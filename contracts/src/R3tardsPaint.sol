@@ -522,17 +522,10 @@ contract R3tardsPaint is ERC721 {
         int256 err = dx + dy;
 
         while (true) {
-            uint256 half = thickness / 2;
-            uint256 ux = uint256(x0);
-            uint256 uy = uint256(y0);
-
-            uint256 startX = ux > half ? ux - half : 0;
-            uint256 startY = uy > half ? uy - half : 0;
-            uint256 endX = ux + half < WIDTH ? ux + half : WIDTH - 1;
-            uint256 endY = uy + half < HEIGHT ? uy + half : HEIGHT - 1;
-            _rawRectFill(startX, startY, endX, endY, color);
+            _rawBrushPoint(uint256(x0), uint256(y0), color, thickness);
 
             if (x0 == x1 && y0 == y1) break;
+
             int256 e2 = 2 * err;
             if (e2 >= dy) {
                 err += dy;
@@ -543,6 +536,25 @@ contract R3tardsPaint is ERC721 {
                 y0 += sy;
             }
         }
+    }
+
+    /// @dev Draw one square brush dab for the genesis rasterizer. Kept in a
+    /// separate helper so _rawLine stays below Solidity's stack-depth limit
+    /// when compiled without viaIR (important for a straightforward Remix build).
+    function _rawBrushPoint(
+        uint256 x,
+        uint256 y,
+        uint8 color,
+        uint256 thickness
+    ) internal {
+        uint256 half = thickness / 2;
+
+        uint256 startX = x > half ? x - half : 0;
+        uint256 startY = y > half ? y - half : 0;
+        uint256 endX = x + half < WIDTH ? x + half : WIDTH - 1;
+        uint256 endY = y + half < HEIGHT ? y + half : HEIGHT - 1;
+
+        _rawRectFill(startX, startY, endX, endY, color);
     }
 
     function _abs(int256 value) internal pure returns (int256) {
