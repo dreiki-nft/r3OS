@@ -148,14 +148,35 @@ contract R3tardsPaint is ERC721 {
     /// @param runs Packed 4-byte horizontal runs: [y, xStart, xEnd, color].
     /// xEnd is inclusive. Color must be 0..15.
     function paintAndMint(bytes calldata runs) external returns (uint256 tokenId) {
+        uint256 pixelWrites = _validateRuns(runs);
+
+        tokenId = totalMints + 1;
+        MintInfo memory info = _buildMintInfo(tokenId, pixelWrites, runs);
+
+        _applyRuns(runs, info.df1Level, info.seed);
+
+        totalMints = tokenId;
+        mintInfo[tokenId] = info;
+
+        // Deliberately use _mint rather than _safeMint. A smart-account caller
+        // should not be denied its NFT merely because it lacks IERC721Receiver.
+        _mint(msg.sender, tokenId);
+
+        _emitPainted(tokenId, info, runs);
+
+        // Every NFT displays the same CURRENT shared image.
+        emit BatchMetadataUpdate(1, tokenId);
+    }
+
+    /// @dev Validate the packed runs and return the number of pixel writes.
+    /// Keeping this work out of paintAndMint avoids Solidity's stack-depth limit.
+    function _validateRuns(bytes calldata runs) internal pure returns (uint256 pixelWrites) {
         uint256 length = runs.length;
         if (length == 0) revert EmptyPatch();
         if (length % 4 != 0) revert InvalidPatchLength();
 
         uint256 runCount = length / 4;
-        uint256 pixelWrites;
 
-        // Validate and count before touching state.
         for (uint256 i; i < runCount; ++i) {
             uint256 offset = i * 4;
             uint256 y = uint8(runs[offset]);
@@ -173,10 +194,15 @@ contract R3tardsPaint is ERC721 {
                 revert TooManyPixelWrites(pixelWrites, MAX_PIXEL_WRITES_PER_MINT);
             }
         }
+    }
 
-        tokenId = totalMints + 1;
+    /// @dev Capture the exact Monad state used by DF1 for this mint.
+    function _buildMintInfo(
+        uint256 tokenId,
+        uint256 pixelWrites,
+        bytes calldata runs
+    ) internal view returns (MintInfo memory info) {
         uint8 df1 = df1LevelForBaseFee(block.basefee);
-
         bytes32 seed = keccak256(
             abi.encodePacked(
                 block.prevrandao,
@@ -188,6 +214,19 @@ contract R3tardsPaint is ERC721 {
             )
         );
 
+        info = MintInfo({
+            painter: msg.sender,
+            blockNumber: uint64(block.number),
+            baseFee: uint96(block.basefee),
+            pixelWrites: uint32(pixelWrites),
+            df1Level: df1,
+            seed: seed
+        });
+    }
+
+    /// @dev Apply all intended runs using the already-derived DF1 state.
+    function _applyRuns(bytes calldata runs, uint8 df1, bytes32 seed) internal {
+        uint256 runCount = runs.length / 4;
         uint256 nonce;
 
         for (uint256 i; i < runCount; ++i) {
@@ -205,34 +244,24 @@ contract R3tardsPaint is ERC721 {
                 }
             }
         }
+    }
 
-        totalMints = tokenId;
-        mintInfo[tokenId] = MintInfo({
-            painter: msg.sender,
-            blockNumber: uint64(block.number),
-            baseFee: uint96(block.basefee),
-            pixelWrites: uint32(pixelWrites),
-            df1Level: df1,
-            seed: seed
-        });
-
-        // Deliberately use _mint rather than _safeMint. A smart-account caller
-        // should not be denied its NFT merely because it lacks IERC721Receiver.
-        _mint(msg.sender, tokenId);
-
+    /// @dev Isolating event construction keeps paintAndMint's live stack small.
+    function _emitPainted(
+        uint256 tokenId,
+        MintInfo memory info,
+        bytes calldata runs
+    ) internal {
         emit Painted(
             tokenId,
-            msg.sender,
-            block.number,
-            block.basefee,
-            df1,
-            seed,
-            pixelWrites,
+            info.painter,
+            info.blockNumber,
+            info.baseFee,
+            info.df1Level,
+            info.seed,
+            info.pixelWrites,
             runs
         );
-
-        // Every NFT displays the same CURRENT shared image.
-        emit BatchMetadataUpdate(1, tokenId);
     }
 
     // ---------------------------------------------------------------------
