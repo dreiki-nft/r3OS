@@ -8,6 +8,13 @@ export const r3tardsPaintAbi = [
   },
   {
     type: 'function',
+    name: 'getBackgroundCanvas',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: 'canvas', type: 'bytes' }],
+  },
+  {
+    type: 'function',
     name: 'totalMints',
     stateMutability: 'view',
     inputs: [],
@@ -17,7 +24,10 @@ export const r3tardsPaintAbi = [
     type: 'function',
     name: 'paintAndMint',
     stateMutability: 'nonpayable',
-    inputs: [{ name: 'runs', type: 'bytes' }],
+    inputs: [
+      { name: 'runs', type: 'bytes' },
+      { name: 'intendedFaceColor', type: 'uint8' },
+    ],
     outputs: [{ name: 'tokenId', type: 'uint256' }],
   },
   {
@@ -39,6 +49,13 @@ export const r3tardsPaintAbi = [
   },
   {
     type: 'function',
+    name: 'faceColorIndex',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint8' }],
+  },
+  {
+    type: 'function',
     name: 'mintInfo',
     stateMutability: 'view',
     inputs: [{ name: 'tokenId', type: 'uint256' }],
@@ -48,6 +65,8 @@ export const r3tardsPaintAbi = [
       { name: 'baseFee', type: 'uint96' },
       { name: 'pixelWrites', type: 'uint32' },
       { name: 'df1Level', type: 'uint8' },
+      { name: 'intendedFaceColor', type: 'uint8' },
+      { name: 'finalFaceColor', type: 'uint8' },
       { name: 'seed', type: 'bytes32' },
     ],
   },
@@ -61,6 +80,8 @@ export const r3tardsPaintAbi = [
       { indexed: true, name: 'blockNumber', type: 'uint256' },
       { indexed: false, name: 'baseFee', type: 'uint256' },
       { indexed: false, name: 'df1Level', type: 'uint8' },
+      { indexed: false, name: 'intendedFaceColor', type: 'uint8' },
+      { indexed: false, name: 'finalFaceColor', type: 'uint8' },
       { indexed: false, name: 'seed', type: 'bytes32' },
       { indexed: false, name: 'pixelWrites', type: 'uint256' },
       { indexed: false, name: 'runs', type: 'bytes' },

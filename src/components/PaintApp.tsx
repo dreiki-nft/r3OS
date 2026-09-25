@@ -21,6 +21,7 @@ import {
   walletClient,
 } from '../lib/chain'
 import { createGenesisCanvas } from '../lib/genesis'
+import { INITIAL_FACE_COLOR, compositeCanvas, compositeColor } from '../lib/layers'
 import {
   drawBrush,
   drawEllipse,
@@ -71,6 +72,12 @@ type MintResult = {
   df1: number
   txHash: Hex
   pixelWrites: bigint
+  finalFaceColor: number
+}
+
+type Snapshot = {
+  buffer: Uint8Array
+  faceColor: number
 }
 
 const TOOL_DEFS: { id: Tool; glyph: string; label: string }[] = [
@@ -178,6 +185,8 @@ export function PaintApp() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [baseline, setBaseline] = useState<Uint8Array>(() => clone(INITIAL))
   const [working, setWorking] = useState<Uint8Array>(() => clone(INITIAL))
+  const [baselineFaceColor, setBaselineFaceColor] = useState(INITIAL_FACE_COLOR)
+  const [workingFaceColor, setWorkingFaceColor] = useState(INITIAL_FACE_COLOR)
   const [tool, setTool] = useState<Tool>('pencil')
   const [fg, setFg] = useState(1)
   const [bg, setBg] = useState(0)
@@ -195,8 +204,8 @@ export function PaintApp() {
   const [menu, setMenu] = useState<string | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [selectionDraft, setSelectionDraft] = useState<Point[]>([])
-  const [undoStack, setUndoStack] = useState<Uint8Array[]>([])
-  const [redoStack, setRedoStack] = useState<Uint8Array[]>([])
+  const [undoStack, setUndoStack] = useState<Snapshot[]>([])
+  const [redoStack, setRedoStack] = useState<Snapshot[]>([])
   const [polygon, setPolygon] = useState<{ base: Uint8Array; points: Point[] } | null>(null)
   const [curve, setCurve] = useState<{ base: Uint8Array; start: Point; end: Point } | null>(null)
 
@@ -211,33 +220,37 @@ export function PaintApp() {
   } | null>(null)
 
   const pending = useMemo(() => encodeChangedRuns(baseline, working), [baseline, working])
+  const display = useMemo(() => compositeCanvas(working, workingFaceColor), [working, workingFaceColor])
+  const facePending = workingFaceColor !== baselineFaceColor
 
-  const pushUndo = useCallback((snapshot: Uint8Array) => {
-    setUndoStack((stack) => [...stack.slice(-29), clone(snapshot)])
+  const pushUndo = useCallback((snapshot: Uint8Array, snapshotFaceColor = workingFaceColor) => {
+    setUndoStack((stack) => [...stack.slice(-29), { buffer: clone(snapshot), faceColor: snapshotFaceColor }])
     setRedoStack([])
-  }, [])
+  }, [workingFaceColor])
 
   const undo = useCallback(() => {
     setUndoStack((stack) => {
       if (!stack.length) return stack
       const previous = stack[stack.length - 1]
-      setRedoStack((redo) => [...redo.slice(-29), clone(working)])
-      setWorking(clone(previous))
+      setRedoStack((redo) => [...redo.slice(-29), { buffer: clone(working), faceColor: workingFaceColor }])
+      setWorking(clone(previous.buffer))
+      setWorkingFaceColor(previous.faceColor)
       setSelection(null)
       return stack.slice(0, -1)
     })
-  }, [working])
+  }, [working, workingFaceColor])
 
   const redo = useCallback(() => {
     setRedoStack((stack) => {
       if (!stack.length) return stack
       const next = stack[stack.length - 1]
-      setUndoStack((undoItems) => [...undoItems.slice(-29), clone(working)])
-      setWorking(clone(next))
+      setUndoStack((undoItems) => [...undoItems.slice(-29), { buffer: clone(working), faceColor: workingFaceColor }])
+      setWorking(clone(next.buffer))
+      setWorkingFaceColor(next.faceColor)
       setSelection(null)
       return stack.slice(0, -1)
     })
-  }, [working])
+  }, [working, workingFaceColor])
 
   const reloadChain = useCallback(async (replaceWorking = true) => {
     if (!publicClient || !contractAddress) {
@@ -246,11 +259,11 @@ export function PaintApp() {
     }
 
     try {
-      const [rawCanvas, total, block] = await Promise.all([
+      const [rawCanvas, total, block, faceColor] = await Promise.all([
         publicClient.readContract({
           address: contractAddress,
           abi: r3tardsPaintAbi,
-          functionName: 'getCanvas',
+          functionName: 'getBackgroundCanvas',
         }),
         publicClient.readContract({
           address: contractAddress,
@@ -258,11 +271,19 @@ export function PaintApp() {
           functionName: 'totalMints',
         }),
         publicClient.getBlock({ blockTag: 'latest' }),
+        publicClient.readContract({
+          address: contractAddress,
+          abi: r3tardsPaintAbi,
+          functionName: 'faceColorIndex',
+        }),
       ])
       const next = decodePackedCanvas(rawCanvas as Hex)
+      const nextFaceColor = Number(faceColor)
       setBaseline(next)
+      setBaselineFaceColor(nextFaceColor)
       if (replaceWorking) {
         setWorking(clone(next))
+        setWorkingFaceColor(nextFaceColor)
         setUndoStack([])
         setRedoStack([])
         setSelection(null)
@@ -351,8 +372,8 @@ export function PaintApp() {
     if (!ctx) return
     const image = ctx.createImageData(WIDTH, HEIGHT)
 
-    for (let i = 0; i < working.length; i += 1) {
-      const entry = PALETTE[working[i]] ?? PALETTE[0]
+    for (let i = 0; i < display.length; i += 1) {
+      const entry = PALETTE[display[i]] ?? PALETTE[0]
       const o = i * 4
       image.data[o] = entry.rgb[0]
       image.data[o + 1] = entry.rgb[1]
@@ -386,7 +407,7 @@ export function PaintApp() {
       ctx.stroke()
     }
     ctx.restore()
-  }, [polygon, selection, selectionDraft, working])
+  }, [display, polygon, selection, selectionDraft])
 
   const canvasPoint = (event: ReactPointerEvent<HTMLCanvasElement>): Point => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -405,7 +426,7 @@ export function PaintApp() {
     const color = colorFromButton(event.button)
 
     if (tool === 'picker') {
-      const picked = working[point.y * WIDTH + point.x]
+      const picked = compositeColor(working[point.y * WIDTH + point.x], point.x, point.y, workingFaceColor)
       if (event.button === 2) setBg(picked)
       else setFg(picked)
       setStatus(`picked ${PALETTE[picked].name}`)
@@ -646,7 +667,7 @@ export function PaintApp() {
   }
 
   const mint = async () => {
-    if (!pending.pixelWrites) {
+    if (!pending.pixelWrites && !facePending) {
       setStatus('nothing changed. even the blockchain deserves a reason.')
       return
     }
@@ -673,7 +694,7 @@ export function PaintApp() {
         address: contractAddress,
         abi: r3tardsPaintAbi,
         functionName: 'paintAndMint',
-        args: [pending.hex],
+        args: [pending.hex, workingFaceColor],
         account,
       })
 
@@ -686,7 +707,7 @@ export function PaintApp() {
         address: contractAddress,
         abi: r3tardsPaintAbi,
         functionName: 'paintAndMint',
-        args: [pending.hex],
+        args: [pending.hex, workingFaceColor],
         account,
         chain,
         gas,
@@ -709,6 +730,7 @@ export function PaintApp() {
               df1: Number(decoded.args.df1Level),
               txHash: hash,
               pixelWrites: decoded.args.pixelWrites,
+              finalFaceColor: Number(decoded.args.finalFaceColor),
             }
             break
           }
@@ -718,7 +740,7 @@ export function PaintApp() {
       }
 
       await reloadChain(true)
-      setMintResult(result ?? { tokenId: chainMints + 1n, df1: df1Estimate, txHash: hash, pixelWrites: BigInt(pending.pixelWrites) })
+      setMintResult(result ?? { tokenId: chainMints + 1n, df1: df1Estimate, txHash: hash, pixelWrites: BigInt(pending.pixelWrites), finalFaceColor: workingFaceColor })
       setStatus('your image was saved. unfortunately everyone else can still edit it.')
     } catch (error) {
       setStatus(`mint failed: ${(error as Error).message}`)
@@ -728,9 +750,10 @@ export function PaintApp() {
   }
 
   const resetPending = () => {
-    if (!pending.pixelWrites) return
-    pushUndo(working)
+    if (!pending.pixelWrites && !facePending) return
+    pushUndo(working, workingFaceColor)
     setWorking(clone(baseline))
+    setWorkingFaceColor(baselineFaceColor)
     setSelection(null)
     setPolygon(null)
     setCurve(null)
@@ -789,6 +812,7 @@ export function PaintApp() {
     ],
     Colors: [
       { label: 'Swap foreground/background', action: () => { const old = fg; setFg(bg); setBg(old) } },
+      { label: workingFaceColor === 1 ? 'Set face white' : 'Set face black', action: () => { pushUndo(working, workingFaceColor); setWorkingFaceColor(workingFaceColor === 1 ? 0 : 1) } },
     ],
     Help: [
       { label: 'About r3tards paint', action: () => window.alert('one r3tard. one paint file. anyone can edit it. mint to save. it never ends.\n\nr3tards is not a r3al proj3ct.') },
@@ -929,10 +953,33 @@ export function PaintApp() {
               />
             ))}
           </div>
+          <div className="face-controls" title="r3tard face state">
+            <span className="face-label">FACE</span>
+            <button
+              className={workingFaceColor === 0 ? 'classic-button active-face' : 'classic-button'}
+              onClick={() => {
+                if (workingFaceColor === 0) return
+                pushUndo(working, workingFaceColor)
+                setWorkingFaceColor(0)
+              }}
+            >
+              WHITE
+            </button>
+            <button
+              className={workingFaceColor === 1 ? 'classic-button active-face' : 'classic-button'}
+              onClick={() => {
+                if (workingFaceColor === 1) return
+                pushUndo(working, workingFaceColor)
+                setWorkingFaceColor(1)
+              }}
+            >
+              BLACK
+            </button>
+          </div>
           <div className="mint-controls">
             <div className="mint-stats">
               <span>mint #{(chainMints + 1n).toString()}</span>
-              <span>{pending.pixelWrites.toLocaleString()} px pending</span>
+              <span>{pending.pixelWrites.toLocaleString()} px pending{facePending ? ' + face flip' : ''}</span>
             </div>
             <button className="classic-button" onClick={wallet ? mint : connect} disabled={busy}>
               {busy ? 'SAVING...' : wallet ? 'MINT / SAVE' : 'CONNECT'}
@@ -959,6 +1006,7 @@ export function PaintApp() {
                 <p>your image was saved.</p>
                 <p><strong>DF1 DAMAGE: {mintResult.df1}%</strong></p>
                 <p>mint #{mintResult.tokenId.toString()} · {mintResult.pixelWrites.toString()} pixel writes</p>
+                <p>face saved as <strong>{mintResult.finalFaceColor === 1 ? 'BLACK' : 'WHITE'}</strong></p>
                 {explorerUrl && (
                   <a href={`${explorerUrl.replace(/\/$/, '')}/tx/${mintResult.txHash}`} target="_blank" rel="noreferrer">
                     view transaction
