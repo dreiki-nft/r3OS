@@ -243,13 +243,9 @@ contract R3tardsPaint is ERC721 {
             uint8 intendedColor = uint8(runs[offset + 3]);
 
             for (uint256 x = xStart; x <= xEnd; ++x) {
-                if (_maskBitAt(OUTLINE_BASE_SLOT, x, y)) {
-                    unchecked {
-                        ++nonce;
-                    }
-                    continue;
-                }
-
+                // The editable bitmap is a true background layer. It is allowed
+                // to change underneath the sacred r3tard line-art mask; the
+                // compositor always renders that immutable mask on top.
                 uint8 finalColor = _df1Color(intendedColor, df1, seed, nonce);
                 _writeBackgroundPixelRaw(uint8(x), y, finalColor);
                 unchecked {
@@ -513,7 +509,7 @@ contract R3tardsPaint is ERC721 {
         uint256[4] memory backgroundWords,
         uint256 outlineWord,
         uint256 x
-    ) internal pure returns (uint8) {
+    ) internal view returns (uint8) {
         uint256 bitShift = 255 - x;
         if (((outlineWord >> bitShift) & 1) == 1) return faceColorIndex;
 

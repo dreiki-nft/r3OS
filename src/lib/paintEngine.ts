@@ -1,5 +1,4 @@
 import { HEIGHT, WIDTH } from './palette'
-import { isProtectedPixel } from './layers'
 
 export type Point = { x: number; y: number }
 
@@ -10,7 +9,7 @@ export function inBounds(x: number, y: number) {
 }
 
 export function setPixel(buffer: Uint8Array, x: number, y: number, color: number) {
-  if (!inBounds(x, y) || isProtectedPixel(x, y)) return
+  if (!inBounds(x, y)) return
   buffer[pixelIndex(x, y)] = color
 }
 
@@ -196,7 +195,7 @@ export function drawPolygon(
 }
 
 export function floodFill(buffer: Uint8Array, start: Point, color: number) {
-  if (!inBounds(start.x, start.y) || isProtectedPixel(start.x, start.y)) return 0
+  if (!inBounds(start.x, start.y)) return 0
   const target = buffer[pixelIndex(start.x, start.y)]
   if (target === color) return 0
 
@@ -222,7 +221,7 @@ export function floodFill(buffer: Uint8Array, start: Point, color: number) {
     for (const [nx, ny] of neighbors) {
       if (!inBounds(nx, ny)) continue
       const ni = pixelIndex(nx, ny)
-      if (isProtectedPixel(nx, ny) || buffer[ni] !== target) continue
+      if (buffer[ni] !== target) continue
       buffer[ni] = color
       queue[tail++] = ni
       changed += 1

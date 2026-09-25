@@ -75,14 +75,22 @@ contract R3tardsPaintTest is Test {
         }
     }
 
-    function testProtectedPixelsIgnoreBackgroundWrites() public {
+    function testBackgroundWritesUnderSacredOverlay() public {
+        // Write red directly underneath a sacred line pixel.
         vm.prank(alice);
-        paint.paintAndMint(hex"5A707004", 0); // y=90, x=112..112, juicy red
-        assertEq(paint.pixelAt(112, 90), 1); // sacred line ignores background write
+        paint.paintAndMint(hex"5A707004", 1); // y=90, x=112..112, juicy red
 
-        vm.prank(alice);
-        paint.paintAndMint(hex"96808004", 0); // y=150, x=128..128, interior area is editable
-        assertEq(paint.pixelAt(128, 150), 4);
+        // The background layer really changed...
+        assertEq(paint.backgroundPixelAt(112, 90), 4);
+        // ...but the final composite still shows the black sacred line above it.
+        assertEq(paint.pixelAt(112, 90), 1);
+
+        // Switching the line state to white still leaves that red background
+        // stored underneath while the final composite shows the white line.
+        vm.prank(bob);
+        paint.paintAndMint(hex"", 0);
+        assertEq(paint.backgroundPixelAt(112, 90), 4);
+        assertEq(paint.pixelAt(112, 90), 0);
     }
 
     function testMultipleRuns() public {
