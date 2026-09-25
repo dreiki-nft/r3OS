@@ -22,11 +22,11 @@ contract R3tardsPaintTest is Test {
         assertEq(paint.MASK_SLOT_COUNT(), 256);
     }
 
-    function testGenesisHasWhiteBackgroundWhiteFaceAndBlackOutline() public view {
+    function testGenesisHasWhiteBackgroundAndBlackLineArt() public view {
         assertEq(paint.pixelAt(0, 0), 0);
-        assertEq(paint.pixelAt(112, 90), 1); // outline
-        assertEq(paint.pixelAt(128, 150), 0); // protected face fill
-        assertEq(paint.faceColorIndex(), 0);
+        assertEq(paint.pixelAt(112, 90), 1); // sacred line art
+        assertEq(paint.pixelAt(128, 150), 0); // interior remains background
+        assertEq(paint.faceColorIndex(), 1);
     }
 
     function testPatchWritesExactColorAtBaseFeeFloor() public {
@@ -59,12 +59,12 @@ contract R3tardsPaintTest is Test {
         assertTrue(seed != bytes32(0));
     }
 
-    function testFaceOnlyMintWorks() public {
+    function testLineColorOnlyMintWorks() public {
         vm.prank(alice);
-        uint256 tokenId = paint.paintAndMint(hex"", 1);
+        uint256 tokenId = paint.paintAndMint(hex"", 0);
         assertEq(tokenId, 1);
-        assertEq(paint.faceColorIndex(), 1);
-        assertEq(paint.pixelAt(128, 150), 1);
+        assertEq(paint.faceColorIndex(), 0);
+        assertEq(paint.pixelAt(112, 90), 0);
     }
 
     function testHorizontalRunIsInclusive() public {
@@ -78,11 +78,11 @@ contract R3tardsPaintTest is Test {
     function testProtectedPixelsIgnoreBackgroundWrites() public {
         vm.prank(alice);
         paint.paintAndMint(hex"5A707004", 0); // y=90, x=112..112, juicy red
-        assertEq(paint.pixelAt(112, 90), 1); // outline still black
+        assertEq(paint.pixelAt(112, 90), 1); // sacred line ignores background write
 
         vm.prank(alice);
-        paint.paintAndMint(hex"96808004", 0); // y=150, x=128..128, inside face fill
-        assertEq(paint.pixelAt(128, 150), 0); // face still white at df1 floor
+        paint.paintAndMint(hex"96808004", 0); // y=150, x=128..128, interior area is editable
+        assertEq(paint.pixelAt(128, 150), 4);
     }
 
     function testMultipleRuns() public {
@@ -177,7 +177,7 @@ contract R3tardsPaintTest is Test {
 
     function testTokenURIIsFullyOnchainDataURI() public {
         vm.prank(alice);
-        paint.paintAndMint(hex"00000004", 1);
+        paint.paintAndMint(hex"00000004", 0);
         string memory uri = paint.tokenURI(1);
         assertTrue(bytes(uri).length > 1_000);
         assertEq(_slice(uri, 0, 29), "data:application/json;base64,");
