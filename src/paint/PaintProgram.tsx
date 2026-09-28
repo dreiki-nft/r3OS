@@ -35,6 +35,7 @@ import { createStrokeQueue } from '../live/paintQueue'
 import { drawEllipse, drawLine, drawRect, floodFill, type Point } from '../lib/paintEngine'
 import { PALETTE } from '../lib/palette'
 import { encodeChangedRuns } from '../lib/patch'
+import { setSleepwalkerDraft } from '../labs/sleepwalkerDraft'
 import { clearAssistantTip, setAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
 import { openProgram } from '../os/programs'
@@ -845,6 +846,25 @@ export function PaintProgram() {
                 ? (quotes[paintFrameKey] as string)
                 : 'quoting…',
           action: () => void paintChunks(true),
+        },
+        {
+          label: 'Dream this…',
+          disabled: patch.pixelWrites === 0 || patch.pixelWrites > 4_096,
+          disabledReason:
+            patch.pixelWrites === 0
+              ? 'draw something first'
+              : patch.pixelWrites > 4_096
+                ? 'dream stencils are capped at 4,096 px'
+                : undefined,
+          action: () => {
+            const draft = setSleepwalkerDraft({
+              runs: patch.hex,
+              pixels: patch.pixelWrites,
+              holderIds: stableHolderIds,
+              onSubmitted: clearPending,
+            })
+            openProgram('sleepwalker', true, `#/sleepwalker?tab=tonight&draft=${draft.version}`)
+          },
         },
         {
           label: `Auto-paint strokes ${autoPaint ? '✓' : ''}`,

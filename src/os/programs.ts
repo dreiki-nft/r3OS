@@ -55,6 +55,15 @@ const ForksProgram = lazy(() =>
 const QuestsProgram = lazy(() =>
   import('../labs/QuestsProgram').then((module) => ({ default: module.QuestsProgram })),
 )
+const BlockDNAProgram = lazy(() =>
+  import('../labs/BlockDNAProgram').then((module) => ({ default: module.BlockDNAProgram })),
+)
+const AuctionProgram = lazy(() =>
+  import('../labs/AuctionProgram').then((module) => ({ default: module.AuctionProgram })),
+)
+const SleepwalkerProgram = lazy(() =>
+  import('../labs/SleepwalkerProgram').then((module) => ({ default: module.SleepwalkerProgram })),
+)
 
 function placeholder(title: string, icon: IconName) {
   return lazy(async () => {
@@ -148,9 +157,40 @@ export const programs: ProgramDef[] = [
     singleInstance: true,
     hash: '#/forks',
   },
-  placeholderProgram('brushes', 'Block DNA', 'dna', '#C864AA'),
+  {
+    id: 'brushes',
+    title: 'Block DNA',
+    icon: 'dna',
+    colour: '#C864AA',
+    component: BlockDNAProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/brushes',
+  },
+  {
+    id: 'sleepwalker',
+    title: 'Sleepwalker',
+    icon: 'moon',
+    colour: '#9F70DA',
+    component: SleepwalkerProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/sleepwalker',
+  },
   placeholderProgram('lanes', 'Lanes', 'chip', '#D47827'),
-  placeholderProgram('auction', 'Auction', 'gavel', '#FFFFFF'),
+  {
+    id: 'auction',
+    title: 'Auction',
+    icon: 'gavel',
+    colour: '#FFFFFF',
+    component: AuctionProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/auction',
+  },
   {
     id: 'quests',
     title: 'Quests',

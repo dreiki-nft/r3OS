@@ -5,6 +5,7 @@ import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { readMany } from '../chain/readMany'
 import { R3TARDS_FORKS_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { encodeForkDiff, forkRowsToIndices } from '../lib/forks'
 import { PALETTE } from '../lib/palette'
@@ -191,7 +192,7 @@ export function ForksProgram() {
         })
       if (selected && labs)
         contracts.push({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'ownerOf', args: [selected] })
-      const result = await publicClient.multicall({ contracts, allowFailure: false })
+      const result = await readMany(contracts as any, { allowFailure: false })
       let cursor = 0
       const next = new Map<bigint, ForkInfo>()
       for (const id of ids) next.set(id, parseInfo(id, result[cursor++]))

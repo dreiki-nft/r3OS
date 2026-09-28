@@ -1,0 +1,313 @@
+/* Phase 3c-2a: Block DNA, Auction and Labs folder */
+.dna-body,
+.auction-main {
+  flex: 1;
+  min-height: 0;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dna-strip {
+  display: flex;
+  gap: 5px;
+  overflow: hidden;
+  align-items: flex-end;
+}
+.dna-strip button {
+  position: relative;
+  border: 0;
+  background: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+}
+.dna-strip button.selected,
+.dna-box button.selected {
+  outline: 1px dotted #f2efe9;
+  background: rgba(95, 237, 223, 0.22);
+}
+.dna-live-dot {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  right: 4px;
+  top: 4px;
+  border-radius: 50%;
+  background: #c52020;
+}
+.dna-strip-meta {
+  display: flex;
+  justify-content: space-between;
+  color: #a3a09a;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.dna-columns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px 350px minmax(0, 1fr);
+  gap: 10px;
+}
+.dna-selected {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dna-box {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.dna-box button {
+  border: 0;
+  background: #1b1b1e;
+  color: inherit;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.dna-empty {
+  color: #6b6b73;
+}
+.dna-stamp {
+  display: grid;
+  grid-template-columns: 288px minmax(0, 1fr);
+  gap: 12px;
+}
+.dna-canvas-preview {
+  position: relative;
+  width: 288px;
+  height: 288px;
+  overflow: hidden;
+  background: #000;
+  cursor: crosshair;
+}
+.dna-stamp-overlay {
+  position: absolute;
+  pointer-events: none;
+  outline: 1px dashed #f2efe9;
+}
+.dna-stamp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auction-main {
+  flex-direction: row;
+}
+.auction-finale {
+  width: 330px;
+  flex: 0 0 330px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auction-preview {
+  background: #000;
+  padding: 5px;
+}
+.auction-finale h3 {
+  margin: 0;
+}
+.auction-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auction-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.auction-facts > div {
+  padding: 8px 10px;
+  background: #0e0e10;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.auction-facts b {
+  font-size: 16px;
+}
+.auction-track {
+  position: relative;
+  height: 22px;
+  background: #1b1b1e;
+  border: 1px solid #3d3d44;
+  margin: 4px 0 6px;
+}
+.auction-track > i {
+  display: block;
+  height: 100%;
+  background: #3d3d44;
+}
+.auction-track .candle {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  border: 1px dashed #fec343;
+  background: rgba(254, 195, 67, 0.08);
+}
+.auction-track .drawn {
+  position: absolute;
+  top: -7px;
+  bottom: -7px;
+  width: 3px;
+  background: #c52020;
+}
+.auction-track-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #a3a09a;
+  font-size: 10px;
+}
+.auction-bid-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.auction-bid-row input,
+.auction-finale input {
+  width: 100px;
+  height: 30px;
+  box-sizing: border-box;
+  background: #0e0e10;
+  color: #f2efe9;
+  border: 0;
+  padding: 0 7px;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    inset -1px -1px 0 #6b6b73;
+  font: inherit;
+}
+.auction-bids {
+  display: grid;
+  grid-template-columns: 130px 150px 130px minmax(0, 1fr);
+  gap: 3px 10px;
+  max-height: 190px;
+  overflow: auto;
+}
+.auction-bid-grid {
+  display: contents;
+}
+.labs-folder-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  position: relative;
+}
+.labs-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.labs-type-filter {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+}
+.labs-type-filter button {
+  border: 0;
+  background: #232326;
+  color: inherit;
+  padding: 5px 8px;
+  font: inherit;
+}
+.labs-type-filter button.active {
+  background: rgba(95, 237, 223, 0.22);
+  outline: 1px dotted #f2efe9;
+}
+.labs-folder-grid {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-content: start;
+  gap: 10px;
+  overflow: auto;
+  background: #0e0e10;
+}
+.labs-folder-grid > button {
+  border: 0;
+  background: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px;
+}
+.labs-folder-grid > button.selected {
+  background: rgba(95, 237, 223, 0.22);
+  outline: 1px dotted #f2efe9;
+}
+.labs-folder-grid img {
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+.labs-properties {
+  position: absolute;
+  z-index: 30;
+  right: 18px;
+  top: 56px;
+  width: 430px;
+  max-height: calc(100% - 90px);
+  overflow: auto;
+  padding: 12px;
+  background: #232326;
+}
+.labs-properties-main {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.labs-properties-main img {
+  image-rendering: pixelated;
+  object-fit: contain;
+  background: #000;
+}
+.labs-trait {
+  display: contents;
+}
+.labs-folder-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #a3a09a;
+}
+@media (max-width: 760px) {
+  .dna-columns {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+  .auction-main {
+    overflow: auto;
+    flex-direction: column;
+  }
+  .auction-finale {
+    width: auto;
+    flex-basis: auto;
+  }
+  .auction-facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .labs-properties {
+    inset: 40px 8px 8px;
+    width: auto;
+  }
+}

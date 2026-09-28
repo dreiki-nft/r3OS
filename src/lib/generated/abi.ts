@@ -5252,6 +5252,19 @@ export const R3TARDS_LABS_ABI = [
   },
   {
     "type": "function",
+    "name": "totalMinted",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "transferFrom",
     "inputs": [
       {

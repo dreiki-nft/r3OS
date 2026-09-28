@@ -126,7 +126,7 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
   } else {
     const base = contractBase(opts, sender)
     await publicClient.simulateContract(base)
-    if (opts.kind === 'flipbookPaint' || opts.kind === 'forkPaint') {
+    if (opts.kind === 'flipbookPaint' || opts.kind === 'forkPaint' || opts.kind === 'sleepwalkerStep') {
       gasLimit = gasLimitFor(opts.kind, 0n, opts.pixels)
     } else {
       const estimate = await publicClient.estimateContractGas(base)

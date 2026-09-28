@@ -4,6 +4,7 @@ import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { readMany } from '../chain/readMany'
 import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
 import { encodeFlipRuns, reelTiming, unpackFrame } from '../lib/flipbook'
 import { PALETTE } from '../lib/palette'
@@ -125,7 +126,7 @@ export function FlipbookProgram() {
           { address, abi: R3TARDS_FLIPBOOK_ABI, functionName: 'painterInfo', args: [account] },
         )
       }
-      const reads = await publicClient.multicall({ contracts, allowFailure: false })
+      const reads = await readMany(contracts as any, { allowFailure: false })
       const frames = unpackFrames(reads[0])
       const next: State = {
         frames,
@@ -281,7 +282,7 @@ export function FlipbookProgram() {
         { address: state.labs!, abi: R3TARDS_LABS_ABI, functionName: 'ownerOf', args: [id] },
         { address: state.labs!, abi: R3TARDS_LABS_ABI, functionName: 'sourceOf', args: [id] },
       ]) as any
-      const values = await publicClient.multicall({ contracts: calls, allowFailure: true })
+      const values = await readMany(calls as any, { allowFailure: true })
       const owned = ids.filter((id, index) => {
         const owner = values[index * 2] as any
         const source = values[index * 2 + 1] as any
@@ -475,7 +476,9 @@ export function FlipbookProgram() {
                 Paint frame
               </Button>
               <small>
-                {paintQuote?.maxCost ?? 'quoting…'}
+                {paintBlocked === 'draw something first'
+                  ? 'draw something first'
+                  : (paintQuote?.maxCost ?? 'quoting…')}
                 <br />
                 240K gas limit
               </small>

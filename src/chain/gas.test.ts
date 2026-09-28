@@ -18,6 +18,7 @@ describe('gas policy', () => {
   it('uses fixed lab limits', () => {
     expect(gasLimitFor('flipbookPaint', 1n)).toBe(240_000n)
     expect(gasLimitFor('forkPaint', 1n)).toBe(250_000n)
+    expect(gasLimitFor('sleepwalkerStep', 1n)).toBe(1_000_000n)
   })
 
   it('rounds the estimate path upward', () => {

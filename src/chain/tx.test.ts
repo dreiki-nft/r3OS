@@ -69,12 +69,14 @@ describe('transaction pipeline', () => {
     mocks.refreshWalletBalance.mockResolvedValue(undefined)
   })
 
-  it('does not estimate fixed-gas Flipbook and fork paints', async () => {
+  it('does not estimate fixed-gas Lab actions', async () => {
     const flip = await quoteAction({ kind: 'flipbookPaint', address, abi, functionName: 'ping', account })
     const fork = await quoteAction({ kind: 'forkPaint', address, abi, functionName: 'ping', account })
+    const step = await quoteAction({ kind: 'sleepwalkerStep', address, abi, functionName: 'ping', account })
     expect(flip.gasLimit).toBe(240_000n)
     expect(fork.gasLimit).toBe(250_000n)
-    expect(mocks.simulateContract).toHaveBeenCalledTimes(2)
+    expect(step.gasLimit).toBe(1_000_000n)
+    expect(mocks.simulateContract).toHaveBeenCalledTimes(3)
     expect(mocks.estimateContractGas).not.toHaveBeenCalled()
   })
 

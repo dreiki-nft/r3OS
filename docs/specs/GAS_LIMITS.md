@@ -71,10 +71,12 @@ Use `eth_estimateGas + 10%` for `forkFrame`, `forkFork`, `setOpen` and `seal`.
 `R3tardsSleepwalker.step(owner)` uses a fixed gas limit:
 
 ```ts
-const SLEEPWALKER_STEP_GAS_LIMIT = 600_000n
+const SLEEPWALKER_STEP_GAS_LIMIT = 1_000_000n
 ```
 
-Do **not** estimate it per step. A ready step can start the next pre-signed session, slice up to 64 stencil pixels, call the core paint path, update dream accounting and pay a tip. The Foundry benchmark keeps the 64-pixel path below 600K; Phase 5 must re-measure it on Monad testnet before launch. A failed readiness gate is a view/preflight concern and should not be intentionally submitted as a paid transaction.
+Do **not** estimate it per step. A ready step can start the next pre-signed session, slice up to 64 stencil pixels, call the core paint path, update dream accounting and pay a tip. In-test Foundry benchmarks (about 505K) under-count it because storage is already warm in a test. A real fresh transaction on a local chain cost **675K** for a step that completed a 61 px dream and refunded the deposit, with Ethereum pricing; Monad-rules cold measurements run about 1.2× Ethereum on this path, so the real worst case is about 820K before a session start. The limit is therefore **1,000,000**. Phase 5 must re-measure the worst path (session start + 64 px + completion + refund) on Monad testnet and tighten it.
+
+`step` wraps the core paint in try/catch, so `eth_estimateGas` is **not** safe here: the estimator finds a lower limit at which the inner paint fails and the step returns `CoreRejected` without painting. Tips should cover the cranker's max cost (`SLEEPWALKER_STEP_GAS_LIMIT × maxFeePerGas`), or nobody will crank. A failed readiness gate is a view/preflight concern and should not be intentionally submitted as a paid transaction.
 
 Use `eth_estimateGas + 10%` for `sleep`, `wake` and `mintDream`; those actions are user-driven setup/cleanup rather than cranker hot paths.
 

@@ -107,6 +107,11 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         emit MetadataUpdate(tokenId);
     }
 
+    /// @notice Number of Labs tokens ever minted. Ids run 1..totalMinted(); burned ids are gaps.
+    function totalMinted() external view returns (uint256) {
+        return _nextTokenId - 1;
+    }
+
     function mintData(uint256 tokenId) external view returns (MintData memory) {
         _requireOwned(tokenId);
         return _mintData[tokenId];

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { mapQuestProgress } from './quests'
+import { badgeSrc } from './QuestsProgram'
 
 describe('quest progress mapping', () => {
+  it('maps all 13 quest ids to badges including RECYCLER', () => {
+    expect(Array.from({ length: 13 }, (_, id) => badgeSrc(id))).toHaveLength(13)
+    expect(badgeSrc(12)).toBe('/os/badges/q12_recycler.png')
+  })
   it('maps a single-condition quest', () => {
     expect(mapQuestProgress([{ threshold: 30n, op: 0 }], [23n], [false], false, false)).toMatchObject({
       value: 23n,

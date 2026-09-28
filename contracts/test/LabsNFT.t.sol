@@ -135,6 +135,7 @@ contract LabsNFTTest is Test {
         uint256 second = sourceB.mintTo(bob);
         assertEq(first, 1);
         assertEq(second, 2);
+        assertEq(labs.totalMinted(), 2);
         assertEq(labs.sourceOf(first), address(sourceA));
         assertEq(labs.sourceOf(second), address(sourceB));
         assertEq(labs.balanceOfExperiment(experimentA, alice), 1);

@@ -25,15 +25,18 @@ function address(name: string, fallback?: string): Address | undefined {
 
 const paint = address('VITE_PAINT_ADDRESS', env('VITE_CONTRACT_ADDRESS'))
 const rpc = env('VITE_RPC_URL')
+const chainId = Number(env('VITE_CHAIN_ID') || 10143)
+const canonicalMulticall3 =
+  chainId === 143 || chainId === 10143 ? '0xcA11bde05977b3631167028862bE2a173976CA11' : undefined
 
 export const config: Readonly<AppConfig> = Object.freeze({
-  chainId: Number(env('VITE_CHAIN_ID') || 10143),
+  chainId,
   rpcUrl: rpc,
   wsUrl: env('VITE_WS_URL'),
   walletRpcUrl: env('VITE_WALLET_RPC_URL'),
   explorerUrl: env('VITE_EXPLORER_URL').replace(/\/$/, ''),
   paintAddress: paint,
-  multicall3Address: address('VITE_MULTICALL3_ADDRESS'),
+  multicall3Address: address('VITE_MULTICALL3_ADDRESS', canonicalMulticall3),
   nftApiUrl: env('VITE_NFT_API_URL'),
   ipfsGateway: env('VITE_IPFS_GATEWAY') || 'https://ipfs.io/ipfs/',
   labs: {

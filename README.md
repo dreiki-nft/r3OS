@@ -437,6 +437,8 @@ Copy the supplied asset pack into `public/os/` before running the app. The app r
 
 Copy `.env.example` to `.env.local`. `VITE_RPC_URL` and `VITE_WS_URL` are **app-only** endpoints. `VITE_WALLET_RPC_URL` must be a public Monad RPC and is the only RPC URL the app will ever provide to `wallet_addEthereumChain`. Every `VITE_` value is public in the browser bundle.
 
+`VITE_MULTICALL3_ADDRESS` is optional. On Monad mainnet (143) and testnet (10143) it defaults to the canonical Multicall3 address `0xcA11bde05977b3631167028862bE2a173976CA11`. The app checks that address for deployed code once before using it; if Multicall3 is missing or unavailable, Lab reads fall back to parallel `eth_call` reads with the same per-call failure semantics.
+
 If either `VITE_RPC_URL` or the Paint contract address is missing, the desktop runs in demo mode with a local blank canvas and all writes explain how to enable onchain mode.
 
 ```bash

@@ -12,7 +12,7 @@ Royalties are fixed forever at 5% (500 bps) to immutable `ROYALTY_RECEIVER`.
 
 ## Mint authorization and binding
 
-A Lab calls `mint(to, experimentId)`. The collection reads the frozen core registry and accepts the call only when `experimentInfo(experimentId).experiment == msg.sender` and the entry is not retired. Token IDs share one global sequence starting at 1.
+A Lab calls `mint(to, experimentId)`. The collection reads the frozen core registry and accepts the call only when `experimentInfo(experimentId).experiment == msg.sender` and the entry is not retired. Token IDs share one global sequence starting at 1; `totalMinted()` returns the highest id minted so far (burned ids stay as gaps), so a client can scan `ownerOf(1..totalMinted())`.
 
 Flipbook, Forks, Sleepwalker and the CD Burner use a two-step deployment that avoids predicting registry IDs:
 

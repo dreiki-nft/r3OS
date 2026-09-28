@@ -4,6 +4,7 @@ import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { readMany } from '../chain/readMany'
 import { R3TARDS_WEEDS_ABI } from '../lib/generated/abi'
 import { getCanvasSnapshot, subscribeCanvas } from '../paint/canvasStore'
 import { closeWindow } from '../os/windows'
@@ -68,7 +69,7 @@ export function WeedsProgram() {
         args: [wallet.account],
       })
     try {
-      const result = await publicClient.multicall({ contracts, allowFailure: false })
+      const result = await readMany(contracts as any, { allowFailure: false })
       setWorld(decodeWorldBitmap(hexToBytes(result[0] as Hex)))
       setRegions(
         Array.from({ length: 16 }, (_, index) => {

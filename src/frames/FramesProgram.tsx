@@ -51,6 +51,7 @@ import {
   type SeasonSummary,
 } from './framesStore'
 import { PixelPreview } from './PixelPreview'
+import { LabsFolder } from './LabsFolder'
 
 const FILTERS = ['Mine', 'All frames', 'Finales', 'Hidden'] as const
 type Filter = (typeof FILTERS)[number]
@@ -184,6 +185,7 @@ export function FramesProgram() {
   const routeFrame = Number(params.get('frame') ?? 0)
   const routeSeason = params.get('season')
   const [filter, setFilter] = useState<Filter>('Mine')
+  const [labsView, setLabsView] = useState(params.get('labs') === '1')
   const [season, setSeason] = useState<number | undefined>(
     routeSeason == null ? undefined : Number(routeSeason),
   )
@@ -220,7 +222,8 @@ export function FramesProgram() {
   useEffect(() => {
     if (routeSeason != null) setSeason(Number(routeSeason))
     if (routeFrame > 0) setSelected(routeFrame)
-  }, [routeSeason, routeFrame])
+    setLabsView(params.get('labs') === '1')
+  }, [routeSeason, routeFrame, params])
 
   const loadMine = useCallback(async () => {
     if (!wallet.account) {
@@ -531,7 +534,7 @@ export function FramesProgram() {
     if (next !== current && next >= 0) setSelected(visibleIds[next])
   }
 
-  const rootView = season == null && (filter === 'Mine' || filter === 'All frames')
+  const rootView = !labsView && season == null && (filter === 'Mine' || filter === 'All frames')
   const selectedRegular = selected != null && selected > 0 && selectedInfo && !selectedInfo.finale
   const toolbar: {
     label: string
@@ -672,7 +675,13 @@ export function FramesProgram() {
       <div className="frames-address-row">
         <div className="frames-address sunken">
           <Icon name="gallery" size={20} colour="#EE93E3" />
-          <span>{season == null ? 'My Frames' : `My Frames › season ${season + 1}`}</span>
+          <span>
+            {labsView
+              ? 'My Frames › Labs'
+              : season == null
+                ? 'My Frames'
+                : `My Frames › season ${season + 1}`}
+          </span>
         </div>
         <div className="frame-filters">
           {FILTERS.map((item) => (
@@ -681,6 +690,7 @@ export function FramesProgram() {
               className={filter === item ? 'active' : ''}
               onClick={() => {
                 setFilter(item)
+                setLabsView(false)
                 setSeason(undefined)
                 setSelected(undefined)
                 setHistory([])
@@ -691,130 +701,147 @@ export function FramesProgram() {
           ))}
         </div>
       </div>
-      <div className="frames-browser">
-        <aside className="frames-details">
-          {selected == null ? (
-            <div className="frames-empty-details">
-              <Icon name="gallery" size={36} colour="#EE93E3" />
-              <p>select a frame.</p>
-            </div>
-          ) : (
-            <>
-              <header>
+      {labsView ? (
+        <LabsFolder onExit={() => setLabsView(false)} />
+      ) : (
+        <div className="frames-browser">
+          <aside className="frames-details">
+            {selected == null ? (
+              <div className="frames-empty-details">
                 <Icon name="gallery" size={36} colour="#EE93E3" />
-                <div>
-                  <b>{selected === 0 ? 'live canvas' : `frame #${selected}`}</b>
-                  <small>
-                    {selected === 0
-                      ? `season ${frames.currentSeason + 1} · live canvas`
-                      : `season ${(selectedInfo?.season ?? 0) + 1} · ${
-                          selectedInfo?.finale ? 'finale' : 'regular frame'
-                        }`}
-                  </small>
+                <p>select a frame.</p>
+              </div>
+            ) : (
+              <>
+                <header>
+                  <Icon name="gallery" size={36} colour="#EE93E3" />
+                  <div>
+                    <b>{selected === 0 ? 'live canvas' : `frame #${selected}`}</b>
+                    <small>
+                      {selected === 0
+                        ? `season ${frames.currentSeason + 1} · live canvas`
+                        : `season ${(selectedInfo?.season ?? 0) + 1} · ${
+                            selectedInfo?.finale ? 'finale' : 'regular frame'
+                          }`}
+                    </small>
+                  </div>
+                </header>
+                <div className="frames-preview sunken">
+                  <PixelPreview image={preview} size={256} />
                 </div>
-              </header>
-              <div className="frames-preview sunken">
-                <PixelPreview image={preview} size={256} />
-              </div>
-              <div className="preview-toggles">
-                {(['frame', 'DF1 onchain', 'DF1 site'] as PreviewMode[]).map((mode) => (
+                <div className="preview-toggles">
+                  {(['frame', 'DF1 onchain', 'DF1 site'] as PreviewMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      className={previewMode === mode ? 'active' : ''}
+                      disabled={selected === 0 && mode !== 'frame'}
+                      title={
+                        selected === 0 && mode !== 'frame'
+                          ? 'saved frames only until the next lab pass'
+                          : mode
+                      }
+                      onClick={() => setPreviewMode(mode)}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+                <small className="preview-caption">
+                  {previewMode === 'frame'
+                    ? 'built-in renderer · 256 × 256 · onchain BMP'
+                    : previewMode === 'DF1 onchain'
+                      ? 'onchain DF1 · exact v1 · 64 × 64, scaled with nearest-neighbour'
+                      : 'site preview · 256 × 256 · rendered in your browser, not the onchain image'}
+                </small>
+                {selectedInfo && (
+                  <dl className="frame-details-grid">
+                    <dt>minted block</dt>
+                    <dd>{selectedInfo.blockNumber.toString()}</dd>
+                    <dt>sealed by</dt>
+                    <dd>{short(selectedInfo.proposer)} (coinbase)</dd>
+                    <dt>DF1</dt>
+                    <dd className={selectedInfo.df1Amount >= 200 ? 'storm-text' : ''}>
+                      {Math.max(100, selectedInfo.df1Amount)}% ·{' '}
+                      {selectedInfo.df1Amount >= 200 ? 'STORM' : 'calm'}
+                    </dd>
+                    <dt>face / bg</dt>
+                    <dd>
+                      {paletteLabel(selectedInfo.faceColor)} / {paletteLabel(selectedInfo.backgroundColor)}
+                    </dd>
+                    <dt>holder at mint</dt>
+                    <dd>{selectedInfo.holderAtMint ? 'yes' : 'no'}</dd>
+                    <dt>paints since last</dt>
+                    <dd>{selectedInfo.paintsSincePreviousFrame.toString()}</dd>
+                    <dt>renderer</dt>
+                    <dd>{selectedRenderer}</dd>
+                    <dt>owner</dt>
+                    <dd>{selectedOwner == null ? 'burned' : ownsSelected ? 'you' : short(selectedOwner)}</dd>
+                  </dl>
+                )}
+              </>
+            )}
+          </aside>
+          <main className="frames-grid-pane sunken">
+            {rootView ? (
+              <div className="season-grid">
+                {filter === 'Mine' && (
                   <button
-                    key={mode}
-                    className={previewMode === mode ? 'active' : ''}
-                    disabled={selected === 0 && mode !== 'frame'}
-                    title={
-                      selected === 0 && mode !== 'frame' ? 'saved frames only until the next lab pass' : mode
-                    }
-                    onClick={() => setPreviewMode(mode)}
+                    className="season-folder"
+                    onDoubleClick={() => setLabsView(true)}
+                    onClick={() => setLabsView(true)}
                   >
-                    {mode}
+                    <Icon name="star" size={36} colour="#5FEDDF" />
+                    <b>Labs</b>
+                    <small>reels · forks · dreams · CDs</small>
                   </button>
-                ))}
+                )}
+                {filter === 'Mine' && mineIds.includes(0) && (
+                  <FrameTile
+                    tokenId={0}
+                    selected={selected === 0}
+                    hidden={false}
+                    list={false}
+                    onSelect={() => setSelected(0)}
+                    onOpen={() => setSelected(0)}
+                    onContextMenu={(x, y) => openContextMenu(0, x, y)}
+                  />
+                )}
+                {frames.seasons
+                  .filter((item) => item.count > 0)
+                  .filter((item) => filter !== 'Mine' || (mineSeasonCounts.get(item.season) ?? 0) > 0)
+                  .map((item) => (
+                    <SeasonFolder
+                      key={item.season}
+                      season={item}
+                      count={filter === 'Mine' ? (mineSeasonCounts.get(item.season) ?? 0) : item.count}
+                      onOpen={() => navigateSeason(item.season)}
+                    />
+                  ))}
               </div>
-              <small className="preview-caption">
-                {previewMode === 'frame'
-                  ? 'built-in renderer · 256 × 256 · onchain BMP'
-                  : previewMode === 'DF1 onchain'
-                    ? 'onchain DF1 · exact v1 · 64 × 64, scaled with nearest-neighbour'
-                    : 'site preview · 256 × 256 · rendered in your browser, not the onchain image'}
-              </small>
-              {selectedInfo && (
-                <dl className="frame-details-grid">
-                  <dt>minted block</dt>
-                  <dd>{selectedInfo.blockNumber.toString()}</dd>
-                  <dt>sealed by</dt>
-                  <dd>{short(selectedInfo.proposer)} (coinbase)</dd>
-                  <dt>DF1</dt>
-                  <dd className={selectedInfo.df1Amount >= 200 ? 'storm-text' : ''}>
-                    {Math.max(100, selectedInfo.df1Amount)}% ·{' '}
-                    {selectedInfo.df1Amount >= 200 ? 'STORM' : 'calm'}
-                  </dd>
-                  <dt>face / bg</dt>
-                  <dd>
-                    {paletteLabel(selectedInfo.faceColor)} / {paletteLabel(selectedInfo.backgroundColor)}
-                  </dd>
-                  <dt>holder at mint</dt>
-                  <dd>{selectedInfo.holderAtMint ? 'yes' : 'no'}</dd>
-                  <dt>paints since last</dt>
-                  <dd>{selectedInfo.paintsSincePreviousFrame.toString()}</dd>
-                  <dt>renderer</dt>
-                  <dd>{selectedRenderer}</dd>
-                  <dt>owner</dt>
-                  <dd>{selectedOwner == null ? 'burned' : ownsSelected ? 'you' : short(selectedOwner)}</dd>
-                </dl>
-              )}
-            </>
-          )}
-        </aside>
-        <main className="frames-grid-pane sunken">
-          {rootView ? (
-            <div className="season-grid">
-              {filter === 'Mine' && mineIds.includes(0) && (
-                <FrameTile
-                  tokenId={0}
-                  selected={selected === 0}
-                  hidden={false}
-                  list={false}
-                  onSelect={() => setSelected(0)}
-                  onOpen={() => setSelected(0)}
-                  onContextMenu={(x, y) => openContextMenu(0, x, y)}
-                />
-              )}
-              {frames.seasons
-                .filter((item) => item.count > 0)
-                .filter((item) => filter !== 'Mine' || (mineSeasonCounts.get(item.season) ?? 0) > 0)
-                .map((item) => (
-                  <SeasonFolder
-                    key={item.season}
-                    season={item}
-                    count={filter === 'Mine' ? (mineSeasonCounts.get(item.season) ?? 0) : item.count}
-                    onOpen={() => navigateSeason(item.season)}
+            ) : (
+              <div className={`frames-grid ${view}`}>
+                {visibleIds.map((tokenId) => (
+                  <FrameTile
+                    key={tokenId}
+                    tokenId={tokenId}
+                    info={infos.get(tokenId)}
+                    selected={selected === tokenId}
+                    hidden={filter === 'Hidden' && isFrameHidden(tokenId)}
+                    list={view === 'list'}
+                    onSelect={() => setSelected(tokenId)}
+                    onOpen={() => {
+                      setSelected(tokenId)
+                      if (tokenId > 0) openTokenProps(tokenId)
+                    }}
+                    onContextMenu={(x, y) => openContextMenu(tokenId, x, y)}
                   />
                 ))}
-            </div>
-          ) : (
-            <div className={`frames-grid ${view}`}>
-              {visibleIds.map((tokenId) => (
-                <FrameTile
-                  key={tokenId}
-                  tokenId={tokenId}
-                  info={infos.get(tokenId)}
-                  selected={selected === tokenId}
-                  hidden={filter === 'Hidden' && isFrameHidden(tokenId)}
-                  list={view === 'list'}
-                  onSelect={() => setSelected(tokenId)}
-                  onOpen={() => {
-                    setSelected(tokenId)
-                    if (tokenId > 0) openTokenProps(tokenId)
-                  }}
-                  onContextMenu={(x, y) => openContextMenu(tokenId, x, y)}
-                />
-              ))}
-              <div ref={sentinel} className="frame-scroll-sentinel" />
-            </div>
-          )}
-        </main>
-      </div>
+                <div ref={sentinel} className="frame-scroll-sentinel" />
+              </div>
+            )}
+          </main>
+        </div>
+      )}
       <footer className="frames-status">
         <span>
           {currentObjects} object{currentObjects === 1 ? '' : 's'}
@@ -895,6 +922,25 @@ export function FramesProgram() {
                 }}
               >
                 Fork this…
+              </button>
+              <button
+                role="menuitem"
+                disabled={!savedFrame || !info?.finale || !ownsSelected}
+                title={
+                  !savedFrame
+                    ? 'select a saved frame'
+                    : !info?.finale
+                      ? 'finales only'
+                      : !ownsSelected
+                        ? 'only the holder can auction this finale'
+                        : 'auction this finale'
+                }
+                onClick={() => {
+                  openProgram('auction', true, `#/auction?token=${tokenId}`)
+                  setContextMenu(undefined)
+                }}
+              >
+                Auction this finale…
               </button>
               <button
                 role="menuitem"

@@ -11,7 +11,7 @@ export function LabCanvas({
   ghost,
   ghostOpacity = 0.3,
 }: {
-  size: 32 | 64 | 256
+  size: 8 | 32 | 64 | 256
   pixels: Uint8Array
   zoom: number
   onPixel?: (x: number, y: number, event: PointerEvent<HTMLCanvasElement>) => void

@@ -113,6 +113,7 @@ One 60 × 60 pixel badge per day-one quest, octagon pin in a palette colour with
 | 9 | `q09_dna_hunter.png` | dna | `#C864AA` |
 | 10 | `q10_lab_rat.png` | frog | `#F7931A` |
 | 11 | `q11_paddle_up.png` | gavel | `#FFFFFF` |
+| 12 | `q12_recycler.png` | trash | `#694B87` |
 
 Quests added later (ids 12+) fall back to a generic trophy badge until art exists for them.
 

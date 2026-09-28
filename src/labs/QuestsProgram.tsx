@@ -4,6 +4,7 @@ import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
 import { quoteAction, sendAction } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { readMany } from '../chain/readMany'
 import { R3TARDS_QUESTS_ABI } from '../lib/generated/abi'
 import { getLiveSnapshot, liveActive, subscribeLive } from '../live/liveStore'
 import { closeWindow } from '../os/windows'
@@ -35,6 +36,7 @@ const DAY_ONE_DETAIL: Record<string, string> = {
   'DNA HUNTER': 'verified brushes',
   'LAB RAT': 'Lab stamps',
   'PADDLE UP': 'finale-auction bids',
+  RECYCLER: 'frames recycled',
 }
 
 function questSubtitle(name: string, goal: bigint) {
@@ -52,6 +54,7 @@ function questSubtitle(name: string, goal: bigint) {
   if (name === 'LAB RAT') return goal === 4n ? 'earn four Lab stamps' : `earn ${n} Lab stamps`
   if (name === 'PADDLE UP')
     return goal === 1n ? 'place a finale-auction bid' : `place ${n} finale-auction bids`
+  if (name === 'RECYCLER') return `burn ${n} frames`
   return `${n} onchain value`
 }
 
@@ -68,8 +71,8 @@ function normalizeCondition(value: any): Condition {
   }
 }
 
-function badgeSrc(id: number) {
-  return id < 12
+export function badgeSrc(id: number) {
+  return id < 13
     ? `/os/badges/q${String(id).padStart(2, '0')}_${
         [
           'month_in',
@@ -84,6 +87,7 @@ function badgeSrc(id: number) {
           'dna_hunter',
           'lab_rat',
           'paddle_up',
+          'recycler',
         ][id]
       }.png`
     : '/os/icons/trophy@2x.png'
@@ -124,17 +128,17 @@ export function QuestsProgram() {
         setDefs([])
         return
       }
-      const values = await publicClient.multicall({
-        contracts: Array.from({ length: count }, (_, id) => ({
+      const values = await readMany(
+        Array.from({ length: count }, (_, id) => ({
           address,
           abi: R3TARDS_QUESTS_ABI,
           functionName: 'questInfo',
           args: [BigInt(id)],
         })) as any,
-        allowFailure: false,
-      })
+        { allowFailure: false },
+      )
       setDefs(
-        values.map((value: any, id) => ({
+        values.map((value: any, id: number) => ({
           id,
           name: String(value[0]),
           startBlock: BigInt(value[1]),
@@ -171,7 +175,7 @@ export function QuestsProgram() {
           args: [wallet.account, BigInt(quest.id)],
         })),
       ]
-      const result = await publicClient.multicall({ contracts, allowFailure: false })
+      const result = await readMany(contracts as any, { allowFailure: false })
       const claimable = BigInt(result[0] as bigint)
       const completed = BigInt(result[1] as bigint)
       setClaimableMask(claimable)
@@ -290,7 +294,7 @@ export function QuestsProgram() {
     <div className="lab-program quests-program">
       <MenuBar menus={menus} />
       <IntroBar
-        lead="twelve achievements across the whole site. reach the goal, claim it, and your Pass counts it."
+        lead="achievements across the whole site. reach the goal, claim it, and your Pass counts it."
         monad="every goal is checked onchain against the contract that tracks it, so a claim can't be faked."
         rules={RULES}
       />
@@ -437,11 +441,11 @@ export function QuestsProgram() {
                             {value.toString()} / {condition.threshold.toString()} {pass ? '✓' : ''}
                           </b>
                         </div>
-                        <progress max={100} value={pct} />
-                        <small>
-                          {shortAddress(condition.target)} · selector {condition.selector} · word{' '}
-                          {condition.word}
-                        </small>
+                        <progress
+                          max={100}
+                          value={pct}
+                          title={`${shortAddress(condition.target)} · selector ${condition.selector} · word ${condition.word}`}
+                        />
                       </div>
                     )
                   })}

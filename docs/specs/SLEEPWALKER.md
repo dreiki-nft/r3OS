@@ -123,7 +123,7 @@ The `/ 2` caps are deliberate: repainting dry non-background pixels costs two co
 
 `Dreamt(owner, cursorFrom, cursorTo, pixels, blockNumber)` records every successful step. `pixels` is the exact core `pixelsToday` delta, while the cursor advances across the submitted stencil chunk. This distinction matters when the core protects outline pixels or otherwise writes fewer pixels than were submitted.
 
-`step` uses a fixed **600,000 gas limit** in the frontend/cranker path. See `GAS_LIMITS.md`.
+`step` uses a fixed **1,000,000 gas limit** in the frontend/cranker path (not an estimate, because of the try/catch around the core paint). See `GAS_LIMITS.md`.
 
 ## Completion and wake
 
