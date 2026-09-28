@@ -256,17 +256,21 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         return bytes(title).length == 0 ? "Lab" : title;
     }
 
+    /// @dev "flipbook" -> "Flipbook", "finale auction" -> "Finale Auction", "cd-burner" -> "CD Burner".
+    ///      Separators (space, '-', '_') become spaces; words of one or two letters are fully uppercased.
     function _titleCase(string memory value) private pure returns (string memory) {
         bytes memory out = bytes(value);
-        bool capitalize = true;
-        for (uint256 i; i < out.length; ++i) {
-            bytes1 c = out[i];
-            if (c == 0x20 || c == 0x2d || c == 0x5f) {
-                capitalize = true;
-            } else if (capitalize) {
-                if (c >= 0x61 && c <= 0x7a) out[i] = bytes1(uint8(c) - 32);
-                capitalize = false;
+        uint256 wordStart;
+        for (uint256 i; i <= out.length; ++i) {
+            bool boundary = i == out.length || out[i] == 0x20 || out[i] == 0x2d || out[i] == 0x5f;
+            if (!boundary) continue;
+            if (i < out.length) out[i] = 0x20;
+            bool shortWord = i - wordStart <= 2;
+            for (uint256 j = wordStart; j < i; ++j) {
+                bytes1 c = out[j];
+                if ((j == wordStart || shortWord) && c >= 0x61 && c <= 0x7a) out[j] = bytes1(uint8(c) - 32);
             }
+            wordStart = i + 1;
         }
         return string(out);
     }

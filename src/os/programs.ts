@@ -64,6 +64,9 @@ const AuctionProgram = lazy(() =>
 const SleepwalkerProgram = lazy(() =>
   import('../labs/SleepwalkerProgram').then((module) => ({ default: module.SleepwalkerProgram })),
 )
+const CDBurnerProgram = lazy(() =>
+  import('../labs/CDBurnerProgram').then((module) => ({ default: module.CDBurnerProgram })),
+)
 
 function placeholder(title: string, icon: IconName) {
   return lazy(async () => {
@@ -179,6 +182,17 @@ export const programs: ProgramDef[] = [
     singleInstance: true,
     hash: '#/sleepwalker',
   },
+  {
+    id: 'cd',
+    title: 'Burn a CD',
+    icon: 'music',
+    colour: '#5FEDDF',
+    component: CDBurnerProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/cd',
+  },
   placeholderProgram('lanes', 'Lanes', 'chip', '#D47827'),
   {
     id: 'auction',
@@ -246,8 +260,8 @@ export const programs: ProgramDef[] = [
     icon: 'trash',
     colour: '#877549',
     component: RecycleBin,
-    defaultSize: { width: 480, height: 330 },
-    minSize: { width: 340, height: 240 },
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
     singleInstance: true,
     hash: '#/bin',
   },

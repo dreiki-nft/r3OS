@@ -38,7 +38,7 @@ export function ownedFromOwnerScan(results: readonly any[], owner: Address, star
   )
 }
 
-async function labsAddress() {
+export async function labsAddress() {
   if (!publicClient) throw new Error('DEMO_MODE')
   const flipbook = (await discoverContracts()).labs.flipbook
   if (!flipbook) throw new Error("this Lab isn't deployed on this network")
@@ -49,7 +49,7 @@ async function labsAddress() {
   })) as Address
 }
 
-async function scanOwned(labs: Address, owner: Address) {
+export async function scanOwnedLabs(labs: Address, owner: Address) {
   if (!publicClient) return []
   const total = BigInt(
     await publicClient.readContract({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'totalMinted' }),
@@ -69,7 +69,13 @@ async function scanOwned(labs: Address, owner: Address) {
   return owned
 }
 
-function bucket(data?: LabsTokenData) {
+export async function loadOwnedLabsTokens(owner: Address) {
+  const address = await labsAddress()
+  const ids = await scanOwnedLabs(address, owner)
+  return Promise.all(ids.map(async (id) => ({ id, data: await readLabsToken(id).catch(() => undefined) })))
+}
+
+export function labsBucket(data?: LabsTokenData) {
   const type = String(data?.attributes.Type ?? '').toLowerCase()
   if (type.includes('reel')) return 'Reels'
   if (type.includes('fork')) return 'Forks'
@@ -79,11 +85,11 @@ function bucket(data?: LabsTokenData) {
 }
 
 function labFor(data?: LabsTokenData) {
-  const type = bucket(data)
+  const type = labsBucket(data)
   if (type === 'Reels') return 'flipbook'
   if (type === 'Forks') return 'forks'
   if (type === 'Dreams') return 'sleepwalker'
-  if (type === 'CDs') return 'cd-burner'
+  if (type === 'CDs') return 'cd'
   return undefined
 }
 
@@ -94,21 +100,26 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
   const [filter, setFilter] = useState<LabsFilter>('All')
   const [selected, setSelected] = useState<bigint>()
   const [message, setMessage] = useState('')
+  const routeToken = useMemo(() => {
+    const raw = new URLSearchParams(location.hash.split('?')[1] ?? '').get('token')
+    return raw && /^\d+$/.test(raw) ? BigInt(raw) : undefined
+  }, [])
 
   const load = useCallback(async () => {
     if (!wallet.account) return setTokens([])
     try {
       const address = labs ?? (await labsAddress())
       setLabs(address)
-      const ids = await scanOwned(address, wallet.account)
+      const ids = await scanOwnedLabs(address, wallet.account)
       const rows = await Promise.all(
         ids.map(async (id) => ({ id, data: await readLabsToken(id).catch(() => undefined) })),
       )
       setTokens(rows)
+      if (routeToken != null && rows.some((token) => token.id === routeToken)) setSelected(routeToken)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : String(error))
     }
-  }, [labs, wallet.account])
+  }, [labs, wallet.account, routeToken])
 
   useEffect(() => {
     void load()
@@ -142,12 +153,13 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
   }, [labs, wallet.account, load])
 
   const shown = useMemo(
-    () => tokens.filter((token) => filter === 'All' || bucket(token.data) === filter),
+    () => tokens.filter((token) => filter === 'All' || labsBucket(token.data) === filter),
     [tokens, filter],
   )
   const chosen = tokens.find((token) => token.id === selected)
   const targetLab = labFor(chosen?.data)
-  const available = targetLab === 'flipbook' || targetLab === 'forks' || targetLab === 'sleepwalker'
+  const available =
+    targetLab === 'flipbook' || targetLab === 'forks' || targetLab === 'sleepwalker' || targetLab === 'cd'
 
   return (
     <div className="labs-folder-view">
@@ -177,7 +189,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
               height={128}
             />
             <b>{token.data?.name || `Labs #${token.id}`}</b>
-            <small>{bucket(token.data) === 'All' ? 'Labs token' : bucket(token.data)}</small>
+            <small>{labsBucket(token.data) === 'All' ? 'Labs token' : labsBucket(token.data)}</small>
           </button>
         ))}
         {!shown.length && (
@@ -210,11 +222,15 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
           </GroupBox>
           <Button
             disabled={!available}
-            title={available ? 'open this token in its Lab' : 'this Lab window arrives in 3c-2c'}
+            title={available ? 'open this token in its Lab' : 'this Lab window is not available'}
             onClick={() => {
               if (!targetLab) return
               if (targetLab === 'sleepwalker') {
                 openProgram('sleepwalker', true, `#/sleepwalker?tab=morning&token=${chosen.id}`)
+                return
+              }
+              if (targetLab === 'cd') {
+                openProgram('cd', true, `#/cd?token=${chosen.id}`)
                 return
               }
               openProgram(targetLab)

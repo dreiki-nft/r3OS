@@ -50,6 +50,7 @@ interface ActionBase {
   signer?: TxSigner
   action?: string
   regions?: readonly number[]
+  onState?: (state: 'signing' | 'sent' | 'confirmed') => void
 }
 
 export interface ContractActionOptions extends ActionBase {
@@ -237,6 +238,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     const sender = senderFor(opts)
     let hash: Hex
     let signedAt: number | undefined
+    opts.onState?.('signing')
     if (signer === 'burner') {
       const sent = await sendWithBurner(opts, quote, sender)
       hash = sent.hash
@@ -244,6 +246,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     } else {
       hash = await sendWithWallet(opts, quote, sender)
     }
+    opts.onState?.('sent')
     const sentAt = typeof performance === 'undefined' ? Date.now() : performance.now()
     recordTxTrace({
       hash,
@@ -266,6 +269,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     if (receipt.status === 'reverted') {
       throw new Error(`the transaction reverted onchain and still cost up to ${quote.maxCost}`)
     }
+    opts.onState?.('confirmed')
     playSound(opts.successSound ?? 'success-light')
     return {
       hash,

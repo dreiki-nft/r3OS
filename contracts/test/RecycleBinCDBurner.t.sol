@@ -511,6 +511,7 @@ contract RecycleBinCDBurnerTest is Test {
         bytes memory json = _json(labs.tokenURI(cdId));
         vm.parseJson(string(json));
         assertEq(vm.parseJsonString(string(json), ".attributes[0].value"), "CD");
+        assertEq(vm.parseJsonString(string(json), ".attributes[1].value"), "CD Burner");
         assertEq(vm.parseJsonUint(string(json), ".attributes[10].value"), 3);
         assertEq(vm.parseJsonString(string(json), ".attributes[11].value"), "EP");
         assertEq(vm.parseJsonUint(string(json), ".attributes[12].value"), 2);

@@ -137,6 +137,10 @@ function FrameTile({
         hidden ? 'hidden-frame' : '',
         list ? 'list' : '',
       ].join(' ')}
+      draggable={tokenId > 0}
+      onDragStart={(event) => {
+        if (tokenId > 0) event.dataTransfer.setData('application/x-r3-frame', String(tokenId))
+      }}
       onClick={onSelect}
       onDoubleClick={onOpen}
       onContextMenu={(event) => {
@@ -510,7 +514,7 @@ export function FramesProgram() {
       ownsSelected
     ) {
       event.preventDefault()
-      setBurnPrompt(true)
+      openProgram('bin', true, `#/bin?recycle=${selected}`)
       return
     }
     if (event.altKey && event.key === 'Enter' && selected != null && selected !== 0) {
@@ -663,12 +667,11 @@ export function FramesProgram() {
         {selectedRegular && ownsSelected && (
           <button
             className="frames-burn"
-            disabled={!burnQuote}
-            title={burnQuote ? 'burn this frame' : 'quoting burn cost'}
-            onClick={() => setBurnPrompt(true)}
+            title="send this frame to the Recycle Bin"
+            onClick={() => openProgram('bin', true, `#/bin?recycle=${selected}`)}
           >
             <Icon name="trash" size={24} colour="#877549" />
-            <span>Burn</span>
+            <span>Recycle</span>
           </button>
         )}
       </div>
@@ -857,7 +860,7 @@ export function FramesProgram() {
           const hidden = isFrameHidden(tokenId)
           const savedFrame = tokenId > 0
           const rendererAllowed = savedFrame && ownsSelected
-          const burnAllowed = savedFrame && !info?.finale && ownsSelected && Boolean(burnQuote)
+          const burnAllowed = savedFrame && !info?.finale && ownsSelected
           return (
             <div
               ref={contextMenuRef}
@@ -966,33 +969,18 @@ export function FramesProgram() {
                         ? 'only the holder can burn this frame'
                         : burnQuote
                           ? undefined
-                          : 'quoting burn cost'
+                          : undefined
                 }
                 onClick={() => {
                   setContextMenu(undefined)
-                  setBurnPrompt(true)
+                  openProgram('bin', true, `#/bin?recycle=${tokenId}`)
                 }}
               >
-                Burn…
+                Send to Recycle Bin
               </button>
             </div>
           )
         })()}
-      {burnPrompt && selected != null && (
-        <MessageBox
-          title="Burn frame"
-          kind="warning"
-          message={
-            `Burn frame #${selected}? The token is destroyed. ` +
-            'The paint history stays onchain in the canvas events.\n\n' +
-            `max cost: ${burnQuote?.maxCost ?? 'quoting…'}`
-          }
-          defaultLabel="OK"
-          onDefault={() => void burnSelected()}
-          onCancel={() => setBurnPrompt(false)}
-          onClose={() => setBurnPrompt(false)}
-        />
-      )}
       {box && <MessageBox {...box} onClose={() => setBox(undefined)} />}
     </div>
   )
