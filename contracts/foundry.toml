@@ -2,13 +2,20 @@
 src = "src"
 test = "test"
 out = "out"
-libs = ["lib", "../node_modules"]
+libs = ["../node_modules"]
 solc_version = "0.8.28"
 evm_version = "prague"
 optimizer = true
 optimizer_runs = 200
+via_ir = true
+network = "monad"
+hardfork = "monad:MonadTen"
+code_size_limit = 131072
+gas_reports = ["R3tardsPaint"]
+fs_permissions = [{ access = "write", path = "./test-output" }, { access = "read", path = "./script" }]
 
 remappings = [
   "@openzeppelin/contracts/=../node_modules/@openzeppelin/contracts/",
-  "forge-std/=lib/forge-std/src/"
+  "forge-std/=../node_modules/forge-std/src/",
+  "solady/=../node_modules/solady/src/"
 ]

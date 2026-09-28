@@ -7,3 +7,6 @@ dist/
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+contracts/.env
+*.tsbuildinfo
+contracts/test-output/

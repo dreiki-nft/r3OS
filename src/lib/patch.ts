@@ -5,7 +5,10 @@ import type { Hex } from 'viem'
  * Diff two 256x256 palette-index buffers into compact onchain horizontal runs:
  * [y, xStart, xEnd, colorIndex]. Only changed pixels are emitted.
  */
-export function encodeChangedRuns(baseline: Uint8Array, working: Uint8Array): {
+export function encodeChangedRuns(
+  baseline: Uint8Array,
+  working: Uint8Array,
+): {
   bytes: Uint8Array
   hex: Hex
   pixelWrites: number
@@ -40,7 +43,7 @@ export function encodeChangedRuns(baseline: Uint8Array, working: Uint8Array): {
   }
 
   const bytes = Uint8Array.from(out)
-  const hex = (`0x${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`) as Hex
+  const hex = `0x${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}` as Hex
   return { bytes, hex, pixelWrites, runCount: out.length / 4 }
 }
 

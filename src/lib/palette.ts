@@ -6,14 +6,14 @@ export type PaletteEntry = {
 }
 
 export const PALETTE: PaletteEntry[] = [
-  { index: 0, hex: '#FFFFFF', name: 'white', rgb: [255, 255, 255] },
+  { index: 0, hex: '#FFFFFF', name: 'background / eraser', rgb: [255, 255, 255] },
   { index: 1, hex: '#000000', name: 'black', rgb: [0, 0, 0] },
   { index: 2, hex: '#965E4B', name: 'trippie brown', rgb: [150, 94, 75] },
   { index: 3, hex: '#877549', name: 'old man olive', rgb: [135, 117, 73] },
   { index: 4, hex: '#C52020', name: 'juicy red', rgb: [197, 32, 32] },
   { index: 5, hex: '#FEC343', name: 'gold', rgb: [254, 195, 67] },
   { index: 6, hex: '#EE93E3', name: 'og pink', rgb: [238, 147, 227] },
-  { index: 7, hex: '#E6A3C6', name: 'tongue pink', rgb: [230, 163, 198] },
+  { index: 7, hex: '#FFFFFF', name: 'white', rgb: [255, 255, 255] },
   { index: 8, hex: '#07992F', name: 'green', rgb: [7, 153, 47] },
   { index: 9, hex: '#A0055D', name: 'nad magenta', rgb: [160, 5, 93] },
   { index: 10, hex: '#694B87', name: 'purple', rgb: [105, 75, 135] },

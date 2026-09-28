@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,5 +13,39 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npm run contract:compile
-      - run: npm run build
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.3
+      - name: Forge build
+        run: forge build --root contracts
+      - name: Contract size check (Monad 128 KiB limit)
+        run: node scripts/check-contract-sizes.mjs
+      - name: Forge tests
+        run: forge test --root contracts
+      - name: Deploy script simulation
+        working-directory: contracts
+        env:
+          DEPLOYER_ADDRESS: "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38"
+          TOKEN_ZERO_RECIPIENT: "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38"
+          ROYALTY_RECEIVER: "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38"
+          R3TARDS_ADDRESS: "0x000000000000000000000000000000000000dEaD"
+          SEASON_START: "1790000000"
+          BASE_PIXELS_PER_HOUR: "32"
+          PIXELS_PER_ACTIVE_DAY: "16"
+          MAX_PIXELS_PER_HOUR: "256"
+          MIN_PIXELS_FOR_ACTIVE_DAY: "16"
+          HOLDER_PIXELS_PER_DAY: "256"
+          LAB_BASE_URI: ""
+        run: forge script script/Deploy.s.sol --sender "$DEPLOYER_ADDRESS"
+      - name: Web unit tests
+        run: npm run test:web
+      - name: Regenerate default outline
+        run: npm run outline:export
+      - name: Regenerate ABI
+        run: npm run abi:export
+      - name: Generated files must match source
+        run: |
+          git diff --exit-code -- src/lib/generated/outline.ts src/lib/generated/abi.ts
+          test -z "$(git status --porcelain -- src/lib/generated)"
+      - name: Frontend build
+        run: npm run build

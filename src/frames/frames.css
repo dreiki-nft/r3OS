@@ -1,0 +1,598 @@
+.frames-program,
+.frame-props {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--face);
+}
+
+.frames-toolbar {
+  display: flex;
+  align-items: stretch;
+  min-height: 70px;
+  border-bottom: 1px solid var(--bevel-dark);
+  padding: 4px 6px;
+  gap: 2px;
+}
+
+.frames-toolbar button {
+  width: 64px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  grid-template-rows: 36px 16px;
+  font: inherit;
+  font-size: 11px;
+}
+
+.frames-toolbar button:disabled {
+  color: var(--muted);
+}
+
+.frames-toolbar button:disabled .ico,
+.frames-toolbar button:disabled svg {
+  opacity: 0.35;
+}
+
+.frames-toolbar-separator {
+  width: 1px;
+  margin: 4px 5px;
+  background: var(--bevel-dark);
+  border-right: 1px solid var(--bevel-light);
+}
+
+.frames-address {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 7px;
+  border-bottom: 1px solid var(--bevel-dark);
+}
+
+.frames-address-field {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  background: var(--field);
+}
+
+.frames-filters {
+  display: flex;
+}
+
+.frames-filters button {
+  min-height: 28px;
+  padding: 0 9px;
+}
+
+.frames-filters button.active {
+  background: var(--field);
+  box-shadow:
+    inset 1px 1px #000,
+    inset -1px -1px var(--bevel-light);
+}
+
+.frames-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+}
+
+.frames-details {
+  overflow: auto;
+  padding: 10px;
+  border-right: 1px solid #000;
+}
+
+.frames-details-header {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.frames-details-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.frames-details-header p {
+  margin: 3px 0 0;
+  color: var(--muted);
+}
+
+.frames-preview-well {
+  width: 266px;
+  height: 266px;
+  margin: 0 auto 8px;
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+
+.frames-preview-toggles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 5px;
+}
+
+.frames-preview-toggles button.active {
+  background: var(--field);
+}
+
+.frames-caption {
+  display: block;
+  min-height: 32px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.frames-details dl,
+.frame-general dl {
+  display: grid;
+  grid-template-columns: 136px 1fr;
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+
+.frames-details dt,
+.frames-details dd,
+.frame-general dt,
+.frame-general dd {
+  margin: 0;
+  padding: 4px 3px;
+  border-bottom: 1px dotted var(--bevel-dark);
+}
+
+.frames-grid {
+  min-width: 0;
+  overflow: auto;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(164px, 1fr));
+  grid-auto-rows: 196px;
+  align-content: start;
+  gap: 10px;
+}
+
+.frames-grid.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.frame-cell,
+.season-folder {
+  position: relative;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.frame-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 5px;
+}
+
+.frame-cell.list {
+  height: 64px;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.frame-thumb {
+  position: relative;
+  width: 154px;
+  height: 154px;
+  border: 3px solid var(--face);
+  background: #000;
+  display: grid;
+  place-items: center;
+}
+
+.frame-cell.list .frame-thumb {
+  width: 58px;
+  height: 58px;
+}
+
+.frame-cell.selected .frame-thumb {
+  border-color: var(--accent);
+  outline: 1px dotted var(--text);
+}
+
+.frame-cell > span {
+  margin-top: 5px;
+  padding: 2px 4px;
+}
+
+.frame-cell.selected > span {
+  background: var(--accent-soft);
+  outline: 1px dotted var(--text);
+}
+
+.frame-cell.hidden-frame .frame-thumb canvas {
+  filter: blur(6px);
+}
+
+.frame-tag {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  padding: 2px 4px;
+  background: var(--desktop);
+  color: #fec343;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.frame-tag.finale {
+  left: auto;
+  right: 2px;
+}
+
+.season-folder {
+  height: 138px;
+  align-self: start;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+}
+
+.season-folder small {
+  color: var(--muted);
+}
+
+.frames-sentinel {
+  height: 1px;
+}
+
+.frames-status {
+  min-height: 24px;
+  display: grid;
+  grid-template-columns: 1fr 140px 170px;
+  border-top: 1px solid var(--bevel-light);
+  font-size: 11px;
+}
+
+.frames-status span {
+  padding: 4px 7px;
+  border-right: 1px solid var(--bevel-dark);
+}
+
+.frame-props-body {
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+}
+
+.frame-general {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: 14px;
+}
+
+.frame-general-thumb {
+  width: 128px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+
+.renderer-layout {
+  display: grid;
+  grid-template-columns: 1fr 198px;
+  gap: 12px;
+}
+
+.renderer-options {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.renderer-options label {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 4px;
+  padding: 6px;
+}
+
+.renderer-options label.selected {
+  background: var(--accent-soft);
+  outline: 1px dotted var(--text);
+}
+
+.renderer-options span,
+.renderer-options small {
+  display: block;
+}
+
+.renderer-options small {
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.renderer-preview {
+  height: 216px;
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+
+.renderer-preview img {
+  image-rendering: pixelated;
+}
+
+.renderer-action {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.df1-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.df1-pair h3 {
+  margin: 0 0 5px;
+}
+
+.df1-pair .sunken {
+  width: 220px;
+  height: 220px;
+  background: #000;
+  display: grid;
+  place-items: center;
+}
+
+.df1-pair small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.df1-seed {
+  word-break: break-word;
+}
+
+.verify-ok {
+  color: var(--accent);
+}
+
+.verify-bad {
+  color: #fec343;
+}
+
+.frame-props-actions {
+  padding: 8px 14px;
+}
+
+@media (max-width: 900px) {
+  .frames-body {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .frames-grid {
+    grid-template-columns: repeat(2, minmax(164px, 1fr));
+  }
+}
+
+/* Explorer class names used by the program shell. */
+.frames-address-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 7px;
+  border-bottom: 1px solid var(--bevel-dark);
+}
+
+.frames-address-row > .frames-address {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  background: var(--field);
+}
+
+.frame-filters {
+  display: flex;
+}
+
+.frame-filters button {
+  min-height: 28px;
+  padding: 0 9px;
+}
+
+.frame-filters button.active {
+  background: var(--field);
+  box-shadow:
+    inset 1px 1px #000,
+    inset -1px -1px var(--bevel-light);
+}
+
+.frames-browser {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+}
+
+.frames-details > header {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.frames-details > header b,
+.frames-details > header small {
+  display: block;
+}
+
+.frames-details > header b {
+  font-size: 20px;
+}
+
+.frames-details > header small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.frames-preview {
+  width: 266px;
+  height: 266px;
+  margin: 0 auto 8px;
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+
+.preview-toggles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.preview-toggles button.active {
+  background: var(--field);
+}
+
+.preview-caption {
+  display: block;
+  min-height: 34px;
+  padding: 5px 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.frame-details-grid {
+  display: grid;
+  grid-template-columns: 136px 1fr;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.frame-details-grid dt,
+.frame-details-grid dd {
+  margin: 0;
+  padding: 4px 3px;
+  border-bottom: 1px dotted var(--bevel-dark);
+}
+
+.frames-grid-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--field);
+}
+
+.season-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+
+.frames-grid-pane > .frames-grid {
+  min-height: 100%;
+}
+
+.frame-scroll-sentinel {
+  height: 1px;
+}
+
+.frames-toolbar button.after-separator {
+  margin-left: 10px;
+  border-left: 1px solid var(--bevel-dark);
+}
+
+.toolbar-glyph {
+  font-size: 24px;
+  line-height: 24px;
+}
+
+.storm-text {
+  color: #fec343;
+}
+
+.frames-context-menu {
+  position: fixed;
+  z-index: 1200000000;
+  width: 188px;
+  padding: 3px;
+  background: var(--face);
+}
+
+.frames-context-menu > button,
+.frames-context-renderer > button,
+.frames-context-submenu button {
+  width: 100%;
+  min-height: 24px;
+  padding: 3px 8px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.frames-context-menu button:hover:not(:disabled),
+.frames-context-menu button:focus-visible:not(:disabled) {
+  background: var(--accent-soft);
+  outline: 1px dotted var(--text);
+}
+
+.frames-context-menu button:disabled {
+  color: var(--muted);
+}
+
+.frames-context-menu small {
+  color: var(--muted);
+}
+
+.frames-context-menu hr {
+  border: 0;
+  border-top: 1px solid #000;
+  border-bottom: 1px solid var(--bevel-light);
+  margin: 3px 2px;
+}
+
+.frames-context-renderer {
+  position: relative;
+}
+
+.frames-context-submenu {
+  display: none;
+  position: absolute;
+  left: calc(100% - 2px);
+  top: -3px;
+  width: 188px;
+  padding: 3px;
+  background: var(--face);
+}
+
+.frames-context-renderer:not(.disabled):hover .frames-context-submenu,
+.frames-context-renderer:not(.disabled):focus-within .frames-context-submenu {
+  display: block;
+}
