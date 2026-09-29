@@ -1793,10 +1793,7 @@ button:disabled {
 
 .intro-bar {
   position: relative;
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
+  container-type: inline-size;
   margin: 0 6px 8px;
   padding: 7px 8px;
   border: 1px solid var(--bevel-dark);
@@ -1823,12 +1820,38 @@ button:disabled {
   color: var(--accent);
 }
 
+.intro-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Narrow windows (Monad X-ray is 380px): wrap the two intro lines and drop the button under them. */
+@container (max-width: 520px) {
+  .intro-row {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .intro-row > .r3-button {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .intro-copy b,
+  .intro-copy span {
+    white-space: normal;
+  }
+}
+
 .intro-popover {
   position: absolute;
   z-index: 40;
   right: 4px;
-  top: 50px;
-  width: min(480px, calc(100vw - 40px));
+  top: calc(100% + 4px);
+  /* Sized to the bar, not the viewport: narrow windows (Monad X-ray is 380px) clipped a 480px popover. */
+  width: min(480px, calc(100% - 8px));
+  box-sizing: border-box;
   background: var(--face-2);
   padding: 12px 14px;
   box-shadow: 5px 5px #000;

@@ -39,17 +39,19 @@ export function IntroBar({
 
   return (
     <div ref={root} className="intro-bar">
-      <Icon name="info" size={24} colour="#5FEDDF" />
-      <div className="intro-copy">
-        <b>{lead}</b>
-        <span>
-          <strong>on monad · </strong>
-          {monad}
-        </span>
+      <div className="intro-row">
+        <Icon name="info" size={24} colour="#5FEDDF" />
+        <div className="intro-copy">
+          <b title={lead}>{lead}</b>
+          <span title={`on monad · ${monad}`}>
+            <strong>on monad · </strong>
+            {monad}
+          </span>
+        </div>
+        <Button aria-expanded={open} onClick={() => setOpen((value) => nextIntroOpen(value, 'toggle'))}>
+          How it works {open ? '▴' : '▾'}
+        </Button>
       </div>
-      <Button aria-expanded={open} onClick={() => setOpen((value) => nextIntroOpen(value, 'toggle'))}>
-        How it works {open ? '▴' : '▾'}
-      </Button>
       {open && (
         <div className="intro-popover raised">
           <b>How it works</b>
