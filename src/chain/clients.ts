@@ -26,7 +26,7 @@ export const walletChain = defineChain({
 startRpcStatsLogger()
 
 const batch = config.rpcBatchSize > 0 ? { batchSize: config.rpcBatchSize, wait: 16 } : false
-const appTransport = config.rpcUrls.length
+export const appTransport = config.rpcUrls.length
   ? fallback(
       config.rpcUrls.map((url) =>
         rateLimited(

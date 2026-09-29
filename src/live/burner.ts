@@ -1,6 +1,6 @@
-import { createWalletClient, http, type Address, type Hex } from 'viem'
+import { createWalletClient, type Address, type Hex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { publicClient, appChain } from '../chain/clients'
+import { appChain, appTransport, publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 
@@ -86,11 +86,11 @@ export function burnerAccount(owner: Address) {
 
 export function burnerWallet(owner: Address) {
   const account = burnerAccount(owner)
-  if (!account || !config.rpcUrl) return undefined
+  if (!account || config.demo) return undefined
   return createWalletClient({
     account,
     chain: appChain,
-    transport: http(config.rpcUrl),
+    transport: appTransport,
   })
 }
 

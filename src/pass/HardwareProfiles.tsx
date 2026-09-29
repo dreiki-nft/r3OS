@@ -51,7 +51,6 @@ export function HardwareProfiles() {
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
 
   useEffect(() => {
-    setCancelQuote(undefined)
     setDreamSessionsLeft(0n)
     if (!wallet.account || !publicClient || !config.paintAddress) return
     const client = publicClient
@@ -78,20 +77,35 @@ export function HardwareProfiles() {
         })) as readonly unknown[]
         if (!cancelled) setDreamSessionsLeft(BigInt(dream[5] as bigint))
       }
-      const quote = await quoteAction({
-        kind: 'estimate',
-        address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'incrementSessionNonce',
-        account,
-        action: 'cancel unused session signatures',
-      })
-      if (!cancelled) setCancelQuote(quote)
     })().catch(() => undefined)
     return () => {
       cancelled = true
     }
   }, [wallet.account, refreshTick])
+
+  useEffect(() => {
+    setCancelQuote(undefined)
+    if (!wallet.account || !config.paintAddress) return
+    const account = wallet.account
+    let cancelled = false
+    void quoteAction({
+      kind: 'estimate',
+      address: config.paintAddress,
+      abi: R3TARDS_PAINT_ABI,
+      functionName: 'incrementSessionNonce',
+      account,
+      action: 'cancel unused session signatures',
+    })
+      .then((quote) => {
+        if (!cancelled) setCancelQuote(quote)
+      })
+      .catch(() => {
+        if (!cancelled) setCancelQuote(undefined)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [wallet.account])
 
   useEffect(() => {
     if (!topUp || !wallet.account || !live.burner) return
@@ -156,6 +170,16 @@ export function HardwareProfiles() {
         confirmHigherCost,
         action: 'cancel unused session signatures',
       })
+      setCancelQuote(
+        await quoteAction({
+          kind: 'estimate',
+          address: config.paintAddress,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'incrementSessionNonce',
+          account: wallet.account,
+          action: 'cancel unused session signatures',
+        }),
+      )
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught))
     } finally {

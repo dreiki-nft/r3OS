@@ -460,30 +460,37 @@ export function AuctionProgram() {
               </GroupBox>
               {info.state === 1 && settleWindow && (
                 <div className="auction-settle-note sunken">
-                  <b>
-                    {settleWindow.state === 'burning'
-                      ? 'candle burning'
-                      : settleWindow.state === 'random'
-                        ? `settle now: the random end is available for ${settleWindow.blocksLeft.toString()} more blocks (~${roughDuration(Number(settleWindow.blocksLeft) * block.blockTimeMs)})`
-                        : `the random end expired: settling now uses the candle start (block ${settleWindow.fallbackEnd.toString()}) as the end`}
-                  </b>
+                  <div>
+                    <b>
+                      {settleWindow.state === 'burning'
+                        ? 'candle burning'
+                        : settleWindow.state === 'random'
+                          ? `settle now: the random end is available for ${settleWindow.blocksLeft.toString()} more blocks (~${roughDuration(Number(settleWindow.blocksLeft) * block.blockTimeMs)})`
+                          : `the random end expired: settling now uses the candle start (block ${settleWindow.fallbackEnd.toString()}) as the end`}
+                    </b>
+                  </div>
                   {wallet.account && block.block <= settleWindow.randomUntil && (
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={autoSettle}
-                        onChange={(event) => {
-                          const checked = event.target.checked
-                          setAutoSettle(checked)
-                          try {
-                            localStorage.setItem(`r3os.auction.autosettle.${auctionId}`, checked ? '1' : '0')
-                          } catch {
-                            // The preference simply becomes session-only when storage is unavailable.
-                          }
-                        }}
-                      />{' '}
-                      Settle for me when bidding closes
-                    </label>
+                    <div>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={autoSettle}
+                          onChange={(event) => {
+                            const checked = event.target.checked
+                            setAutoSettle(checked)
+                            try {
+                              localStorage.setItem(
+                                `r3os.auction.autosettle.${auctionId}`,
+                                checked ? '1' : '0',
+                              )
+                            } catch {
+                              // The preference simply becomes session-only when storage is unavailable.
+                            }
+                          }}
+                        />{' '}
+                        Settle for me when bidding closes
+                      </label>
+                    </div>
                   )}
                 </div>
               )}

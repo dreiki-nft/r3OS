@@ -13,7 +13,7 @@ import {
 } from 'viem'
 import { publicClient, wsClient } from '../../chain/clients'
 import { config } from '../../chain/config'
-import { scanBackward } from '../../chain/logs'
+import { getLogsWindow, scanBackward } from '../../chain/logs'
 import { discoverContracts } from '../../chain/contracts'
 import { readMany } from '../../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../../chain/tx'
@@ -31,7 +31,15 @@ import { Button } from '../ui/Button'
 import { Icon } from '../ui/Icon'
 import { MenuBar } from '../ui/MenuBar'
 import { MessageBox } from '../ui/MessageBox'
-import { binEligibleFrames, recyclePath } from '../../labs/recycle'
+import {
+  binEligibleFrames,
+  mergeRecycleRows,
+  recycleCacheRows,
+  recyclePath,
+  recycleScanPlan,
+  type RecycleLogCache,
+  type RecycleLogCacheValue,
+} from '../../labs/recycle'
 
 const RECYCLED = parseAbiItem(
   'event Recycled(address indexed owner,uint256 indexed frameId,uint256 season,uint256 blockNumber)',
@@ -191,14 +199,46 @@ export function RecycleBin() {
 
   const loadRows = useCallback(async (address: Address) => {
     if (!publicClient) return
+    const client = publicClient
     const cacheKey = `${config.chainId}:${address.toLowerCase()}`
-    const cached = (await idbGet<CachedBurn[]>('logCache', cacheKey)) ?? []
-    const logs = await scanBackward({
-      address,
-      event: RECYCLED,
-      maxBlocks: 50 * config.logsRange,
-      until: (found) => found.length >= 100,
-    })
+    const cached = await idbGet<RecycleLogCacheValue<CachedBurn>>('logCache', cacheKey)
+    const cachedRows = recycleCacheRows(cached)
+    const fallbackRows = (items: readonly CachedBurn[]): Row[] =>
+      items.map((row) => ({
+        id: row.id,
+        owner: row.owner,
+        deletedAt: row.deletedAt,
+        tombstone: {
+          minter: zeroAddress,
+          season: row.season,
+          blockNumber: row.savedBlock,
+          storm: false,
+        },
+      }))
+
+    if (cachedRows.length) setRows(fallbackRows(cachedRows))
+
+    const head = await client.getBlockNumber({ cacheTime: 0 })
+    const maxBlocks = 50 * config.logsRange
+    const plan = recycleScanPlan(cached, head, maxBlocks)
+    const logs =
+      plan.mode === 'incremental'
+        ? await getLogsWindow({
+            address,
+            event: RECYCLED,
+            fromBlock: plan.fromBlock,
+            toBlock: plan.toBlock,
+            maxBlocks,
+          })
+        : plan.mode === 'backward'
+          ? await scanBackward({
+              address,
+              event: RECYCLED,
+              toBlock: plan.toBlock,
+              maxBlocks,
+              until: (found) => found.length >= 100,
+            })
+          : []
     const fresh: CachedBurn[] = logs.map((log: any) => ({
       id: Number(log.args?.frameId ?? 0n),
       owner: (log.args?.owner ?? zeroAddress) as Address,
@@ -206,12 +246,14 @@ export function RecycleBin() {
       season: Number(log.args?.season ?? 0n),
       savedBlock: BigInt(log.args?.blockNumber ?? 0n),
     }))
-    const merged = new Map<string, CachedBurn>()
-    for (const row of [...cached, ...fresh]) merged.set(`${row.id}:${row.deletedAt}`, row)
-    const latest = [...merged.values()]
-      .sort((a, b) => (a.deletedAt === b.deletedAt ? b.id - a.id : a.deletedAt < b.deletedAt ? 1 : -1))
-      .slice(0, 100)
-    await idbSet('logCache', cacheKey, latest)
+    const latest = mergeRecycleRows(cachedRows, fresh)
+    const nextCache: RecycleLogCache<CachedBurn> = { scannedTo: head, rows: latest }
+    await idbSet('logCache', cacheKey, nextCache)
+
+    if (!latest.length) {
+      setRows([])
+      return
+    }
     const reads = await readMany(
       latest.map((row) => ({
         address,
@@ -291,17 +333,21 @@ export function RecycleBin() {
               ...additions.reverse(),
               ...current.filter((row) => !keys.has(`${row.id}:${row.deletedAt}`)),
             ].slice(0, 100)
-            void idbSet(
-              'logCache',
-              `${config.chainId}:${bin.toLowerCase()}`,
-              next.map((row) => ({
-                id: row.id,
-                owner: row.owner,
-                deletedAt: row.deletedAt,
-                season: row.tombstone.season,
-                savedBlock: row.tombstone.blockNumber,
-              })) satisfies CachedBurn[],
+            const cachedRows = next.map((row) => ({
+              id: row.id,
+              owner: row.owner,
+              deletedAt: row.deletedAt,
+              season: row.tombstone.season,
+              savedBlock: row.tombstone.blockNumber,
+            })) satisfies CachedBurn[]
+            const scannedTo = additions.reduce(
+              (latest, row) => (row.deletedAt > latest ? row.deletedAt : latest),
+              0n,
             )
+            void idbSet('logCache', `${config.chainId}:${bin.toLowerCase()}`, {
+              scannedTo,
+              rows: cachedRows,
+            } satisfies RecycleLogCache<CachedBurn>)
             return next
           })
           await loadSidebar(bin, wallet.account)
