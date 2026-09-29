@@ -2566,3 +2566,29 @@ button:disabled {
     margin-bottom: 10px;
   }
 }
+
+.block-pulse {
+  animation: block-pulse 0.28s ease-out 1;
+}
+
+@keyframes block-pulse {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-dot,
+  .block-pulse {
+    animation: none !important;
+  }
+}

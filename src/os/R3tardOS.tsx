@@ -103,7 +103,9 @@ export function R3tardOS() {
                 ? 'canvas.bmp - Paint'
                 : win.id === 'frame-props'
                   ? `frame #${frameToken} Properties`
-                  : program.title
+                  : win.id === 'validators'
+                    ? 'Network Neighborhood'
+                    : program.title
             }
             icon={program.icon}
             controls={program.controls}

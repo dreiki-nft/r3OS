@@ -68,7 +68,10 @@ export function decodeMonadNotification(value: unknown): MonadLogNotification | 
   return undefined
 }
 
-export async function subscribeMonadLogs(addresses: readonly Address[]) {
+export async function subscribeMonadLogs(
+  addresses: readonly Address[],
+  onNotification?: (notification: MonadLogNotification) => void,
+) {
   if (!wsClient || !addresses.length) throw new Error('monadLogs unavailable')
   const transport = wsClient.transport as unknown as SubscribableTransport
   if (typeof transport.subscribe !== 'function') throw new Error('monadLogs unavailable')
@@ -76,7 +79,9 @@ export async function subscribeMonadLogs(addresses: readonly Address[]) {
     params: ['monadLogs', { address: addresses }],
     onData: (data) => {
       const notification = decodeMonadNotification(data)
-      if (!notification?.transactionHash) return
+      if (!notification) return
+      onNotification?.(notification)
+      if (!notification.transactionHash) return
       markTraceCommit(notification.transactionHash, notification.commitState, notification.blockNumber)
     },
     onError: () => {

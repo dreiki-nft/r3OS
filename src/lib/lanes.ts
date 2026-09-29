@@ -458,7 +458,7 @@ export function summarize(blocks: LaneBlock[]): {
   }
 }
 
-function lanesFor(tx: LaneTx): number[] {
+export function lanesFor(tx: LaneTx): number[] {
   const lanes = new Set<number>()
   if (tx.kinds.has('paint') || tx.kinds.has('weeds') || tx.kinds.has('brush')) {
     for (let lane = 0; lane < 16; lane++) if ((tx.regionsMask & (1 << lane)) !== 0) lanes.add(lane)

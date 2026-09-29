@@ -1,10 +1,19 @@
+import { zeroAddress, type Address } from 'viem'
 import { publicClient, wsClient } from './clients'
 import { demoConstants, readCoreConstants } from './contracts'
 
 type Listener = () => void
 
+export interface BlockHeaderSnapshot {
+  number: bigint
+  timestamp: bigint
+  miner: Address
+}
+
 export interface BlockSnapshot {
   block: bigint
+  timestamp: bigint
+  miner: Address
   blockTimeMs: number
   storm: boolean
   stormId?: bigint
@@ -17,6 +26,8 @@ export interface BlockSnapshot {
 let constants = demoConstants
 let snapshot: BlockSnapshot = {
   block: 0n,
+  timestamp: 0n,
+  miner: zeroAddress,
   blockTimeMs: 300,
   storm: false,
   stormEndsIn: 0n,
@@ -24,9 +35,10 @@ let snapshot: BlockSnapshot = {
   mode: 'offline',
 }
 const listeners = new Set<Listener>()
-let lastAt = 0
 let stopWatch: (() => void) | undefined
 let pollTimer: number | undefined
+let lastAt = 0
+let lastHeader: BlockHeaderSnapshot | undefined
 
 export function isStormAt(
   block: bigint,
@@ -51,20 +63,50 @@ export function stormCountdown(
     : { stormEndsIn: 0n, nextStormIn: period - offset }
 }
 
-function accept(block: bigint, mode: BlockSnapshot['mode']) {
+export function normalizeHeader(value: unknown): BlockHeaderSnapshot {
+  const header = value as { number?: bigint | null; timestamp?: bigint; miner?: Address | null }
+  return {
+    number: header.number ?? 0n,
+    timestamp: header.timestamp ?? 0n,
+    miner: header.miner ?? zeroAddress,
+  }
+}
+
+export async function readLatestHeader(client: {
+  getBlock: (args: { blockTag: 'latest'; includeTransactions: false }) => Promise<unknown>
+}) {
+  return normalizeHeader(await client.getBlock({ blockTag: 'latest', includeTransactions: false }))
+}
+
+function accept(header: BlockHeaderSnapshot, mode: BlockSnapshot['mode']) {
   const now = typeof performance === 'undefined' ? Date.now() : performance.now()
-  if (lastAt && block > snapshot.block) {
+  if (lastHeader && lastAt && header.number > lastHeader.number) {
     snapshot = {
       ...snapshot,
-      blockTimeMs: emaBlockTime(snapshot.blockTimeMs, now - lastAt, Number(block - snapshot.block)),
+      blockTimeMs: emaBlockTime(
+        snapshot.blockTimeMs,
+        now - lastAt,
+        Number(header.number - lastHeader.number),
+      ),
     }
   }
   lastAt = now
-  const countdown = stormCountdown(block)
-  const storm = isStormAt(block)
-  const stormId = storm ? block / constants.STORM_PERIOD_BLOCKS : undefined
+  lastHeader = header
+  const countdown = stormCountdown(header.number)
+  const storm = isStormAt(header.number)
+  const stormId = storm ? header.number / constants.STORM_PERIOD_BLOCKS : undefined
   const stormStart = stormId == null ? undefined : stormId * constants.STORM_PERIOD_BLOCKS
-  snapshot = { ...snapshot, block, storm, stormId, stormStart, ...countdown, mode }
+  snapshot = {
+    ...snapshot,
+    block: header.number,
+    timestamp: header.timestamp,
+    miner: header.miner,
+    storm,
+    stormId,
+    stormStart,
+    ...countdown,
+    mode,
+  }
   for (const listener of listeners) listener()
 }
 
@@ -82,12 +124,17 @@ export function subscribeBlocks(listener: Listener) {
 export async function startBlockClock() {
   constants = await readCoreConstants().catch(() => demoConstants)
   if (!publicClient) return
-  const initial = await publicClient.getBlockNumber({ cacheTime: 0 }).catch(() => 0n)
+  const initial = await readLatestHeader(publicClient as never).catch(() => ({
+    number: 0n,
+    timestamp: 0n,
+    miner: zeroAddress,
+  }))
   accept(initial, wsClient ? 'live' : 'polling')
 
   if (wsClient) {
-    stopWatch = wsClient.watchBlockNumber({
-      onBlockNumber: (block) => accept(block, 'live'),
+    stopWatch = (wsClient as any).watchBlocks({
+      includeTransactions: false,
+      onBlock: (header: unknown) => accept(normalizeHeader(header), 'live'),
       onError: () => startPolling(),
     })
   } else {
@@ -100,8 +147,12 @@ function startPolling() {
   stopWatch = undefined
   const poll = async () => {
     if (!publicClient) return
-    const block = await publicClient.getBlockNumber({ cacheTime: 0 }).catch(() => snapshot.block)
-    accept(block, 'polling')
+    const header = await readLatestHeader(publicClient as never).catch(() => ({
+      number: snapshot.block,
+      timestamp: snapshot.timestamp,
+      miner: snapshot.miner,
+    }))
+    accept(header, 'polling')
     pollTimer = window.setTimeout(poll, document.hidden ? 5_000 : 400)
   }
   if (pollTimer) window.clearTimeout(pollTimer)
@@ -115,4 +166,13 @@ export function stopBlockClock() {
 
 export function blockEta(blocks: bigint) {
   return Number(blocks) * snapshot.blockTimeMs
+}
+
+export function __setBlockSnapshotForTests(next: Partial<BlockSnapshot>) {
+  snapshot = { ...snapshot, ...next }
+  lastHeader = {
+    number: snapshot.block,
+    timestamp: snapshot.timestamp,
+    miner: snapshot.miner,
+  }
 }

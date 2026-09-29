@@ -1,4 +1,4 @@
-import { createElement, lazy, type ComponentType, type LazyExoticComponent } from 'react'
+import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { PaintProgram } from '../paint/PaintProgram'
 import { PassProgram } from '../pass/PassProgram'
 import type { IconName } from './icons'
@@ -67,31 +67,12 @@ const SleepwalkerProgram = lazy(() =>
 const CDBurnerProgram = lazy(() =>
   import('../labs/CDBurnerProgram').then((module) => ({ default: module.CDBurnerProgram })),
 )
-
-function placeholder(title: string, icon: IconName) {
-  return lazy(async () => {
-    const { Placeholder } = await import('./programs/Placeholder')
-    return { default: () => createElement(Placeholder, { title, icon }) }
-  })
-}
-
-const placeholderProgram = (
-  id: string,
-  title: string,
-  icon: IconName,
-  colour: string,
-  hash = `#/${id}`,
-): ProgramDef => ({
-  id,
-  title,
-  icon,
-  colour,
-  component: placeholder(title, icon),
-  defaultSize: { width: 440, height: 300 },
-  minSize: { width: 320, height: 220 },
-  singleInstance: true,
-  hash,
-})
+const LanesProgram = lazy(() =>
+  import('../lanes/LanesProgram').then((module) => ({ default: module.LanesProgram })),
+)
+const NetworkProgram = lazy(() =>
+  import('../network/NetworkProgram').then((module) => ({ default: module.NetworkProgram })),
+)
 
 export const programs: ProgramDef[] = [
   {
@@ -193,7 +174,17 @@ export const programs: ProgramDef[] = [
     singleInstance: true,
     hash: '#/cd',
   },
-  placeholderProgram('lanes', 'Lanes', 'chip', '#D47827'),
+  {
+    id: 'lanes',
+    title: 'Lanes',
+    icon: 'chip',
+    colour: '#D47827',
+    component: LanesProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/lanes',
+  },
   {
     id: 'auction',
     title: 'Auction',
@@ -216,7 +207,17 @@ export const programs: ProgramDef[] = [
     singleInstance: true,
     hash: '#/quests',
   },
-  placeholderProgram('validators', 'Validators', 'globe', '#5FEDDF'),
+  {
+    id: 'validators',
+    title: 'Validators',
+    icon: 'globe',
+    colour: '#5FEDDF',
+    component: NetworkProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/validators',
+  },
   {
     id: 'xray',
     title: 'Monad X-ray',

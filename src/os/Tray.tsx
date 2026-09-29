@@ -112,7 +112,9 @@ export function Tray() {
           <Icon name="key" size={20} colour="#5FEDDF" />
         </button>
       )}
-      <span className="block-dot">●</span>
+      <span key={block.block.toString()} className="block-dot block-pulse">
+        ●
+      </span>
       <span>#{block.block.toString()}</span>
       {storm && (
         <MessageBox
