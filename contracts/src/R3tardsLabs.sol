@@ -152,21 +152,25 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         uint8 dominantColour;
         uint8 coloursUsed;
 
-        try ILabTokenSource(data.lab).labToken{gas: LAB_TOKEN_GAS_LIMIT}(tokenId) returns (
-            string memory sourceKind,
-            string memory sourceDescription,
-            bytes memory sourceImageSvg,
-            string memory sourceAttributes,
-            uint8 sourceDominantColour,
-            uint8 sourceColoursUsed
-        ) {
+        (bool tokenOk, bytes memory tokenData) = data.lab.staticcall{gas: LAB_TOKEN_GAS_LIMIT}(
+            abi.encodeCall(ILabTokenSource.labToken, (tokenId))
+        );
+        if (tokenOk && _validLabTokenReturn(tokenData)) {
+            (
+                string memory sourceKind,
+                string memory sourceDescription,
+                bytes memory sourceImageSvg,
+                string memory sourceAttributes,
+                uint8 sourceDominantColour,
+                uint8 sourceColoursUsed
+            ) = abi.decode(tokenData, (string, string, bytes, string, uint8, uint8));
             if (bytes(sourceKind).length != 0) kind = sourceKind;
             if (bytes(sourceDescription).length != 0) description = sourceDescription;
             if (sourceImageSvg.length != 0) imageSvg = sourceImageSvg;
             labAttributes = sourceAttributes;
             dominantColour = sourceDominantColour < 16 ? sourceDominantColour : 0;
             coloursUsed = sourceColoursUsed > 16 ? 16 : sourceColoursUsed;
-        } catch {}
+        }
 
         bytes memory attributes = abi.encodePacked(
             '{"trait_type":"Type","value":"', _jsonEscape(kind), '"}',
@@ -188,11 +192,13 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         }
 
         string memory tokenName = string.concat("r3tards labs ", _lower(kind), " #", tokenId.toString());
-        try ILabTokenNameSource(data.lab).labTokenName{gas: LAB_TOKEN_NAME_GAS_LIMIT}(tokenId) returns (
-            string memory sourceName
-        ) {
+        (bool nameOk, bytes memory nameData) = data.lab.staticcall{gas: LAB_TOKEN_NAME_GAS_LIMIT}(
+            abi.encodeCall(ILabTokenNameSource.labTokenName, (tokenId))
+        );
+        if (nameOk && _validAbiString(nameData)) {
+            string memory sourceName = abi.decode(nameData, (string));
             if (bytes(sourceName).length != 0) tokenName = sourceName;
-        } catch {}
+        }
 
         string memory encodedImage = Base64.encode(imageSvg);
         bytes memory json = abi.encodePacked(
@@ -236,6 +242,49 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         uint256 experimentId = _mintData[tokenId].experimentId;
         if (from != address(0)) --_experimentBalances[experimentId][from];
         if (to != address(0)) ++_experimentBalances[experimentId][to];
+    }
+
+    function _validLabTokenReturn(bytes memory data) private pure returns (bool) {
+        if (data.length < 224) return false;
+        for (uint256 i; i < 4; ++i) {
+            uint256 offset;
+            assembly ("memory-safe") {
+                offset := mload(add(add(data, 0x20), mul(i, 0x20)))
+            }
+            if (offset < 192 || (offset & 31) != 0 || offset > data.length - 32) return false;
+            uint256 length;
+            assembly ("memory-safe") {
+                length := mload(add(add(data, 0x20), offset))
+            }
+            uint256 remaining = data.length - offset - 32;
+            if (length > remaining) return false;
+            uint256 padded = (length + 31) & ~uint256(31);
+            if (padded > remaining) return false;
+        }
+        uint256 dominant;
+        uint256 colours;
+        assembly ("memory-safe") {
+            dominant := mload(add(data, 0xa0))
+            colours := mload(add(data, 0xc0))
+        }
+        return dominant <= type(uint8).max && colours <= type(uint8).max;
+    }
+
+    function _validAbiString(bytes memory data) private pure returns (bool) {
+        if (data.length < 64) return false;
+        uint256 offset;
+        uint256 length;
+        assembly ("memory-safe") {
+            offset := mload(add(data, 0x20))
+        }
+        if (offset != 32 || offset > data.length - 32) return false;
+        assembly ("memory-safe") {
+            length := mload(add(add(data, 0x20), offset))
+        }
+        uint256 remaining = data.length - offset - 32;
+        if (length > remaining) return false;
+        uint256 padded = (length + 31) & ~uint256(31);
+        return padded <= remaining;
     }
 
     function _tokenExternalUrl(uint256 tokenId) private view returns (string memory) {

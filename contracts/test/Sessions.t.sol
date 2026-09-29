@@ -22,13 +22,6 @@ contract Mock1271Owner is IERC1271 {
     }
 }
 
-contract MockPassLink {
-    address public immutable PAINT;
-    mapping(address => uint256) public passOf;
-    constructor(address paint_) { PAINT = paint_; }
-    function setPass(address owner, uint256 tokenId) external { passOf[owner] = tokenId; }
-}
-
 contract SessionsTest is Test {
     R3tardsPaint paint;
     MockR3tards r;
@@ -139,18 +132,11 @@ contract SessionsTest is Test {
         paint.startSession(otherOwner, key, expiry, 100, 0, deadline, otherSig);
     }
 
-    function testKeyWithOwnerHistoryOrPainterPassCannotBecomeSessionKey() public {
+    function testKeyWithOwnerHistoryCannotBecomeSessionKey() public {
         address paintedKey = address(0x1111);
         vm.prank(paintedKey);
         paint.paint(hex"04000304", new uint256[](0));
         _expectSessionStartError(paintedKey, R3tardsPaint.SessionKeyHasOwnerHistory.selector);
-
-        MockPassLink pass = new MockPassLink(address(paint));
-        vm.prank(owner);
-        paint.setPainterPass(address(pass));
-        address passKey = address(0x2222);
-        pass.setPass(passKey, 7);
-        _expectSessionStartError(passKey, R3tardsPaint.SessionKeyHasPainterPass.selector);
     }
 
     function testActiveSessionKeyCannotBecomeSessionOwner() public {
@@ -238,4 +224,3 @@ contract SessionsTest is Test {
         return abi.encodePacked(rr, ss, v);
     }
 }
-

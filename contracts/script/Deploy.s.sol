@@ -38,8 +38,9 @@ contract Deploy is Script {
         address deployer = vm.envAddress("DEPLOYER_ADDRESS");
         address r3tards = vm.envAddress("R3TARDS_ADDRESS");
         uint64 seasonStart = uint64(vm.envUint("SEASON_START"));
-        address tokenZeroRecipient = vm.envAddress("TOKEN_ZERO_RECIPIENT");
-        address royaltyReceiver = vm.envAddress("ROYALTY_RECEIVER");
+        address tokenZeroRecipient = vm.envOr("TOKEN_ZERO_RECIPIENT", deployer);
+        address royaltyReceiver = vm.envOr("ROYALTY_RECEIVER", deployer);
+        address finalOwner = vm.envOr("FINAL_OWNER", deployer);
         uint32 basePixelsPerHour = uint32(vm.envUint("BASE_PIXELS_PER_HOUR"));
         uint32 pixelsPerActiveDay = uint32(vm.envUint("PIXELS_PER_ACTIVE_DAY"));
         uint32 maxPixelsPerHour = uint32(vm.envUint("MAX_PIXELS_PER_HOUR"));
@@ -49,8 +50,9 @@ contract Deploy is Script {
         if (block.chainid == 143 && !vm.envOr("CONFIRM_MAINNET", false)) {
             revert("mainnet blocked: deploy testnet first, then set CONFIRM_MAINNET=true");
         }
-        require(deployer == tokenZeroRecipient, "deployer must be initial owner");
-        require(deployer == royaltyReceiver, "deployer must be royalty receiver");
+        require(tokenZeroRecipient != address(0), "token zero recipient is zero");
+        require(royaltyReceiver != address(0), "royalty receiver is zero");
+        require(finalOwner != address(0), "final owner is zero");
 
         vm.startBroadcast(deployer);
 
@@ -60,7 +62,7 @@ contract Deploy is Script {
                 abi.encode(
                     r3tards,
                     seasonStart,
-                    tokenZeroRecipient,
+                    deployer,
                     royaltyReceiver,
                     basePixelsPerHour,
                     pixelsPerActiveDay,
@@ -80,8 +82,8 @@ contract Deploy is Script {
         R3tardsPainterPass pass = R3tardsPainterPass(
             vm.deployCode("R3tardsPainterPass.sol:R3tardsPainterPass", abi.encode(address(paint)))
         );
-
         paint.setPainterPass(address(pass));
+
         uint256 diffId = paint.addRenderer(address(diff), "diff");
         uint256 timelapseId = paint.addRenderer(address(timelapse), "season timelapse");
         uint256 df1Id = paint.addRenderer(address(df1), "df1");
@@ -171,10 +173,20 @@ contract Deploy is Script {
             paint.owner() == deployer && labs.owner() == deployer && pass.owner() == deployer && quests.owner() == deployer,
             "owner mismatch"
         );
+        if (tokenZeroRecipient != deployer) paint.transferFrom(deployer, tokenZeroRecipient, 0);
+        if (finalOwner != deployer) {
+            paint.transferOwnership(finalOwner);
+            labs.transferOwnership(finalOwner);
+            pass.transferOwnership(finalOwner);
+            quests.transferOwnership(finalOwner);
+        }
         vm.stopBroadcast();
 
         console.log("chainId", block.chainid);
         console.log("deployer/initial owner", deployer);
+        console.log("token #0 recipient", tokenZeroRecipient);
+        console.log("royalty receiver", royaltyReceiver);
+        console.log("final owner", finalOwner);
         console.log("R3tardsPaint", address(paint));
         console.log("R3tardsPainterPass", address(pass));
         console.log("R3tardsLabs", address(labs));
@@ -205,7 +217,18 @@ contract Deploy is Script {
         console.log("timelapse renderer id", timelapseId);
         console.log("df1 renderer id", df1Id);
         console.log("renderers frozen", paint.renderersFrozen());
-        console.log("REMINDER: Paint, Labs, Pass and Quests ownership can later move via Ownable2Step.");
+        console.log("OWNERSHIP CHECKLIST");
+        if (finalOwner == deployer) {
+            console.log("Paint: deployer remains owner (FINAL_OWNER default)");
+            console.log("Labs: deployer remains owner (FINAL_OWNER default)");
+            console.log("Pass: deployer remains owner (FINAL_OWNER default)");
+            console.log("Quests: deployer remains owner (FINAL_OWNER default)");
+        } else {
+            console.log("Paint: FINAL_OWNER must call acceptOwnership()", address(paint));
+            console.log("Labs: FINAL_OWNER must call acceptOwnership()", address(labs));
+            console.log("Pass: FINAL_OWNER must call acceptOwnership()", address(pass));
+            console.log("Quests: FINAL_OWNER must call acceptOwnership()", address(quests));
+        }
         console.log("Sleepwalker, Recycle Bin and CD Burner are adminless; Sleepwalker clone keys only accept its calls.");
     }
 

@@ -4,30 +4,28 @@ This is the Phase 2d contract-boundary threat model. The full economic wipe/repa
 
 ## Core freeze
 
-`contracts/src/R3tardsPaint.sol` is frozen at the verified 2b-fix2 core. Later Labs integrate only through the registries, view APIs, stamp sources and events already exposed by that contract. The core changes again only for a concrete reported bug. This avoids turning every experiment into another reason to mutate the day-1 trust boundary.
+`contracts/src/R3tardsPaint.sol` received its final pre-testnet SEC hardening before deployment: outline-density limits, experiment-registry freeze, session nonce cancellation, finale grace-period authorization and fail-safe renderer calls. Nothing is deployed yet. After day-1 deployment the core is frozen; later Labs integrate only through registries, view APIs, stamp sources and events already exposed by that contract.
 
 ## Administrative authority: `Ownable2Step`
 
-Ownership transfer is two-step. The current owner nominates a pending owner; the pending owner must explicitly accept. A typo therefore does not immediately transfer control.
+Ownership transfer is two-step. The current owner nominates a pending owner; the pending owner must explicitly accept. A typo therefore does not immediately transfer control. `R3tardsPaint.renounceOwnership()` is disabled so a broken Lab can always be retired by a valid owner; ownership can still move through the two-step path.
 
 The `R3tardsPaint` owner can:
 
-- configure/append/clear **future-season** outlines before those seasons start;
-- append optional renderers;
-- permanently freeze renderer additions;
-- add/retire display-only Lab registry entries;
-- bind the official Painter Pass address once. The candidate must report this Paint contract as `PAINT()` and the pointer cannot later be changed.
+- configure/append/clear **future-season** outlines before those seasons start, capped at 16,384 unique outline pixels per season;
+- append optional renderer contracts and permanently freeze renderer additions;
+- add/retire display-only Lab registry entries and permanently freeze new experiment additions.
 
-The Painter Pass owner can append view-only `IStampSource` contracts. Calls are gas-capped and affect display metadata only.
+The Painter Pass owner can append view-only `IStampSource` contracts, disable/re-enable a source, and update the marketplace external link. Stamp calls are gas-capped, malformed data is ignored, and disabled sources are skipped.
 
 The owners cannot:
 
 - paint, erase, recolor, or directly write canvas pixels through admin authority;
-- modify a running or past season outline;
+- modify a running or past season outline or exceed the future-season outline cap;
 - mutate already-minted frame/background data or proposer records;
 - override a token holder's renderer choice;
 - replace renderer 0 or change the default renderer;
-- unfreeze renderer additions;
+- unfreeze renderer or experiment additions;
 - make a Lab registry or stamp-source address privileged merely by registering it;
 - alter storm timing or force/non-force a storm;
 - rewrite painter quest statistics;
@@ -38,27 +36,29 @@ An owner that separately owns an NFT only has the ordinary holder rights attache
 
 ## Future-season outline authority
 
-Custom outlines are writable only before the target season starts. The expanded mask is paid for during configuration, not by the season's first painter. Once the season starts, the custom/default selection, guest name, and effective outline are fixed. Frames recompose against their recorded season's fixed outline.
+Custom outlines are writable only before the target season starts. Their union is capped at **16,384 unique pixels**, preventing an owner from creating a future season whose entire 256 × 256 canvas is protected and therefore unpaintable. The genesis outline and shipped guest outlines remain below that cap.
+
+The expanded mask is paid for during configuration, not by the season's first painter. Once the season starts, the custom/default selection, guest name, and effective outline are fixed. Frames recompose against their recorded season's fixed outline.
 
 ## Session-key registration and theft
 
 A session key must send its own `startSession` transaction. An owner signature alone cannot register an unrelated victim address. This prevents the previous permanent-bricking attack where a malicious owner could label somebody else's wallet as a burner.
 
-A key is rejected if it has already painted as its own identity or currently holds the official Painter Pass. An active key cannot be overwritten with a different owner. Revoked and expired entries are treated as ordinary addresses by all action gates, so historical session participation does not brick a wallet.
+A key is rejected if it has already painted as its own identity. The former external Painter Pass lookup was redundant because claiming a Pass already requires paint history; removing that call also prevents an incorrectly configured external contract from bricking all future session starts. An active key cannot be overwritten with a different owner. Revoked and expired entries are treated as ordinary addresses by all action gates, so historical session participation does not brick a wallet.
 
-While active, a stolen burner can spend the remaining signed session allowance painting as the owner. Damage is bounded by both the owner's ordinary budget and `maxUnits`, and the session expires at `expiryBlock`. The owner can revoke it at any time.
+Owners can call `incrementSessionNonce()` to invalidate signed but not-yet-started authorizations. While active, a stolen burner can spend the remaining signed session allowance painting as the owner. Damage is bounded by both the owner's ordinary budget and `maxUnits`, and the session expires at `expiryBlock`. The owner can revoke it at any time.
 
 An active session key cannot use delegated identity to mint frames, flip face/background, or claim the Painter Pass. Frontend Phase 4 must revoke before sweeping unused MON.
 
 ## Painter Pass binding
 
-The Paint owner has a one-time setup action to bind the official Painter Pass. Before this is configured, session registration can enforce the "has painted as self" safety rule but cannot know whether a candidate owns the separate Pass. Deployment therefore binds the Pass immediately after deploying it and before normal use.
+There is no core Painter Pass pointer. Session safety depends only on core-owned paint/session state, so a separate metadata contract cannot become a liveness dependency for `startSession`.
 
-The pointer cannot be replaced later. A malicious or mistaken initial binding would therefore be permanent, which is why deployment validation and the two-step owner model matter.
+The Painter Pass remains bound in the opposite direction through its immutable `PAINT` reference. That lets Pass metadata read the core without giving the Pass any authority over painting or session registration.
 
 ## Malicious external renderers
 
-External renderers are opt-in per token. The holder chooses them; the owner cannot force one onto somebody else's token. Calls are capped at 14M gas and wrapped in `try/catch`; revert, out-of-gas, or empty output falls back to permanent renderer 0.
+External renderers are opt-in per token. The holder chooses them; the owner cannot force one onto somebody else's token. New renderer registrations must point to deployed code. Metadata calls use a 14M-gas low-level `staticcall`, validate ABI return data before decoding, and fall back to permanent renderer 0 on revert, out-of-gas, empty or malformed output.
 
 The timelapse renderer is additionally constrained to at most four 128×128 frames and has regression tests for `<13M` direct gas, `<200 KB` output, and successful routing under a 30M `eth_call` budget.
 
@@ -84,10 +84,11 @@ A user can predict storms exactly and coordinate activity around them. That is i
 
 ## Painter Pass and external stamp sources
 
-The Painter Pass is soulbound and grants no privileges. Its built-in stamps are derived live from core stats. External `IStampSource` entries are view-only, holder-independent presentation extensions. Reverts or excessive gas from a stamp source are ignored.
+The Painter Pass is soulbound and grants no privileges. Its built-in stamps are derived live from core stats. External `IStampSource` entries are view-only, holder-independent presentation extensions. Calls use a fixed gas cap; revert, empty/malformed return data or a disabled source is ignored instead of bricking `tokenURI`.
+
+The Pass owner can disable or re-enable an existing source. That is explicitly a metadata availability power: disabling a source makes its stamp appear unearned/skipped but cannot change core state or grant/revoke paint permissions.
 
 A burned Pass cannot be re-claimed by the same address.
-
 
 ## Flipbook Lab
 
@@ -164,7 +165,7 @@ Phase 5 must verify that contract `blockhash(n)` matches recent RPC block hashes
 
 The candle end depends on the closing block hash. The proposer of that exact block could theoretically try to influence its block contents or withhold a block, so the mechanism is not treated as cryptographic randomness for high-value adversarial games. Here it only selects one of 12,000 possible historical end points after a public 24-hour bidding window.
 
-Settlement should happen inside the 256-block blockhash reveal window. If nobody settles in time, the contract deliberately falls back to `closeBlock` instead of using a later hash that a settler could time or grind. Shill bidding cannot be prevented: bidders control their own accounts and may bid against themselves by paying/locking capital.
+Settlement first uses native `blockhash` while the close block is inside the 256-block window, then Monad's EIP-2935 history contract while the hash remains within its 8,191-block ring. If settlement misses both, the deterministic fallback end is `candleStartBlock`, not `closeBlock`. A late bidder therefore cannot turn delayed settlement into a guaranteed win; bids after the candle start lose under the fallback. No later block hash is used, so a settler cannot choose or grind a replacement randomness source by timing settlement. Shill bidding still cannot be prevented: bidders control their own accounts and may bid against themselves by paying/locking capital.
 
 Bid deposits stay escrowed until settlement because a bidder who looks outbid at the visible close may still become the candle winner. Seller proceeds and ERC-2981 royalties use pull-payment credits. `bid`, `settle`, deposit withdrawal and credit withdrawal are guarded against reentrancy; state/balances are zeroed or finalized before external value transfers, and the winning NFT uses `transferFrom` rather than a receiver callback. The accounting invariant is that contract MON equals all unwithdrawn bidder deposits plus all outstanding credits.
 

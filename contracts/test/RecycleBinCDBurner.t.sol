@@ -280,6 +280,7 @@ contract RecycleBinCDBurnerTest is Test {
 
         vm.warp(uint256(seasonStart) + 30 days);
         vm.roll(vm.getBlockNumber() + 1);
+        vm.prank(alice);
         uint256 finale = paint.mintSeasonFinale(0);
         vm.prank(alice);
         paint.approve(address(bin), finale);
@@ -499,6 +500,7 @@ contract RecycleBinCDBurnerTest is Test {
         uint256 first = _makeFrame(alice, 0);
         vm.warp(uint256(seasonStart) + 30 days);
         vm.roll(vm.getBlockNumber() + 1);
+        vm.prank(alice);
         uint256 finale = paint.mintSeasonFinale(0);
         uint256 second = _makeFrame(alice, 1);
 

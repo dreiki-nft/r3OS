@@ -29,6 +29,7 @@ contract MonadNoveltyTest is Test {
         vm.warp(paint.seasonEndTime(0) + 1);
         address proposer2 = address(0xBEEF);
         vm.coinbase(proposer2);
+        vm.prank(alice);
         uint256 finale = paint.mintSeasonFinale(0);
         R3tardsPaint.FrameInfoData memory finaleInfo = paint.frameInfo(finale);
         assertEq(finaleInfo.proposer, proposer2);
@@ -121,4 +122,3 @@ contract MonadNoveltyTest is Test {
         }
     }
 }
-

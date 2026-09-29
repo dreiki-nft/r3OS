@@ -255,8 +255,8 @@ contract CollabSeasonsTest is Test {
         console.log("GAS setSeasonOutline typical", typicalGas);
         assertLt(typicalGas, 30_000_000);
 
-        bytes memory worst = new bytes(256 * 3);
-        for (uint256 y; y < 256; ++y) {
+        bytes memory worst = new bytes(64 * 3);
+        for (uint256 y; y < 64; ++y) {
             uint256 o = y * 3;
             worst[o] = bytes1(uint8(y));
             worst[o + 1] = 0x00;
@@ -264,9 +264,9 @@ contract CollabSeasonsTest is Test {
         }
         g = gasleft();
         vm.prank(alice);
-        p.setSeasonOutline(2, worst, "full mask");
+        p.setSeasonOutline(2, worst, "max mask");
         uint256 worstGas = g - gasleft();
-        console.log("GAS setSeasonOutline worst-case full mask", worstGas);
+        console.log("GAS setSeasonOutline max allowed mask", worstGas);
         assertLt(worstGas, 30_000_000);
     }
 

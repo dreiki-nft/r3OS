@@ -45,8 +45,6 @@ contract PassArtTest is Test {
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
         pass = new R3tardsPainterPass(address(paint));
-        vm.prank(alice);
-        paint.setPainterPass(address(pass));
 
         vm.prank(alice);
         paint.paint(hex"00000304", new uint256[](0));

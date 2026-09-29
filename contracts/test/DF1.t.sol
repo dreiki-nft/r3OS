@@ -64,6 +64,7 @@ contract DF1RendererTest is Test {
         assertTrue(bytes(frameUri).length > 0);
 
         vm.warp(paint.seasonEndTime(0) + 1);
+        vm.prank(alice);
         uint256 finaleId = paint.mintSeasonFinale(0);
         string memory finaleUri = renderer.tokenURI(address(paint), finaleId);
         assertTrue(bytes(finaleUri).length > 0);
@@ -96,7 +97,7 @@ contract DF1RendererTest is Test {
 
         bytes memory full = _fullOutlineRuns();
         vm.prank(alice);
-        paint.setSeasonOutline(1, full, "full guest");
+        paint.setSeasonOutline(1, full, "max guest");
         vm.warp(paint.seasonStartTime(1));
         (bytes memory actualGuest,,) = renderer.source64(address(paint), 0);
         assertEq(actualGuest, _naiveSource(0));
@@ -111,17 +112,17 @@ contract DF1RendererTest is Test {
         assertLt(defaultGas, 10_000_000);
 
         vm.prank(alice);
-        paint.setSeasonOutline(1, _fullOutlineRuns(), "full guest");
+        paint.setSeasonOutline(1, _fullOutlineRuns(), "max guest");
         vm.warp(paint.seasonStartTime(1));
         gasBefore = gasleft();
         renderer.tokenURI(address(paint), 0);
         uint256 customGas = gasBefore - gasleft();
-        console.log("GAS DF1 tokenURI full custom outline", customGas);
+        console.log("GAS DF1 tokenURI max custom outline", customGas);
         assertLt(customGas, 10_000_000);
     }
 
     function testGasConstantWithManyShortRuns() public {
-        for (uint256 chunk; chunk < 6; ++chunk) {
+        for (uint256 chunk; chunk < 1; ++chunk) {
             bytes memory runs = _shortRunsChunk(chunk);
             vm.startPrank(alice);
             if (chunk == 0) paint.setSeasonOutline(1, runs, "many runs");
@@ -133,7 +134,7 @@ contract DF1RendererTest is Test {
         uint256 gasBefore = gasleft();
         string memory direct = renderer.tokenURI(address(paint), 0);
         uint256 directGas = gasBefore - gasleft();
-        console.log("GAS DF1 tokenURI 24000 short runs", directGas);
+        console.log("GAS DF1 tokenURI 4000 short runs (outline cap)", directGas);
         assertLt(directGas, 10_000_000);
 
         vm.prank(alice);
@@ -184,8 +185,8 @@ contract DF1RendererTest is Test {
     }
 
     function _fullOutlineRuns() internal pure returns (bytes memory runs) {
-        runs = new bytes(256 * 3);
-        for (uint256 y; y < 256; ++y) {
+        runs = new bytes(64 * 3);
+        for (uint256 y; y < 64; ++y) {
             runs[y * 3] = bytes1(uint8(y));
             runs[y * 3 + 1] = 0x00;
             runs[y * 3 + 2] = 0xff;

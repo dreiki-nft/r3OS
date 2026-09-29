@@ -184,15 +184,17 @@ Ownership uses OpenZeppelin `Ownable2Step`: `transferOwnership(newOwner)` only n
 
 The **R3tardsPaint owner can**:
 
-1. configure, append, or clear a collaboration outline for a **future season only**, before that season begins;
-2. append renderer addresses/names to the optional renderer registry;
+1. configure, append, or clear a collaboration outline for a **future season only**, before that season begins, with at most **16,384 unique outline pixels** per season;
+2. append renderer addresses/names to the optional renderer registry; renderer addresses must contain code;
 3. permanently call `freezeRenderers()`, after which no renderer can ever be added;
 4. add and retire entries in the display-only Lab registry;
-5. bind the official Painter Pass address **once** with `setPainterPass()`. The address must report this Paint contract as its `PAINT()` core and can never be replaced.
+5. permanently call `freezeExperiments()`, after which no new Lab entry can be added while existing entries may still be retired.
+
+`R3tardsPaint.renounceOwnership()` is deliberately disabled. The owner can transfer through `Ownable2Step`, but the protocol cannot be left without the ability to retire a broken Lab entry.
 
 The **R3tardsLabs owner can** set the collection external link for marketplace metadata. It cannot mint, move or burn tokens, authorize Labs, change rendering, or change the immutable 5% royalty receiver.
 
-The **Painter Pass owner can** append view-only `IStampSource` contracts and set the collection external link. These are display/marketplace metadata powers only.
+The **Painter Pass owner can** append view-only `IStampSource` contracts, enable/disable an existing stamp source, and set the collection external link. Disabling a source only removes that source from live Pass metadata; it grants no protocol privilege and does not alter paint history.
 
 The **Quests owner can** append new display-only quests through `Ownable2Step`. Existing quests, completion records and requirements are immutable once added.
 
@@ -200,15 +202,18 @@ The owners **can never**:
 
 - paint, erase, recolor, restore, or otherwise modify canvas pixels through an owner privilege;
 - change a current or past season outline after that season starts;
+- cover more than 16,384 unique canvas pixels with a future-season outline;
 - alter a frame's immutable stored background, block, proposer, season, face, or background record;
 - choose or override the renderer for somebody else's token;
 - change renderer 0 or make another renderer the default;
-- unfreeze the renderer registry;
+- unfreeze the renderer registry or Lab registry;
 - give a Lab experiment or stamp source contract pixel, frame, budget, session, or ownership permissions merely by registering it. No Lab has special powers over the canvas; Sleepwalker only paints through your own signed session, with your own budget;
 - trigger, cancel, move, or alter a DF1 storm;
 - change painter statistics directly;
 - burn token #0 or season finales;
 - bypass paint budgets, tile heat, wet-paint rules, region caps, frame cooldowns, or session limits.
+
+Bad optional metadata extensions fail closed: malformed/reverting renderer, stamp-source and Labs metadata return data is ignored and the permanent built-in/fallback metadata path remains available.
 
 If an owner also owns an NFT, they retain only the same holder rights as any other holder for that NFT.
 
@@ -222,7 +227,7 @@ appendSeasonOutline(season, moreRuns)
 clearSeasonOutline(season)
 ```
 
-Outline runs are packed 3-byte `[y, xStart, xEnd]` values. An empty custom outline is valid and means no character. Masks are expanded before the season starts into that season's own aligned 1,024-slot nibble-mask region, while the raw run chunks remain readable onchain through `seasonOutlineRuns(season)`.
+Outline runs are packed 3-byte `[y, xStart, xEnd]` values. An empty custom outline is valid and means no character. The union of all outline runs for one season is capped at **16,384 unique pixels** (one quarter of the 256 × 256 canvas), including appended/overlapping runs. Masks are expanded before the season starts into that season's own aligned 1,024-slot nibble-mask region, while the raw run chunks remain readable onchain through `seasonOutlineRuns(season)`.
 
 Once a season starts, its outline and guest name are permanent. Frames always recompose with the outline belonging to their recorded season.
 
@@ -230,7 +235,11 @@ Once a season starts, its outline and guest name are permanent. Frames always re
 
 `startSession(owner, sessionKey, expiryBlock, maxUnits, nonce, deadline, sig)` verifies an EIP-712 owner signature through OpenZeppelin `SignatureChecker`, including ERC-1271 owners. The signature is domain-bound to chain ID and this contract, includes the per-owner nonce, and uses a unix-seconds deadline.
 
-A session can only be activated by the **session key itself**: `msg.sender == sessionKey`. This prevents one wallet from registering an unrelated victim address as a burner. A key that has already painted as itself, or currently holds the official Painter Pass, cannot become a session key. An active key cannot be reassigned to another owner.
+A session can only be activated by the **session key itself**: `msg.sender == sessionKey`. This prevents one wallet from registering an unrelated victim address as a burner. A key that has already painted as itself cannot become a session key. An active key cannot be reassigned to another owner.
+
+The core no longer calls the Painter Pass during session setup. Pass ownership already implies paint history, so that external check was redundant; removing it also prevents a bad metadata/Pass address from bricking `startSession`.
+
+An owner can call `incrementSessionNonce()` at any time to invalidate an unused signed authorization before its session starts. Starting a session also consumes the current nonce as normal.
 
 A session lasts at most 24,000 blocks. A session-key paint:
 
@@ -240,7 +249,7 @@ A session lasts at most 24,000 blocks. A session-key paint:
 - also consumes the session's signed `maxUnits` allowance;
 - may call `paint` only. It cannot mint frames or change face/background while active.
 
-The owner may revoke the session at any time. **Expired or revoked session entries are no longer special identities:** the address immediately behaves as a normal wallet again and may paint, mint frames, change face/background, or claim a pass if independently eligible.
+The owner may revoke an active session at any time. **Expired or revoked session entries are no longer special identities:** the address immediately behaves as a normal wallet again and may paint, mint frames, change face/background, or claim a pass if independently eligible.
 
 ## DF1 storms
 
@@ -365,55 +374,55 @@ Production gas limits must be re-measured on Monad testnet. In particular, Flipb
 
 ## Deployment without raw private keys
 
-Deploy-only values live in `contracts/.env.example`; frontend public variables remain in root `.env.example`. Do **not** put a raw private key in either file.
+Foundry deployment uses an unlocked Foundry account alias or a Ledger. No raw private key belongs in `.env`, shell history or the repo.
 
-Load your deploy environment, then use an external signer. Hardware wallet example:
-
-```bash
-forge script contracts/script/Deploy.s.sol:Deploy \
-  --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --ledger
-```
-
-Foundry keystore example:
-
-```bash
-forge script contracts/script/Deploy.s.sol:Deploy \
-  --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --account <keystore-name>
-```
-
-For launch, the marketplace/admin wallet is the same address in all three deploy settings:
+Required launch roles are independent:
 
 ```text
-DEPLOYER_ADDRESS = ROYALTY_RECEIVER = TOKEN_ZERO_RECIPIENT = 0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA
+DEPLOYER_ADDRESS=<hardware-wallet / Foundry broadcaster>
+TOKEN_ZERO_RECIPIENT=0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA
+ROYALTY_RECEIVER=<Safe multisig>
+FINAL_OWNER=<Safe multisig>
 ```
 
-The broadcaster must equal that address; otherwise the owner-only registration steps fail. `TOKEN_ZERO_RECIPIENT` is also the frozen core owner, which is what lets this wallet claim the **r3tards paint** marketplace page. Mainnet chain ID 143 additionally requires `CONFIRM_MAINNET=true` after the same deployment has been tested on testnet. Always deploy with `--account` or `--ledger`, never a raw private key.
+`TOKEN_ZERO_RECIPIENT`, `ROYALTY_RECEIVER` and `FINAL_OWNER` all default to `DEPLOYER_ADDRESS` so local/CI deploys keep working without extra environment variables. For mainnet, set them explicitly. `ROYALTY_RECEIVER` is immutable in Paint/Labs and therefore must be correct at deployment; use the intended Safe. `FINAL_OWNER` should also be the intended Safe.
 
-The script deploys `R3tardsLabs` immediately after the core. Flipbook and Forks are then deployed with the shared collection address, registered in the core Lab registry, and bound once to their returned experiment IDs. Sleepwalker deploys its `SleepwalkerKey` implementation plus the adminless Lab, registers/binds the Lab the same way, and becomes the sixth Pass stamp source (visual pin 11). Recycle Bin is registered/bound next and becomes the seventh stamp source; CD Burner is registered/bound as the ninth Lab experiment and mints through the same Labs collection. This avoids predicting registry IDs while keeping the token Labs adminless. The script also binds the official Painter Pass, installs the 13 day-one quests, registers all three optional renderers, and intentionally leaves the renderer registry unfrozen.
+The script temporarily deploys Paint with token #0 on the broadcaster so every owner-only renderer/Lab/quest wiring step can complete even when `TOKEN_ZERO_RECIPIENT` is a different address. After all wiring, token #0 is transferred to `TOKEN_ZERO_RECIPIENT`. Then the script calls `transferOwnership(FINAL_OWNER)` on every ownable day-1 contract: Paint, Labs, Painter Pass and Quests. Because they use `Ownable2Step`, the Safe must later call `acceptOwnership()` on each one. The script prints that checklist at the end.
 
-Deployment gas must be re-measured after the shared Labs collection migration. `DeployGas.t.sol` is the source of truth for the current breakdown; do not reuse the pre-migration aggregate as if the extra collection and changed Lab bytecode were free, because sadly EVM accounting has not adopted optimism as a gas strategy.
+Mainnet chain ID 143 additionally requires `CONFIRM_MAINNET=true` after the same deployment has been tested on testnet. Always deploy with `--account` or `--ledger`, never a raw private key.
 
-### Marketplace setup
+Example:
 
-After deployment, connect the launch wallet above to Magic Eden and claim/edit all three collection pages:
+```bash
+forge script script/Deploy.s.sol:Deploy \\
+  --rpc-url "$MONAD_TESTNET_RPC_URL" \\
+  --account r3tards-deployer \\
+  --broadcast
+```
 
-1. **r3tards paint** — `R3tardsPaint`, claimed through ownership of the frozen core / token #0 recipient;
-2. **r3tards labs** — `R3tardsLabs`, covering reels, forks, dreams, mix CD-Rs and future Lab tokens;
-3. **r3tards painter pass** — `R3tardsPainterPass`, the soulbound collection.
+or:
+
+```bash
+forge script script/Deploy.s.sol:Deploy \\
+  --rpc-url "$MONAD_TESTNET_RPC_URL" \\
+  --ledger \\
+  --broadcast
+```
+
+After deployment, verify token #0 ownership, immutable royalty receivers and every pending owner before accepting ownership from the Safe. Do not accept ownership until every contract address and registry entry has been checked.
 
 `R3tardsLabs` and the Painter Pass expose ERC-7572 `contractURI()` metadata and owner-controlled external links. Labs royalties are fixed at 5% to `ROYALTY_RECEIVER`; the soulbound Pass reports 0%.
 
-RPC/explorer URLs are not hardcoded. Get current values from `docs.monad.xyz`.
-
 ## Phase 5 testnet checklist
 
-In addition to the broader soak plan:
+Before mainnet:
 
-- verify contract `blockhash(n)` equals the RPC block hash for recent Monad blocks;
-- verify the Block DNA catch window is effectively 256 blocks on Monad;
-- measure the fork-paint gas distribution and replace the provisional fixed 250K limit if testnet evidence requires it.
-- settle a finale auction inside the 256-block reveal window and again after that window to verify both candle and fallback paths.
-- check whether Monad exposes EIP-2935 block-hash history; if it does, a later auction version could safely widen the reveal window without settler-timing influence.
+- verify Monad's EIP-2935 history contract at `0x0000F90827F1C53a10cb7A02335B175320002935` returns the same recent block hashes as RPC and confirm the effective 8,191-block history window under MonadTen;
+- measure auction settlement inside native `blockhash`, through EIP-2935 history, and after the history window where the candle-start fallback is used;
+- verify `block.coinbase` semantics for the validator seal;
+- re-measure all gas policies in `docs/specs/GAS_LIMITS.md`, including Sleepwalker painted/skipped/completing steps;
+- verify the mainnet `ROYALTY_RECEIVER`, `FINAL_OWNER` and `TOKEN_ZERO_RECIPIENT` values before broadcasting, then verify every `pendingOwner` before each Safe `acceptOwnership()`;
+- run the full browser/testnet soak and re-check every registry address before `freezeRenderers()` / `freezeExperiments()` are used.
 
 ## Roadmap
 

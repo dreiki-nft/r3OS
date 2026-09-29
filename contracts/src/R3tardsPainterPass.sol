@@ -22,6 +22,7 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
     mapping(address => uint256) public passOf;
     mapping(address => bool) public hasClaimed;
     address[] private _stampSources;
+    bool[] private _stampSourceEnabled;
     string private _externalLink;
 
     error NoPaintYet();
@@ -30,10 +31,12 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
     error Soulbound();
     error NotAuthorized();
     error InvalidStampSource();
+    error InvalidStampSourceIndex(uint256 sourceId);
 
     event Locked(uint256 tokenId);
     event Unlocked(uint256 tokenId);
     event StampSourceAdded(uint256 indexed sourceId, address indexed source);
+    event StampSourceEnabled(uint256 indexed sourceId, bool enabled);
     event ContractURIUpdated();
 
     constructor(address paint) ERC721("r3tards painter pass", "R3PASS") Ownable(msg.sender) {
@@ -70,6 +73,7 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
         if (source == address(0) || source.code.length == 0) revert InvalidStampSource();
         sourceId = _stampSources.length;
         _stampSources.push(source);
+        _stampSourceEnabled.push(true);
         emit StampSourceAdded(sourceId, source);
     }
 
@@ -79,6 +83,17 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
 
     function stampSource(uint256 sourceId) external view returns (address) {
         return _stampSources[sourceId];
+    }
+
+    function stampSourceEnabled(uint256 sourceId) external view returns (bool) {
+        if (sourceId >= _stampSources.length) revert InvalidStampSourceIndex(sourceId);
+        return _stampSourceEnabled[sourceId];
+    }
+
+    function setStampSourceEnabled(uint256 sourceId, bool enabled) external onlyOwner {
+        if (sourceId >= _stampSources.length) revert InvalidStampSourceIndex(sourceId);
+        _stampSourceEnabled[sourceId] = enabled;
+        emit StampSourceEnabled(sourceId, enabled);
     }
 
     function externalLink() external view returns (string memory) {
@@ -142,22 +157,24 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
 
         bytes memory extraAttributes;
         for (uint256 i; i < _stampSources.length; ++i) {
-            try IStampSource(_stampSources[i]).stamp{gas: STAMP_SOURCE_GAS_LIMIT}(tokenOwner)
-                returns (string memory name, bool earned)
-            {
-                if (earned) {
-                    uint256 pin = 6 + i;
-                    if (pin < PassArt.MAX_PINS) pinMask |= 1 << pin;
-                    if (bytes(name).length != 0) {
-                        extraAttributes = abi.encodePacked(
-                            extraAttributes,
-                            ',{"trait_type":"Stamp: ',
-                            _jsonEscape(name),
-                            '","value":"earned"}'
-                        );
-                    }
+            if (!_stampSourceEnabled[i]) continue;
+            (bool ok, bytes memory data) = _stampSources[i].staticcall{gas: STAMP_SOURCE_GAS_LIMIT}(
+                abi.encodeCall(IStampSource.stamp, (tokenOwner))
+            );
+            if (!ok || !_validStampReturn(data)) continue;
+            (string memory name, bool earned) = abi.decode(data, (string, bool));
+            if (earned) {
+                uint256 pin = 6 + i;
+                if (pin < PassArt.MAX_PINS) pinMask |= 1 << pin;
+                if (bytes(name).length != 0) {
+                    extraAttributes = abi.encodePacked(
+                        extraAttributes,
+                        ',{"trait_type":"Stamp: ',
+                        _jsonEscape(name),
+                        '","value":"earned"}'
+                    );
                 }
-            } catch {}
+            }
         }
 
         uint256 pinCount = 6 + _stampSources.length;
@@ -216,6 +233,25 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
             '}]}'
         );
         return string.concat("data:application/json;base64,", Base64.encode(json));
+    }
+
+    function _validStampReturn(bytes memory data) internal pure returns (bool) {
+        if (data.length < 96) return false;
+        uint256 offset;
+        uint256 earned;
+        uint256 length;
+        assembly ("memory-safe") {
+            offset := mload(add(data, 0x20))
+            earned := mload(add(data, 0x40))
+        }
+        if (offset != 64 || earned > 1 || offset > data.length - 32) return false;
+        assembly ("memory-safe") {
+            length := mload(add(add(data, 0x20), offset))
+        }
+        uint256 remaining = data.length - offset - 32;
+        if (length > remaining) return false;
+        uint256 padded = (length + 31) & ~uint256(31);
+        return padded <= remaining;
     }
 
     function _jsonEscape(string memory value) internal pure returns (string memory) {

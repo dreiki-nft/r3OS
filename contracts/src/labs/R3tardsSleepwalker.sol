@@ -24,6 +24,8 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
     uint256 public constant STEP_MAX_PX = 64;
     uint256 public constant MIN_STEP_BLOCKS = 100;
     uint256 public constant MAX_SURVIVAL_SAMPLES = 128;
+    uint256 private constant REFUND_GAS_LIMIT = 30_000;
+    bytes4 private constant NO_CHANGE_SELECTOR = bytes4(keccak256("NoChange()"));
 
     IR3tardsSleepwalkerCore public immutable PAINT;
     R3tardsLabs public immutable LABS;
@@ -40,7 +42,8 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         Allowance,
         Pace,
         Budget,
-        CoreRejected
+        CoreRejected,
+        Skipped
     }
 
     struct StartSessionAuthorization {
@@ -72,7 +75,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         uint32 pixelsDreamt;
         uint16 helpers;
         uint8 nextSession;
-        uint8 sessionsUsed;
+        uint32 sessionsUsed;
         uint64 dreamId;
         bool sleeping;
         bool stalled;
@@ -94,7 +97,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         uint16 helpers;
         uint16 survivalBps;
         uint128 mismatchMask;
-        uint8 nights;
+        uint32 nights;
         uint8 sampleCount;
         uint8 dominantColour;
         uint8 coloursUsed;
@@ -237,9 +240,10 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         address owner = msg.sender;
         DreamState storage dream = _dreams[owner];
         if (!dream.sleeping) revert NotStalled();
-        if (!dream.stalled) {
-            (, bool wouldStall,) = _sessionPreview(owner, dream);
-            if (!wouldStall) revert NotStalled();
+        address key = keyOf(owner);
+        if (key.code.length != 0) {
+            (,,,,, bool active) = PAINT.sessionInfo(key);
+            if (active) revert NotStalled();
         }
         if (sessions.length == 0 || sessions.length > MAX_SESSIONS) revert InvalidSessionCount();
 
@@ -249,7 +253,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         dream.nextSession = 0;
         dream.stalled = false;
 
-        address key = _ensureKey(owner);
+        key = _ensureKey(owner);
         StoredSession storage first = _sessions[owner][0];
         SleepwalkerKey(key).start(
             owner,
@@ -266,13 +270,12 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
     }
 
     function withdrawRefund() external nonReentrant {
-        address owner = msg.sender;
-        uint256 amount = refunds[owner];
-        if (amount == 0) revert NoRefund();
-        refunds[owner] = 0;
-        (bool ok,) = payable(owner).call{value: amount}("");
-        if (!ok) revert RefundFailed();
-        emit RefundWithdrawn(owner, amount);
+        _withdrawRefundTo(msg.sender, msg.sender);
+    }
+
+    function withdrawRefundTo(address to) external nonReentrant {
+        if (to == address(0)) revert ZeroAddress();
+        _withdrawRefundTo(msg.sender, to);
     }
 
     function step(address owner) external nonReentrant returns (StepCode code, bytes memory reason) {
@@ -361,7 +364,29 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
             if (refund != 0) _refundOrCredit(owner, refund);
             return _stepResult(owner, completed ? StepCode.Complete : StepCode.Painted, bytes(""));
         } catch (bytes memory paintReason) {
-            return _stepResult(owner, StepCode.CoreRejected, paintReason);
+            if (_selector(paintReason) != NO_CHANGE_SELECTOR) {
+                return _stepResult(owner, StepCode.CoreRejected, paintReason);
+            }
+
+            uint32 cursorFrom = dream.cursor;
+            dream.cursor = cursorTo;
+            dream.runOffset = nextRunOffset;
+            dream.runSkip = nextRunSkip;
+            dream.lastStepBlock = uint48(block.number);
+            ++dream.steps;
+            emit Dreamt(owner, cursorFrom, cursorTo, 0, block.number);
+
+            if (cursorTo >= dream.totalPixels) {
+                dream.complete = true;
+                dream.sleeping = false;
+                uint256 refund = dream.deposit;
+                dream.deposit = 0;
+                delete _sessions[owner];
+                delete _holderIds[owner];
+                emit DreamComplete(owner, dream.pixelsDreamt, dream.steps);
+                if (refund != 0) _refundOrCredit(owner, refund);
+            }
+            return _stepResult(owner, StepCode.Skipped, bytes(""));
         }
     }
 
@@ -375,7 +400,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         delete _holderIds[owner];
         delete _dreams[owner];
         emit Woke(owner, refund);
-        if (refund != 0) _send(owner, refund, true);
+        if (refund != 0) _refundOrCredit(owner, refund);
     }
 
     function mintDream() external returns (uint256 tokenId) {
@@ -622,12 +647,14 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
                 return (false, 0, startReason);
             }
         }
+        _markStalled(owner, dream);
         return (false, 0, bytes("no sessions left"));
     }
 
     function _stepReady(address owner) private view returns (bool) {
         DreamState storage dream = _dreams[owner];
         if (!dream.sleeping || dream.stalled || dream.cursor >= dream.totalPixels) return false;
+        if (dream.deposit < dream.tipPerStep) return false;
 
         (bool sessionReady, bool wouldStall, uint256 sessionAvailable) = _sessionPreview(owner, dream);
         if (!sessionReady || wouldStall || sessionAvailable < 2) return false;
@@ -644,7 +671,12 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
             if (limit > budgetPixels) limit = budgetPixels;
             uint256 sessionPixels = sessionAvailable / 2;
             if (limit > sessionPixels) limit = sessionPixels;
-            return limit != 0;
+            if (limit == 0) return false;
+
+            bytes memory stencil = FrameStore.read(dream.stencilPointer);
+            (bytes memory chunk,,, uint32 requestedPixels) =
+                _buildChunk(stencil, dream.runOffset, dream.runSkip, limit);
+            return requestedPixels != 0 && _chunkWouldChange(chunk);
         } catch {
             return false;
         }
@@ -692,7 +724,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
             }
             return (true, false, session.maxUnits);
         }
-        return (false, false, 0);
+        return (false, true, 0);
     }
 
     function _markStalled(address owner, DreamState storage dream) private {
@@ -807,37 +839,47 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         for (uint256 i; i < length; ++i) ids[i] = _holderIds[owner][i];
     }
 
+    struct SurvivalScan {
+        uint256 count;
+        uint256 total;
+        uint256 survived;
+        uint256 sampleIndex;
+        uint256 ordinal;
+        uint256 season;
+        uint128 mismatchMask;
+    }
+
     function _sampleSurvival(bytes memory stencil, uint32 totalPixels)
         private
         view
         returns (uint16 basisPoints, uint8 sampleCount, uint128 mismatchMask)
     {
-        uint256 count = totalPixels < MAX_SURVIVAL_SAMPLES ? totalPixels : MAX_SURVIVAL_SAMPLES;
-        sampleCount = uint8(count);
-        uint256 survived;
-        uint256 sampleIndex;
-        uint256 target;
-        uint256 ordinal;
-        uint256 season = PAINT.currentSeason();
-        for (uint256 o; o < stencil.length && sampleIndex < count; o += 4) {
-            uint256 y = uint8(stencil[o]);
-            uint256 x0 = uint8(stencil[o + 1]);
-            uint256 x1 = uint8(stencil[o + 2]);
-            uint8 colour = uint8(stencil[o + 3]);
-            for (uint256 x = x0; x <= x1 && sampleIndex < count; ++x) {
-                target = count == 1 ? 0 : (sampleIndex * (uint256(totalPixels) - 1)) / (count - 1);
-                if (ordinal == target) {
-                    if (PAINT.pixelAt(season, x, y) == colour) {
-                        ++survived;
-                    } else {
-                        mismatchMask |= uint128(1) << sampleIndex;
-                    }
-                    ++sampleIndex;
-                }
-                ++ordinal;
-            }
+        // State lives in memory so the optimizer can't run out of stack when this is inlined into mintDream.
+        SurvivalScan memory scan;
+        scan.count = totalPixels < MAX_SURVIVAL_SAMPLES ? totalPixels : MAX_SURVIVAL_SAMPLES;
+        scan.total = totalPixels;
+        scan.season = PAINT.currentSeason();
+        sampleCount = uint8(scan.count);
+        for (uint256 o; o < stencil.length && scan.sampleIndex < scan.count; o += 4) {
+            _sampleRun(scan, uint8(stencil[o]), uint8(stencil[o + 1]), uint8(stencil[o + 2]), uint8(stencil[o + 3]));
         }
-        basisPoints = count == 0 ? 0 : uint16((survived * 10_000) / count);
+        mismatchMask = scan.mismatchMask;
+        basisPoints = scan.count == 0 ? 0 : uint16((scan.survived * 10_000) / scan.count);
+    }
+
+    function _sampleRun(SurvivalScan memory scan, uint256 y, uint256 x0, uint256 x1, uint8 colour) private view {
+        for (uint256 x = x0; x <= x1 && scan.sampleIndex < scan.count; ++x) {
+            uint256 target = scan.count == 1 ? 0 : (scan.sampleIndex * (scan.total - 1)) / (scan.count - 1);
+            if (scan.ordinal == target) {
+                if (PAINT.pixelAt(scan.season, x, y) == colour) {
+                    ++scan.survived;
+                } else {
+                    scan.mismatchMask |= uint128(1) << scan.sampleIndex;
+                }
+                ++scan.sampleIndex;
+            }
+            ++scan.ordinal;
+        }
     }
 
     function _colourStats(bytes memory stencil) private pure returns (uint8 dominantColour, uint8 coloursUsed) {
@@ -945,8 +987,50 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         return (code, reason);
     }
 
+    function _withdrawRefundTo(address owner, address to) private {
+        uint256 amount = refunds[owner];
+        if (amount == 0) revert NoRefund();
+        refunds[owner] = 0;
+        (bool ok,) = payable(to).call{value: amount}("");
+        if (!ok) revert RefundFailed();
+        emit RefundWithdrawn(owner, amount);
+    }
+
+    function _selector(bytes memory reason) private pure returns (bytes4 selector_) {
+        if (reason.length < 4) return bytes4(0);
+        assembly ("memory-safe") {
+            selector_ := mload(add(reason, 0x20))
+        }
+    }
+
+    function _chunkWouldChange(bytes memory chunk) private view returns (bool) {
+        uint256 season = PAINT.currentSeason();
+        bytes memory outline = PAINT.seasonOutlineRuns(season);
+        uint256[256] memory outlineRows;
+        for (uint256 o; o < outline.length; o += 3) {
+            uint256 y = uint8(outline[o]);
+            uint256 x0 = uint8(outline[o + 1]);
+            uint256 x1 = uint8(outline[o + 2]);
+            uint256 width = x1 - x0 + 1;
+            uint256 mask = width == 256 ? type(uint256).max : ((uint256(1) << width) - 1) << x0;
+            outlineRows[y] |= mask;
+        }
+
+        for (uint256 o; o < chunk.length; o += 4) {
+            uint256 y = uint8(chunk[o]);
+            uint256 x0 = uint8(chunk[o + 1]);
+            uint256 x1 = uint8(chunk[o + 2]);
+            uint8 colour = uint8(chunk[o + 3]);
+            for (uint256 x = x0; x <= x1; ++x) {
+                if ((outlineRows[y] & (uint256(1) << x)) != 0) continue;
+                if (PAINT.pixelAt(season, x, y) != colour) return true;
+            }
+        }
+        return false;
+    }
+
     function _refundOrCredit(address owner, uint256 amount) private {
-        (bool ok,) = payable(owner).call{value: amount}("");
+        (bool ok,) = payable(owner).call{value: amount, gas: REFUND_GAS_LIMIT}("");
         if (!ok) {
             refunds[owner] += amount;
             emit RefundCredited(owner, amount);

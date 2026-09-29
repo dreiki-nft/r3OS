@@ -82,6 +82,7 @@ contract FramesSeasonsTest is Test {
         p.transferFrom(alice, bob, 0);
 
         vm.warp(uint256(start) + 30 days);
+        vm.prank(bob);
         uint256 finale = p.mintSeasonFinale(0);
         assertEq(p.ownerOf(finale), bob);
 
@@ -90,6 +91,7 @@ contract FramesSeasonsTest is Test {
         p.burn(finale);
 
         vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SeasonFinaleAlreadyMinted.selector, 0));
+        vm.prank(bob);
         p.mintSeasonFinale(0);
     }
 

@@ -20,7 +20,7 @@ contract ToggleRefundOwner {
     }
 
     receive() external payable {
-        if (rejectRefunds) revert("refund rejected");
+        if (rejectRefunds || gasleft() < 50_000) revert("refund rejected");
     }
 
     function setRejectRefunds(bool reject_) external {
@@ -45,6 +45,14 @@ contract ToggleRefundOwner {
 
     function withdrawRefund() external {
         sleepwalker.withdrawRefund();
+    }
+
+    function withdrawRefundTo(address to) external {
+        sleepwalker.withdrawRefundTo(to);
+    }
+
+    function wake() external {
+        sleepwalker.wake();
     }
 }
 
@@ -173,7 +181,7 @@ contract SleepwalkerTest is Test {
         _assertKeyNeverPaintedAsItself();
     }
 
-    function testLiveModeConsumedNoncesDropsStoredSessionsWithoutRevert() public {
+    function testSec_ExhaustedStoredSessionsStall() public {
         _humanPaint(4, 0, 63, 4);
         uint256 firstExpiry = vm.getBlockNumber() + paint.MAX_SESSION_BLOCKS();
         _sleep(_run(14, 0, 199, 5), 3, 256, 1 wei, 0);
@@ -185,7 +193,9 @@ contract SleepwalkerTest is Test {
 
         vm.prank(cranker);
         (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.NoSession));
+        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Stalled));
+        (,,,,,,, bool stalled) = sleepwalker.dreamOf(owner);
+        assertTrue(stalled);
         _assertKeyNeverPaintedAsItself();
     }
 
@@ -455,7 +465,7 @@ contract SleepwalkerTest is Test {
                 R3tardsSleepwalker.StartSessionAuthorization[] memory sessions =
                     _signedSessionsFor(pk, painter, count, 256);
                 vm.prank(painter);
-                sleepwalker.sleep(
+                sleepwalker.sleep{value: 1 wei}(
                     _run(uint8(200 + i), 0, uint8(kind == 3 ? 99 : 9), 5),
                     _emptyIds(),
                     sessions,
@@ -479,6 +489,135 @@ contract SleepwalkerTest is Test {
                 || (code == R3tardsSleepwalker.StepCode.Complete && kind != 0);
             assertEq(ready, painted, "stepReady mismatch");
         }
+    }
+
+    function testSec_ResumeAllowedWheneverCoreSessionIsInactive() public {
+        _humanPaint(36, 0, 31, 4);
+        R3tardsSleepwalker.StartSessionAuthorization[] memory first = _signedSessions(1, 256);
+        vm.prank(owner);
+        sleepwalker.sleep{value: 1 wei}(_run(37, 0, 95, 5), _emptyIds(), first, 1 wei);
+
+        vm.roll(first[0].expiryBlock + 1);
+        (,,,,,,, bool stalledBefore) = sleepwalker.dreamOf(owner);
+        assertTrue(stalledBefore); // S1: exhausted sessions now report the dream as stalled
+
+        R3tardsSleepwalker.StartSessionAuthorization[] memory fresh = _signedSessions(1, 256);
+        vm.prank(owner);
+        sleepwalker.resume(fresh);
+        (,,,,,,, bool stalledAfter) = sleepwalker.dreamOf(owner);
+        assertFalse(stalledAfter);
+    }
+
+    function testSec_NoChangeChunkSkipsWithoutTipAndStepReadyIsFalse() public {
+        _humanPaint(38, 0, 63, 5);
+        uint256 tip = 0.01 ether;
+        uint256 deposit = 0.1 ether;
+        _sleep(_run(38, 0, 63, 5), 1, 256, tip, deposit);
+
+        address[] memory owners = new address[](1);
+        owners[0] = owner;
+        assertFalse(sleepwalker.stepReady(owners)[0]);
+
+        uint256 crankerBefore = cranker.balance;
+        uint256 gasBefore = gasleft();
+        vm.prank(cranker);
+        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        uint256 gasUsed = gasBefore - gasleft();
+        console.log("GAS Sleepwalker skipped step", gasUsed);
+        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Skipped));
+        assertEq(cranker.balance, crankerBefore);
+        (, uint256 cursor,, uint256 remaining,,,,) = sleepwalker.dreamOf(owner);
+        assertEq(cursor, 64);
+        assertEq(remaining, 0);
+    }
+
+    function testSec_RefundPushIsGasCappedAndWakeCreditsOnFailure() public {
+        ToggleRefundOwner contractOwner = new ToggleRefundOwner(paint, sleepwalker);
+        vm.deal(address(contractOwner), 1 ether);
+
+        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions =
+            new R3tardsSleepwalker.StartSessionAuthorization[](1);
+        sessions[0] = R3tardsSleepwalker.StartSessionAuthorization({
+            expiryBlock: vm.getBlockNumber() + paint.MAX_SESSION_BLOCKS(),
+            maxUnits: 128,
+            nonce: paint.sessionNonces(address(contractOwner)),
+            deadline: vm.getBlockTimestamp() + 1 hours,
+            sig: hex"01"
+        });
+
+        uint256 deposit = 0.1 ether;
+        contractOwner.goToSleep{value: deposit}(_run(39, 0, 9, 5), sessions, 1 wei);
+        contractOwner.setRejectRefunds(false);
+        contractOwner.wake();
+        assertEq(sleepwalker.refunds(address(contractOwner)), deposit);
+    }
+
+    function testSec_WithdrawRefundToRecoversFromRejectingOwner() public {
+        ToggleRefundOwner contractOwner = new ToggleRefundOwner(paint, sleepwalker);
+        vm.deal(address(contractOwner), 1 ether);
+
+        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions =
+            new R3tardsSleepwalker.StartSessionAuthorization[](1);
+        sessions[0] = R3tardsSleepwalker.StartSessionAuthorization({
+            expiryBlock: vm.getBlockNumber() + paint.MAX_SESSION_BLOCKS(),
+            maxUnits: 128,
+            nonce: paint.sessionNonces(address(contractOwner)),
+            deadline: vm.getBlockTimestamp() + 1 hours,
+            sig: hex"01"
+        });
+
+        uint256 deposit = 0.1 ether;
+        contractOwner.goToSleep{value: deposit}(_run(40, 0, 9, 5), sessions, 1 wei);
+        contractOwner.wake();
+        assertEq(sleepwalker.refunds(address(contractOwner)), deposit);
+
+        uint256 before = cranker.balance;
+        contractOwner.withdrawRefundTo(cranker);
+        assertEq(sleepwalker.refunds(address(contractOwner)), 0);
+        assertEq(cranker.balance, before + deposit);
+    }
+
+    function testSec_SessionsUsedWiderThanUint8() public {
+        _humanPaint(41, 0, 31, 4);
+        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(1, 256);
+        vm.prank(owner);
+        sleepwalker.sleep{value: 1 wei}(_run(42, 0, 95, 5), _emptyIds(), sessions, 1 wei);
+
+        for (uint256 i = 1; i < 256; ++i) {
+            vm.roll(sessions[0].expiryBlock + 1);
+            sessions = _signedSessions(1, 256);
+            vm.prank(owner);
+            sleepwalker.resume(sessions);
+        }
+
+        vm.prank(owner);
+        uint256 tokenId = sleepwalker.mintDream();
+        R3tardsSleepwalker.DreamTokenData memory data = sleepwalker.dreamToken(tokenId);
+        assertEq(data.nights, 256);
+    }
+
+    function testSec_UnpaidDreamIsHiddenButOwnerCanStillStep() public {
+        _humanPaint(43, 0, 31, 4);
+        _sleep(_run(44, 0, 9, 5), 1, 128, 1 wei, 0);
+
+        address[] memory owners = new address[](1);
+        owners[0] = owner;
+        assertFalse(sleepwalker.stepReady(owners)[0]);
+
+        vm.prank(owner);
+        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertTrue(code == R3tardsSleepwalker.StepCode.Painted || code == R3tardsSleepwalker.StepCode.Complete);
+    }
+
+    function testSec_GasCompletingStep() public {
+        _humanPaint(45, 0, 31, 4);
+        _sleep(_run(46, 0, 9, 5), 1, 128, 1 wei, 1 wei);
+        uint256 before = gasleft();
+        vm.prank(cranker);
+        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        uint256 used = before - gasleft();
+        console.log("GAS Sleepwalker completing step", used);
+        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Complete));
     }
 
     function testGasSleepStepWake() public {

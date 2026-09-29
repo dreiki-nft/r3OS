@@ -97,6 +97,7 @@ contract RenderersLabOwnershipTest is Test {
         vm.stopPrank();
 
         vm.warp(paint.seasonEndTime(0) + 1);
+        vm.prank(paint.ownerOf(0));
         uint256 finale = paint.mintSeasonFinale(0);
 
         uint256 before = gasleft();

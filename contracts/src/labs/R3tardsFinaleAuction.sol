@@ -12,6 +12,8 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
     uint256 public constant BIDDING_BLOCKS = 288_000;
     uint256 public constant CANDLE_BLOCKS = 12_000;
     uint256 public constant REVEAL_WINDOW = 256;
+    uint256 public constant HISTORY_WINDOW = 8_191;
+    address public constant HISTORY_STORAGE_ADDRESS = 0x0000F90827F1C53a10cb7A02335B175320002935;
     uint256 public constant MIN_RAISE_BPS = 500;
     uint256 public constant MAX_START_DELAY = 2_016_000;
 
@@ -195,14 +197,13 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
         uint256 close = uint256(a.startBlock) + BIDDING_BLOCKS - 1;
         if (block.number <= close) revert StillBidding(close);
 
-        uint256 drawnEndBlock = close;
+        uint256 candleStart = close - CANDLE_BLOCKS + 1;
+        uint256 drawnEndBlock = candleStart;
         bool fallbackUsed = true;
-        if (block.number - close <= REVEAL_WINDOW) {
-            bytes32 h = blockhash(close);
-            if (h != bytes32(0)) {
-                drawnEndBlock = close - (uint256(keccak256(abi.encode(h, auctionId))) % CANDLE_BLOCKS);
-                fallbackUsed = false;
-            }
+        bytes32 h = _historicalBlockHash(close);
+        if (h != bytes32(0)) {
+            drawnEndBlock = close - (uint256(keccak256(abi.encode(h, auctionId))) % CANDLE_BLOCKS);
+            fallbackUsed = false;
         }
 
         Bid[] storage bids = _bids[auctionId];
@@ -312,10 +313,22 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
         if (a.state == 2) return (true, a.endBlock);
         if (a.state == 3) return (false, 0);
         if (block.number <= close) return (false, 0);
-        if (block.number - close > REVEAL_WINDOW) return (true, close);
-        bytes32 h = blockhash(close);
-        if (h == bytes32(0)) return (false, 0);
+        bytes32 h = _historicalBlockHash(close);
+        if (h == bytes32(0)) return (true, close - CANDLE_BLOCKS + 1);
         return (true, close - (uint256(keccak256(abi.encode(h, auctionId))) % CANDLE_BLOCKS));
+    }
+
+    function _historicalBlockHash(uint256 blockNumber) private view returns (bytes32 h) {
+        if (blockNumber >= block.number) return bytes32(0);
+        uint256 age = block.number - blockNumber;
+        if (age <= REVEAL_WINDOW) return blockhash(blockNumber);
+        if (age > HISTORY_WINDOW) return bytes32(0);
+
+        (bool ok, bytes memory data) = HISTORY_STORAGE_ADDRESS.staticcall(abi.encode(blockNumber));
+        if (!ok || data.length != 32) return bytes32(0);
+        assembly ("memory-safe") {
+            h := mload(add(data, 0x20))
+        }
     }
 
     function _minNextBid(Auction storage a, bool hasBids) private view returns (uint256) {

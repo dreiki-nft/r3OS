@@ -56,7 +56,6 @@ contract QuestsTest is Test {
             "R3tardsPainterPass.sol:R3tardsPainterPass", abi.encode(address(paint))
         ));
         vm.prank(alice);
-        paint.setPainterPass(address(pass));
         quests = new R3tardsQuests(address(paint), uint64(vm.getBlockTimestamp()), address(this));
         target = new QuestTarget();
     }

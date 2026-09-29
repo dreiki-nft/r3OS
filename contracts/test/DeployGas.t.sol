@@ -55,7 +55,6 @@ contract DeployGasTest is Test {
         (address questsAddress,) = _deploy("R3tardsQuests.sol:R3tardsQuests", abi.encode(paintAddress, seasonStart, address(this)), "R3tardsQuests");
         R3tardsQuests quests = R3tardsQuests(questsAddress);
 
-        _call(paintAddress, abi.encodeCall(paint.setPainterPass, (passAddress)), "wire setPainterPass");
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (diffAddress, "diff")), "wire renderer diff");
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (timelapseAddress, "season timelapse")), "wire renderer timelapse");
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (df1Address, "df1")), "wire renderer df1");

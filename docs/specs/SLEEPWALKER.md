@@ -80,11 +80,15 @@ The first nonce must equal `core.sessionNonces(owner)` and later nonces must be 
 
 If ordinary Live Mode consumed one or more nonces during the night, Sleepwalker skips stored authorizations whose nonce is now stale. It never rewinds or fabricates a nonce.
 
-If nobody cranks during an entire expected session window, the next stored authorization is now ahead of the core's current nonce. The dream becomes **stalled** instead of wasting transactions on a permanent nonce gap. The owner can either `wake()` or call `resume(sessions[])` with fresh consecutive signatures. Resume keeps the stencil cursor, dream counters and deposit.
+If every stored authorization is stale, used or expired and the key has no active core session, the dream is marked **stalled**. A future nonce gap or a missed expected session window also stalls it. `step`, `stepReady` and the session preview all agree on that state instead of leaving an unresumable `NoSession` dream.
+
+The owner may call `resume(sessions[])` whenever the deterministic key has **no active core session**. Resume does not require the old `stalled` flag first; it validates fresh consecutive signatures, keeps the stencil cursor, dream counters and deposit, clears the stalled flag and starts the first fresh session.
 
 ### Deposit and tips
 
-`msg.value` is the owner's tip deposit. `tipPerStep` must be non-zero. A cranker gets exactly `tipPerStep` only after a successful core paint and only when the remaining deposit covers it. A failed readiness gate or reverted core paint pays nothing and does not advance the stencil.
+`msg.value` is the owner's tip deposit. `tipPerStep` must be non-zero. A cranker gets exactly `tipPerStep` only after a successful core paint and only when the remaining deposit covers it. A failed readiness gate, reverted core paint, or skipped no-change chunk pays no tip.
+
+`stepReady` returns false when `deposit < tipPerStep`, so Night Shift does not advertise unpaid work. The owner may still call `step` on their own dream to advance or finish it without paying an external cranker.
 
 Sleepwalker is adminless. No owner or operator can seize, redirect or edit another sleeper's deposit or dream.
 
@@ -95,13 +99,14 @@ Anyone can crank a sleeper. The function returns a `StepCode` plus optional raw 
 Normal not-ready conditions return rather than revert:
 
 - `NoDream` — the owner is not sleeping;
-- `NoSession` — no active/usable signed session is available yet;
-- `Stalled` — an expected session window was missed, so fresh owner signatures are required;
+- `NoSession` — a future stored session exists but is not startable yet;
+- `Stalled` — the key has no active session and the stored authorizations are exhausted/stale or an expected nonce/session window was missed;
 - `NotPaintedToday` — human pixels are below the core active-day threshold;
 - `Allowance` — today's 2× dream allowance is used;
-- `Pace` — fewer than `MIN_STEP_BLOCKS = 100` blocks have passed since this owner's last successful step;
+- `Pace` — fewer than `MIN_STEP_BLOCKS = 100` blocks have passed since this owner's last successful or skipped step;
 - `Budget` — the core reports no spendable hourly/holder budget, or the stored holder IDs are no longer valid;
-- `CoreRejected` — `key.paint` reverted, with the raw revert bytes included for UI-friendly decoding.
+- `CoreRejected` — `key.paint` reverted for a reason other than core `NoChange`, with the raw revert bytes included for UI-friendly decoding;
+- `Skipped` — the submitted chunk would change no writable core pixel. The cursor advances across that chunk, no dream pixels are credited and no tip is paid.
 
 A ready step:
 
@@ -117,17 +122,21 @@ A ready step:
 
 The `/ 2` caps are deliberate: repainting dry non-background pixels costs two core units per changed pixel. Sizing chunks for that worst case prevents a low-budget dream from retrying the same oversized chunk forever.
 6. calls `core.paint` through the active key;
-7. measures the exact before/after `painterStats(owner).pixelsToday` delta and records only that delta as dream pixels;
-8. advances the stencil cursor across the submitted chunk, records the successful caller, and counts the dreaming day if needed;
-9. pays the caller's tip if the deposit covers it.
+7. if the core returns `NoChange`, advances past the chunk as `Skipped` without paying a tip; otherwise a successful paint measures the exact before/after `painterStats(owner).pixelsToday` delta and records only that delta as dream pixels;
+8. advances the stencil cursor across the submitted chunk, records the successful caller only for painted work, and counts the dreaming day only when pixels actually changed;
+9. pays the caller's tip only for a successful paint and only if the deposit covers it.
 
-`Dreamt(owner, cursorFrom, cursorTo, pixels, blockNumber)` records every successful step. `pixels` is the exact core `pixelsToday` delta, while the cursor advances across the submitted stencil chunk. This distinction matters when the core protects outline pixels or otherwise writes fewer pixels than were submitted.
+`Dreamt(owner, cursorFrom, cursorTo, pixels, blockNumber)` records both painted and skipped cursor advances. `pixels` is zero for a skipped chunk and otherwise the exact core `pixelsToday` delta. This distinction matters when a chunk is already painted, is colour 0 on blank canvas, or is fully protected by the season outline.
+
+`stepReady` pre-checks the next chunk against `pixelAt` and the season outline. A chunk that would only produce core `NoChange` is not advertised as profitable Night Shift work.
 
 `step` uses a fixed **1,000,000 gas limit** in the frontend/cranker path (not an estimate, because of the try/catch around the core paint). See `GAS_LIMITS.md`.
 
 ## Completion and wake
 
-When the cursor reaches the end, Sleepwalker emits `DreamComplete`, marks the owner as no longer sleeping, deletes every unused signed session and stored holder ID, and attempts to refund the remaining tip deposit. A rejecting owner cannot block completion: failed pushes are credited to `refunds(owner)` and can later be pulled with `withdrawRefund()`.
+When the cursor reaches the end, Sleepwalker emits `DreamComplete`, marks the owner as no longer sleeping, deletes every unused signed session and stored holder ID, and attempts to refund the remaining tip deposit with a **30,000 gas** push. A rejecting or gas-hungry owner cannot block completion: failed pushes are credited to `refunds(owner)`.
+
+`withdrawRefund()` pulls that credit to the owner. `withdrawRefundTo(to)` lets the owner redirect the pull to another address, so a contract wallet whose receive path rejects MON can still recover the refund.
 
 The completed stencil pointer and its counters remain until the owner mints the Dream NFT, explicitly calls `wake`, or starts another dream. This is the one intentional difference between automatic completion cleanup and manual wake: it preserves enough immutable data to mint after `DreamComplete`.
 
@@ -136,7 +145,7 @@ The completed stencil pointer and its counters remain until the owner mints the 
 - deletes the stencil reference and current dream state;
 - deletes every unused signature;
 - deletes the stored holder IDs;
-- refunds the remaining deposit.
+- attempts the same 30,000-gas refund push, crediting `refunds(owner)` on failure instead of reverting.
 
 The Lab cannot revoke the currently active core session because `R3tardsPaint.revokeSession` is owner-only. The 3c UI therefore revokes the key from the owner's wallet **before** calling `wake`. Even if the user calls `wake` alone, Sleepwalker has deleted the signatures and state and will never call that key again.
 
@@ -166,7 +175,9 @@ Returns:
 
 ### `stepReady(owners[])`
 
-Batch-friendly Night Shift view. It mirrors every normal early exit in `step`: no dream, stalled, no startable session, day gate, allowance, pace, conservative budget/session-unit chunk capacity and completion. It performs no writes and starts no session.
+Batch-friendly Night Shift view. It mirrors every normal early exit in `step`: no dream, stalled/exhausted session state, no startable session, day gate, allowance, pace, conservative budget/session-unit chunk capacity and completion. It also returns false when the deposit cannot pay one tip or when the next chunk would change no writable pixel after checking the live canvas and season outline.
+
+It performs no writes and starts no session. The owner can still call `step` directly on an unpaid dream; `stepReady` is specifically the public-cranker profitability filter.
 
 ### `dreamingDays(owner)` and Pass stamp
 

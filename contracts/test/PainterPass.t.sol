@@ -33,14 +33,10 @@ contract PainterPassTest is Test {
             address(r), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
         pass = new R3tardsPainterPass(address(paint));
-        vm.prank(alice);
-        paint.setPainterPass(address(pass));
     }
 
-    function testPainterPassBindingIsOneTime() public {
-        vm.prank(alice);
-        vm.expectRevert(R3tardsPaint.PainterPassAlreadySet.selector);
-        paint.setPainterPass(address(pass));
+    function testPainterPassCoreBindingIsImmutable() public view {
+        assertEq(address(pass.PAINT()), address(paint));
     }
 
     function testClaimRequiresPaintSoulboundAndOwnerMayBurn() public {

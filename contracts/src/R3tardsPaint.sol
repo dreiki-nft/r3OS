@@ -19,7 +19,6 @@ interface IR3tardsCollection {
 
 interface IR3tardsPainterPassLink {
     function PAINT() external view returns (address);
-    function passOf(address owner) external view returns (uint256);
 }
 
 /// @title r3tards paint v2
@@ -47,6 +46,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     uint256 public constant FRAME_COOLDOWN_BLOCKS = 200;
     uint256 public constant MAX_RAW_PIXELS_PER_PAINT = 65_536;
     uint256 public constant MAX_OUTLINE_CHUNK_BYTES = 12_000;
+    uint256 public constant MAX_OUTLINE_PIXELS = 16_384;
     uint256 public constant MAX_SESSION_BLOCKS = 24_000;
     uint256 public constant RENDERER_GAS_LIMIT = 14_000_000;
     uint256 public constant MAX_TIMELAPSE_FRAMES = 4;
@@ -89,6 +89,8 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     uint32 public immutable MIN_PIXELS_FOR_ACTIVE_DAY;
     uint32 public immutable HOLDER_PIXELS_PER_DAY;
     address public immutable ROYALTY_RECEIVER;
+    /// @notice Discovery pointer to the Painter Pass, set once. The core never calls it after setup.
+    address public painterPass;
 
     struct PainterData {
         uint48 hourBucket;
@@ -211,7 +213,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     RendererData[] private _renderers;
     mapping(uint256 tokenId => uint256 rendererId) private _tokenRenderer;
     bool public renderersFrozen;
-    address public painterPass;
+    bool public experimentsFrozen;
     ExperimentData[] private _experiments;
     uint256[4] private _defaultOutlineWordBitmap;
 
@@ -252,6 +254,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     error InvalidOutlineRunsLength();
     error InvalidOutlineRun(uint256 runIndex, uint256 y, uint256 xStart, uint256 xEnd);
     error OutlineChunkTooLarge(uint256 length, uint256 maximum);
+    error OutlinePixelLimitExceeded(uint256 pixels, uint256 maximum);
     error GuestNameTooLong(uint256 length);
     error InvalidGuestCharacter(uint256 index, uint8 character);
     error InvalidSessionKey();
@@ -264,15 +267,17 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     error SessionUnitsExceeded(uint256 needed, uint256 available);
     error SessionKeyPaintOnly();
     error SessionKeyHasOwnerHistory();
-    error SessionKeyHasPainterPass();
     error SessionKeyInUse(address owner);
-    error PainterPassAlreadySet();
-    error InvalidPainterPass();
     error RendererFrozen();
     error InvalidRenderer(uint256 rendererId);
+    error RendererHasNoCode(address renderer);
     error RendererNameEmpty();
     error NotTokenHolder(uint256 tokenId);
     error ExperimentNotFound(uint256 experimentId);
+    error ExperimentRegistryFrozen();
+    error OwnershipRenounceDisabled();
+    error PainterPassAlreadySet();
+    error InvalidPainterPass();
 
     event Painted(
         uint256 indexed season,
@@ -293,12 +298,14 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     event MetadataUpdate(uint256 _tokenId);
     event SessionStarted(address indexed owner, address indexed sessionKey, uint256 expiryBlock, uint256 maxUnits);
     event SessionRevoked(address indexed owner, address indexed sessionKey);
-    event PainterPassSet(address indexed painterPass);
+    event SessionNonceIncremented(address indexed owner, uint256 newNonce);
     event RendererAdded(uint256 indexed rendererId, address indexed renderer, string name);
     event RenderersFrozen();
     event TokenRendererSet(uint256 indexed tokenId, uint256 indexed rendererId);
     event ExperimentAdded(uint256 indexed experimentId, address indexed experiment, string name, string uri);
     event ExperimentRetired(uint256 indexed experimentId);
+    event ExperimentsFrozen();
+    event PainterPassSet(address indexed painterPass);
 
     constructor(
         address r3tards,
@@ -415,7 +422,10 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         _validateOutlineRuns(outlineRuns);
 
         SeasonOutlineData storage data = _seasonOutlines[season];
-        _replaceSeasonOutlineRuns(season, outlineRuns);
+        uint256 outlinePixels = _replaceSeasonOutlineRuns(season, outlineRuns);
+        if (outlinePixels > MAX_OUTLINE_PIXELS) {
+            revert OutlinePixelLimitExceeded(outlinePixels, MAX_OUTLINE_PIXELS);
+        }
         delete data.runChunks;
         data.totalRunBytes = 0;
         data.custom = true;
@@ -443,7 +453,10 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         if (nextTotal > type(uint32).max) revert InvalidOutlineRunsLength();
         data.runChunks.push(_storeOutlineChunk(moreRuns));
         data.totalRunBytes = uint32(nextTotal);
-        _orSeasonOutlineRuns(season, moreRuns);
+        uint256 outlinePixels = _orSeasonOutlineRuns(season, moreRuns);
+        if (outlinePixels > MAX_OUTLINE_PIXELS) {
+            revert OutlinePixelLimitExceeded(outlinePixels, MAX_OUTLINE_PIXELS);
+        }
         emit SeasonOutlineAppended(season, keccak256(moreRuns));
     }
 
@@ -495,7 +508,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         pointer = FrameStore.writePrepared(init);
     }
 
-    function _replaceSeasonOutlineRuns(uint256 season, bytes calldata outlineRuns) internal {
+    function _replaceSeasonOutlineRuns(uint256 season, bytes calldata outlineRuns) internal returns (uint256 pixelCount) {
         uint256[1024] memory words;
         uint256[4] memory nextBitmaps;
 
@@ -514,6 +527,8 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
             }
         }
 
+        for (uint256 i; i < 1024; ++i) pixelCount += _outlineWordPixelCount(words[i]);
+
         uint256 base = customOutlineBaseSlot(season);
         for (uint256 group; group < 4; ++group) {
             uint256 oldBitmap = _customOutlineWordBitmap[season][group];
@@ -531,7 +546,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         }
     }
 
-    function _orSeasonOutlineRuns(uint256 season, bytes calldata outlineRuns) internal {
+    function _orSeasonOutlineRuns(uint256 season, bytes calldata outlineRuns) internal returns (uint256 pixelCount) {
         uint256 base = customOutlineBaseSlot(season);
         uint256[4] memory bitmaps;
         for (uint256 i; i < 4; ++i) bitmaps[i] = _customOutlineWordBitmap[season][i];
@@ -558,6 +573,18 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
             if (_customOutlineWordBitmap[season][i] != bitmaps[i]) {
                 _customOutlineWordBitmap[season][i] = bitmaps[i];
             }
+        }
+        for (uint256 slotIndex; slotIndex < CANVAS_SLOT_COUNT; ++slotIndex) {
+            if ((bitmaps[slotIndex >> 8] & (uint256(1) << (slotIndex & 255))) == 0) continue;
+            pixelCount += _outlineWordPixelCount(_sload(base + slotIndex));
+        }
+    }
+
+    function _outlineWordPixelCount(uint256 word) internal pure returns (uint256 count) {
+        uint256 occupied = word & NIBBLE_LSB;
+        while (occupied != 0) {
+            occupied &= occupied - 1;
+            ++count;
         }
     }
 
@@ -605,10 +632,6 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         }
         if (_isSessionActive(_sessions[owner_])) revert InvalidSessionKey();
         if (_painters[sessionKey].paintCount != 0) revert SessionKeyHasOwnerHistory();
-        address pass = painterPass;
-        if (pass != address(0) && IR3tardsPainterPassLink(pass).passOf(sessionKey) != 0) {
-            revert SessionKeyHasPainterPass();
-        }
         SessionData storage existing = _sessions[sessionKey];
         if (_isSessionActive(existing) && existing.owner != owner_) revert SessionKeyInUse(existing.owner);
         if (block.timestamp > deadline) revert SessionDeadlineExpired();
@@ -635,16 +658,10 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         emit SessionStarted(owner_, sessionKey, expiryBlock, maxUnits);
     }
 
-    function setPainterPass(address pass) external onlyOwner {
-        if (painterPass != address(0)) revert PainterPassAlreadySet();
-        if (pass == address(0)) revert InvalidPainterPass();
-        try IR3tardsPainterPassLink(pass).PAINT() returns (address linkedPaint) {
-            if (linkedPaint != address(this)) revert InvalidPainterPass();
-        } catch {
-            revert InvalidPainterPass();
-        }
-        painterPass = pass;
-        emit PainterPassSet(pass);
+    function incrementSessionNonce() external {
+        uint256 nextNonce = sessionNonces[msg.sender] + 1;
+        sessionNonces[msg.sender] = nextNonce;
+        emit SessionNonceIncremented(msg.sender, nextNonce);
     }
 
     function revokeSession(address sessionKey) external {
@@ -708,6 +725,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     function addRenderer(address renderer, string calldata name_) external onlyOwner returns (uint256 rendererId) {
         if (renderersFrozen) revert RendererFrozen();
         if (renderer == address(0)) revert ZeroAddress();
+        if (renderer.code.length == 0) revert RendererHasNoCode(renderer);
         if (bytes(name_).length == 0) revert RendererNameEmpty();
         rendererId = _renderers.length;
         _renderers.push(RendererData({renderer: renderer, name: name_}));
@@ -751,10 +769,31 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         onlyOwner
         returns (uint256 experimentId)
     {
+        if (experimentsFrozen) revert ExperimentRegistryFrozen();
         if (experiment == address(0)) revert ZeroAddress();
         experimentId = _experiments.length;
         _experiments.push(ExperimentData({experiment: experiment, name: name_, uri: uri, retired: false}));
         emit ExperimentAdded(experimentId, experiment, name_, uri);
+    }
+
+    /// @notice One-time discovery pointer for the frontend. Validated once here; never called during painting.
+    function setPainterPass(address pass) external onlyOwner {
+        if (painterPass != address(0)) revert PainterPassAlreadySet();
+        if (pass == address(0) || pass.code.length == 0) revert InvalidPainterPass();
+        try IR3tardsPainterPassLink(pass).PAINT() returns (address linkedPaint) {
+            if (linkedPaint != address(this)) revert InvalidPainterPass();
+        } catch {
+            revert InvalidPainterPass();
+        }
+        painterPass = pass;
+        emit PainterPassSet(pass);
+    }
+
+    function freezeExperiments() external onlyOwner {
+        if (!experimentsFrozen) {
+            experimentsFrozen = true;
+            emit ExperimentsFrozen();
+        }
     }
 
     function retireExperiment(uint256 experimentId) external onlyOwner {
@@ -1432,6 +1471,9 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         if (ss.finaleMinted) revert SeasonFinaleAlreadyMinted(season);
 
         address recipient = ownerOf(0);
+        if (block.timestamp < seasonEndTime(season) + 7 days && !_isAuthorized(recipient, msg.sender, 0)) {
+            revert NotAuthorized();
+        }
         address pointer = _storeBackgroundFrame(season);
         tokenId = _nextTokenId++;
         ss.finaleMinted = true;
@@ -1794,11 +1836,32 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         uint256 rendererId = _tokenRenderer[tokenId];
         if (rendererId != 0 && rendererId < _renderers.length) {
             address renderer = _renderers[rendererId].renderer;
-            try IFrameRenderer(renderer).tokenURI{gas: RENDERER_GAS_LIMIT}(address(this), tokenId) returns (string memory uri) {
+            (bool ok, bytes memory data) = renderer.staticcall{gas: RENDERER_GAS_LIMIT}(
+                abi.encodeCall(IFrameRenderer.tokenURI, (address(this), tokenId))
+            );
+            if (ok && _validAbiString(data)) {
+                string memory uri = abi.decode(data, (string));
                 if (bytes(uri).length != 0) return uri;
-            } catch {}
+            }
         }
         return _builtinTokenURI(tokenId);
+    }
+
+    function _validAbiString(bytes memory data) internal pure returns (bool) {
+        if (data.length < 64) return false;
+        uint256 offset;
+        uint256 length;
+        assembly ("memory-safe") {
+            offset := mload(add(data, 0x20))
+        }
+        if (offset != 32 || offset + 32 > data.length) return false;
+        assembly ("memory-safe") {
+            length := mload(add(add(data, 0x20), offset))
+        }
+        uint256 remaining = data.length - offset - 32;
+        if (length > remaining) return false;
+        uint256 padded = (length + 31) & ~uint256(31);
+        return padded <= remaining;
     }
 
     function builtinTokenURI(uint256 tokenId) external view returns (string memory) {
@@ -2292,8 +2355,11 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         for (uint256 i = words; i < len; ++i) dst[dstOffset + i] = src[srcOffset + i];
     }
 
+    function renounceOwnership() public pure override {
+        revert OwnershipRenounceDisabled();
+    }
+
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC2981) returns (bool) {
         return interfaceId == 0x49064906 || super.supportsInterface(interfaceId);
     }
 }
-

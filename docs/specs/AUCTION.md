@@ -8,7 +8,7 @@ Season finales can be listed in a permissionless candle auction. Bidding remains
 
 After `closeBlock`, `settle` uses the close block hash to draw the candle end. The winner is the **last standing bid at or before that drawn block**. A bid submitted later in the final hour can therefore be validly accepted by the contract yet turn out to have landed after the candle was already out.
 
-If nobody settles while the close block hash is still available, the contract deliberately falls back to `closeBlock`. It never uses a later hash that a settler could choose by waiting.
+The auction reads the close hash directly with `blockhash` for the first 256 blocks after close, then uses Monad's EIP-2935 history contract at `0x0000F90827F1C53a10cb7A02335B175320002935` while that hash remains inside the 8,191-block history window. If neither source can return the close hash, the contract deliberately falls back to **`candleStartBlock`**, never `closeBlock` and never a later hash. That means a missed settlement cannot hand the auction to a last-second bidder: only bids at or before the first possible candle block remain eligible.
 
 ## Auction screen
 
@@ -22,11 +22,11 @@ Show:
 - whether the drawn end is known;
 - settlement state, winner, price, royalty and fallback status.
 
-The drawn end appears as soon as the block after `closeBlock` is available through `previewEndBlock`. During the reveal window the site should send `settle` immediately after the close. Anyone can settle, so this automation is convenience rather than authority.
+The drawn end appears as soon as the close hash is readable through `previewEndBlock`. The site should still send `settle` promptly after close, but settlement is not limited to the native 256-block `blockhash` window: EIP-2935 extends close-hash recovery to 8,191 blocks. Anyone can settle, so this automation is convenience rather than authority. If that history is also missed, show the deterministic fallback end at `candleStartBlock`.
 
 Copy next to bidding: **Your bid is locked until settlement.** Every deposit might turn out to be the winning historical bid, so losing deposits cannot be withdrawn early.
 
-Also warn: **A bid placed during the final hour might land after the candle.** The bidder cannot know that until the close hash exists.
+Also warn: **A bid placed during the final hour might land after the candle.** The bidder cannot know that until the close hash exists. If settlement misses all available close-hash history, every bid placed after `candleStartBlock` loses by definition.
 
 ## Bidding
 

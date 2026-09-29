@@ -184,7 +184,7 @@ contract FinaleAuctionTest is Test {
         auction.cancel(id2);
     }
 
-    function testSettleInsideRevealUsesCandleAndSecondSettleReverts() public {
+    function testSec_SettleInsideWindowUsesRandomCandle() public {
         uint256 id = _list(1 ether);
         R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.prank(alice);
@@ -201,7 +201,10 @@ contract FinaleAuctionTest is Test {
         (bool known, uint256 preview) = auction.previewEndBlock(id);
         assertTrue(known);
         assertEq(preview, expected);
+        uint256 gasBefore = gasleft();
         auction.settle(id);
+        uint256 gasUsed = gasBefore - gasleft();
+        console.log("GAS Auction settle history available", gasUsed);
         R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.endBlock, expected);
         assertFalse(settled.usedFallback);
@@ -209,19 +212,71 @@ contract FinaleAuctionTest is Test {
         auction.settle(id);
     }
 
-    function testFallbackAfterRevealWindow() public {
+    function testSec_Eip2935ExtendsAuctionHistoryWindow() public {
+        uint256 id = _list(1 ether);
+        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        vm.prank(alice);
+        auction.bid{value: 1 ether}(id);
+
+        bytes32 historicalHash = keccak256("historical close block");
+        vm.roll(uint256(info.closeBlock) + auction.REVEAL_WINDOW() + 1);
+        vm.mockCall(
+            auction.HISTORY_STORAGE_ADDRESS(),
+            abi.encode(uint256(info.closeBlock)),
+            abi.encode(historicalHash)
+        );
+        uint256 expected = uint256(info.closeBlock)
+            - (uint256(keccak256(abi.encode(historicalHash, id))) % auction.CANDLE_BLOCKS());
+
+        (bool known, uint256 preview) = auction.previewEndBlock(id);
+        assertTrue(known);
+        assertEq(preview, expected);
+        auction.settle(id);
+        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        assertEq(settled.endBlock, expected);
+        assertFalse(settled.usedFallback);
+    }
+
+    function testSec_AuctionFallbackAfterHistoryWindow() public {
         uint256 id = _list(1 ether);
         vm.prank(alice);
         auction.bid{value: 1 ether}(id);
         R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
-        vm.roll(uint256(info.closeBlock) + auction.REVEAL_WINDOW() + 1);
+        vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         (bool known, uint256 preview) = auction.previewEndBlock(id);
         assertTrue(known);
-        assertEq(preview, info.closeBlock);
+        assertEq(preview, info.candleStartBlock);
+        uint256 gasBefore = gasleft();
+        auction.settle(id);
+        uint256 gasUsed = gasBefore - gasleft();
+        console.log("GAS Auction settle history expired", gasUsed);
+        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        assertEq(settled.endBlock, info.candleStartBlock);
+        assertTrue(settled.usedFallback);
+    }
+
+    function testSec_FallbackCandleStartRejectsLateBidAndLateBidderWithdraws() public {
+        uint256 id = _list(1 ether);
+        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+
+        vm.roll(info.candleStartBlock);
+        vm.prank(alice);
+        auction.bid{value: 1 ether}(id);
+        vm.roll(uint256(info.candleStartBlock) + 1);
+        vm.prank(bob);
+        auction.bid{value: 1.05 ether}(id);
+
+        vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         auction.settle(id);
         R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
-        assertEq(settled.endBlock, info.closeBlock);
-        assertTrue(settled.usedFallback);
+        assertEq(settled.endBlock, info.candleStartBlock);
+        assertEq(settled.winner, alice);
+        assertEq(auction.depositOf(id, bob), 1.05 ether);
+
+        uint256 before = bob.balance;
+        vm.prank(bob);
+        auction.withdraw(id);
+        assertEq(bob.balance, before + 1.05 ether);
     }
 
     function testCandleIgnoresLateBidAndRefundsLateTopup() public {
@@ -290,7 +345,7 @@ contract FinaleAuctionTest is Test {
         vm.prank(bob);
         auction.bid{value: 1.05 ether}(id);
         R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
-        vm.roll(uint256(info.closeBlock) + auction.REVEAL_WINDOW() + 1); // fallback includes both
+        vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1); // fallback includes both
         auction.settle(id);
         R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.winner, bob);
@@ -312,6 +367,7 @@ contract FinaleAuctionTest is Test {
         otherPaint.paint(hex"c8c8d704", new uint256[](0));
         vm.warp(otherPaint.seasonEndTime(0));
         vm.roll(vm.getBlockNumber() + 1);
+        vm.prank(seller);
         uint256 otherFinale = otherPaint.mintSeasonFinale(0);
         R3tardsFinaleAuction otherAuction = new R3tardsFinaleAuction(address(otherPaint));
         vm.prank(seller);
@@ -321,7 +377,7 @@ contract FinaleAuctionTest is Test {
         vm.prank(alice);
         otherAuction.bid{value: 100}(id);
         R3tardsFinaleAuction.AuctionInfo memory info = otherAuction.auctionInfo(id);
-        vm.roll(uint256(info.closeBlock) + otherAuction.REVEAL_WINDOW() + 1);
+        vm.roll(uint256(info.closeBlock) + otherAuction.HISTORY_WINDOW() + 1);
         otherAuction.settle(id);
         assertEq(otherAuction.auctionInfo(id).royalty, 0);
         assertEq(otherAuction.credits(seller), 100);
@@ -337,7 +393,7 @@ contract FinaleAuctionTest is Test {
         vm.prank(alice);
         auction.withdraw(id);
         R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
-        vm.roll(uint256(info.closeBlock) + auction.REVEAL_WINDOW() + 1);
+        vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         auction.settle(id);
 
         vm.prank(alice);
@@ -363,7 +419,7 @@ contract FinaleAuctionTest is Test {
         vm.prank(bob);
         auction.bid{value: 1.05 ether}(id);
         R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
-        vm.roll(uint256(info.closeBlock) + auction.REVEAL_WINDOW() + 1);
+        vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         auction.settle(id);
         attacker.pull();
         assertTrue(attacker.triedWithdraw());
@@ -422,7 +478,7 @@ contract FinaleAuctionTest is Test {
             auction.bid{value: minBid}(id);
         }
         R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
-        vm.roll(uint256(info.closeBlock) + auction.REVEAL_WINDOW() + 1);
+        vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         beforeGas = gasleft();
         auction.settle(id);
         used = beforeGas - gasleft();
@@ -500,6 +556,7 @@ contract FinaleAuctionTest is Test {
         frame = paint.mintFrame();
         vm.warp(paint.seasonEndTime(0));
         vm.roll(vm.getBlockNumber() + 1);
+        vm.prank(seller);
         finaleId = paint.mintSeasonFinale(0);
     }
 
@@ -509,6 +566,7 @@ contract FinaleAuctionTest is Test {
         paint.paint(hex"c9c9d704", new uint256[](0));
         vm.warp(paint.seasonEndTime(season));
         vm.roll(vm.getBlockNumber() + 1);
+        vm.prank(seller);
         finaleId = paint.mintSeasonFinale(season);
     }
 

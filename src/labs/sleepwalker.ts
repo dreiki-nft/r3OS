@@ -136,6 +136,7 @@ export const STEP_CODE_MESSAGES = [
   'too soon — wait for the pace window',
   'no spendable paint budget',
   'core paint rejected',
+  'skipped: that part was already painted, the dream moved on (no tip)',
 ] as const
 
 export function stepCodeMessage(code: number, waitBlocks?: bigint) {

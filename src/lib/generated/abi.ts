@@ -224,6 +224,19 @@ export const R3TARDS_PAINT_ABI = [
   },
   {
     "type": "function",
+    "name": "MAX_OUTLINE_PIXELS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_PIXELS_PER_HOUR",
     "inputs": [],
     "outputs": [
@@ -980,6 +993,19 @@ export const R3TARDS_PAINT_ABI = [
   },
   {
     "type": "function",
+    "name": "experimentsFrozen",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "faceColor",
     "inputs": [
       {
@@ -1142,6 +1168,13 @@ export const R3TARDS_PAINT_ABI = [
   },
   {
     "type": "function",
+    "name": "freezeExperiments",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "freezeRenderers",
     "inputs": [],
     "outputs": [],
@@ -1280,6 +1313,13 @@ export const R3TARDS_PAINT_ABI = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "incrementSessionNonce",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1916,7 +1956,7 @@ export const R3TARDS_PAINT_ABI = [
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],
-    "stateMutability": "nonpayable"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -2672,6 +2712,12 @@ export const R3TARDS_PAINT_ABI = [
   },
   {
     "type": "event",
+    "name": "ExperimentsFrozen",
+    "inputs": [],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "FaceChanged",
     "inputs": [
       {
@@ -2948,6 +2994,25 @@ export const R3TARDS_PAINT_ABI = [
         "type": "bytes32",
         "indexed": false,
         "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SessionNonceIncremented",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newNonce",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -3263,6 +3328,11 @@ export const R3TARDS_PAINT_ABI = [
   },
   {
     "type": "error",
+    "name": "ExperimentRegistryFrozen",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "FrameDoesNotExist",
     "inputs": [
       {
@@ -3575,6 +3645,22 @@ export const R3TARDS_PAINT_ABI = [
   },
   {
     "type": "error",
+    "name": "OutlinePixelLimitExceeded",
+    "inputs": [
+      {
+        "name": "pixels",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "OwnableInvalidOwner",
     "inputs": [
       {
@@ -3594,6 +3680,11 @@ export const R3TARDS_PAINT_ABI = [
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "OwnershipRenounceDisabled",
+    "inputs": []
   },
   {
     "type": "error",
@@ -3642,6 +3733,17 @@ export const R3TARDS_PAINT_ABI = [
     "type": "error",
     "name": "RendererFrozen",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RendererHasNoCode",
+    "inputs": [
+      {
+        "name": "renderer",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
   },
   {
     "type": "error",
@@ -3715,11 +3817,6 @@ export const R3TARDS_PAINT_ABI = [
   {
     "type": "error",
     "name": "SessionKeyHasOwnerHistory",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "SessionKeyHasPainterPass",
     "inputs": []
   },
   {
@@ -4217,6 +4314,24 @@ export const R3TARDS_PAINTER_PASS_ABI = [
   },
   {
     "type": "function",
+    "name": "setStampSourceEnabled",
+    "inputs": [
+      {
+        "name": "sourceId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "stampSource",
     "inputs": [
       {
@@ -4243,6 +4358,25 @@ export const R3TARDS_PAINTER_PASS_ABI = [
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "stampSourceEnabled",
+    "inputs": [
+      {
+        "name": "sourceId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -4462,6 +4596,25 @@ export const R3TARDS_PAINTER_PASS_ABI = [
   },
   {
     "type": "event",
+    "name": "StampSourceEnabled",
+    "inputs": [
+      {
+        "name": "sourceId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Transfer",
     "inputs": [
       {
@@ -4615,6 +4768,17 @@ export const R3TARDS_PAINTER_PASS_ABI = [
     "type": "error",
     "name": "InvalidStampSource",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidStampSourceIndex",
+    "inputs": [
+      {
+        "name": "sourceId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   },
   {
     "type": "error",
@@ -8568,6 +8732,32 @@ export const R3TARDS_FINALE_AUCTION_ABI = [
   },
   {
     "type": "function",
+    "name": "HISTORY_STORAGE_ADDRESS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "HISTORY_WINDOW",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_START_DELAY",
     "inputs": [],
     "outputs": [
@@ -10237,8 +10427,8 @@ export const R3TARDS_SLEEPWALKER_ABI = [
           },
           {
             "name": "nights",
-            "type": "uint8",
-            "internalType": "uint8"
+            "type": "uint32",
+            "internalType": "uint32"
           },
           {
             "name": "sampleCount",
@@ -10565,6 +10755,19 @@ export const R3TARDS_SLEEPWALKER_ABI = [
     "type": "function",
     "name": "withdrawRefund",
     "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawRefundTo",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
