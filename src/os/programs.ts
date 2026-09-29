@@ -3,6 +3,7 @@ import { PaintProgram } from '../paint/PaintProgram'
 import { PassProgram } from '../pass/PassProgram'
 import type { IconName } from './icons'
 import { bottomRightWindowPosition, nextWindowPosition, openWindow } from './windows'
+import { getReleaseSnapshot, isProgramAvailable, markProgramOpened, type ReleaseSnapshot } from './releases'
 
 export type WindowControls = 'full' | 'min-close' | 'help-close' | 'close'
 
@@ -310,12 +311,27 @@ export const programs: ProgramDef[] = [
   },
 ]
 
-export const visiblePrograms = () => programs.filter((program) => !program.hidden)
 export const programById = (id: string) => programs.find((program) => program.id === id)
+
+export function programIsVisible(program: ProgramDef, snapshot: ReleaseSnapshot = getReleaseSnapshot()) {
+  return !program.hidden && isProgramAvailable(program.id, snapshot)
+}
+
+export const visiblePrograms = (snapshot: ReleaseSnapshot = getReleaseSnapshot()) =>
+  programs.filter((program) => programIsVisible(program, snapshot))
 
 export function openProgram(id: string, updateHash = true, hashOverride?: string) {
   const program = programById(id)
-  if (!program) return
+  if (!program) return false
+  if (!program.hidden && !isProgramAvailable(program.id)) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('r3os:not-installed', { detail: { id: program.id, title: program.title } }),
+      )
+    }
+    return false
+  }
+  if (!program.hidden && !getReleaseSnapshot().revealAll) markProgramOpened(program.id)
   const rect =
     program.placement === 'bottom-right'
       ? bottomRightWindowPosition(program.defaultSize, program.minSize)
@@ -323,4 +339,5 @@ export function openProgram(id: string, updateHash = true, hashOverride?: string
   openWindow(program.id, rect, program.minSize, program.alwaysOnTop, program.placement !== 'bottom-right')
   const hash = hashOverride ?? program.hash
   if (updateHash && location.hash !== hash) location.hash = hash
+  return true
 }

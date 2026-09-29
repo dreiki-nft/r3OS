@@ -13,7 +13,7 @@ export function Balloon({ notice }: { notice: BalloonNotice }) {
   }, [notice.id])
 
   useEffect(() => {
-    playSound('cute-bubble')
+    playSound(notice.sound ?? 'cute-bubble')
   }, [notice.id])
 
   useEffect(() => {

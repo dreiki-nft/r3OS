@@ -1,13 +1,15 @@
 import { useRef, useState, useSyncExternalStore } from 'react'
 import { focusWindow, getWindows, minimizeWindow, subscribeWindows } from './windows'
-import { programById } from './programs'
+import { programById, programIsVisible } from './programs'
 import { StartMenu } from './StartMenu'
 import { Tray } from './Tray'
 import { Icon } from './ui/Icon'
 import { SafeImage } from './ui/SafeImage'
+import { getReleaseSnapshot, subscribeReleases } from './releases'
 
 export function Taskbar({ onShutdown }: { onShutdown: () => void }) {
   const state = useSyncExternalStore(subscribeWindows, getWindows)
+  const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const [open, setOpen] = useState(false)
   const startButton = useRef<HTMLButtonElement>(null)
 
@@ -25,7 +27,7 @@ export function Taskbar({ onShutdown }: { onShutdown: () => void }) {
         <div className="task-buttons">
           {state.windows.map((win) => {
             const program = programById(win.id)
-            if (!program) return null
+            if (!program || (!program.hidden && !programIsVisible(program, releases))) return null
             return (
               <button
                 key={win.id}

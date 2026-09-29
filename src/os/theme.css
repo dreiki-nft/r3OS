@@ -2592,3 +2592,32 @@ button:disabled {
     animation: none !important;
   }
 }
+
+.desktop-icon-new .desktop-icon-art {
+  position: relative;
+}
+
+.desktop-icon-new .desktop-icon-art::after {
+  content: '✦';
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  color: var(--accent);
+  font-size: 14px;
+  text-shadow: 1px 1px #000;
+  animation: blink 0.8s steps(1) infinite;
+}
+
+.quest-row.locked {
+  color: var(--text-muted);
+}
+
+.quest-row.locked .quest-progress em {
+  width: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-icon-new .desktop-icon-art::after {
+    animation: none;
+  }
+}

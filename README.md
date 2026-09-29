@@ -439,6 +439,8 @@ Copy `.env.example` to `.env.local`. `VITE_RPC_URL` and `VITE_WS_URL` are **app-
 
 `VITE_MULTICALL3_ADDRESS` is optional. On Monad mainnet (143) and testnet (10143) it defaults to the canonical Multicall3 address `0xcA11bde05977b3631167028862bE2a173976CA11`. The app checks that address for deployed code once before using it; if Multicall3 is missing or unavailable, Lab reads fall back to parallel `eth_call` reads with the same per-call failure semantics.
 
+`VITE_REVEAL_ALL=true` bypasses `public/releases.json` and reveals every program. Dev mode does the same automatically for local/testnet work. Production otherwise fetches `public/releases.json` once at boot with `no-cache`; program ids missing from the file are available immediately, while listed ids stay hidden until their UTC timestamp.
+
 If either `VITE_RPC_URL` or the Paint contract address is missing, the desktop runs in demo mode with a local blank canvas and all writes explain how to enable onchain mode.
 
 ```bash

@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { openProgram, visiblePrograms } from './programs'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
 import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { R3TARDS_RECYCLE_BIN_ABI } from '../lib/generated/abi'
+import { getReleaseSnapshot, programNeedsSparkle, subscribeReleases } from './releases'
 
 export function desktopRows(height = typeof innerHeight === 'number' ? innerHeight : 900) {
   return Math.max(1, Math.floor((height - 48 - 16) / 88))
 }
 
 export function Desktop() {
-  const programs = visiblePrograms()
+  const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
+  const programs = visiblePrograms(releases)
   const [selected, setSelected] = useState(0)
   const rows = useMemo(() => desktopRows(), [])
   const [binFull, setBinFull] = useState(false)
@@ -76,7 +78,7 @@ export function Desktop() {
         <button
           role="gridcell"
           key={program.id}
-          className={`desktop-icon ${selected === index ? 'selected' : ''} ${program.id === 'bin' && binFull ? 'desktop-bin-full' : ''}`}
+          className={`desktop-icon ${selected === index ? 'selected' : ''} ${program.id === 'bin' && binFull ? 'desktop-bin-full' : ''} ${programNeedsSparkle(program.id, releases) ? 'desktop-icon-new' : ''}`}
           onDragOver={(event) => {
             if (program.id === 'bin' && event.dataTransfer.types.includes('application/x-r3-frame'))
               event.preventDefault()

@@ -4,9 +4,9 @@ import { getBlockSnapshot, startBlockClock, subscribeBlocks } from '../chain/blo
 import { startCanvasStore } from '../paint/canvasStore'
 import { Assistant } from './Assistant'
 import { setAssistantTip } from './assistantStore'
-import { clearBalloons } from './balloons'
+import { clearBalloons, pushBalloon } from './balloons'
 import { Desktop } from './Desktop'
-import { openProgram, programById } from './programs'
+import { openProgram, programById, programIsVisible } from './programs'
 import { playSound } from './sound'
 import { StormScreen } from './StormScreen'
 import { Taskbar } from './Taskbar'
@@ -17,6 +17,13 @@ import { Window } from './Window'
 import { clampAllWindows, getWindows, resetWindows, sortWindowsForDisplay, subscribeWindows } from './windows'
 import { initSound } from './sound'
 import { initWalletDiscovery } from '../chain/wallet'
+import {
+  availableScheduledPrograms,
+  consumeInstallAnnouncement,
+  getReleaseSnapshot,
+  initReleases,
+  subscribeReleases,
+} from './releases'
 
 function ProgramLoading() {
   return <div className="program-loading">⌛ loading program…</div>
@@ -25,13 +32,16 @@ function ProgramLoading() {
 export function R3tardOS() {
   const windows = useSyncExternalStore(subscribeWindows, getWindows)
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const [stormId, setStormId] = useState<bigint>()
+  const [notInstalled, setNotInstalled] = useState<string>()
   const [shutdown, setShutdown] = useState(false)
   const currentStorm = block.stormId
 
   useEffect(() => {
     initSound()
     initWalletDiscovery()
+    void initReleases()
     void startBlockClock()
     void startCanvasStore()
     window.addEventListener('resize', clampAllWindows)
@@ -39,14 +49,41 @@ export function R3tardOS() {
   }, [])
 
   useEffect(() => {
+    const locked = (event: Event) => {
+      const detail = (event as CustomEvent<{ title?: string }>).detail
+      setNotInstalled(detail?.title ?? 'this program')
+    }
+    window.addEventListener('r3os:not-installed', locked)
+    return () => window.removeEventListener('r3os:not-installed', locked)
+  }, [])
+
+  useEffect(() => {
     const route = () => {
       const id = location.hash.split('/')[1]?.split('?')[0]
-      if (id && programById(id)) openProgram(id, false)
+      if (!id || !programById(id) || releases.status === 'loading') return
+      if (openProgram(id, false)) setNotInstalled(undefined)
     }
     route()
     window.addEventListener('hashchange', route)
     return () => window.removeEventListener('hashchange', route)
-  }, [])
+  }, [releases.version])
+
+  useEffect(() => {
+    if (releases.revealAll) return
+    for (const id of availableScheduledPrograms(releases)) {
+      const program = programById(id)
+      if (!program || !consumeInstallAnnouncement(id)) continue
+      pushBalloon({
+        id: `installed:${id}`,
+        title: `New program installed: ${program.title}`,
+        body: 'ready to use.',
+        icon: program.icon,
+        href: program.hash,
+        hrefLabel: 'Open',
+        sound: 'success-heavy',
+      })
+    }
+  }, [releases])
 
   useEffect(() => {
     if (currentStorm == null) return
@@ -90,7 +127,7 @@ export function R3tardOS() {
       )}
       {sortWindowsForDisplay(windows.windows).map((win) => {
         const program = programById(win.id)
-        if (!program) return null
+        if (!program || (!program.hidden && !programIsVisible(program, releases))) return null
         const Component = program.component
         const frameToken = new URLSearchParams(location.hash.split('?')[1] ?? '').get('token') ?? '?'
         return (
@@ -132,6 +169,13 @@ export function R3tardOS() {
         />
       </ErrorBoundary>
       {stormId != null && <StormScreen start={block.stormStart ?? 0n} onDismiss={dismissStorm} />}
+      {notInstalled && (
+        <MessageBox
+          title={notInstalled}
+          message="this program isn't installed yet."
+          onClose={() => setNotInstalled(undefined)}
+        />
+      )}
       {shutdown && (
         <MessageBox
           title="Shut Down"

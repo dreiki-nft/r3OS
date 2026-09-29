@@ -4,6 +4,7 @@ import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
 import { quoteAction, sendAction } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { discoverContracts } from '../chain/contracts'
 import { readMany } from '../chain/readMany'
 import { R3TARDS_QUESTS_ABI } from '../lib/generated/abi'
 import { getLiveSnapshot, liveActive, subscribeLive } from '../live/liveStore'
@@ -14,7 +15,8 @@ import { IntroBar } from '../os/ui/IntroBar'
 import { MenuBar } from '../os/ui/MenuBar'
 import { SafeImage } from '../os/ui/SafeImage'
 import { errorText, labAddress, shortAddress } from './labCommon'
-import { mapQuestProgress, type QuestProgressState } from './quests'
+import { mapQuestProgress, questLockedByHiddenLab, type QuestProgressState } from './quests'
+import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 
 const RULES = [
   'each quest reads a number straight from a contract: pixels painted, frames saved, storm paints, and so on.',
@@ -22,6 +24,17 @@ const RULES = [
   'live mode can claim for you.',
   'badges are bragging rights only. new quests can be added later; existing ones never change.',
 ] as const
+
+const EXPERIMENT_PROGRAMS: Record<string, string> = {
+  flipbook: 'flipbook',
+  weeds: 'weeds',
+  forks: 'forks',
+  brushes: 'brushes',
+  'finale auction': 'auction',
+  sleepwalker: 'sleepwalker',
+  'recycle-bin': 'bin',
+  'cd-burner': 'cd',
+}
 
 const DAY_ONE_DETAIL: Record<string, string> = {
   'MONTH IN': 'days painting',
@@ -97,6 +110,9 @@ export function QuestsProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
+  const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
+  const [labTargets, setLabTargets] = useState<Record<string, string>>({})
+  const [labTargetsReady, setLabTargetsReady] = useState(false)
   const [address, setAddress] = useState<Address>()
   const [missing, setMissing] = useState(false)
   const [defs, setDefs] = useState<QuestDef[]>([])
@@ -112,6 +128,20 @@ export function QuestsProgram() {
     void labAddress('quests')
       .then(setAddress)
       .catch(() => setMissing(true))
+  }, [])
+
+  useEffect(() => {
+    void discoverContracts()
+      .then((contracts) => {
+        const targets: Record<string, string> = {}
+        for (const [name, programId] of Object.entries(EXPERIMENT_PROGRAMS)) {
+          const target = contracts.labs[name]
+          if (target) targets[target.toLowerCase()] = programId
+        }
+        setLabTargets(targets)
+        setLabTargetsReady(true)
+      })
+      .catch(() => undefined)
   }, [])
 
   const loadDefs = useCallback(async () => {
@@ -277,8 +307,11 @@ export function QuestsProgram() {
     }
   }
 
+  const locked = (quest: QuestDef) =>
+    !labTargetsReady ||
+    questLockedByHiddenLab(quest.conditions, labTargets, (id) => !isProgramAvailable(id, releases))
   const claimableIds = defs
-    .filter((quest) => Boolean(claimableMask & (1n << BigInt(quest.id))))
+    .filter((quest) => !locked(quest) && Boolean(claimableMask & (1n << BigInt(quest.id))))
     .map((quest) => quest.id)
   const chosenDef = defs[selected]
   const chosenProgress = progress[selected]
@@ -319,6 +352,7 @@ export function QuestsProgram() {
         <section className="quest-list sunken">
           {defs.map((quest, index) => {
             const row = progress[index]
+            const isLocked = locked(quest)
             const claimed = Boolean(completedMask & (1n << BigInt(quest.id)))
             const claimable = Boolean(claimableMask & (1n << BigInt(quest.id)))
             const value = row?.value ?? 0n
@@ -333,7 +367,7 @@ export function QuestsProgram() {
                 key={quest.id}
                 role="button"
                 tabIndex={0}
-                className={`quest-row ${selected === index ? 'selected' : ''}`}
+                className={`quest-row ${selected === index ? 'selected' : ''} ${isLocked ? 'locked' : ''}`}
                 onClick={() => setSelected(index)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
@@ -345,24 +379,29 @@ export function QuestsProgram() {
                 <SafeImage
                   className="quest-mini-badge"
                   src={badgeSrc(quest.id)}
-                  alt={quest.name}
+                  alt={isLocked ? 'locked quest' : quest.name}
                   width={34}
                   height={34}
+                  style={isLocked ? { filter: 'grayscale(1)', opacity: 0.35 } : undefined}
                 />
                 <span className="quest-name">
-                  <b>{quest.name}</b>
-                  <small>{questSubtitle(quest.name, goal)}</small>
+                  <b>{isLocked ? '???' : quest.name}</b>
+                  <small>{isLocked ? 'coming soon' : questSubtitle(quest.name, goal)}</small>
                 </span>
                 <span className="quest-progress">
                   <i>
-                    <em style={{ width: `${percent}%` }} />
+                    <em style={{ width: isLocked ? '0%' : `${percent}%` }} />
                   </i>
                 </span>
                 <span className="quest-value">
-                  {value.toString()} / {goal.toString()}
+                  {isLocked ? '—' : `${value.toString()} / ${goal.toString()}`}
                 </span>
-                <span className={`quest-state ${claimed ? 'claimed' : claimable ? 'ready' : ''}`}>
-                  {claimed ? (
+                <span
+                  className={`quest-state ${!isLocked && claimed ? 'claimed' : !isLocked && claimable ? 'ready' : ''}`}
+                >
+                  {isLocked ? (
+                    'coming soon'
+                  ) : claimed ? (
                     'claimed ✓'
                   ) : claimable ? (
                     <Button
@@ -386,23 +425,42 @@ export function QuestsProgram() {
           <GroupBox title="Trophy case">
             <div className="trophy-grid">
               {defs.map((quest) => {
+                const isLocked = locked(quest)
                 const claimed = Boolean(completedMask & (1n << BigInt(quest.id)))
                 const ready = Boolean(claimableMask & (1n << BigInt(quest.id)))
                 return (
                   <button
                     key={quest.id}
-                    className={`${selected === quest.id ? 'selected' : ''} ${claimed ? 'claimed' : 'locked'}`}
+                    className={`${selected === quest.id ? 'selected' : ''} ${claimed && !isLocked ? 'claimed' : 'locked'}`}
                     onClick={() => setSelected(quest.id)}
                   >
-                    <SafeImage src={badgeSrc(quest.id)} alt={quest.name} width={60} height={60} />
-                    <span>{claimed ? '✓' : ready ? '!' : ''}</span>
+                    <SafeImage
+                      src={badgeSrc(quest.id)}
+                      alt={isLocked ? 'locked quest' : quest.name}
+                      width={60}
+                      height={60}
+                      style={isLocked ? { filter: 'grayscale(1)', opacity: 0.35 } : undefined}
+                    />
+                    <span>{isLocked ? '' : claimed ? '✓' : ready ? '!' : ''}</span>
                   </button>
                 )
               })}
             </div>
           </GroupBox>
-          <GroupBox title={chosenDef?.name ?? 'Quest'}>
-            {chosenDef && (
+          <GroupBox title={chosenDef && locked(chosenDef) ? '???' : (chosenDef?.name ?? 'Quest')}>
+            {chosenDef && locked(chosenDef) ? (
+              <div className="quest-detail">
+                <SafeImage
+                  src={badgeSrc(chosenDef.id)}
+                  alt="locked quest"
+                  width={60}
+                  height={60}
+                  style={{ filter: 'grayscale(1)', opacity: 0.35 }}
+                />
+                <b>coming soon</b>
+                <p className="muted">this quest belongs to a Lab that isn't installed yet.</p>
+              </div>
+            ) : chosenDef ? (
               <div className="quest-detail">
                 <SafeImage src={badgeSrc(chosenDef.id)} alt={chosenDef.name} width={60} height={60} />
                 <p>
@@ -461,7 +519,7 @@ export function QuestsProgram() {
                   never change. live mode can claim for you.
                 </p>
               </div>
-            )}
+            ) : null}
           </GroupBox>
         </aside>
       </div>

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { disconnectWallet, getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { openProgram, visiblePrograms } from './programs'
+import { openProgram, programById, programIsVisible, visiblePrograms } from './programs'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
 import { WalletChooser } from './WalletChooser'
+import { getReleaseSnapshot, subscribeReleases } from './releases'
 
 export function StartMenu({
   onClose,
@@ -15,7 +16,12 @@ export function StartMenu({
   returnFocus: () => void
 }) {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
-  const programs = visiblePrograms()
+  const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
+  const programs = visiblePrograms(releases)
+  const visible = (id: string) => {
+    const program = programById(id)
+    return Boolean(program && programIsVisible(program, releases))
+  }
   const [choosing, setChoosing] = useState(false)
   const [programsOpen, setProgramsOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
@@ -85,22 +91,30 @@ export function StartMenu({
             </div>
           )}
         </div>
-        <button data-start-item onClick={() => open('pass')}>
-          <Icon name="computer" size={24} />
-          My Pass
-        </button>
-        <button data-start-item onClick={() => open('frames')}>
-          <Icon name="gallery" size={24} />
-          My Frames
-        </button>
-        <button data-start-item onClick={() => open('sounds')}>
-          <Icon name="music" size={24} />
-          Sounds
-        </button>
-        <button data-start-item onClick={() => open('help')}>
-          <Icon name="help" size={24} />
-          Help
-        </button>
+        {visible('pass') && (
+          <button data-start-item onClick={() => open('pass')}>
+            <Icon name="computer" size={24} />
+            My Pass
+          </button>
+        )}
+        {visible('frames') && (
+          <button data-start-item onClick={() => open('frames')}>
+            <Icon name="gallery" size={24} />
+            My Frames
+          </button>
+        )}
+        {visible('sounds') && (
+          <button data-start-item onClick={() => open('sounds')}>
+            <Icon name="music" size={24} />
+            Sounds
+          </button>
+        )}
+        {visible('help') && (
+          <button data-start-item onClick={() => open('help')}>
+            <Icon name="help" size={24} />
+            Help
+          </button>
+        )}
         <hr />
         {wallet.account ? (
           <button

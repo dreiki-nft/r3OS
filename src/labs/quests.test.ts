@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { mapQuestProgress } from './quests'
+import { mapQuestProgress, questLockedByHiddenLab } from './quests'
 import { badgeSrc } from './QuestsProgram'
 
 describe('quest progress mapping', () => {
+  it('locks a quest when one of its target contracts belongs to a hidden Lab', () => {
+    const targets = { '0xabc': 'forks', '0xdef': 'brushes' }
+    expect(questLockedByHiddenLab([{ target: '0xAbC' }], targets, (id) => id === 'forks')).toBe(true)
+    expect(questLockedByHiddenLab([{ target: '0xDef' }], targets, (id) => id === 'forks')).toBe(false)
+    expect(questLockedByHiddenLab([{ target: '0x123' }], targets, () => true)).toBe(false)
+  })
   it('maps all 13 quest ids to badges including RECYCLER', () => {
     expect(Array.from({ length: 13 }, (_, id) => badgeSrc(id))).toHaveLength(13)
     expect(badgeSrc(12)).toBe('/os/badges/q12_recycler.png')

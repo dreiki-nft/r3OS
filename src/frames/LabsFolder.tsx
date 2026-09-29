@@ -7,6 +7,7 @@ import { readMany } from '../chain/readMany'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
+import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { SafeImage } from '../os/ui/SafeImage'
@@ -95,6 +96,7 @@ function labFor(data?: LabsTokenData) {
 
 export function LabsFolder({ onExit }: { onExit: () => void }) {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
+  const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const [labs, setLabs] = useState<Address>()
   const [tokens, setTokens] = useState<LabsOwnedToken[]>([])
   const [filter, setFilter] = useState<LabsFilter>('All')
@@ -158,8 +160,9 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
   )
   const chosen = tokens.find((token) => token.id === selected)
   const targetLab = labFor(chosen?.data)
-  const available =
+  const hasWindow =
     targetLab === 'flipbook' || targetLab === 'forks' || targetLab === 'sleepwalker' || targetLab === 'cd'
+  const available = Boolean(targetLab && hasWindow && isProgramAvailable(targetLab, releases))
 
   return (
     <div className="labs-folder-view">
@@ -222,7 +225,13 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
           </GroupBox>
           <Button
             disabled={!available}
-            title={available ? 'open this token in its Lab' : 'this Lab window is not available'}
+            title={
+              available
+                ? 'open this token in its Lab'
+                : targetLab && hasWindow && !isProgramAvailable(targetLab, releases)
+                  ? 'not installed yet'
+                  : 'this Lab window is not available'
+            }
             onClick={() => {
               if (!targetLab) return
               if (targetLab === 'sleepwalker') {

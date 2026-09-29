@@ -36,3 +36,18 @@ export function mapQuestProgress(
     claimed,
   }
 }
+
+export interface QuestTargetLike {
+  target: string
+}
+
+export function questLockedByHiddenLab(
+  conditions: readonly QuestTargetLike[],
+  targetPrograms: Readonly<Record<string, string>>,
+  isHidden: (programId: string) => boolean,
+) {
+  return conditions.some((condition) => {
+    const programId = targetPrograms[condition.target.toLowerCase()]
+    return Boolean(programId && isHidden(programId))
+  })
+}

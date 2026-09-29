@@ -1,4 +1,5 @@
 import type { IconName } from './icons'
+import type { SoundName } from './sound'
 
 type Listener = () => void
 
@@ -9,6 +10,7 @@ export interface BalloonNotice {
   icon?: IconName
   href?: string
   hrefLabel?: string
+  sound?: SoundName
 }
 
 type BalloonInput = Omit<BalloonNotice, 'id'> & { id?: BalloonNotice['id'] }
