@@ -1,10 +1,21 @@
 import '../../labs/phase3c2c.css'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { hexToBytes, parseAbiItem, zeroAddress, type Address, type Hex } from 'viem'
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+  hexToBytes,
+  keccak256,
+  parseAbiItem,
+  toHex,
+  zeroAddress,
+  type Address,
+  type Hex,
+} from 'viem'
 import { publicClient, wsClient } from '../../chain/clients'
 import { discoverContracts } from '../../chain/contracts'
 import { readMany } from '../../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../../chain/tx'
+import { formatMaxCost, withTenPercent } from '../../chain/gas'
 import { getWalletSnapshot, subscribeWallet } from '../../chain/wallet'
 import { getFrameInfoBatch, mineTokenIds, refreshFrameIndex, type FrameInfo } from '../../frames/framesStore'
 import { decodePacked4Bpp, type PixelImage } from '../../frames/frameImage'
@@ -29,6 +40,55 @@ type SortKey = 'name' | 'season' | 'deleted' | 'saved' | 'storm' | 'owner'
 
 function short(address?: string) {
   return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '—'
+}
+
+const ERC721_STORAGE_LOCATION = BigInt('0x80bb2b638cc20bc4d0a60d66940f3ab4a00c1d7b313d8d71e33a90b8ed882d00')
+
+function operatorApprovalSlot(owner: Address, operator: Address) {
+  const root = toHex(ERC721_STORAGE_LOCATION + 5n, { size: 32 })
+  const inner = keccak256(encodeAbiParameters([{ type: 'address' }, { type: 'bytes32' }], [owner, root]))
+  return keccak256(encodeAbiParameters([{ type: 'address' }, { type: 'bytes32' }], [operator, inner]))
+}
+
+async function quoteRecycleWithApprovalOverride({
+  owner,
+  paint,
+  bin,
+  ids,
+  fees,
+}: {
+  owner: Address
+  paint: Address
+  bin: Address
+  ids: readonly number[]
+  fees: ActionQuote
+}): Promise<ActionQuote | undefined> {
+  if (!publicClient) return undefined
+  try {
+    const data = encodeFunctionData({
+      abi: R3TARDS_RECYCLE_BIN_ABI,
+      functionName: 'recycle',
+      args: [ids.map(BigInt)],
+    })
+    const slot = operatorApprovalSlot(owner, bin)
+    const estimate = await (publicClient as any).request({
+      method: 'eth_estimateGas',
+      params: [
+        { from: owner, to: bin, data },
+        'latest',
+        { [paint]: { stateDiff: { [slot]: toHex(1n, { size: 32 }) } } },
+      ],
+    })
+    return {
+      gasLimit: withTenPercent(BigInt(estimate)),
+      maxFeePerGas: fees.maxFeePerGas,
+      maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+      maxCost: formatMaxCost(withTenPercent(BigInt(estimate)), fees.maxFeePerGas),
+      quotedAtBlock: fees.quotedAtBlock,
+    }
+  } catch {
+    return undefined
+  }
 }
 
 function tupleTombstone(value: any): Tombstone {
@@ -96,6 +156,7 @@ export function RecycleBin() {
   const [picked, setPicked] = useState<number[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [quote, setQuote] = useState<ActionQuote>()
+  const [recycleQuote, setRecycleQuote] = useState<ActionQuote>()
   const [operatorApproved, setOperatorApproved] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -206,6 +267,7 @@ export function RecycleBin() {
   useEffect(() => {
     if (!confirmOpen || !wallet.account || !bin || !picked.length || !publicClient) {
       setQuote(undefined)
+      setRecycleQuote(undefined)
       return
     }
     let cancelled = false
@@ -252,7 +314,19 @@ export function RecycleBin() {
                 account: wallet.account!,
                 action: `recycle ${picked.length} frame${picked.length === 1 ? '' : 's'}`,
               })
-      if (!cancelled) setQuote(next)
+      if (!cancelled) {
+        setQuote(next)
+        if (path === 'approveThenRecycle') {
+          const preview = await quoteRecycleWithApprovalOverride({
+            owner: wallet.account!,
+            paint,
+            bin,
+            ids: picked,
+            fees: next,
+          })
+          if (!cancelled) setRecycleQuote(preview)
+        }
+      }
     })().catch((error) => !cancelled && setMessage(error instanceof Error ? error.message : String(error)))
     return () => {
       cancelled = true
@@ -288,7 +362,7 @@ export function RecycleBin() {
             quote,
             action: 'approve the Recycle Bin',
           })
-          const recycleQuote = await quoteAction({
+          const nextRecycleQuote = await quoteAction({
             kind: 'estimate',
             address: bin,
             abi: R3TARDS_RECYCLE_BIN_ABI,
@@ -298,20 +372,31 @@ export function RecycleBin() {
             action: `recycle ${picked.length} frame${picked.length === 1 ? '' : 's'}`,
           })
           setOperatorApproved(true)
-          setQuote(recycleQuote)
-          setMessage('permission granted · review the recycle max cost, then confirm once more')
-          return
+          setRecycleQuote(nextRecycleQuote)
+          setMessage(`permission granted · recycle max cost ${nextRecycleQuote.maxCost}`)
+          await new Promise((resolve) => window.setTimeout(resolve, 250))
+          await sendAction({
+            kind: 'estimate',
+            address: bin,
+            abi: R3TARDS_RECYCLE_BIN_ABI,
+            functionName: 'recycle',
+            args: [picked.map(BigInt)],
+            account: wallet.account,
+            quote: nextRecycleQuote,
+            action: `recycle ${picked.length} frame${picked.length === 1 ? '' : 's'}`,
+          })
+        } else {
+          await sendAction({
+            kind: 'estimate',
+            address: bin,
+            abi: R3TARDS_RECYCLE_BIN_ABI,
+            functionName: 'recycle',
+            args: [picked.map(BigInt)],
+            account: wallet.account,
+            quote,
+            action: `recycle ${picked.length} frame${picked.length === 1 ? '' : 's'}`,
+          })
         }
-        await sendAction({
-          kind: 'estimate',
-          address: bin,
-          abi: R3TARDS_RECYCLE_BIN_ABI,
-          functionName: 'recycle',
-          args: [picked.map(BigInt)],
-          account: wallet.account,
-          quote,
-          action: `recycle ${picked.length} frame${picked.length === 1 ? '' : 's'}`,
-        })
       }
       const before = mine
       await refreshFrameIndex()
@@ -497,18 +582,11 @@ export function RecycleBin() {
           kind="warning"
           message={`Are you sure you want to send these ${picked.length} frame${picked.length === 1 ? '' : 's'} to the Recycle Bin? Recycling burns them forever. This can't be undone.`}
           details={
-            `${picked.length > 1 && !operatorApproved ? 'one-time permission so the Bin can burn frames you pick\n' : ''}` +
-            `max cost for ${picked.length > 1 && !operatorApproved ? 'the approval' : 'this transaction'}: ${quote?.maxCost ?? 'quoting…'}`
+            picked.length > 1 && !operatorApproved
+              ? `one-time permission so the Bin can burn frames you pick\napproval max cost: ${quote?.maxCost ?? 'quoting…'}\nrecycle max cost: ${recycleQuote?.maxCost ?? 'quoted immediately after approval, before the second wallet prompt'}\nconfirming this batch continues straight from approval into recycle.`
+              : `recycle max cost: ${quote?.maxCost ?? recycleQuote?.maxCost ?? 'quoting…'}`
           }
-          defaultLabel={
-            busy
-              ? picked.length > 1 && !operatorApproved
-                ? 'Approving…'
-                : 'Recycling…'
-              : picked.length > 1 && !operatorApproved
-                ? 'Approve'
-                : 'Recycle'
-          }
+          defaultLabel={busy ? 'Recycling…' : 'Recycle'}
           onDefault={() => void executeRecycle()}
           onCancel={() => setConfirmOpen(false)}
           onClose={() => setConfirmOpen(false)}

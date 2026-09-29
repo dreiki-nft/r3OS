@@ -423,7 +423,7 @@ In addition to the broader soak plan:
 - **2f:** 2e fixes + finale candle auction + quests ✅
 - **Bin/CD contracts:** Recycle Bin + mix CD-R artifacts
 - **3:** frontend
-- **4:** Monad showcase
+- **4:** Monad showcase: Lanes, Network Neighborhood, heartbeat and Disk Defragmenter
 - **5:** docs + testnet soak
 - **day 1:** launch the verified canvas, Labs and showcase together
 

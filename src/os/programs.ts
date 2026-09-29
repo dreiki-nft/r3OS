@@ -73,6 +73,9 @@ const LanesProgram = lazy(() =>
 const NetworkProgram = lazy(() =>
   import('../network/NetworkProgram').then((module) => ({ default: module.NetworkProgram })),
 )
+const DefragProgram = lazy(() =>
+  import('../defrag/DefragProgram').then((module) => ({ default: module.DefragProgram })),
+)
 
 export const programs: ProgramDef[] = [
   {
@@ -217,6 +220,17 @@ export const programs: ProgramDef[] = [
     minSize: { width: 760, height: 520 },
     singleInstance: true,
     hash: '#/validators',
+  },
+  {
+    id: 'defrag',
+    title: 'Disk Defragmenter',
+    icon: 'layers',
+    colour: '#9F70DA',
+    component: DefragProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/defrag',
   },
   {
     id: 'xray',

@@ -1,5 +1,13 @@
 import './sleepwalker.css'
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ChangeEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ChangeEvent,
+} from 'react'
 import {
   decodeEventLog,
   formatEther,
@@ -26,9 +34,12 @@ import {
   cursorPixels,
   estimateDreamSteps,
   filterReadySleepers,
+  nightShiftProfit,
   orderDreamt,
   planSleepwalkerSessions,
   sleepwalkerTypedData,
+  sleepwalkerStepMaxCost,
+  suggestedSleepwalkerTip,
   stepCodeMessage,
   type DreamtLike,
   type SignedSession,
@@ -174,30 +185,52 @@ export function survivalPercent(stencil: Hex, cursor: number, live: Uint8Array) 
   return Math.round((survived * 1000) / points.length) / 10
 }
 
-function StencilPreview({ runs, cursor }: { runs: Hex; cursor?: number }) {
+function StencilPreview({
+  runs,
+  cursor,
+  background,
+  backgroundColor = 0,
+}: {
+  runs: Hex
+  cursor?: number
+  background?: Uint8Array
+  backgroundColor?: number
+}) {
+  const ref = useRef<HTMLCanvasElement>(null)
   const pixels = useMemo(() => cursorPixels(runs, cursor ?? Number.MAX_SAFE_INTEGER), [runs, cursor])
-  const bounds = useMemo(() => {
-    if (!pixels.length) return { x: 0, y: 0, w: 1, h: 1 }
-    const xs = pixels.map((p) => p.x)
-    const ys = pixels.map((p) => p.y)
-    const x = Math.min(...xs)
-    const y = Math.min(...ys)
-    return { x, y, w: Math.max(...xs) - x + 1, h: Math.max(...ys) - y + 1 }
-  }, [pixels])
+
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const context = canvas.getContext('2d')
+    if (!context) return
+    context.imageSmoothingEnabled = false
+    const image = context.createImageData(256, 256)
+    const rgba = image.data
+    for (let index = 0; index < 65_536; index++) {
+      const raw = background?.[index] ?? backgroundColor
+      const colourIndex = raw === 0 ? backgroundColor : raw
+      const [r, g, b] = PALETTE[colourIndex]?.rgb ?? [0, 0, 0]
+      const offset = index * 4
+      rgba[offset] = r
+      rgba[offset + 1] = g
+      rgba[offset + 2] = b
+      rgba[offset + 3] = 255
+    }
+    for (const pixel of pixels) {
+      const [r, g, b] = PALETTE[pixel.colour]?.rgb ?? [255, 255, 255]
+      const offset = (pixel.y * 256 + pixel.x) * 4
+      rgba[offset] = r
+      rgba[offset + 1] = g
+      rgba[offset + 2] = b
+      rgba[offset + 3] = 255
+    }
+    context.putImageData(image, 0, 0)
+  }, [pixels, background, backgroundColor])
+
   return (
     <div className="sleep-stencil sunken">
-      <svg viewBox={`${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}`} preserveAspectRatio="xMidYMid meet">
-        {pixels.map((pixel, index) => (
-          <rect
-            key={`${pixel.x}:${pixel.y}:${index}`}
-            x={pixel.x}
-            y={pixel.y}
-            width="1"
-            height="1"
-            fill={PALETTE[pixel.colour]?.hex ?? '#FFFFFF'}
-          />
-        ))}
-      </svg>
+      <canvas ref={ref} width={256} height={256} aria-label="dream stencil preview" />
     </div>
   )
 }
@@ -221,6 +254,8 @@ export function SleepwalkerProgram() {
   const [manualHolderIds, setManualHolderIds] = useState('')
   const [holderDialog, setHolderDialog] = useState(false)
   const [tip, setTip] = useState('0.01')
+  const [tipEdited, setTipEdited] = useState(false)
+  const [maxFeePerGas, setMaxFeePerGas] = useState(0n)
   const [deposit, setDeposit] = useState('0.50')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
@@ -326,6 +361,24 @@ export function SleepwalkerProgram() {
     )
     return () => window.clearTimeout(timer)
   }, [playing, replayCursor, dreamt, block.blockTimeMs])
+
+  useEffect(() => {
+    if (!publicClient || (tab !== 'tonight' && tab !== 'night')) return
+    let cancelled = false
+    void publicClient
+      .estimateFeesPerGas()
+      .then((rawFees) => {
+        if (cancelled) return
+        const fees = rawFees as { maxFeePerGas?: bigint; gasPrice?: bigint }
+        const value = fees.maxFeePerGas ?? fees.gasPrice ?? 0n
+        setMaxFeePerGas(value)
+        if (!tipEdited && value > 0n) setTip(formatEther(suggestedSleepwalkerTip(value)))
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [tab, tipEdited, block.block / 20n])
 
   const refreshReadiness = useCallback(
     async (current: readonly Sleeper[]) => {
@@ -752,7 +805,7 @@ export function SleepwalkerProgram() {
   async function stepAll() {
     const ready = filterReadySleepers(
       sleepers,
-      sleepers.map((s) => s.ready),
+      sleepers.map((s) => s.ready && maxFeePerGas > 0n && nightShiftProfit(s.tip, maxFeePerGas).profitable),
     )
     if (!ready.length) return
     try {
@@ -872,9 +925,32 @@ export function SleepwalkerProgram() {
                 <label>
                   Tip per step
                   <span className="sleep-money">
-                    <input value={tip} onChange={(event) => setTip(event.target.value)} /> MON
+                    <input
+                      value={tip}
+                      onChange={(event) => {
+                        setTipEdited(true)
+                        setTip(event.target.value)
+                      }}
+                    />{' '}
+                    MON
                   </span>
                 </label>
+                {maxFeePerGas > 0n &&
+                  (() => {
+                    let entered = 0n
+                    try {
+                      entered = parseEther(tip || '0')
+                    } catch {
+                      /* live validation below */
+                    }
+                    const cost = sleepwalkerStepMaxCost(maxFeePerGas)
+                    return (
+                      <p className={entered < cost ? 'sleep-tip-warning' : 'muted'}>
+                        crankers pay up to {Number(formatEther(cost)).toPrecision(3)} MON per step. tips below
+                        that probably won't get cranked.
+                      </p>
+                    )
+                  })()}
                 <label>
                   Tip deposit
                   <span className="sleep-money">
@@ -901,7 +977,12 @@ export function SleepwalkerProgram() {
             <div className="sleep-columns morning">
               <GroupBox title="Replay">
                 {stencil !== '0x' ? (
-                  <StencilPreview runs={stencil} cursor={replayCursor} />
+                  <StencilPreview
+                    runs={stencil}
+                    cursor={replayCursor}
+                    background={canvas.background}
+                    backgroundColor={canvas.backgroundColor}
+                  />
                 ) : (
                   <p>no dream stencil yet.</p>
                 )}
@@ -965,7 +1046,9 @@ export function SleepwalkerProgram() {
                 )}
                 {minted && (
                   <GroupBox title="Dream NFT">
-                    <SafeImage src={minted.image} alt={minted.name} width={180} height={180} />
+                    <div className="dream-nft-preview">
+                      <SafeImage src={minted.image} alt={minted.name} width={180} height={180} />
+                    </div>
                     <b>{minted.name}</b>
                   </GroupBox>
                 )}
@@ -982,26 +1065,58 @@ export function SleepwalkerProgram() {
                 <p>crank someone else's dream. tips pay only when a step actually paints.</p>
               </div>
               <Button onClick={() => void discoverSleepers()}>{busy || 'Refresh'}</Button>
-              <Button primary disabled={!sleepers.some((s) => s.ready)} onClick={() => void stepAll()}>
-                Step all ({sleepers.filter((s) => s.ready).length})
+              <Button
+                primary
+                disabled={
+                  !sleepers.some(
+                    (s) => s.ready && maxFeePerGas > 0n && nightShiftProfit(s.tip, maxFeePerGas).profitable,
+                  )
+                }
+                onClick={() => void stepAll()}
+              >
+                Step all (
+                {
+                  sleepers.filter(
+                    (s) => s.ready && maxFeePerGas > 0n && nightShiftProfit(s.tip, maxFeePerGas).profitable,
+                  ).length
+                }
+                )
               </Button>
             </div>
             <div className="night-list sunken">
-              {sleepers.map((sleeper) => (
-                <div className={`night-row ${sleeper.ready ? 'ready' : ''}`} key={sleeper.owner}>
-                  <span>
-                    <b>{short(sleeper.owner)}</b>
-                    <small>{sleeper.ready ? 'ready now' : 'not ready'}</small>
-                  </span>
-                  <span>{formatEther(sleeper.tip)} MON tip</span>
-                  <span className="muted">
-                    {sleeper.result ?? (sleeper.ready ? 'stepReady ✓' : 'gray until ready')}
-                  </span>
-                  <Button disabled={!sleeper.ready} onClick={() => void stepOne(sleeper.owner)}>
-                    Step
-                  </Button>
-                </div>
-              ))}
+              {sleepers.map((sleeper) => {
+                const economics = nightShiftProfit(sleeper.tip, maxFeePerGas)
+                const actionable = sleeper.ready && maxFeePerGas > 0n && economics.profitable
+                return (
+                  <div
+                    className={`night-row ${actionable ? 'ready' : ''} ${!economics.profitable ? 'unprofitable' : ''}`}
+                    key={sleeper.owner}
+                  >
+                    <span>
+                      <b>{short(sleeper.owner)}</b>
+                      <small>{sleeper.ready ? 'ready now' : 'not ready'}</small>
+                    </span>
+                    <span>
+                      {formatEther(sleeper.tip)} MON tip
+                      <small>
+                        tip − max cost: {economics.profit < 0n ? '−' : '+'}
+                        {formatEther(economics.profit < 0n ? -economics.profit : economics.profit)} MON
+                      </small>
+                    </span>
+                    <span className="muted">
+                      {sleeper.result ??
+                        (!economics.profitable
+                          ? 'tip is below crank max cost'
+                          : sleeper.ready
+                            ? 'stepReady ✓'
+                            : 'gray until ready')}
+                    </span>
+                    <Button disabled={!actionable} onClick={() => void stepOne(sleeper.owner)}>
+                      Step
+                    </Button>
+                  </div>
+                )
+              })}
               {!sleepers.length && <p>no sleepers found right now.</p>}
             </div>
           </div>

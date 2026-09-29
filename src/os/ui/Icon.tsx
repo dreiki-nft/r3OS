@@ -7,7 +7,7 @@ export function Icon({
   title,
 }: {
   name: IconName
-  size?: 20 | 24 | 36 | 72
+  size?: number
   colour?: string
   title?: string
 }) {

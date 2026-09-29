@@ -62,6 +62,13 @@ export function Tray() {
         </span>
       </button>
       <button
+        aria-label="Show assistant"
+        title="Show assistant"
+        onClick={() => window.dispatchEvent(new Event('r3os-show-assistant'))}
+      >
+        <Icon name="question-filled" size={20} colour="#FFFFFF" />
+      </button>
+      <button
         aria-label="Connection information"
         onClick={() => {
           if (connectionOpen) {

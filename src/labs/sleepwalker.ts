@@ -5,6 +5,26 @@ export const SLEEPWALKER_MAX_STENCIL_PIXELS = 4_096
 export const SLEEPWALKER_STEP_MAX_PX = 64
 export const SLEEPWALKER_STEP_GAS_LIMIT = 1_000_000n
 
+export const SLEEPWALKER_TIP_ROUND_WEI = 1_000_000_000_000_000n
+
+export function sleepwalkerStepMaxCost(maxFeePerGas: bigint) {
+  return SLEEPWALKER_STEP_GAS_LIMIT * maxFeePerGas
+}
+
+export function suggestedSleepwalkerTip(maxFeePerGas: bigint) {
+  const cost = sleepwalkerStepMaxCost(maxFeePerGas)
+  const withMargin = (cost * 125n + 99n) / 100n
+  if (withMargin === 0n) return SLEEPWALKER_TIP_ROUND_WEI
+  return (
+    ((withMargin + SLEEPWALKER_TIP_ROUND_WEI - 1n) / SLEEPWALKER_TIP_ROUND_WEI) * SLEEPWALKER_TIP_ROUND_WEI
+  )
+}
+
+export function nightShiftProfit(tip: bigint, maxFeePerGas: bigint) {
+  const maxCost = sleepwalkerStepMaxCost(maxFeePerGas)
+  return { maxCost, profit: tip - maxCost, profitable: tip >= maxCost }
+}
+
 export interface SessionPlan extends StartSessionMessage {}
 
 export interface SignedSession {

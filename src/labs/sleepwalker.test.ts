@@ -9,6 +9,9 @@ import {
   planSleepwalkerSessions,
   sleepwalkerTypedData,
   stepCodeMessage,
+  suggestedSleepwalkerTip,
+  sleepwalkerStepMaxCost,
+  nightShiftProfit,
 } from './sleepwalker'
 
 const owner = '0x0000000000000000000000000000000000000001' as Address
@@ -96,5 +99,23 @@ describe('Sleepwalker Night Shift', () => {
     expect(stepCodeMessage(5)).toBe("hasn't painted today")
     expect(stepCodeMessage(7, 23n)).toBe('too soon, wait 23 blocks')
     expect(filterReadySleepers([{ owner }, { owner: key }], [false, true])).toEqual([{ owner: key }])
+  })
+})
+
+describe('Sleepwalker tip economics', () => {
+  it('suggests at least 125% of the crank max cost and rounds up cleanly', () => {
+    const fee = 2_000_000_000n
+    const maxCost = sleepwalkerStepMaxCost(fee)
+    const suggested = suggestedSleepwalkerTip(fee)
+    expect(suggested).toBeGreaterThanOrEqual((maxCost * 125n + 99n) / 100n)
+    expect(suggested % 1_000_000_000_000_000n).toBe(0n)
+  })
+
+  it('reports positive and negative Night Shift profit', () => {
+    const fee = 1_000_000_000n
+    expect(nightShiftProfit(2_000_000_000_000_000n, fee).profitable).toBe(true)
+    const loss = nightShiftProfit(500_000_000_000_000n, fee)
+    expect(loss.profitable).toBe(false)
+    expect(loss.profit).toBeLessThan(0n)
   })
 })

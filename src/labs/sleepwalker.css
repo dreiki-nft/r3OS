@@ -221,3 +221,45 @@
     display: none;
   }
 }
+.sleep-stencil canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  background: #0b0b0c;
+}
+.sleep-tip-warning {
+  margin: 2px 0 10px;
+  color: #fec343;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.dream-nft-preview {
+  display: inline-flex;
+  padding: 8px;
+  background-color: #f2efe9;
+  background-image:
+    linear-gradient(45deg, #c9c9c9 25%, transparent 25%),
+    linear-gradient(-45deg, #c9c9c9 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #c9c9c9 75%),
+    linear-gradient(-45deg, transparent 75%, #c9c9c9 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+  box-shadow:
+    inset 1px 1px #000,
+    inset -1px -1px #6b6b73;
+}
+.night-row > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.night-row.unprofitable {
+  color: #666;
+}
+.night-row.unprofitable small {
+  color: #777;
+}

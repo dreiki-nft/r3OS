@@ -1,0 +1,187 @@
+.defrag-program {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #232326;
+  color: #f2efe9;
+  font-size: 12px;
+}
+.defrag-program .intro-bar {
+  margin: 0 6px 6px;
+}
+.defrag-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 8px;
+}
+.defrag-head > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.defrag-head span {
+  display: flex;
+  flex-direction: column;
+}
+.defrag-head small {
+  color: #a3a09a;
+}
+.defrag-grid {
+  margin: 0 8px;
+  padding: 8px;
+  background: #0e0e10;
+  display: grid;
+  grid-template-columns: repeat(128, minmax(2px, 1fr));
+  gap: 1px;
+  overflow: auto;
+  flex: 1;
+  min-height: 180px;
+  align-content: start;
+}
+.defrag-grid i {
+  aspect-ratio: 1;
+  min-width: 2px;
+  background: #694b87;
+  transition: background 0.35s;
+}
+.defrag-grid i.page-start {
+  box-shadow: -2px 0 0 #000;
+}
+.defrag-grid i.free,
+.defrag-legend i.free {
+  background: #fff;
+}
+.defrag-grid i.optimized,
+.defrag-legend i.optimized {
+  background: #694b87;
+}
+.defrag-grid i.reading,
+.defrag-legend i.reading {
+  background: #07992f;
+}
+.defrag-grid i.writing,
+.defrag-legend i.writing {
+  background: #c52020;
+}
+.defrag-grid i.frozen,
+.defrag-legend i.frozen {
+  background-color: #fec343;
+  background-image: radial-gradient(#0b0b0c 18%, transparent 20%);
+  background-size: 4px 4px;
+}
+.defrag-details {
+  position: relative;
+  margin: 12px 8px 8px;
+  padding: 16px 10px 10px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  border: 1px solid #6b6b73;
+}
+.defrag-details .legend-label {
+  position: absolute;
+  top: -9px;
+  left: 10px;
+  background: #232326;
+  padding: 0 6px;
+}
+.defrag-details > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.defrag-details small {
+  color: #a3a09a;
+}
+.defrag-details b {
+  font-size: 16px;
+}
+.defrag-progress {
+  height: 18px;
+  margin: 0 8px;
+  padding: 3px;
+  background: #0e0e10;
+}
+.defrag-progress span {
+  display: block;
+  height: 100%;
+  background: #694b87;
+  transition: width 0.1s linear;
+}
+.defrag-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+}
+.defrag-controls > span {
+  flex: 1;
+}
+.defrag-status {
+  margin-top: auto;
+  padding: 4px 8px;
+  background: #232326;
+  color: #d6d2cb;
+}
+.defrag-select {
+  width: min(560px, 90vw);
+  padding: 10px;
+  background: #232326;
+}
+.defrag-select > p {
+  margin: 10px 4px;
+}
+.defrag-select > label {
+  display: grid;
+  grid-template-columns: 20px 32px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+}
+.defrag-select > label.selected {
+  background: rgba(95, 237, 223, 0.22);
+  outline: 1px dotted #f2efe9;
+}
+.defrag-select label span {
+  display: flex;
+  flex-direction: column;
+}
+.defrag-select label small {
+  color: #a3a09a;
+}
+.defrag-select-details {
+  padding: 8px;
+  background: #0e0e10;
+  border: 1px solid #3d3d44;
+  line-height: 1.45;
+}
+.defrag-legend {
+  display: grid;
+  gap: 8px;
+}
+.defrag-legend span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.defrag-legend i {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #000;
+}
+.defrag-program .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 10px;
+}
+@media (max-width: 760px) {
+  .defrag-grid {
+    grid-template-columns: repeat(64, minmax(3px, 1fr));
+  }
+  .defrag-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
