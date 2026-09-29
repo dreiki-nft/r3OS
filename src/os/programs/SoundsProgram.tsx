@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Tabs } from '../ui/Tabs'
 import { GroupBox } from '../ui/GroupBox'
 import { ListBox } from '../ui/ListBox'
 import { Button } from '../ui/Button'
 import { getVolume, isMuted, playSound, setMuted, setVolume, type SoundName } from '../sound'
 import { Icon } from '../ui/Icon'
+import { closeWindow } from '../windows'
 const rows: [SoundName, string, string][] = [
   ['system-initiate', 'Wallet connected', 'system-initiate.mp3'],
   ['system-shutdown', 'Disconnect / Shut Down', 'system-shutdown.mp3'],
@@ -23,6 +24,13 @@ export function SoundsProgram() {
   const [selected, setSelected] = useState(rows[0])
   const [vol, setVol] = useState(Math.round(getVolume() * 100))
   const [muted, setM] = useState(isMuted())
+  // Changes apply live (like the Win98 preview); Cancel restores what was set when the window opened.
+  const opened = useRef({ volume: getVolume(), muted: isMuted() })
+  const cancel = () => {
+    setVolume(opened.current.volume)
+    setMuted(opened.current.muted)
+    closeWindow('sounds')
+  }
   return (
     <div className="properties">
       <Tabs tabs={['Sounds']} active="Sounds" onChange={() => {}} />
@@ -79,9 +87,13 @@ export function SoundsProgram() {
         </label>
       </GroupBox>
       <div className="dialog-actions">
-        <Button primary>OK</Button>
-        <Button>Cancel</Button>
-        <Button>Apply</Button>
+        <Button primary onClick={() => closeWindow('sounds')}>
+          OK
+        </Button>
+        <Button onClick={cancel}>Cancel</Button>
+        <Button disabled title="changes apply as you make them">
+          Apply
+        </Button>
       </div>
     </div>
   )

@@ -18,6 +18,7 @@ import {
 } from '../lib/cdArt'
 import { loadBurner } from '../live/burner'
 import { openProgram } from '../os/programs'
+import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
 import { Icon } from '../os/ui/Icon'
 import { MenuBar } from '../os/ui/MenuBar'
@@ -504,6 +505,7 @@ export function CDBurnerProgram() {
             setStep(0)
             setTracks([])
             setLabel('')
+            closeWindow('cd')
           }}
         >
           Cancel

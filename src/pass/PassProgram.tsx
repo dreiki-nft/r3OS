@@ -13,6 +13,7 @@ import { R3TARDS_PAINTER_PASS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/ab
 import { clearAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
 import { openProgram } from '../os/programs'
+import { closeWindow } from '../os/windows'
 import { playSound } from '../os/sound'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -545,8 +546,10 @@ export function PassProgram() {
         )}
       </div>
       <div className="dialog-actions">
-        <Button primary>OK</Button>
-        <Button>Cancel</Button>
+        <Button primary onClick={() => closeWindow('pass')}>
+          OK
+        </Button>
+        <Button onClick={() => closeWindow('pass')}>Cancel</Button>
       </div>
       {box && <MessageBox {...box} onClose={() => setBox(undefined)} />}
     </div>
