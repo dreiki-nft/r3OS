@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { zeroAddress, type Address } from 'viem'
 import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
-import { readMany } from '../chain/readMany'
+import { readHeavy, readMany } from '../chain/readMany'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
@@ -11,7 +11,7 @@ import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { SafeImage } from '../os/ui/SafeImage'
-import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
+import { decodeLabsTokenUri, readLabsToken, type LabsTokenData } from '../labs/labsToken'
 
 export type LabsOwnedToken = { id: bigint; data?: LabsTokenData }
 export type LabsFilter = 'All' | 'Reels' | 'Forks' | 'Dreams' | 'CDs'
@@ -73,7 +73,25 @@ export async function scanOwnedLabs(labs: Address, owner: Address) {
 export async function loadOwnedLabsTokens(owner: Address) {
   const address = await labsAddress()
   const ids = await scanOwnedLabs(address, owner)
-  return Promise.all(ids.map(async (id) => ({ id, data: await readLabsToken(id).catch(() => undefined) })))
+  if (!ids.length) return []
+  const rows = await readHeavy(
+    ids.map((id) => ({ address, abi: R3TARDS_LABS_ABI, functionName: 'tokenURI', args: [id] })),
+  )
+  return ids.map((id, index) => ({
+    id,
+    data:
+      rows[index]?.status === 'success'
+        ? decodeLabsTokenUriSafe(String((rows[index] as { status: 'success'; result: unknown }).result))
+        : undefined,
+  }))
+}
+
+function decodeLabsTokenUriSafe(uri: string) {
+  try {
+    return decodeLabsTokenUri(uri)
+  } catch {
+    return undefined
+  }
 }
 
 export function labsBucket(data?: LabsTokenData) {
@@ -112,10 +130,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
     try {
       const address = labs ?? (await labsAddress())
       setLabs(address)
-      const ids = await scanOwnedLabs(address, wallet.account)
-      const rows = await Promise.all(
-        ids.map(async (id) => ({ id, data: await readLabsToken(id).catch(() => undefined) })),
-      )
+      const rows = await loadOwnedLabsTokens(wallet.account)
       setTokens(rows)
       if (routeToken != null && rows.some((token) => token.id === routeToken)) setSelected(routeToken)
     } catch (error) {

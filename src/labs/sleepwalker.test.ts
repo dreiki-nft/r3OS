@@ -12,6 +12,9 @@ import {
   suggestedSleepwalkerTip,
   sleepwalkerStepMaxCost,
   nightShiftProfit,
+  dreamWindowBlocks,
+  reduceNightShiftCandidates,
+  untimedReplayOrder,
 } from './sleepwalker'
 
 const owner = '0x0000000000000000000000000000000000000001' as Address
@@ -94,7 +97,31 @@ describe('Sleepwalker stencil/replay', () => {
   })
 })
 
+describe('Sleepwalker bounded history', () => {
+  it('derives the dream window from four session windows plus slack', () => {
+    expect(dreamWindowBlocks(24_000n)).toBe(100_000n)
+  })
+
+  it('replays an untimed dream in stencil order up to the cursor', () => {
+    expect(untimedReplayOrder(0)).toEqual([0])
+    expect(untimedReplayOrder(190, 64)).toEqual([0, 64, 128, 190])
+  })
+})
+
 describe('Sleepwalker Night Shift', () => {
+  it('reduces Slept and DreamResumed candidates to unique latest owners', () => {
+    expect(
+      reduceNightShiftCandidates([
+        { owner, tip: 1n },
+        { owner: key, tip: 2n },
+        { owner, tip: 3n },
+      ]),
+    ).toEqual([
+      { owner, tip: 3n },
+      { owner: key, tip: 2n },
+    ])
+  })
+
   it('maps step codes to words and filters readiness', () => {
     expect(stepCodeMessage(5)).toBe("hasn't painted today")
     expect(stepCodeMessage(7, 23n)).toBe('too soon, wait 23 blocks')

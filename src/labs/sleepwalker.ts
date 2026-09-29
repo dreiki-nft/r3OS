@@ -154,3 +154,31 @@ export function filterReadySleepers<T extends { owner: Address }>(
 export function estimateDreamSteps(pixels: number, stepMax = SLEEPWALKER_STEP_MAX_PX) {
   return pixels === 0 ? 0 : Math.ceil(pixels / stepMax)
 }
+
+export function dreamWindowBlocks(maxSessionBlocks: bigint) {
+  return maxSessionBlocks * 4n + 4_000n
+}
+
+export function untimedReplayOrder(cursor: number, stepMax = SLEEPWALKER_STEP_MAX_PX) {
+  const end = Math.max(0, cursor)
+  const step = Math.max(1, stepMax)
+  const order = [0]
+  for (let value = step; value < end; value += step) order.push(value)
+  if (end > 0) order.push(end)
+  return order
+}
+
+export interface NightShiftCandidateEvent {
+  owner: Address
+  tip?: bigint
+}
+
+export function reduceNightShiftCandidates(events: readonly NightShiftCandidateEvent[]) {
+  const owners = new Map<string, { owner: Address; tip: bigint }>()
+  for (const event of events) {
+    const key = event.owner.toLowerCase()
+    const previous = owners.get(key)
+    owners.set(key, { owner: event.owner, tip: event.tip ?? previous?.tip ?? 0n })
+  }
+  return [...owners.values()]
+}

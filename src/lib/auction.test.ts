@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { keccak256, stringToHex, type Address } from 'viem'
-import { candleEndBlock, candleWindow, minNextBid, winnerAt, type AuctionBid } from './auction'
+import {
+  HISTORY_WINDOW,
+  REVEAL_WINDOW,
+  auctionSettleWindow,
+  candleEndBlock,
+  candleWindow,
+  minNextBid,
+  winnerAt,
+  type AuctionBid,
+} from './auction'
 
 const A = '0x00000000000000000000000000000000000000a1' as Address
 const B = '0x00000000000000000000000000000000000000b2' as Address
@@ -64,5 +73,19 @@ describe('candle auction helpers', () => {
 
   it('returns the bidding and candle windows', () => {
     expect(candleWindow(1_000n)).toEqual({ closeBlock: 288_999n, candleStartBlock: 277_000n })
+  })
+
+  it('describes the SEC settlement window with and without history storage', () => {
+    const close = 20_000n
+    expect(auctionSettleWindow(close, close - 1n, true).state).toBe('burning')
+    const history = auctionSettleWindow(close, close + 1n, true)
+    expect(history.state).toBe('random')
+    expect(history.randomUntil).toBe(close + HISTORY_WINDOW)
+    expect(auctionSettleWindow(close, close + HISTORY_WINDOW + 1n, true)).toMatchObject({
+      state: 'fallback',
+      fallbackEnd: close - 12_000n + 1n,
+    })
+    expect(auctionSettleWindow(close, close + REVEAL_WINDOW, false).state).toBe('random')
+    expect(auctionSettleWindow(close, close + REVEAL_WINDOW + 1n, false).state).toBe('fallback')
   })
 })

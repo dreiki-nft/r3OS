@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { parseEther } from 'viem'
 import { publicClient } from '../chain/clients'
+import { discoverContracts } from '../chain/contracts'
+import { useRefreshTick } from '../chain/refreshTick'
 import { config } from '../chain/config'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3TARDS_PAINT_ABI, R3TARDS_SLEEPWALKER_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -29,6 +31,7 @@ function short(address?: string) {
 }
 
 export function HardwareProfiles() {
+  const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const [topUp, setTopUp] = useState(false)
@@ -37,11 +40,58 @@ export function HardwareProfiles() {
   const [ending, setEnding] = useState(false)
   const [endProgress, setEndProgress] = useState('')
   const [error, setError] = useState('')
+  const [sessionNonce, setSessionNonce] = useState(0n)
+  const [cancelQuote, setCancelQuote] = useState<ActionQuote>()
+  const [dreamSessionsLeft, setDreamSessionsLeft] = useState(0n)
+  const [cancelling, setCancelling] = useState(false)
   const endWorkRef = useRef(false)
   const confirmHigherCost = async (oldQuote: ActionQuote, nextQuote: ActionQuote) =>
     window.confirm(`gas moved from ${oldQuote.maxCost} to ${nextQuote.maxCost}. continue?`)
 
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
+
+  useEffect(() => {
+    setCancelQuote(undefined)
+    setDreamSessionsLeft(0n)
+    if (!wallet.account || !publicClient || !config.paintAddress) return
+    const client = publicClient
+    const account = wallet.account
+    let cancelled = false
+    void (async () => {
+      const nonce = BigInt(
+        await client.readContract({
+          address: config.paintAddress!,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'sessionNonces',
+          args: [account],
+        }),
+      )
+      if (!cancelled) setSessionNonce(nonce)
+      const contracts = await discoverContracts()
+      const sleepwalker = contracts.labs.sleepwalker
+      if (sleepwalker) {
+        const dream = (await client.readContract({
+          address: sleepwalker,
+          abi: R3TARDS_SLEEPWALKER_ABI,
+          functionName: 'dreamOf',
+          args: [account],
+        })) as readonly unknown[]
+        if (!cancelled) setDreamSessionsLeft(BigInt(dream[5] as bigint))
+      }
+      const quote = await quoteAction({
+        kind: 'estimate',
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'incrementSessionNonce',
+        account,
+        action: 'cancel unused session signatures',
+      })
+      if (!cancelled) setCancelQuote(quote)
+    })().catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [wallet.account, refreshTick])
 
   useEffect(() => {
     if (!topUp || !wallet.account || !live.burner) return
@@ -89,6 +139,27 @@ export function HardwareProfiles() {
       await refreshLiveStatus(wallet.account)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught))
+    }
+  }
+
+  async function cancelUnusedSignatures() {
+    if (!wallet.account || !config.paintAddress || !cancelQuote) return
+    setCancelling(true)
+    try {
+      await sendAction({
+        kind: 'estimate',
+        address: config.paintAddress,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'incrementSessionNonce',
+        account: wallet.account,
+        quote: cancelQuote,
+        confirmHigherCost,
+        action: 'cancel unused session signatures',
+      })
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught))
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -214,6 +285,28 @@ export function HardwareProfiles() {
           <dt>Session paints</dt>
           <dd>{live.sessionPaints.toLocaleString()} (counts toward LIVE WIRE)</dd>
         </dl>
+      </GroupBox>
+      <GroupBox title="Cancel unused signatures">
+        <dl className="hardware-status">
+          <dt>Session nonce</dt>
+          <dd>{sessionNonce.toString()}</dd>
+        </dl>
+        <p>
+          Every session you signed but haven't started stops working. Sessions already running keep going;
+          revoke those separately.
+        </p>
+        {dreamSessionsLeft > 0n && (
+          <p className="warning-line">
+            your Sleepwalker dream stalls at its next night. Resume with new signatures or wake up.
+          </p>
+        )}
+        <Button
+          disabled={!wallet.account || !cancelQuote || cancelling}
+          onClick={() => void cancelUnusedSignatures()}
+        >
+          {cancelling ? 'Cancelling…' : 'Cancel unused signatures'}
+        </Button>
+        <small>{cancelQuote?.maxCost ?? 'quoting…'}</small>
       </GroupBox>
       <div className="hardware-actions">
         <Button

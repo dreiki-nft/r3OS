@@ -8,11 +8,13 @@ import {
   useSyncExternalStore,
   type ChangeEvent,
 } from 'react'
+import { useRefreshTick } from '../chain/refreshTick'
 import {
   decodeEventLog,
   formatEther,
   parseAbiItem,
   parseEther,
+  isAddress,
   zeroAddress,
   type Address,
   type Hex,
@@ -24,22 +26,27 @@ import { discoverContracts } from '../chain/contracts'
 import { parseManualIds, resolveHolderIds } from '../chain/holders'
 import { friendlyError } from '../chain/errors'
 import { readMany } from '../chain/readMany'
+import { getLogsWindow, scanBackward } from '../chain/logs'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI, R3TARDS_SLEEPWALKER_ABI } from '../lib/generated/abi'
 import { PALETTE } from '../lib/palette'
+import { idbGet, idbSet } from '../lib/idb'
 import { readLabsToken, type LabsTokenData } from './labsToken'
 import {
   buildSleepwalkerStencil,
   cursorPixels,
   estimateDreamSteps,
+  dreamWindowBlocks,
   filterReadySleepers,
   nightShiftProfit,
   orderDreamt,
+  reduceNightShiftCandidates,
   planSleepwalkerSessions,
   sleepwalkerTypedData,
   sleepwalkerStepMaxCost,
   suggestedSleepwalkerTip,
+  untimedReplayOrder,
   stepCodeMessage,
   type DreamtLike,
   type SignedSession,
@@ -49,7 +56,7 @@ import {
   markSleepwalkerDraftSubmitted,
   subscribeSleepwalkerDraft,
 } from './sleepwalkerDraft'
-import { chunkBlockRanges, getCanvasSnapshot, subscribeCanvas } from '../paint/canvasStore'
+import { getCanvasSnapshot, subscribeCanvas } from '../paint/canvasStore'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { IntroBar } from '../os/ui/IntroBar'
@@ -65,6 +72,7 @@ const SLEPT = parseAbiItem(
   'event Slept(address indexed owner,address indexed key,address pointer,uint256 totalPixels,uint256 sessions,uint256 tipPerStep,uint256 deposit)',
 )
 const COMPLETE = parseAbiItem('event DreamComplete(address indexed owner,uint256 pixelsDreamt,uint256 steps)')
+const RESUMED = parseAbiItem('event DreamResumed(address indexed owner,uint256 sessions)')
 const WOKE = parseAbiItem('event Woke(address indexed owner,uint256 refund)')
 const STALLED = parseAbiItem('event DreamStalled(address indexed owner,uint256 blockNumber)')
 const MINTED = parseAbiItem(
@@ -94,6 +102,7 @@ type AllowanceView = {
 type Sleeper = {
   owner: Address
   tip: bigint
+  deposit: bigint
   ready: boolean
   result?: string
 }
@@ -166,16 +175,37 @@ async function pointerBytes(pointer: Address) {
   return `0x${code.slice(4)}` as Hex
 }
 
-async function eventChunks(address: Address, event: any, args?: Record<string, unknown>) {
-  if (!publicClient) return []
-  const head = await publicClient.getBlockNumber({ cacheTime: 0 })
-  const out: any[] = []
-  for (const range of chunkBlockRanges(0n, head, 25_000n)) {
-    const rows = await publicClient.getLogs({ address, event, args, ...range } as any)
-    out.push(...rows)
-  }
-  return out
+function sleptStorageKey(owner: Address) {
+  return `r3os.sleepwalker.slept.${config.chainId}.${owner.toLowerCase()}`
 }
+
+function readStoredSleptBlock(owner: Address) {
+  try {
+    const value = localStorage.getItem(sleptStorageKey(owner))
+    return value && /^\d+$/.test(value) ? BigInt(value) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function writeStoredSleptBlock(owner: Address, blockNumber: bigint) {
+  try {
+    localStorage.setItem(sleptStorageKey(owner), blockNumber.toString())
+  } catch {
+    // Replay still works through bounded log discovery when storage is unavailable.
+  }
+}
+
+type CachedOwnerEvent = {
+  kind: 'Dreamt' | 'DreamComplete' | 'DreamStalled' | 'DreamMinted'
+  blockNumber: bigint
+  cursorFrom?: bigint
+  cursorTo?: bigint
+  pixels?: bigint
+}
+
+type OwnerEventCache = { scannedTo: bigint; events: CachedOwnerEvent[] }
+type NightCache = { scannedTo: bigint; owners: Address[] }
 
 export function survivalPercent(stencil: Hex, cursor: number, live: Uint8Array) {
   const points = cursorPixels(stencil, cursor)
@@ -238,6 +268,7 @@ function StencilPreview({
 export function SleepwalkerProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  const refreshTick = useRefreshTick()
   const canvas = useSyncExternalStore(subscribeCanvas, getCanvasSnapshot)
   const draft = useSyncExternalStore(subscribeSleepwalkerDraft, getSleepwalkerDraft)
   const [tab, setTab] = useState<Tab>(tabFromHash)
@@ -270,6 +301,13 @@ export function SleepwalkerProgram() {
   const [lastMintBlock, setLastMintBlock] = useState<bigint>()
   const [minted, setMinted] = useState<LabsTokenData>()
   const [sleepers, setSleepers] = useState<Sleeper[]>([])
+  const [ownerProgress, setOwnerProgress] = useState('')
+  const [nightProgress, setNightProgress] = useState('')
+  const [untimedReplay, setUntimedReplay] = useState(false)
+  const [refundTo, setRefundTo] = useState('')
+  const ownerScanRef = useRef({ key: '', missing: false, running: false })
+  const nightAbortRef = useRef<AbortController | null>(null)
+  const DREAM_WINDOW_BLOCKS = dreamWindowBlocks(maxSessionBlocks)
 
   useEffect(() => {
     void discoverContracts().then((contracts) => setAddress(contracts.labs.sleepwalker))
@@ -306,37 +344,124 @@ export function SleepwalkerProgram() {
 
   useEffect(() => {
     void refresh().catch((caught) => setError(friendlyError(caught, 'sleepwalker').message))
-  }, [refresh, block.block])
+  }, [refresh, refreshTick])
 
   const loadOwnerEvents = useCallback(async () => {
-    if (!wallet.account || !address) return
-    try {
-      const [dreamLogs, sleptLogs, completeLogs, stalledLogs, mintedLogs] = await Promise.all([
-        eventChunks(address, DREAMT, { owner: wallet.account }),
-        eventChunks(address, SLEPT, { owner: wallet.account }),
-        eventChunks(address, COMPLETE, { owner: wallet.account }),
-        eventChunks(address, STALLED, { owner: wallet.account }),
-        eventChunks(address, MINTED, { owner: wallet.account }),
-      ])
-      const events = dreamLogs.map((log) => ({
-        cursorFrom: BigInt(log.args.cursorFrom ?? 0),
-        cursorTo: BigInt(log.args.cursorTo ?? 0),
-        pixels: BigInt(log.args.pixels ?? 0),
-        blockNumber: BigInt(log.args.blockNumber ?? log.blockNumber ?? 0),
-      }))
-      setDreamt(orderDreamt(events))
-      setLastSleepBlock(sleptLogs.at(-1)?.blockNumber ?? undefined)
-      setLastCompleteBlock(completeLogs.at(-1)?.blockNumber ?? undefined)
-      setStalledAt(stalledLogs.at(-1)?.blockNumber ?? undefined)
-      setLastMintBlock(mintedLogs.at(-1)?.blockNumber ?? undefined)
-    } catch (caught) {
-      setError(friendlyError(caught, 'Dreamt').message)
+    if (!wallet.account || !address || !publicClient) return
+    const owner = wallet.account
+    // No stored dream: nothing to replay, so no log reads at all.
+    if (dream.pointer === zeroAddress) {
+      setUntimedReplay(false)
+      setDreamt([])
+      setLastSleepBlock(undefined)
+      setLastCompleteBlock(undefined)
+      setStalledAt(undefined)
+      setLastMintBlock(undefined)
+      setOwnerProgress('')
+      return
     }
-  }, [wallet.account, address])
+    const scanKey = `${owner.toLowerCase()}:${dream.pointer.toLowerCase()}`
+    const scan = ownerScanRef.current
+    // One scan at a time, and a dream whose Slept block is outside the window is scanned once, not every tick.
+    if (scan.running || (scan.key === scanKey && scan.missing)) return
+    ownerScanRef.current = { key: scanKey, missing: false, running: true }
+    try {
+      const head = await publicClient.getBlockNumber({ cacheTime: 0 })
+      let sleptBlock = readStoredSleptBlock(owner)
+      if (sleptBlock == null || sleptBlock > head || head - sleptBlock + 1n > DREAM_WINDOW_BLOCKS) {
+        const slept = await scanBackward({
+          address,
+          event: SLEPT,
+          args: { owner },
+          maxBlocks: DREAM_WINDOW_BLOCKS,
+          until: (logs) => logs.length > 0,
+          onProgress: (done, total) =>
+            setOwnerProgress(
+              `reading your dream… ${Math.min(100, Math.round((Number(done) / Number(total || 1n)) * 100))}%`,
+            ),
+        })
+        sleptBlock = slept.at(-1)?.blockNumber
+        if (sleptBlock != null) writeStoredSleptBlock(owner, sleptBlock)
+      }
+      if (sleptBlock == null || sleptBlock > head || head - sleptBlock + 1n > DREAM_WINDOW_BLOCKS) {
+        ownerScanRef.current = { key: scanKey, missing: true, running: false }
+        setUntimedReplay(true)
+        setDreamt([])
+        setLastSleepBlock(undefined)
+        setLastCompleteBlock(undefined)
+        setStalledAt(undefined)
+        setLastMintBlock(undefined)
+        setOwnerProgress('untimed replay')
+        return
+      }
+
+      setUntimedReplay(false)
+      setLastSleepBlock(sleptBlock)
+      const pointer = dream.pointer === zeroAddress ? 'none' : dream.pointer.toLowerCase()
+      const cacheKey = `sleep:${config.chainId}:${owner.toLowerCase()}:${pointer}`
+      const cached = await idbGet<OwnerEventCache>('logCache', cacheKey)
+      let events = cached?.events?.filter((event) => event.blockNumber >= sleptBlock!) ?? []
+      let fromBlock = sleptBlock
+      if (cached && cached.scannedTo >= sleptBlock) fromBlock = cached.scannedTo + 1n
+      if (fromBlock <= head) {
+        const rows = await getLogsWindow({
+          address,
+          events: [DREAMT, COMPLETE, STALLED, MINTED],
+          args: { owner },
+          fromBlock,
+          toBlock: head,
+          maxBlocks: DREAM_WINDOW_BLOCKS,
+          onProgress: (done, total) =>
+            setOwnerProgress(
+              `reading your dream… ${Math.min(100, Math.round((Number(done) / Number(total || 1n)) * 100))}%`,
+            ),
+        })
+        for (const log of rows as any[]) {
+          const kind = String(log.eventName ?? '') as CachedOwnerEvent['kind']
+          if (
+            kind !== 'Dreamt' &&
+            kind !== 'DreamComplete' &&
+            kind !== 'DreamStalled' &&
+            kind !== 'DreamMinted'
+          )
+            continue
+          const args = log.args ?? {}
+          events.push({
+            kind,
+            blockNumber: BigInt(log.blockNumber ?? args.blockNumber ?? 0n),
+            cursorFrom: kind === 'Dreamt' ? BigInt(args.cursorFrom ?? 0n) : undefined,
+            cursorTo: kind === 'Dreamt' ? BigInt(args.cursorTo ?? 0n) : undefined,
+            pixels: kind === 'Dreamt' ? BigInt(args.pixels ?? 0n) : undefined,
+          })
+        }
+        events.sort((a, b) => (a.blockNumber === b.blockNumber ? 0 : a.blockNumber < b.blockNumber ? -1 : 1))
+        await idbSet('logCache', cacheKey, { scannedTo: head, events } satisfies OwnerEventCache)
+      }
+
+      const dreamEvents = events
+        .filter((event) => event.kind === 'Dreamt')
+        .map((event) => ({
+          cursorFrom: event.cursorFrom ?? 0n,
+          cursorTo: event.cursorTo ?? 0n,
+          pixels: event.pixels ?? 0n,
+          blockNumber: event.blockNumber,
+        }))
+      setDreamt(orderDreamt(dreamEvents))
+      setLastCompleteBlock(events.filter((event) => event.kind === 'DreamComplete').at(-1)?.blockNumber)
+      setStalledAt(events.filter((event) => event.kind === 'DreamStalled').at(-1)?.blockNumber)
+      setLastMintBlock(events.filter((event) => event.kind === 'DreamMinted').at(-1)?.blockNumber)
+      setOwnerProgress('')
+    } catch (caught) {
+      setOwnerProgress('')
+      setError(friendlyError(caught, 'Dreamt').message)
+    } finally {
+      ownerScanRef.current = { ...ownerScanRef.current, running: false }
+    }
+  }, [wallet.account, address, dream.pointer, DREAM_WINDOW_BLOCKS])
 
   useEffect(() => {
     if (wallet.account && address) void loadOwnerEvents()
-  }, [wallet.account, address, loadOwnerEvents])
+  }, [wallet.account, address, loadOwnerEvents, refreshTick])
 
   useEffect(() => {
     if (!dream.pointer || dream.pointer === zeroAddress) {
@@ -350,7 +475,15 @@ export function SleepwalkerProgram() {
   }, [dream.pointer, dream.cursor, draft?.runs])
 
   useEffect(() => {
-    if (!playing || !dreamt.length) return
+    if (!playing) return
+    if (untimedReplay) {
+      const order = untimedReplayOrder(Number(dream.cursor))
+      const next = order.find((value) => value > replayCursor)
+      if (next == null) return setPlaying(false)
+      const timer = window.setTimeout(() => setReplayCursor(next), 140)
+      return () => window.clearTimeout(timer)
+    }
+    if (!dreamt.length) return setPlaying(false)
     let index = dreamt.findIndex((event) => Number(event.cursorTo) > replayCursor)
     if (index < 0) index = dreamt.length
     if (index >= dreamt.length) return setPlaying(false)
@@ -360,7 +493,7 @@ export function SleepwalkerProgram() {
       Math.max(90, Math.min(1_500, Number(gap) * Math.max(100, block.blockTimeMs))),
     )
     return () => window.clearTimeout(timer)
-  }, [playing, replayCursor, dreamt, block.blockTimeMs])
+  }, [playing, replayCursor, dreamt, dream.cursor, untimedReplay, block.blockTimeMs])
 
   useEffect(() => {
     if (!publicClient || (tab !== 'tonight' && tab !== 'night')) return
@@ -386,14 +519,30 @@ export function SleepwalkerProgram() {
       try {
         const owners = current.map((item) => item.owner)
         const rows = await readMany(
-          [{ address, abi: R3TARDS_SLEEPWALKER_ABI, functionName: 'stepReady', args: [owners] }],
-          { allowFailure: false },
+          [
+            { address, abi: R3TARDS_SLEEPWALKER_ABI, functionName: 'stepReady', args: [owners] },
+            ...owners.map((owner) => ({
+              address,
+              abi: R3TARDS_SLEEPWALKER_ABI,
+              functionName: 'dreamOf',
+              args: [owner],
+            })),
+          ],
+          { allowFailure: true },
         )
-        const ready = rows[0] as boolean[]
+        const ready = rows[0]?.status === 'success' ? (rows[0].result as boolean[]) : []
         setSleepers((existing) =>
           existing.map((item) => {
             const index = owners.findIndex((owner) => owner.toLowerCase() === item.owner.toLowerCase())
-            return index < 0 ? item : { ...item, ready: ready[index] === true }
+            if (index < 0) return item
+            const dreamRow = rows[index + 1] as any
+            const dreamTuple = dreamRow?.status === 'success' ? asTuple(dreamRow.result) : undefined
+            return {
+              ...item,
+              ready: ready[index] === true,
+              deposit: dreamTuple ? BigInt(dreamTuple[3] as bigint) : item.deposit,
+              tip: dreamTuple ? BigInt(dreamTuple[4] as bigint) : item.tip,
+            }
           }),
         )
       } catch {
@@ -405,50 +554,97 @@ export function SleepwalkerProgram() {
 
   const discoverSleepers = useCallback(async () => {
     if (!address || !publicClient) return
+    nightAbortRef.current?.abort()
+    const controller = new AbortController()
+    nightAbortRef.current = controller
     setBusy('finding sleepers…')
+    setNightProgress('reading Night Shift…')
     try {
-      const [sleptLogs, completeLogs, wokeLogs] = await Promise.all([
-        eventChunks(address, SLEPT),
-        eventChunks(address, COMPLETE),
-        eventChunks(address, WOKE),
-      ])
-      const active = new Set<string>()
-      const tips = new Map<string, bigint>()
-      const timeline = [
-        ...sleptLogs.map((log) => ({ kind: 'sleep', log })),
-        ...completeLogs.map((log) => ({ kind: 'done', log })),
-        ...wokeLogs.map((log) => ({ kind: 'done', log })),
-      ].sort((a, b) => Number((a.log.blockNumber ?? 0n) - (b.log.blockNumber ?? 0n)))
-      for (const item of timeline) {
-        const owner = String(item.log.args.owner ?? '').toLowerCase()
-        if (!owner) continue
-        if (item.kind === 'sleep') {
-          active.add(owner)
-          tips.set(owner, BigInt(item.log.args.tipPerStep ?? 0))
-        } else active.delete(owner)
+      const head = await publicClient.getBlockNumber({ cacheTime: 0 })
+      const floor = head >= DREAM_WINDOW_BLOCKS - 1n ? head - DREAM_WINDOW_BLOCKS + 1n : 0n
+      const cacheKey = `sleep-night:${config.chainId}:${address.toLowerCase()}`
+      const cached = await idbGet<NightCache>('logCache', cacheKey)
+      let owners = cached?.owners ?? []
+      let fromBlock = floor
+      if (cached && cached.scannedTo >= floor) fromBlock = cached.scannedTo + 1n
+      if (fromBlock <= head) {
+        const logs = await getLogsWindow({
+          address,
+          events: [SLEPT, RESUMED],
+          fromBlock,
+          toBlock: head,
+          maxBlocks: DREAM_WINDOW_BLOCKS,
+          signal: controller.signal,
+          onProgress: (done, total) =>
+            setNightProgress(
+              `reading Night Shift… ${Math.min(100, Math.round((Number(done) / Number(total || 1n)) * 100))}%`,
+            ),
+        })
+        const additions = reduceNightShiftCandidates(
+          (logs as any[]).flatMap((log) =>
+            log.args?.owner
+              ? [{ owner: log.args.owner as Address, tip: log.args?.tipPerStep as bigint | undefined }]
+              : [],
+          ),
+        ).map((item) => item.owner)
+        const merged = new Map<string, Address>()
+        for (const owner of [...owners, ...additions]) merged.set(owner.toLowerCase(), owner)
+        owners = [...merged.values()]
+        await idbSet('logCache', cacheKey, { scannedTo: head, owners } satisfies NightCache)
       }
-      const owners = [...active] as Address[]
-      if (!owners.length) return setSleepers([])
-      const readyRows = await readMany(
-        [{ address, abi: R3TARDS_SLEEPWALKER_ABI, functionName: 'stepReady', args: [owners] }],
-        { allowFailure: false },
+      if (controller.signal.aborted) return
+      if (!owners.length) {
+        setSleepers([])
+        return
+      }
+      const rows = await readMany(
+        [
+          { address, abi: R3TARDS_SLEEPWALKER_ABI, functionName: 'stepReady', args: [owners] },
+          ...owners.map((owner) => ({
+            address,
+            abi: R3TARDS_SLEEPWALKER_ABI,
+            functionName: 'dreamOf',
+            args: [owner],
+          })),
+        ],
+        { allowFailure: true },
       )
-      const ready = readyRows[0] as boolean[]
-      setSleepers(owners.map((owner, index) => ({ owner, tip: tips.get(owner) ?? 0n, ready: ready[index] })))
+      const ready = rows[0]?.status === 'success' ? (rows[0].result as boolean[]) : []
+      const next = owners.flatMap((owner, index) => {
+        const row = rows[index + 1] as any
+        if (row?.status !== 'success') return []
+        const tuple = asTuple(row.result)
+        const pointer = String(tuple[0] ?? zeroAddress) as Address
+        const deposit = BigInt(tuple[3] as bigint)
+        const tip = BigInt(tuple[4] as bigint)
+        const stalled = Boolean(tuple[7])
+        if (pointer === zeroAddress || stalled) return []
+        return [{ owner, tip, deposit, ready: ready[index] === true }]
+      })
+      setSleepers(next)
     } catch (caught) {
-      setError(friendlyError(caught, 'stepReady').message)
+      if ((caught as Error)?.name !== 'AbortError') setError(friendlyError(caught, 'stepReady').message)
     } finally {
+      if (nightAbortRef.current === controller) nightAbortRef.current = null
+      setNightProgress('')
       setBusy('')
     }
-  }, [address])
+  }, [address, DREAM_WINDOW_BLOCKS])
 
   useEffect(() => {
     if (tab === 'night') void discoverSleepers()
   }, [tab, discoverSleepers])
 
   useEffect(() => {
+    if (tab === 'night') return
+    nightAbortRef.current?.abort()
+    nightAbortRef.current = null
+    setNightProgress('')
+  }, [tab])
+
+  useEffect(() => {
     if (tab === 'night' && sleepers.length) void refreshReadiness(sleepers)
-  }, [tab, block.block, refreshReadiness])
+  }, [tab, refreshTick, refreshReadiness])
 
   useEffect(() => {
     if (tab !== 'night' || !wsClient || !address) return
@@ -463,7 +659,7 @@ export function SleepwalkerProgram() {
             const args = log.args as { owner?: Address; tipPerStep?: bigint }
             if (!args.owner) continue
             const index = next.findIndex((item) => item.owner.toLowerCase() === args.owner!.toLowerCase())
-            const item: Sleeper = { owner: args.owner, tip: args.tipPerStep ?? 0n, ready: false }
+            const item: Sleeper = { owner: args.owner, tip: args.tipPerStep ?? 0n, deposit: 0n, ready: false }
             if (index < 0) next.push(item)
             else next[index] = { ...next[index], ...item }
           }
@@ -475,6 +671,12 @@ export function SleepwalkerProgram() {
       const owners = new Set(logs.map((log) => String(log.args?.owner ?? '').toLowerCase()))
       setSleepers((current) => current.filter((item) => !owners.has(item.owner.toLowerCase())))
     }
+    const stopResumed = wsClient.watchContractEvent({
+      address,
+      abi: R3TARDS_SLEEPWALKER_ABI,
+      eventName: 'DreamResumed',
+      onLogs: () => void discoverSleepers(),
+    })
     const stopComplete = wsClient.watchContractEvent({
       address,
       abi: R3TARDS_SLEEPWALKER_ABI,
@@ -489,10 +691,11 @@ export function SleepwalkerProgram() {
     })
     return () => {
       stopSlept()
+      stopResumed()
       stopComplete()
       stopWoke()
     }
-  }, [tab, address])
+  }, [tab, address, discoverSleepers])
 
   useEffect(() => {
     if (draft) setHolderIds([...draft.holderIds])
@@ -594,10 +797,11 @@ export function SleepwalkerProgram() {
       const quote = await quoteAction(action)
       setConfirm({
         title: 'Go to sleep',
-        message: `${quote.maxCost} transaction max, plus ${deposit} MON tip deposit. ${completedUnminted ? 'sleeping again discards the mint option for your last dream. ' : ''}Submit the dream?`,
+        message: `${quote.maxCost} for the transaction, plus ${deposit} MON tip deposit. ${completedUnminted ? 'sleeping again discards the mint option for your last dream. ' : ''}Submit the dream?`,
         defaultLabel: 'Go to sleep',
         run: async () => {
-          await sendAction({ ...action, quote })
+          const result = await sendAction({ ...action, quote })
+          writeStoredSleptBlock(wallet.account!, result.blockNumber)
           markSleepwalkerDraftSubmitted(draft.version)
           setTab('morning')
           await refresh()
@@ -631,7 +835,8 @@ export function SleepwalkerProgram() {
         message: `${quote.maxCost}. Start with fresh consecutive session signatures and keep the current stencil progress?`,
         defaultLabel: 'Resume',
         run: async () => {
-          await sendAction({ ...action, quote })
+          const result = await sendAction({ ...action, quote })
+          writeStoredSleptBlock(wallet.account!, result.blockNumber)
           await refresh()
         },
       })
@@ -679,7 +884,7 @@ export function SleepwalkerProgram() {
         : wakeQuote.maxCost
       setConfirm({
         title: 'Wake up',
-        message: `${cost}. First revoke the active Sleepwalker session key from your wallet, then wake to delete unused signatures and refund the remaining deposit.`,
+        message: `${cost}. Revoking the session key alone doesn't stop the dream: the next signed night starts by itself. Wake up deletes unused signatures and refunds your deposit.`,
         defaultLabel: 'Wake up',
         run: async () => {
           if (revokeQuote) {
@@ -744,6 +949,38 @@ export function SleepwalkerProgram() {
       })
     } catch (caught) {
       setError(friendlyError(caught, functionName).message)
+    }
+  }
+
+  async function withdrawRefundTo() {
+    if (!wallet.account || !address) return
+    if (!isAddress(refundTo)) {
+      setError('enter a valid refund address')
+      return
+    }
+    try {
+      const action = {
+        kind: 'estimate' as const,
+        address,
+        abi: R3TARDS_SLEEPWALKER_ABI,
+        functionName: 'withdrawRefundTo',
+        args: [refundTo as Address],
+        account: wallet.account,
+        action: 'withdraw Sleepwalker refund to another address',
+      }
+      const quote = await quoteAction(action)
+      setConfirm({
+        title: 'Send refund',
+        message: `${quote.maxCost}. Send the whole pending refund to ${refundTo}?`,
+        defaultLabel: 'Send',
+        run: async () => {
+          await sendAction({ ...action, quote })
+          setRefundTo('')
+          await refresh()
+        },
+      })
+    } catch (caught) {
+      setError(friendlyError(caught, 'withdrawRefundTo').message)
     }
   }
 
@@ -1021,8 +1258,9 @@ export function SleepwalkerProgram() {
                   </dl>
                   {dream.stalled && (
                     <p className="warning-line">
-                      Your dream stopped at block {(stalledAt ?? dream.nextStepBlock).toString()}: nobody
-                      stepped for 2 hours. Resume with new signatures, or wake up
+                      {dream.sessionsLeft === 0n
+                        ? 'Dream stalled: no signed nights left. Resume with new signatures or wake up.'
+                        : `Dream stalled at block ${(stalledAt ?? dream.nextStepBlock).toString()}. Resume with new signatures or wake up.`}
                     </p>
                   )}
                   <div className="sleep-actions">
@@ -1041,7 +1279,20 @@ export function SleepwalkerProgram() {
                 {refund > 0n && (
                   <GroupBox title="Refund">
                     <p>{formatEther(refund)} MON waiting</p>
-                    <Button onClick={() => void simpleAction('withdrawRefund')}>Withdraw</Button>
+                    <div className="sleep-actions">
+                      <Button onClick={() => void simpleAction('withdrawRefund')}>Withdraw</Button>
+                    </div>
+                    <label>
+                      Send to another address
+                      <input
+                        value={refundTo}
+                        onChange={(event) => setRefundTo(event.target.value.trim())}
+                        placeholder="0x…"
+                      />
+                    </label>
+                    <Button disabled={!isAddress(refundTo)} onClick={() => void withdrawRefundTo()}>
+                      Send
+                    </Button>
                   </GroupBox>
                 )}
                 {minted && (
@@ -1069,7 +1320,11 @@ export function SleepwalkerProgram() {
                 primary
                 disabled={
                   !sleepers.some(
-                    (s) => s.ready && maxFeePerGas > 0n && nightShiftProfit(s.tip, maxFeePerGas).profitable,
+                    (s) =>
+                      s.ready &&
+                      s.deposit >= s.tip &&
+                      maxFeePerGas > 0n &&
+                      nightShiftProfit(s.tip, maxFeePerGas).profitable,
                   )
                 }
                 onClick={() => void stepAll()}
@@ -1077,7 +1332,11 @@ export function SleepwalkerProgram() {
                 Step all (
                 {
                   sleepers.filter(
-                    (s) => s.ready && maxFeePerGas > 0n && nightShiftProfit(s.tip, maxFeePerGas).profitable,
+                    (s) =>
+                      s.ready &&
+                      s.deposit >= s.tip &&
+                      maxFeePerGas > 0n &&
+                      nightShiftProfit(s.tip, maxFeePerGas).profitable,
                   ).length
                 }
                 )
@@ -1086,7 +1345,8 @@ export function SleepwalkerProgram() {
             <div className="night-list sunken">
               {sleepers.map((sleeper) => {
                 const economics = nightShiftProfit(sleeper.tip, maxFeePerGas)
-                const actionable = sleeper.ready && maxFeePerGas > 0n && economics.profitable
+                const actionable =
+                  sleeper.ready && sleeper.deposit >= sleeper.tip && maxFeePerGas > 0n && economics.profitable
                 return (
                   <div
                     className={`night-row ${actionable ? 'ready' : ''} ${!economics.profitable ? 'unprofitable' : ''}`}
@@ -1100,16 +1360,21 @@ export function SleepwalkerProgram() {
                       {formatEther(sleeper.tip)} MON tip
                       <small>
                         tip − max cost: {economics.profit < 0n ? '−' : '+'}
-                        {formatEther(economics.profit < 0n ? -economics.profit : economics.profit)} MON
+                        {Number(
+                          formatEther(economics.profit < 0n ? -economics.profit : economics.profit),
+                        ).toFixed(6)}{' '}
+                        MON
                       </small>
                     </span>
                     <span className="muted">
                       {sleeper.result ??
-                        (!economics.profitable
-                          ? 'tip is below crank max cost'
-                          : sleeper.ready
-                            ? 'stepReady ✓'
-                            : 'gray until ready')}
+                        (sleeper.deposit < sleeper.tip
+                          ? 'out of deposit'
+                          : !economics.profitable
+                            ? 'tip is below crank max cost'
+                            : sleeper.ready
+                              ? 'stepReady ✓'
+                              : 'gray until ready')}
                     </span>
                     <Button disabled={!actionable} onClick={() => void stepOne(sleeper.owner)}>
                       Step
@@ -1124,7 +1389,12 @@ export function SleepwalkerProgram() {
       </main>
 
       <footer className="sleep-status sunken">
-        <span>{error || (wallet.account ? `key ${short(key)}` : 'connect wallet')}</span>
+        <span>
+          {error ||
+            ownerProgress ||
+            nightProgress ||
+            (wallet.account ? `key ${short(key)}` : 'connect wallet')}
+        </span>
         <span>block #{block.block.toString()}</span>
       </footer>
 

@@ -48,6 +48,22 @@ After settlement:
 
 Expose separate **Withdraw bid** and **Withdraw proceeds** controls when balances are non-zero.
 
+### Settlement window and keeper
+
+The frontend checks once whether Monad's EIP-2935 history-storage contract exists at `0x0000F90827F1C53a10cb7A02335B175320002935`.
+
+While an auction is live it shows one of three settlement states:
+
+1. **candle burning** before `closeBlock`;
+2. **settle now** after close while the close-block hash is still available, including the remaining block/time estimate;
+3. **random end expired** after the usable hash window, explicitly showing that settlement now uses `candleStartBlock` as the safe fallback end.
+
+`previewEndBlock(auctionId)` remains the contract-authoritative drawn end. The UI does not reproduce the random draw.
+
+Connected users may opt into **Settle for me when bidding closes**. The preference is stored per auction in localStorage. If the Auction window remains open when bidding closes, the frontend attempts `settle(auctionId)` once for that auction during the browser session. This is not unattended signing: the wallet still prompts.
+
+`scripts/auction-keeper.sh <auction address> <auction id>` is the launch keeper. It uses `cast` with a Foundry keystore account, never a raw private key, simulates `settle` every two seconds, sends when the simulation succeeds, and exits once `auctionInfo().state` reports the auction settled.
+
 ## Seller flow
 
 1. Pick a finale owned by the connected wallet.

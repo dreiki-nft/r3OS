@@ -1,7 +1,8 @@
-import { parseAbiItem, type Address } from 'viem'
+import type { Address } from 'viem'
 import { decodeJsonDataUri } from '../lib/dataUri'
-import { publicClient } from '../chain/clients'
+import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
+import { readHeavy } from '../chain/readMany'
 import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
 
 export type LabsAttributeValue = string | number | boolean
@@ -13,8 +14,12 @@ export interface LabsTokenData {
 
 type RawAttribute = { trait_type?: unknown; value?: unknown }
 type RawToken = { name?: unknown; image?: unknown; attributes?: unknown }
-const cache = new Map<string, LabsTokenData>()
+type CacheEntry = { data: LabsTokenData; expiresAt: number }
+
+const CACHE_TTL_MS = 5 * 60_000
+const cache = new Map<string, CacheEntry>()
 let labsAddressPromise: Promise<Address> | undefined
+let stopMetadataWatch: (() => void) | undefined
 
 function attributeMap(raw: unknown): Record<string, LabsAttributeValue> {
   const result: Record<string, LabsAttributeValue> = {}
@@ -44,47 +49,52 @@ async function labsAddress() {
     if (!publicClient) throw new Error('DEMO_MODE')
     const flipbook = (await discoverContracts()).labs.flipbook
     if (!flipbook) throw new Error("this Lab isn't deployed on this network")
-    return (await publicClient.readContract({
-      address: flipbook,
-      abi: R3TARDS_FLIPBOOK_ABI,
-      functionName: 'LABS',
-    })) as Address
+    const result = await readHeavy([{ address: flipbook, abi: R3TARDS_FLIPBOOK_ABI, functionName: 'LABS' }])
+    if (result[0]?.status !== 'success') throw result[0]?.error ?? new Error('LABS_UNAVAILABLE')
+    return result[0].result as Address
   })()
   return labsAddressPromise
 }
 
-async function latestMetadataUpdateBlock(labs: Address, id: bigint) {
-  if (!publicClient) return 0n
-  const event = parseAbiItem('event MetadataUpdate(uint256 _tokenId)')
-  const logs = await publicClient.getLogs({
-    address: labs,
-    event,
-    fromBlock: 0n,
-    toBlock: 'latest',
-  })
-  const matching = logs.filter((log) => BigInt((log.args as { _tokenId?: bigint })._tokenId ?? -1n) === id)
-  return matching.at(-1)?.blockNumber ?? 0n
-}
-
-export async function readLabsToken(id: bigint, knownMetadataUpdateBlock?: bigint) {
-  if (!publicClient) throw new Error('DEMO_MODE')
-  const labs = await labsAddress()
-  const metadataUpdateBlock = knownMetadataUpdateBlock ?? (await latestMetadataUpdateBlock(labs, id))
-  const key = `${id}:${metadataUpdateBlock}`
-  const hit = cache.get(key)
-  if (hit) return hit
-  const uri = (await publicClient.readContract({
+function ensureMetadataWatch(labs: Address) {
+  if (!wsClient || stopMetadataWatch) return
+  stopMetadataWatch = wsClient.watchContractEvent({
     address: labs,
     abi: R3TARDS_LABS_ABI,
-    functionName: 'tokenURI',
-    args: [id],
-  })) as string
-  const data = decodeLabsTokenUri(uri)
-  cache.set(key, data)
+    eventName: 'MetadataUpdate',
+    onLogs: (logs) => {
+      for (const log of logs) {
+        const id = (log.args as { _tokenId?: bigint })._tokenId
+        if (id != null) invalidateLabsToken(id)
+      }
+    },
+  })
+}
+
+export function invalidateLabsToken(id: bigint) {
+  const prefix = `${id}:`
+  for (const key of cache.keys()) if (key.startsWith(prefix)) cache.delete(key)
+}
+
+export async function readLabsToken(id: bigint, version: string | number | bigint = '') {
+  if (!publicClient) throw new Error('DEMO_MODE')
+  const labs = await labsAddress()
+  ensureMetadataWatch(labs)
+  const key = `${id}:${version}`
+  const hit = cache.get(key)
+  if (hit && hit.expiresAt > Date.now()) return hit.data
+  const result = await readHeavy([
+    { address: labs, abi: R3TARDS_LABS_ABI, functionName: 'tokenURI', args: [id] },
+  ])
+  if (result[0]?.status !== 'success') throw result[0]?.error ?? new Error('TOKEN_URI_UNAVAILABLE')
+  const data = decodeLabsTokenUri(String(result[0].result))
+  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS })
   return data
 }
 
 export function __clearLabsTokenCacheForTests() {
   cache.clear()
   labsAddressPromise = undefined
+  stopMetadataWatch?.()
+  stopMetadataWatch = undefined
 }

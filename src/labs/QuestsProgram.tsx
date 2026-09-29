@@ -17,6 +17,7 @@ import { SafeImage } from '../os/ui/SafeImage'
 import { errorText, labAddress, shortAddress } from './labCommon'
 import { mapQuestProgress, questLockedByHiddenLab, type QuestProgressState } from './quests'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
+import { useRefreshTick } from '../chain/refreshTick'
 
 const RULES = [
   'each quest reads a number straight from a contract: pixels painted, frames saved, storm paints, and so on.',
@@ -108,6 +109,7 @@ export function badgeSrc(id: number) {
 
 export function QuestsProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
@@ -233,7 +235,7 @@ export function QuestsProgram() {
 
   useEffect(() => {
     void refresh()
-  }, [refresh, block.block])
+  }, [refresh, refreshTick])
 
   useEffect(() => {
     if (!wsClient || !address) return

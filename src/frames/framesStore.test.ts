@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Address } from 'viem'
 import {
+  seasonIndexChanged,
   applyTransferToOwnerMap,
   ownerScanBatches,
   ownersFromSettled,
@@ -57,5 +58,17 @@ describe('frames store helpers', () => {
 
   it('keeps flagged ids hidden until the viewer restores them', () => {
     expect(visibleFlaggedIds([4, 9, 12], [9])).toEqual([12, 4])
+  })
+})
+
+describe('seasonIndexChanged', () => {
+  const row = { season: 0, regularFrames: 2, finaleMinted: false, finaleTokenId: 0n, count: 2 }
+  const previous = { currentSeason: 1, total: 2, seasons: [row] }
+  it('is false for an identical index, so refreshes do not bump the version', () => {
+    expect(seasonIndexChanged(previous, 1, [{ ...row }], 2)).toBe(false)
+  })
+  it('is true when a finale or frame lands', () => {
+    expect(seasonIndexChanged(previous, 1, [{ ...row, finaleMinted: true, finaleTokenId: 3n }], 3)).toBe(true)
+    expect(seasonIndexChanged(previous, 2, [row, { ...row, season: 1, regularFrames: 0 }], 2)).toBe(true)
   })
 })

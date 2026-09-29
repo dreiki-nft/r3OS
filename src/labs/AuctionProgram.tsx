@@ -1,5 +1,5 @@
 import './phase3c2a.css'
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { formatEther, parseEther, type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
@@ -8,7 +8,7 @@ import { readMany } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_FINALE_AUCTION_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
-import { winnerAt, type AuctionBid } from '../lib/auction'
+import { HISTORY_STORAGE_ADDRESS, auctionSettleWindow, winnerAt, type AuctionBid } from '../lib/auction'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -18,10 +18,12 @@ import { PixelPreview } from '../frames/PixelPreview'
 import { getFrameImage } from '../frames/frameImage'
 import type { PixelImage } from '../frames/frameImage'
 import { errorText, labAddress, sameAddress, shortAddress } from './labCommon'
+import { useRefreshTick } from '../chain/refreshTick'
 
 const RULES = [
   'bid by depositing MON. your bid is your total deposit, and a new high has to beat the last one by 5%.',
   "the last 12,000 blocks (~1 h) are the candle. after close, the close block's hash picks the real end somewhere inside it.",
+  'settle while the close hash is still available. if it expires, the contract safely falls back to the candle start.',
   "whoever was highest at that block wins. bids after it are refunded, so sniping in the last second doesn't help.",
   'no admin: anyone can settle once bidding closes. the seller is paid, 5% royalty goes to the collection, and losing bidders withdraw their deposits.',
 ] as const
@@ -62,6 +64,13 @@ function normalizeInfo(raw: any): Info {
   }
 }
 
+export function roughDuration(ms: number) {
+  const seconds = Math.max(1, Math.ceil(ms / 1000))
+  if (seconds < 90) return `${seconds} s`
+  const minutes = Math.round(seconds / 60)
+  return minutes < 90 ? `${minutes} min` : `${(minutes / 60).toFixed(1)} h`
+}
+
 export function auctionBarPosition(block: bigint, start: bigint, close: bigint) {
   if (close <= start) return 0
   const clamped = block < start ? start : block > close ? close : block
@@ -82,6 +91,7 @@ function routeNumber(name: string) {
 
 export function AuctionProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const [address, setAddress] = useState<Address>()
   const [auctionId, setAuctionId] = useState<bigint>(routeNumber('auction'))
@@ -101,12 +111,39 @@ export function AuctionProgram() {
   const [approveQuote, setApproveQuote] = useState<ActionQuote>()
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
+  const [historyAvailable, setHistoryAvailable] = useState(false)
+  const [autoSettle, setAutoSettle] = useState(false)
+  const bidCountRef = useRef(0)
+  const autoSettledRef = useRef(new Set<string>())
 
   useEffect(() => {
     void labAddress('finale auction')
       .then(setAddress)
       .catch(() => setMessage("this Lab isn't deployed on this network"))
   }, [])
+
+  useEffect(() => {
+    if (!publicClient) return
+    let cancelled = false
+    void publicClient
+      .getCode({ address: HISTORY_STORAGE_ADDRESS })
+      .then((code) => !cancelled && setHistoryAvailable(Boolean(code && code !== '0x')))
+      .catch(() => !cancelled && setHistoryAvailable(false))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    bidCountRef.current = 0
+    setBids([])
+    if (!auctionId) return setAutoSettle(false)
+    try {
+      setAutoSettle(localStorage.getItem(`r3os.auction.autosettle.${auctionId}`) === '1')
+    } catch {
+      setAutoSettle(false)
+    }
+  }, [auctionId])
 
   const refresh = useCallback(async () => {
     if (!publicClient || !address) return
@@ -146,14 +183,27 @@ export function AuctionProgram() {
         setDeposit(BigInt(values[3]))
         setCredits(BigInt(values[4]))
       }
-      const bidCalls = Array.from({ length: next.bidCount }, (_, index) => ({
-        address,
-        abi: R3TARDS_FINALE_AUCTION_ABI,
-        functionName: 'bidAt',
-        args: [id, BigInt(index)],
-      }))
-      const bidRows = bidCalls.length ? ((await readMany(bidCalls, { allowFailure: false })) as any[]) : []
-      setBids(bidRows.map((row) => ({ bidder: row[0], blockNumber: BigInt(row[1]), total: BigInt(row[2]) })))
+      if (next.bidCount < bidCountRef.current) {
+        bidCountRef.current = 0
+        setBids([])
+      }
+      if (next.bidCount > bidCountRef.current) {
+        const start = bidCountRef.current
+        const bidCalls = Array.from({ length: next.bidCount - start }, (_, offset) => ({
+          address,
+          abi: R3TARDS_FINALE_AUCTION_ABI,
+          functionName: 'bidAt',
+          args: [id, BigInt(start + offset)],
+        }))
+        const bidRows = (await readMany(bidCalls, { allowFailure: false })) as any[]
+        const appended = bidRows.map((row) => ({
+          bidder: row[0] as Address,
+          blockNumber: BigInt(row[1]),
+          total: BigInt(row[2]),
+        }))
+        setBids((current) => [...current.slice(0, start), ...appended])
+        bidCountRef.current = next.bidCount
+      }
       setImage(await getFrameImage(Number(next.tokenId)))
     } catch (error) {
       setMessage(errorText(error))
@@ -162,9 +212,19 @@ export function AuctionProgram() {
 
   useEffect(() => {
     void refresh()
-  }, [refresh, block.block])
+  }, [refresh, refreshTick])
 
   const actions = auctionActions(info, block.block, deposit, credits)
+  const settleWindow = info ? auctionSettleWindow(info.closeBlock, block.block, historyAvailable) : undefined
+  useEffect(() => {
+    if (!info || !address || !wallet.account || !autoSettle || info.state !== 1) return
+    if (block.block <= info.closeBlock) return
+    const key = `${auctionId}`
+    if (autoSettledRef.current.has(key)) return
+    autoSettledRef.current.add(key)
+    void send('settle', [auctionId])
+  }, [info, address, wallet.account, autoSettle, block.block, auctionId])
+
   const winning = useMemo(
     () => (info && knownEnd ? winnerAt(bids, previewEnd) : null),
     [info, knownEnd, bids, previewEnd],
@@ -353,8 +413,7 @@ export function AuctionProgram() {
                 </Button>
               </div>
               <small>
-                approval max cost {approveQuote?.maxCost ?? 'quoting…'} · list max cost{' '}
-                {listQuote?.maxCost ?? 'quoting…'}
+                approval {approveQuote?.maxCost ?? 'quoting…'} · list {listQuote?.maxCost ?? 'quoting…'}
               </small>
             </GroupBox>
           )}
@@ -393,12 +452,41 @@ export function AuctionProgram() {
                 </div>
                 <small>
                   {knownEnd
-                    ? `drawn end · ${previewEnd}${info.usedFallback ? ' · fallback close block' : ''}`
+                    ? `drawn end · ${previewEnd}${info.usedFallback ? ' · candle-start fallback' : ''}`
                     : block.block >= info.candleStartBlock
                       ? 'the real end is somewhere in the final-hour candle'
                       : `candle starts ${info.candleStartBlock}`}
                 </small>
               </GroupBox>
+              {info.state === 1 && settleWindow && (
+                <div className="auction-settle-note sunken">
+                  <b>
+                    {settleWindow.state === 'burning'
+                      ? 'candle burning'
+                      : settleWindow.state === 'random'
+                        ? `settle now: the random end is available for ${settleWindow.blocksLeft.toString()} more blocks (~${roughDuration(Number(settleWindow.blocksLeft) * block.blockTimeMs)})`
+                        : `the random end expired: settling now uses the candle start (block ${settleWindow.fallbackEnd.toString()}) as the end`}
+                  </b>
+                  {wallet.account && block.block <= settleWindow.randomUntil && (
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={autoSettle}
+                        onChange={(event) => {
+                          const checked = event.target.checked
+                          setAutoSettle(checked)
+                          try {
+                            localStorage.setItem(`r3os.auction.autosettle.${auctionId}`, checked ? '1' : '0')
+                          } catch {
+                            // The preference simply becomes session-only when storage is unavailable.
+                          }
+                        }}
+                      />{' '}
+                      Settle for me when bidding closes
+                    </label>
+                  )}
+                </div>
+              )}
               {info.state === 1 && (
                 <div className="auction-bid-row">
                   <label>

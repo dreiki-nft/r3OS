@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import type { Address, Log } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
+import { getLogsWindow } from '../chain/logs'
 import { discoverContracts } from '../chain/contracts'
 import { subscribeMonadLogs, type MonadLogNotification } from '../chain/monadLogs'
 import { closeWindow } from '../os/windows'
@@ -124,8 +125,7 @@ export function LanesProgram() {
     let cancelled = false
     const list = Object.values(addresses).filter(Boolean) as Address[]
     const fromBlock = clock.block >= 99n ? clock.block - 99n : 0n
-    void publicClient
-      .getLogs({ address: list, fromBlock, toBlock: clock.block } as any)
+    void getLogsWindow({ address: list, fromBlock, toBlock: clock.block, maxBlocks: 100 })
       .then((logs) => {
         if (cancelled) return
         const decoded = applyFinality(decodeLaneLogs(logs as Log[], addresses), finality.current)
@@ -187,12 +187,12 @@ export function LanesProgram() {
       return
     }
     if (clock.block <= previous || clock.block - previous < 10n) return
-    const fromBlock = previous + 1n
+    const keepFrom = clock.block >= 99n ? clock.block - 99n : 0n
+    const fromBlock = previous + 1n > keepFrom ? previous + 1n : keepFrom
     const toBlock = clock.block
     lastPolled.current = toBlock
     const list = Object.values(addresses).filter(Boolean) as Address[]
-    void publicClient
-      .getLogs({ address: list, fromBlock, toBlock } as any)
+    void getLogsWindow({ address: list, fromBlock, toBlock, maxBlocks: 100 })
       .then((logs) => {
         const decoded = decodeLaneLogs(logs as Log[], addresses)
         const keepFrom = clock.block >= 99n ? clock.block - 99n : 0n

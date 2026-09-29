@@ -12,6 +12,8 @@ import {
   type Hex,
 } from 'viem'
 import { publicClient, wsClient } from '../../chain/clients'
+import { config } from '../../chain/config'
+import { scanBackward } from '../../chain/logs'
 import { discoverContracts } from '../../chain/contracts'
 import { readMany } from '../../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../../chain/tx'
@@ -22,6 +24,7 @@ import { decodePacked4Bpp, type PixelImage } from '../../frames/frameImage'
 import { PixelPreview } from '../../frames/PixelPreview'
 import { loadBurner } from '../../live/burner'
 import { R3TARDS_PAINT_ABI, R3TARDS_RECYCLE_BIN_ABI } from '../../lib/generated/abi'
+import { idbGet, idbSet } from '../../lib/idb'
 import { openProgram } from '../programs'
 import { playSound } from '../sound'
 import { Button } from '../ui/Button'
@@ -36,6 +39,7 @@ const RECYCLED = parseAbiItem(
 
 type Tombstone = { minter: Address; season: number; blockNumber: bigint; storm: boolean }
 type Row = { id: number; owner: Address; deletedAt: bigint; tombstone: Tombstone }
+type CachedBurn = { id: number; owner: Address; deletedAt: bigint; season: number; savedBlock: bigint }
 type SortKey = 'name' | 'season' | 'deleted' | 'saved' | 'storm' | 'owner'
 
 function short(address?: string) {
@@ -187,29 +191,48 @@ export function RecycleBin() {
 
   const loadRows = useCallback(async (address: Address) => {
     if (!publicClient) return
-    const logs = await publicClient.getLogs({ address, event: RECYCLED, fromBlock: 0n, toBlock: 'latest' })
-    const latest = logs.slice(-100).reverse()
+    const cacheKey = `${config.chainId}:${address.toLowerCase()}`
+    const cached = (await idbGet<CachedBurn[]>('logCache', cacheKey)) ?? []
+    const logs = await scanBackward({
+      address,
+      event: RECYCLED,
+      maxBlocks: 50 * config.logsRange,
+      until: (found) => found.length >= 100,
+    })
+    const fresh: CachedBurn[] = logs.map((log: any) => ({
+      id: Number(log.args?.frameId ?? 0n),
+      owner: (log.args?.owner ?? zeroAddress) as Address,
+      deletedAt: BigInt(log.blockNumber ?? 0n),
+      season: Number(log.args?.season ?? 0n),
+      savedBlock: BigInt(log.args?.blockNumber ?? 0n),
+    }))
+    const merged = new Map<string, CachedBurn>()
+    for (const row of [...cached, ...fresh]) merged.set(`${row.id}:${row.deletedAt}`, row)
+    const latest = [...merged.values()]
+      .sort((a, b) => (a.deletedAt === b.deletedAt ? b.id - a.id : a.deletedAt < b.deletedAt ? 1 : -1))
+      .slice(0, 100)
+    await idbSet('logCache', cacheKey, latest)
     const reads = await readMany(
-      latest.map((log) => ({
+      latest.map((row) => ({
         address,
         abi: R3TARDS_RECYCLE_BIN_ABI,
         functionName: 'tombstone',
-        args: [log.args.frameId!],
+        args: [BigInt(row.id)],
       })),
       { allowFailure: true },
     )
     setRows(
-      latest.map((log, index) => ({
-        id: Number(log.args.frameId ?? 0n),
-        owner: (log.args.owner ?? zeroAddress) as Address,
-        deletedAt: log.blockNumber ?? 0n,
+      latest.map((row, index) => ({
+        id: row.id,
+        owner: row.owner,
+        deletedAt: row.deletedAt,
         tombstone:
           (reads[index] as any)?.status === 'success'
             ? tupleTombstone((reads[index] as any).result)
             : {
                 minter: zeroAddress,
-                season: Number(log.args.season ?? 0n),
-                blockNumber: BigInt(log.args.blockNumber ?? 0n),
+                season: row.season,
+                blockNumber: row.savedBlock,
                 storm: false,
               },
       })),
@@ -237,9 +260,55 @@ export function RecycleBin() {
       address: bin,
       abi: R3TARDS_RECYCLE_BIN_ABI,
       eventName: 'Recycled',
-      onLogs: () => void refresh(),
+      onLogs: (logs) => {
+        void (async () => {
+          const reads = await readMany(
+            logs.map((log) => ({
+              address: bin,
+              abi: R3TARDS_RECYCLE_BIN_ABI,
+              functionName: 'tombstone',
+              args: [log.args.frameId!],
+            })),
+            { allowFailure: true },
+          )
+          const additions: Row[] = logs.map((log, index) => ({
+            id: Number(log.args.frameId ?? 0n),
+            owner: (log.args.owner ?? zeroAddress) as Address,
+            deletedAt: log.blockNumber ?? 0n,
+            tombstone:
+              (reads[index] as any)?.status === 'success'
+                ? tupleTombstone((reads[index] as any).result)
+                : {
+                    minter: zeroAddress,
+                    season: Number(log.args.season ?? 0n),
+                    blockNumber: BigInt(log.args.blockNumber ?? 0n),
+                    storm: false,
+                  },
+          }))
+          setRows((current) => {
+            const keys = new Set(additions.map((row) => `${row.id}:${row.deletedAt}`))
+            const next = [
+              ...additions.reverse(),
+              ...current.filter((row) => !keys.has(`${row.id}:${row.deletedAt}`)),
+            ].slice(0, 100)
+            void idbSet(
+              'logCache',
+              `${config.chainId}:${bin.toLowerCase()}`,
+              next.map((row) => ({
+                id: row.id,
+                owner: row.owner,
+                deletedAt: row.deletedAt,
+                season: row.tombstone.season,
+                savedBlock: row.tombstone.blockNumber,
+              })) satisfies CachedBurn[],
+            )
+            return next
+          })
+          await loadSidebar(bin, wallet.account)
+        })()
+      },
     })
-  }, [bin, refresh])
+  }, [bin, loadSidebar, wallet.account])
 
   useEffect(() => {
     const id = Number(new URLSearchParams(location.hash.split('?')[1] ?? '').get('recycle') ?? 0)
@@ -373,7 +442,7 @@ export function RecycleBin() {
           })
           setOperatorApproved(true)
           setRecycleQuote(nextRecycleQuote)
-          setMessage(`permission granted · recycle max cost ${nextRecycleQuote.maxCost}`)
+          setMessage(`permission granted · recycle ${nextRecycleQuote.maxCost}`)
           await new Promise((resolve) => window.setTimeout(resolve, 250))
           await sendAction({
             kind: 'estimate',
@@ -535,9 +604,7 @@ export function RecycleBin() {
           {!sorted.length && <p className="bin-empty">Recycle Bin is empty.</p>}
         </main>
       </div>
-      <footer className="bin-status">
-        {message || `${rows.length} recent recycled frame${rows.length === 1 ? '' : 's'}`}
-      </footer>
+      <footer className="bin-status">{message || `recent burns · ${rows.length}`}</footer>
 
       {pickerOpen && (
         <MessageBox

@@ -43,40 +43,66 @@ export async function readManyUsing(
   client: any,
   calls: readonly ReadManyCall[],
   options: { allowFailure?: boolean; multicallAddress?: Address } = {},
-) {
+): Promise<any[]> {
   const allowFailure = options.allowFailure ?? true
   if (!calls.length) return []
+  let chunks: ReadManyResult[]
 
   if (options.multicallAddress) {
-    const result = await client.multicall({
-      contracts: calls,
-      allowFailure: true,
-      multicallAddress: options.multicallAddress,
-    })
-    if (!allowFailure) {
-      const failed = result.find((item: any) => item.status === 'failure')
-      if (failed) throw failed.error
-      return result.map((item: any) => item.result)
+    chunks = []
+    for (let i = 0; i < calls.length; i += 100) {
+      const part = calls.slice(i, i + 100)
+      const result = await client.multicall({
+        contracts: part,
+        allowFailure: true,
+        multicallAddress: options.multicallAddress,
+      })
+      chunks.push(...result)
     }
-    return result
+  } else {
+    chunks = await Promise.all(calls.map((call) => fallbackRead(client, call)))
   }
 
-  const result = await Promise.all(calls.map((call) => fallbackRead(client, call)))
   if (!allowFailure) {
-    const failed = result.find((item) => item.status === 'failure')
+    const failed = chunks.find((item) => item.status === 'failure')
     if (failed?.status === 'failure') throw failed.error
-    return result.map((item) => (item as { status: 'success'; result: unknown }).result)
+    return chunks.map((item) => (item as { status: 'success'; result: unknown }).result)
   }
-  return result
+  return chunks
 }
 
-/** One batched-read path for Labs, with a Multicall3 code check and a parallel fallback. */
+/** One bounded-read path for ordinary reads. Multicalls are split into at most 100 calls. */
 export async function readMany(calls: readonly ReadManyCall[], options: { allowFailure?: boolean } = {}) {
   if (!publicClient) throw new Error('DEMO_MODE')
   return readManyUsing(publicClient, calls, {
     ...options,
     multicallAddress: await usableMulticall3(),
   })
+}
+
+export async function readHeavyUsing(
+  client: any,
+  calls: readonly ReadManyCall[],
+  options: { concurrency?: number } = {},
+) {
+  const concurrency = Math.max(1, Math.floor(options.concurrency ?? 2))
+  const results: ReadManyResult[] = new Array(calls.length)
+  let cursor = 0
+  const worker = async () => {
+    while (true) {
+      const index = cursor++
+      if (index >= calls.length) return
+      results[index] = await fallbackRead(client, calls[index])
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, calls.length) }, () => worker()))
+  return results
+}
+
+/** Heavy art/metadata reads are individual eth_call requests with bounded concurrency. */
+export async function readHeavy(calls: readonly ReadManyCall[], options: { concurrency?: number } = {}) {
+  if (!publicClient) throw new Error('DEMO_MODE')
+  return readHeavyUsing(publicClient, calls, options)
 }
 
 export function __resetReadManyForTests() {

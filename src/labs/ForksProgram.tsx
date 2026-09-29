@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { parseAbiItem, type Address } from 'viem'
+import { type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
@@ -18,7 +18,8 @@ import { MenuBar } from '../os/ui/MenuBar'
 import { Icon } from '../os/ui/Icon'
 import { LabCanvas } from './LabCanvas'
 import { errorText, labAddress, sameAddress, shortAddress } from './labCommon'
-import { readLabsToken, type LabsTokenData } from './labsToken'
+import { invalidateLabsToken, readLabsToken, type LabsTokenData } from './labsToken'
+import { useRefreshTick } from '../chain/refreshTick'
 
 const RULES = [
   "pick a saved frame (or someone else's fork) and fork it. you get the fork as an NFT, starting from that image.",
@@ -45,7 +46,7 @@ type ForkInfo = {
   sealedBlock: bigint
 }
 
-type ForkLog = { id: bigint; sourceFrameId: bigint; parentForkId: bigint; creator: Address; depth: number }
+type ForkLog = { id: bigint; sourceFrameId: bigint; parentForkId: bigint; depth: number }
 
 function parseInfo(id: bigint, value: any): ForkInfo {
   const v = Array.isArray(value) ? value : value
@@ -74,13 +75,13 @@ function routeFrame() {
 
 export function ForksProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const [address, setAddress] = useState<Address>()
   const [paintAddress, setPaintAddress] = useState<Address>()
   const [labs, setLabs] = useState<Address>()
   const [missing, setMissing] = useState(false)
-  const [logs, setLogs] = useState<ForkLog[]>([])
   const [infos, setInfos] = useState(new Map<bigint, ForkInfo>())
   const [selected, setSelected] = useState<bigint>()
   const [owner, setOwner] = useState<Address>()
@@ -127,46 +128,58 @@ export function ForksProgram() {
     return () => window.removeEventListener('hashchange', syncRouteFrame)
   }, [])
 
-  const refreshLogs = useCallback(async () => {
+  const refreshCatalog = useCallback(async () => {
     if (!publicClient || !address) return
     try {
-      const event = parseAbiItem(
-        'event ForkCreated(uint256 indexed forkId,uint256 indexed sourceFrameId,uint256 parentForkId,address indexed creator,uint16 depth)',
+      const count = BigInt(
+        await publicClient.readContract({ address, abi: R3TARDS_FORKS_ABI, functionName: 'forkCount' }),
       )
-      const found = await publicClient.getLogs({ address, event, fromBlock: 0n, toBlock: 'latest' })
-      const next = found.map((log) => {
-        const args = log.args as any
-        return {
-          id: BigInt(args.forkId),
-          sourceFrameId: BigInt(args.sourceFrameId),
-          parentForkId: BigInt(args.parentForkId),
-          creator: args.creator as Address,
-          depth: Number(args.depth),
-        }
+      const missingIds: bigint[] = []
+      for (let id = 1n; id <= count; id++) if (!infos.has(id)) missingIds.push(id)
+      if (!missingIds.length) {
+        if (!selected && count > 0n) setSelected(count)
+        return
+      }
+      const rows = await readMany(
+        missingIds.map((id) => ({ address, abi: R3TARDS_FORKS_ABI, functionName: 'forkInfo', args: [id] })),
+        { allowFailure: false },
+      )
+      const additions = new Map<bigint, ForkInfo>()
+      missingIds.forEach((id, index) => additions.set(id, parseInfo(id, rows[index])))
+      setInfos((current) => {
+        const next = new Map(current)
+        for (const [id, info] of additions) next.set(id, info)
+        return next
       })
-      setLogs(next)
-      if (!selected && next.length) setSelected(next.at(-1)!.id)
+      if (!selected && count > 0n) setSelected(count)
     } catch (error) {
       setMessage(errorText(error))
     }
-  }, [address, selected])
+  }, [address, infos, selected])
 
   useEffect(() => {
-    void refreshLogs()
-  }, [refreshLogs])
+    void refreshCatalog()
+  }, [refreshCatalog])
+
+  const logs = useMemo<ForkLog[]>(
+    () =>
+      [...infos.values()]
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .map((item) => ({
+          id: item.id,
+          sourceFrameId: item.sourceFrameId,
+          parentForkId: item.parentForkId,
+          depth: item.depth,
+        })),
+    [infos],
+  )
 
   const refresh = useCallback(async () => {
     if (!publicClient || !address) return
     try {
-      const ids = logs.map((item) => item.id)
-      const contracts: any[] = ids.map((id) => ({
-        address,
-        abi: R3TARDS_FORKS_ABI,
-        functionName: 'forkInfo',
-        args: [id],
-      }))
-      contracts.push({ address, abi: R3TARDS_FORKS_ABI, functionName: 'LABS' })
+      const contracts: any[] = [{ address, abi: R3TARDS_FORKS_ABI, functionName: 'LABS' }]
       if (selected) {
+        contracts.push({ address, abi: R3TARDS_FORKS_ABI, functionName: 'forkInfo', args: [selected] })
         contracts.push({ address, abi: R3TARDS_FORKS_ABI, functionName: 'forkRows', args: [selected] })
       }
       if (wallet.account)
@@ -194,12 +207,11 @@ export function ForksProgram() {
         contracts.push({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'ownerOf', args: [selected] })
       const result = await readMany(contracts as any, { allowFailure: false })
       let cursor = 0
-      const next = new Map<bigint, ForkInfo>()
-      for (const id of ids) next.set(id, parseInfo(id, result[cursor++]))
-      setInfos(next)
       const labsAddress = result[cursor++] as Address
       setLabs(labsAddress)
       if (selected) {
+        const selectedInfo = parseInfo(selected, result[cursor++])
+        setInfos((current) => new Map(current).set(selected, selectedInfo))
         const rows = result[cursor++] as readonly bigint[]
         const pixels = forkRowsToIndices(rows)
         const previousBase = baseRef.current
@@ -229,11 +241,11 @@ export function ForksProgram() {
     } catch (error) {
       setMessage(errorText(error))
     }
-  }, [address, logs, selected, wallet.account, paintAddress, labs])
+  }, [address, selected, wallet.account, paintAddress, labs])
 
   useEffect(() => {
     void refresh()
-  }, [refresh, block.block])
+  }, [refresh, refreshTick])
 
   useEffect(() => {
     if (!wsClient || !address) return
@@ -241,11 +253,11 @@ export function ForksProgram() {
       address,
       abi: R3TARDS_FORKS_ABI,
       onLogs: (eventLogs) => {
-        if (eventLogs.some((log) => log.eventName === 'ForkCreated')) void refreshLogs()
+        if (eventLogs.some((log) => log.eventName === 'ForkCreated')) void refreshCatalog()
         void refresh()
       },
     })
-  }, [address, refresh, refreshLogs])
+  }, [address, refresh, refreshCatalog])
 
   useEffect(() => {
     if (!selected) return
@@ -399,6 +411,7 @@ export function ForksProgram() {
         confirmHigherCost: async (_old, next) =>
           window.confirm(`gas went up. continue with ${next.maxCost}?`),
       })
+      invalidateLabsToken(selected)
       setMetaVersion((value) => value + 1)
       await refresh()
     } catch (error) {
@@ -429,7 +442,7 @@ export function ForksProgram() {
       })
       setCreateFrame(0)
       setCreateMode('fork')
-      await refreshLogs()
+      await refreshCatalog()
     } catch (error) {
       setMessage(errorText(error))
     } finally {
@@ -462,6 +475,7 @@ export function ForksProgram() {
         confirmHigherCost: async (_old, next) =>
           window.confirm(`gas went up. continue with ${next.maxCost}?`),
       })
+      invalidateLabsToken(selected)
       setMetaVersion((value) => value + 1)
       await refresh()
     } catch (error) {
@@ -489,6 +503,7 @@ export function ForksProgram() {
         confirmHigherCost: async (_old, next) =>
           window.confirm(`gas went up. continue with ${next.maxCost}?`),
       })
+      invalidateLabsToken(selected)
       setMetaVersion((value) => value + 1)
       await refresh()
     } catch (error) {
@@ -575,12 +590,7 @@ export function ForksProgram() {
               <span className="tree-box" />
               <span>
                 <b>fork #{item.id.toString()}</b>
-                <small>
-                  depth {item.depth}
-                  {sameAddress(wallet.account, logs.find((log) => log.id === item.id)?.creator)
-                    ? ' · yours'
-                    : ''}
-                </small>
+                <small>depth {item.depth}</small>
               </span>
               <em className={item.isSealed ? 'sealed' : item.isOpen ? 'open' : 'closed'}>
                 {item.isSealed ? 'SEALED' : item.isOpen ? 'OPEN' : 'CLOSED'}
@@ -753,7 +763,7 @@ export function ForksProgram() {
               Fork a frame…
             </Button>
             <small>
-              {createReason || (createQuote ? `max cost ${createQuote.maxCost}` : 'select a source to quote')}
+              {createReason || (createQuote ? createQuote.maxCost : 'select a source to quote')}
               <br />
               one new fork per 600 blocks (~3 min) · paint the main canvas once to unlock
             </small>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { hexToBytes, parseAbiItem, type Address, type Hex } from 'viem'
+import { hexToBytes, type Address, type Hex } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
@@ -18,6 +18,8 @@ import { Icon } from '../os/ui/Icon'
 import { LabCanvas } from './LabCanvas'
 import { asHex, errorText, labAddress, shortAddress } from './labCommon'
 import { readLabsToken, type LabsTokenData } from './labsToken'
+import { scanOwnedLabs } from '../frames/LabsFolder'
+import { useRefreshTick } from '../chain/refreshTick'
 
 const UINT64_MAX = (1n << 64n) - 1n
 const RULES = [
@@ -84,8 +86,11 @@ function MiniFrame({ pixels }: { pixels: Uint8Array }) {
   return <LabCanvas size={32} pixels={pixels} zoom={1} />
 }
 
+const reelOwnershipCache = new Map<string, bigint[]>()
+
 export function FlipbookProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const [address, setAddress] = useState<Address>()
@@ -173,7 +178,7 @@ export function FlipbookProgram() {
 
   useEffect(() => {
     void refresh()
-  }, [refresh, block.block])
+  }, [refresh, refreshTick])
 
   useEffect(() => {
     if (!wsClient || !address) return
@@ -258,48 +263,57 @@ export function FlipbookProgram() {
     return () => {
       cancelled = true
     }
-  }, [address, wallet.account, reelReason, block.block])
+  }, [address, wallet.account, reelReason, refreshTick])
 
   const loadReels = useCallback(async () => {
     if (!publicClient || !wallet.account || !address || !state.labs) return
     try {
-      const transfer = parseAbiItem(
-        'event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)',
+      const [experimentRow, totalRow] = await readMany(
+        [
+          { address, abi: R3TARDS_FLIPBOOK_ABI, functionName: 'experimentId' },
+          { address: state.labs, abi: R3TARDS_LABS_ABI, functionName: 'totalMinted' },
+        ],
+        { allowFailure: false },
       )
-      const logs = await publicClient.getLogs({
-        address: state.labs,
-        event: transfer,
-        args: { to: wallet.account },
-        fromBlock: 0n,
-        toBlock: 'latest',
-      })
-      const receivedIds: bigint[] = logs
-        .map((log) => (log.args as { tokenId?: bigint }).tokenId)
-        .filter((id): id is bigint => id != null)
-      const ids: bigint[] = [...new Set<bigint>(receivedIds)]
-      if (!ids.length) return setReels([])
-      const calls = ids.flatMap((id) => [
-        { address: state.labs!, abi: R3TARDS_LABS_ABI, functionName: 'ownerOf', args: [id] },
-        { address: state.labs!, abi: R3TARDS_LABS_ABI, functionName: 'sourceOf', args: [id] },
-      ]) as any
-      const values = await readMany(calls as any, { allowFailure: true })
-      const owned = ids.filter((id, index) => {
-        const owner = values[index * 2] as any
-        const source = values[index * 2 + 1] as any
-        return (
-          owner.status === 'success' &&
-          source.status === 'success' &&
-          String(owner.result).toLowerCase() === wallet.account!.toLowerCase() &&
-          String(source.result).toLowerCase() === address.toLowerCase()
+      const experimentId = BigInt(experimentRow as bigint)
+      const totalMinted = BigInt(totalRow as bigint)
+      const balance = BigInt(
+        await publicClient.readContract({
+          address: state.labs,
+          abi: R3TARDS_LABS_ABI,
+          functionName: 'balanceOfExperiment',
+          args: [experimentId, wallet.account],
+        }),
+      )
+      if (balance === 0n) {
+        setReels([])
+        return
+      }
+      const cacheKey = `${wallet.account.toLowerCase()}:${totalMinted}`
+      let owned = reelOwnershipCache.get(cacheKey)
+      if (!owned) {
+        const ids = await scanOwnedLabs(state.labs, wallet.account)
+        const sources = await readMany(
+          ids.map((id) => ({
+            address: state.labs!,
+            abi: R3TARDS_LABS_ABI,
+            functionName: 'sourceOf',
+            args: [id],
+          })),
+          { allowFailure: true },
         )
-      })
+        owned = ids.filter((_, index) => {
+          const row = sources[index] as any
+          return row?.status === 'success' && String(row.result).toLowerCase() === address.toLowerCase()
+        })
+        reelOwnershipCache.set(cacheKey, owned)
+      }
       const shown = owned.slice(-4).reverse()
-      const next = await Promise.all(
-        shown.map(async (id) => ({ id, data: await readLabsToken(id).catch(() => undefined) })),
-      )
+      const next: { id: bigint; data?: LabsTokenData }[] = []
+      for (const id of shown) next.push({ id, data: await readLabsToken(id).catch(() => undefined) })
       setReels(next)
     } catch {
-      // Ownership list is secondary UI. Keep the editor live if an archival RPC rejects a genesis scan.
+      // Ownership is secondary UI. Keep the editor usable if an archival read fails.
     }
   }, [wallet.account, address, state.labs])
 

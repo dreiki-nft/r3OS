@@ -2,6 +2,8 @@ import { hexToBytes, type Hex } from 'viem'
 import { markTraceProposedFromPlainLog } from '../chain/txTrace'
 import { publicClient, wsClient } from '../chain/clients'
 import { config } from '../chain/config'
+import { getLogsWindow } from '../chain/logs'
+export { chunkBlockRanges } from '../chain/logs'
 import { decodeCoreEventLog } from '../chain/coreLogs'
 import { demoConstants, readCoreConstants, seasonAtTimestamp } from '../chain/contracts'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
@@ -184,14 +186,6 @@ function enqueue<T>(job: () => Promise<T>) {
   return run
 }
 
-export function chunkBlockRanges(fromBlock: bigint, toBlock: bigint, size = 1_000n) {
-  const ranges: { fromBlock: bigint; toBlock: bigint }[] = []
-  for (let start = fromBlock; start <= toBlock; start += size) {
-    ranges.push({ fromBlock: start, toBlock: start + size - 1n < toBlock ? start + size - 1n : toBlock })
-  }
-  return ranges
-}
-
 function sortLogs<T extends { blockNumber: bigint; logIndex?: number | null }>(logs: readonly T[]) {
   return [...logs].sort((a, b) => {
     if (a.blockNumber !== b.blockNumber) return a.blockNumber < b.blockNumber ? -1 : 1
@@ -278,10 +272,11 @@ function pruneApplied(beforeBlock: bigint) {
 async function seedCanonicalOverlap(latest: bigint) {
   if (!publicClient || !config.paintAddress) return
   const fromBlock = latest > 32n ? latest - 32n : 0n
-  const logs = (await publicClient.getLogs({
+  const logs = (await getLogsWindow({
     address: config.paintAddress,
     fromBlock,
     toBlock: latest,
+    maxBlocks: 33,
   })) as unknown as CoreLog[]
   pruneApplied(fromBlock)
   for (const log of logs) {
@@ -458,19 +453,17 @@ export async function catchUpNow(targetBlock?: bigint) {
   }
   if (latest <= snapshot.snapshotBlock) return
   const gap = latest - snapshot.snapshotBlock
-  if (gap > 20_000n) {
+  if (gap > BigInt(20 * config.logsRange)) {
     await loadCanvasNow()
     return
   }
   let needsReload = false
-  for (const range of chunkBlockRanges(snapshot.snapshotBlock + 1n, latest)) {
-    const logs = (await publicClient.getLogs({
-      address: config.paintAddress,
-      fromBlock: range.fromBlock,
-      toBlock: range.toBlock,
-    })) as unknown as CoreLog[]
-    if (await applyDeliveredLogs(logs)) needsReload = true
-  }
+  const logs = (await getLogsWindow({
+    address: config.paintAddress,
+    fromBlock: snapshot.snapshotBlock + 1n,
+    toBlock: latest,
+  })) as unknown as CoreLog[]
+  if (await applyDeliveredLogs(logs)) needsReload = true
   if (needsReload) {
     await loadCanvasNow()
     return
@@ -495,7 +488,11 @@ export async function reconcileSpeculativeNow() {
   if (!publicClient || !config.paintAddress) return false
   const latest = await publicClient.getBlockNumber({ cacheTime: 0 })
   const fromBlock = snapshot.snapshotBlock > 32n ? snapshot.snapshotBlock - 32n : 0n
-  const logs = (await publicClient.getLogs({
+  if (latest - fromBlock + 1n > BigInt(20 * config.logsRange)) {
+    await loadCanvasNow()
+    return true
+  }
+  const logs = (await getLogsWindow({
     address: config.paintAddress,
     fromBlock,
     toBlock: latest,

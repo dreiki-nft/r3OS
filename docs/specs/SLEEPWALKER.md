@@ -298,3 +298,19 @@ The Night Shift tab batches `stepReady(owners[])` and shows sleepers that can cu
 When ordinary Live Mode is active, the UI may offer an opt-in **help sleepers while I paint** toggle. The local burner may submit `Sleepwalker.step(owner)` calls for tips, but it gets no special Sleepwalker authority: `step` is permissionless for everyone.
 
 Use the normal r3tardOS 98 neutral chrome and DF1 cyan selection. No purple UI chrome.
+
+### Bounded history and replay
+
+The frontend never scans Sleepwalker from genesis. Its history horizon is derived from the core rather than invented in the UI:
+
+`DREAM_WINDOW_BLOCKS = 4 × MAX_SESSION_BLOCKS + 4,000`
+
+With the current core `MAX_SESSION_BLOCKS = 24,000`, the window is 100,000 blocks.
+
+For the connected owner, the `sleep` and `resume` receipts store the latest sleep block in localStorage under `r3os.sleepwalker.slept.<chainId>.<owner>`. If that hint is missing, the UI scans backward for the newest `Slept(owner)` only inside the dream window. From that block forward it reads `Dreamt`, `DreamComplete`, `DreamStalled` and `DreamMinted` through the bounded log layer, caches the result in IndexedDB and extends only the unscanned tail on later refreshes.
+
+If the start block cannot be recovered inside the bounded window, or the requested replay would exceed it, Morning uses an **untimed replay**: stencil order from pixel 0 through the current cursor at a fixed visual pace. Survival remains unchanged and still compares the live canvas against the stencil colours.
+
+Night Shift discovers candidates only from `Slept` and `DreamResumed` inside the same rolling dream window, caches discovered owners, and extends the cache incrementally. `stepReady(owners)` plus `dreamOf(owner)` prune candidates. Readiness is deposit-aware: when `deposit < tipPerStep`, the row shows **out of deposit** and is not offered as payable work.
+
+A stalled dream may now mean there are no signed nights left. The Morning UI says **Dream stalled: no signed nights left** and offers **Resume** or **Wake up**. Pending refunds can be withdrawn to the owner with `withdrawRefund()` or to a validated alternate address with `withdrawRefundTo(to)`.

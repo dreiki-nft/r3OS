@@ -1,4 +1,4 @@
-export type R3StoreName = 'frameInfo' | 'frameImage' | 'owners'
+export type R3StoreName = 'frameInfo' | 'frameImage' | 'owners' | 'logCache'
 
 type LruEntry = {
   key: string
@@ -6,8 +6,8 @@ type LruEntry = {
 }
 
 const DB_NAME = 'r3tards-paint'
-const DB_VERSION = 1
-const STORES: R3StoreName[] = ['frameInfo', 'frameImage', 'owners']
+const DB_VERSION = 2
+const STORES: R3StoreName[] = ['frameInfo', 'frameImage', 'owners', 'logCache']
 const FALLBACK_LIMIT = 300
 const memory = new Map<string, LruEntry>()
 let dbPromise: Promise<IDBDatabase> | undefined

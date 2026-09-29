@@ -121,7 +121,12 @@ export function subscribeBlocks(listener: Listener) {
   }
 }
 
+let clockStarted = false
+
 export async function startBlockClock() {
+  // React StrictMode runs mount effects twice in dev; one clock only, or polling doubles.
+  if (clockStarted) return
+  clockStarted = true
   constants = await readCoreConstants().catch(() => demoConstants)
   if (!publicClient) return
   const initial = await readLatestHeader(publicClient as never).catch(() => ({
@@ -162,6 +167,7 @@ function startPolling() {
 export function stopBlockClock() {
   stopWatch?.()
   if (pollTimer) window.clearTimeout(pollTimer)
+  clockStarted = false
 }
 
 export function blockEta(blocks: bigint) {

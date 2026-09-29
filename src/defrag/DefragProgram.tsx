@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { decodeEventLog, parseAbiItem, type Address, type Hex, type Log } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
+import { getLogsWindow } from '../chain/logs'
 import { discoverContracts } from '../chain/contracts'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { closeWindow } from '../os/windows'
@@ -161,8 +162,7 @@ export function DefragProgram() {
     let cancelled = false
     const list = [addresses.paint, addresses.flipbook, addresses.brushes].filter(Boolean) as Address[]
     const fromBlock = clock.block >= 99n ? clock.block - 99n : 0n
-    void publicClient
-      .getLogs({ address: list, fromBlock, toBlock: clock.block } as any)
+    void getLogsWindow({ address: list, fromBlock, toBlock: clock.block, maxBlocks: 100 })
       .then((logs) => {
         if (cancelled) return
         const mapped = (logs as Log[]).flatMap((log) => parseLog(log, addresses, boxIndex))
@@ -196,12 +196,12 @@ export function DefragProgram() {
       return
     }
     if (clock.block <= previous || clock.block - previous < 10n) return
-    const fromBlock = previous + 1n
+    const keepFrom = clock.block >= 99n ? clock.block - 99n : 0n
+    const fromBlock = previous + 1n > keepFrom ? previous + 1n : keepFrom
     const toBlock = clock.block
     lastPolled.current = toBlock
     const list = [addresses.paint, addresses.flipbook, addresses.brushes].filter(Boolean) as Address[]
-    void publicClient
-      .getLogs({ address: list, fromBlock, toBlock } as any)
+    void getLogsWindow({ address: list, fromBlock, toBlock, maxBlocks: 100 })
       .then((logs) => {
         const mapped = (logs as Log[]).flatMap((log) => parseLog(log, addresses, boxIndex))
         const keepFrom = clock.block >= 99n ? clock.block - 99n : 0n

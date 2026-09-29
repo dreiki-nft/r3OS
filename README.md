@@ -394,18 +394,18 @@ Mainnet chain ID 143 additionally requires `CONFIRM_MAINNET=true` after the same
 Example:
 
 ```bash
-forge script script/Deploy.s.sol:Deploy \\
-  --rpc-url "$MONAD_TESTNET_RPC_URL" \\
-  --account r3tards-deployer \\
+forge script script/Deploy.s.sol:Deploy \
+  --rpc-url "$MONAD_TESTNET_RPC_URL" \
+  --account r3tards-deployer \
   --broadcast
 ```
 
 or:
 
 ```bash
-forge script script/Deploy.s.sol:Deploy \\
-  --rpc-url "$MONAD_TESTNET_RPC_URL" \\
-  --ledger \\
+forge script script/Deploy.s.sol:Deploy \
+  --rpc-url "$MONAD_TESTNET_RPC_URL" \
+  --ledger \
   --broadcast
 ```
 
@@ -415,6 +415,8 @@ After deployment, verify token #0 ownership, immutable royalty receivers and eve
 
 ## Phase 5 testnet checklist
 
+Step-by-step deploy commands and the testnet Vercel environment are in [`docs/TESTNET_DEPLOY.md`](docs/TESTNET_DEPLOY.md).
+
 Before mainnet:
 
 - verify Monad's EIP-2935 history contract at `0x0000F90827F1C53a10cb7A02335B175320002935` returns the same recent block hashes as RPC and confirm the effective 8,191-block history window under MonadTen;
@@ -423,6 +425,14 @@ Before mainnet:
 - re-measure all gas policies in `docs/specs/GAS_LIMITS.md`, including Sleepwalker painted/skipped/completing steps;
 - verify the mainnet `ROYALTY_RECEIVER`, `FINAL_OWNER` and `TOKEN_ZERO_RECIPIENT` values before broadcasting, then verify every `pendingOwner` before each Safe `acceptOwnership()`;
 - run the full browser/testnet soak and re-check every registry address before `freezeRenderers()` / `freezeExperiments()` are used.
+
+### Public-RPC launch checks
+
+- With Paint plus one Lab open, use `rpcStats` over a 10-second idle window and keep HTTP JSON-RPC traffic at **6 calls/s or less**; websocket traffic is excluded.
+- Run with `VITE_LOGS_RANGE=100` and confirm no `eth_getLogs` request spans more than 100 blocks and every Lab still loads.
+- Set `VITE_DEPLOY_BLOCK` to the real deployment block before soak testing; no production path should reconstruct history from genesis.
+- Run `scripts/auction-keeper.sh` during every finale auction so a permissionless settle is submitted as soon as the contract accepts it.
+- On both testnet and mainnet run `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$RPC_URL"` and record whether Monad's history-storage contract is present before relying on the extended auction hash window.
 
 ## Roadmap
 
@@ -459,3 +469,26 @@ npm run build
 ```
 
 `npm run check` remains the full release gate: Foundry build/tests, web tests, generated outline/ABI checks and the Vite production build. The frontend imports contract ABIs exclusively from `src/lib/generated/abi.ts`; do not hand-maintain ABI fragments for protocol actions.
+
+### RPC endpoints
+
+Phase 5 uses an ordered public-RPC pool instead of assuming one archival endpoint can serve every read. `VITE_RPC_URL` is retained only as a backwards-compatible primary URL; when it is set it is placed first, followed by the comma-separated `VITE_RPC_URLS` entries. Empty values are dropped and duplicates are removed.
+
+| RPC | `eth_getLogs` range | Rate | `eth_call` gas cap |
+|---|---:|---:|---:|
+| `rpc.monad.xyz` (QuickNode) | 100 blocks | 25 rps | 200M |
+| `rpc1.monad.xyz` (Alchemy) | 1,000 blocks / 10,000 logs | 15 rps | 200M |
+| `rpc3.monad.xyz` (Ankr) | 1,000 blocks | 300 per 10 s | 1B |
+| `rpc-mainnet.monadinfra.com` | 100 blocks | provider-defined | 200M |
+
+Recommended testnet setup: put the Monad testnet public RPCs in `VITE_RPC_URLS` and keep `VITE_LOGS_RANGE=100`.
+
+Recommended mainnet setup: put `rpc1.monad.xyz` and/or `rpc3.monad.xyz` first, keep `rpc.monad.xyz` as a fallback, and use `VITE_LOGS_RANGE=1000` only when every configured primary supports it. A 100-block fallback still works because range-limit errors shrink the session-wide log chunk size automatically.
+
+`VITE_RPC_RPS` is a per-endpoint request budget. Each endpoint has its own FIFO limiter before viem retry/fallback handling. `VITE_RPC_BATCH_SIZE` defaults to 10; set it to `0` to disable JSON-RPC batching. Heavy art and metadata reads are never placed in multicalls or unbounded `Promise.all` lists.
+
+Set `VITE_DEPLOY_BLOCK` to the deployment block before testnet/mainnet soak. Every historical log query is clamped to that floor and chunked through `src/chain/logs.ts`; the frontend must never perform an unbounded log scan from block 0.
+
+`VITE_WALLET_RPC_URL` remains separate and is still the only endpoint exposed through wallet chain metadata. None of the app fallback RPCs are sent to the wallet.
+
+Demo mode now means either no app RPC URL is configured at all (`VITE_RPC_URL` and `VITE_RPC_URLS` are both empty) or the Paint address is missing.

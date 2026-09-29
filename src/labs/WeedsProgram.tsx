@@ -15,6 +15,7 @@ import { MenuBar } from '../os/ui/MenuBar'
 import { LabCanvas } from './LabCanvas'
 import { errorText, labAddress } from './labCommon'
 import { decodeWorldBitmap, patternPreviewCells, WEED_PATTERNS } from './weeds'
+import { useRefreshTick } from '../chain/refreshTick'
 
 const RULES = [
   'the canvas is split into 16 regions. each one is its own 64 × 64 Life world that wraps at the edges.',
@@ -28,6 +29,7 @@ const EMPTY_REGIONS = Array.from({ length: 16 }, () => ({ generation: 0n, lastTi
 
 export function WeedsProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const canvas = useSyncExternalStore(subscribeCanvas, getCanvasSnapshot)
   const [address, setAddress] = useState<Address>()
@@ -90,7 +92,7 @@ export function WeedsProgram() {
 
   useEffect(() => {
     void refresh()
-  }, [refresh, block.block])
+  }, [refresh, refreshTick])
 
   useEffect(() => {
     if (!wsClient || !address) return

@@ -10,6 +10,8 @@ import {
 } from 'react'
 import { type Address } from 'viem'
 import { publicClient } from '../chain/clients'
+import { readMany } from '../chain/readMany'
+import { useRefreshTick } from '../chain/refreshTick'
 import { config } from '../chain/config'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
@@ -52,10 +54,23 @@ import {
 } from './framesStore'
 import { PixelPreview } from './PixelPreview'
 import { LabsFolder } from './LabsFolder'
+import { finaleEligibility } from './finale'
 
 const FILTERS = ['Mine', 'All frames', 'Finales', 'Hidden'] as const
 type Filter = (typeof FILTERS)[number]
 type PreviewMode = 'frame' | 'DF1 onchain' | 'DF1 site'
+
+type FinaleReadyRow = {
+  season: number
+  endsAt: bigint
+  recipient: Address
+  canMint: boolean
+  authorized: boolean
+  publicOpen: boolean
+  holderWindowEnds: bigint
+  quote?: ActionQuote
+  ready: boolean
+}
 
 function short(address?: string | null) {
   return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '—'
@@ -179,6 +194,7 @@ function SeasonFolder({
 }
 
 export function FramesProgram() {
+  const refreshTick = useRefreshTick()
   const [routeVersion, setRouteVersion] = useState(0)
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const frames = useSyncExternalStore(subscribeFrames, getFramesSnapshot)
@@ -210,12 +226,94 @@ export function FramesProgram() {
   const [burnQuote, setBurnQuote] = useState<ActionQuote>()
   const [burnPrompt, setBurnPrompt] = useState(false)
   const [box, setBox] = useState<{ title: string; message: string; kind?: 'error' | 'warning' | 'info' }>()
+  const [finaleReady, setFinaleReady] = useState<FinaleReadyRow[]>([])
+  const [finaleMinting, setFinaleMinting] = useState<number>()
   const sentinel = useRef<HTMLDivElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     void refreshFrameIndex()
   }, [])
+
+  useEffect(() => {
+    if (!publicClient || !config.paintAddress) return
+    const client = publicClient
+    let cancelled = false
+    void (async () => {
+      const latestSeason = frames.currentSeason
+      const seasons = [latestSeason - 1, latestSeason - 2, latestSeason - 3].filter((value) => value >= 0)
+      if (!seasons.length) {
+        if (!cancelled) setFinaleReady([])
+        return
+      }
+      const owner = (await client.readContract({
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'ownerOf',
+        args: [0n],
+      })) as Address
+      const calls: any[] = [
+        { address: config.paintAddress!, abi: R3TARDS_PAINT_ABI, functionName: 'getApproved', args: [0n] },
+        ...seasons.map((season) => ({
+          address: config.paintAddress!,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'seasonInfo',
+          args: [BigInt(season)],
+        })),
+      ]
+      if (wallet.account)
+        calls.push({
+          address: config.paintAddress!,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'isApprovedForAll',
+          args: [owner, wallet.account],
+        })
+      const values = (await readMany(calls, { allowFailure: false })) as any[]
+      const approved = values[0] as Address
+      const operatorApproved = wallet.account ? Boolean(values.at(-1)) : false
+      const latest = (await client.getBlock({ blockTag: 'latest', includeTransactions: false })) as {
+        timestamp: bigint
+      }
+      const rows: FinaleReadyRow[] = []
+      for (let index = 0; index < seasons.length; index++) {
+        const season = seasons[index]
+        const info = values[index + 1] as any
+        const endsAt = BigInt(info.endsAt ?? info[1])
+        const finaleMinted = Boolean(info.finaleMinted ?? info[5])
+        const successfulPaints = BigInt(info.successfulPaints ?? info[7])
+        const eligibility = finaleEligibility({
+          endsAt,
+          successfulPaints,
+          finaleMinted,
+          now: latest.timestamp,
+          account: wallet.account,
+          tokenZeroOwner: owner,
+          approved,
+          operatorApproved,
+        })
+        if (!eligibility.ready) continue
+        let quote: ActionQuote | undefined
+        if (eligibility.canMint && wallet.account) {
+          quote = await quoteAction({
+            kind: 'estimate',
+            address: config.paintAddress!,
+            abi: R3TARDS_PAINT_ABI,
+            functionName: 'mintSeasonFinale',
+            args: [BigInt(season)],
+            account: wallet.account,
+            action: `mint season ${season + 1} finale`,
+          }).catch(() => undefined)
+        }
+        rows.push({ season, endsAt, recipient: owner, quote, ...eligibility })
+      }
+      if (!cancelled) setFinaleReady(rows)
+    })().catch(() => {
+      if (!cancelled) setFinaleReady([])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [frames.currentSeason, wallet.account, refreshTick])
 
   useEffect(() => {
     const route = () => setRouteVersion((value) => value + 1)
@@ -612,6 +710,33 @@ export function FramesProgram() {
     },
   ]
 
+  async function mintFinale(row: FinaleReadyRow) {
+    if (!wallet.account || !config.paintAddress || !row.quote) return
+    setFinaleMinting(row.season)
+    try {
+      await sendAction({
+        kind: 'estimate',
+        address: config.paintAddress,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'mintSeasonFinale',
+        args: [BigInt(row.season)],
+        account: wallet.account,
+        quote: row.quote,
+        action: `mint season ${row.season + 1} finale`,
+        successSound: 'success-heavy',
+      })
+      await refreshFrameIndex()
+    } catch (error) {
+      setBox({
+        title: 'Mint finale',
+        message: error instanceof Error ? error.message : String(error),
+        kind: 'error',
+      })
+    } finally {
+      setFinaleMinting(undefined)
+    }
+  }
+
   const menus: Parameters<typeof MenuBar>[0]['menus'] = [
     { label: 'File', items: [{ label: 'Close', action: () => closeWindow('frames') }] },
     {
@@ -787,6 +912,33 @@ export function FramesProgram() {
           <main className="frames-grid-pane sunken">
             {rootView ? (
               <div className="season-grid">
+                {finaleReady.map((row) => (
+                  <div className="season-folder finale-ready" key={`finale-${row.season}`}>
+                    <Icon name="gallery" size={36} colour="#5FEDDF" />
+                    <b>Season {row.season + 1} finale is ready</b>
+                    <small>recipient: {short(row.recipient)}</small>
+                    {row.authorized ? (
+                      <small>holder of #0 or approved operator</small>
+                    ) : row.publicOpen ? (
+                      <small>anyone can mint it now; it goes to the holder of #0</small>
+                    ) : (
+                      <small>
+                        only the holder of #0 can mint until{' '}
+                        {new Date(Number(row.holderWindowEnds) * 1000).toLocaleString()}
+                      </small>
+                    )}
+                    {row.canMint && (
+                      <Button
+                        primary
+                        disabled={!row.quote || finaleMinting === row.season}
+                        onClick={() => void mintFinale(row)}
+                      >
+                        {finaleMinting === row.season ? 'Minting…' : 'Mint finale'}
+                      </Button>
+                    )}
+                    {row.canMint && <small>{row.quote?.maxCost ?? 'quoting…'}</small>}
+                  </div>
+                ))}
                 {filter === 'Mine' && (
                   <button
                     className="season-folder"

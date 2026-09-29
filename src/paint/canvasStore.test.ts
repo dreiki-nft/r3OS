@@ -12,7 +12,7 @@ import {
 
 describe('canvas store helpers', () => {
   it('chunks log ranges at 1,000 blocks', () => {
-    expect(chunkBlockRanges(1n, 2_501n)).toEqual([
+    expect(chunkBlockRanges(1n, 2_501n, 1_000)).toEqual([
       { fromBlock: 1n, toBlock: 1_000n },
       { fromBlock: 1_001n, toBlock: 2_000n },
       { fromBlock: 2_001n, toBlock: 2_501n },

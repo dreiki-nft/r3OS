@@ -207,12 +207,33 @@ export function visibleFlaggedIds(flagged: Iterable<number>, unhidden: Iterable<
   return [...flagged].filter((id) => !restored.has(id)).sort((a, b) => b - a)
 }
 
+export function seasonIndexChanged(
+  previous: Pick<FramesSnapshot, 'currentSeason' | 'seasons' | 'total'>,
+  currentSeason: number,
+  seasons: readonly SeasonSummary[],
+  total: number,
+) {
+  if (previous.currentSeason !== currentSeason || previous.total !== total) return true
+  if (previous.seasons.length !== seasons.length) return true
+  return seasons.some((row, index) => {
+    const old = previous.seasons[index]
+    return (
+      old.season !== row.season ||
+      old.regularFrames !== row.regularFrames ||
+      old.finaleMinted !== row.finaleMinted ||
+      old.finaleTokenId !== row.finaleTokenId
+    )
+  })
+}
+
 export async function refreshFrameIndex(force = false) {
   ensureStarted()
   if (indexPromise && !force) return indexPromise
   indexPromise = (async () => {
     if (!publicClient || !config.paintAddress) return
-    emit({ loading: true })
+    // Only the first load shows a loading state; later refreshes emit only on real changes,
+    // otherwise version-driven effects (My Frames loadMine) re-trigger this refresh forever.
+    if (!snapshot.seasons.length) emit({ loading: true })
     const client = publicClient
     const currentSeason = Number(
       await client.readContract({
@@ -245,6 +266,7 @@ export async function refreshFrameIndex(force = false) {
       }
     })
     const total = seasonTotal(seasons)
+    if (!snapshot.loading && !seasonIndexChanged(snapshot, currentSeason, seasons, total)) return
     emit({ loading: false, currentSeason, seasons, total })
   })().finally(() => {
     indexPromise = undefined

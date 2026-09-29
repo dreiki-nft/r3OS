@@ -17,6 +17,7 @@ import { notifyBurnerChanged, burnerAccount, burnerWallet, loadBurner } from '..
 import { sendWithBurnerNonce } from '../live/nonce'
 import { playSound } from '../os/sound'
 import { markTraceReceipt, recordTxTrace, type TxSigner } from './txTrace'
+import { bumpRefresh } from './refreshTick'
 
 export interface ActionQuote {
   gasLimit: bigint
@@ -270,6 +271,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
       throw new Error(`the transaction reverted onchain and still cost up to ${quote.maxCost}`)
     }
     opts.onState?.('confirmed')
+    bumpRefresh()
     playSound(opts.successSound ?? 'success-light')
     return {
       hash,

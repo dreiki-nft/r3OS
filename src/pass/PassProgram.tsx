@@ -5,6 +5,7 @@ import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { discoverContracts } from '../chain/contracts'
 import { choosePassDisplay, resolveHolderIds } from '../chain/holders'
+import { readHeavy } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { formattedBalance, getWalletSnapshot, subscribeWallet, walletOnCorrectChain } from '../chain/wallet'
 import { decodeJsonDataUri } from '../lib/dataUri'
@@ -250,30 +251,37 @@ export function PassProgram() {
 
   useEffect(() => {
     if (!displayOpen || !collection || !publicClient) return
-    const client = publicClient
-    void Promise.all(
-      ids.map(async (id) => {
-        const key = `${collection}:${id}`
-        const cached = imageMemory.get(key)
-        if (cached) return [id.toString(), cached] as const
+    let cancelled = false
+    void (async () => {
+      const missing = ids.filter((id) => !imageMemory.has(`${collection}:${id}`))
+      const rows = await readHeavy(
+        missing.map((id) => ({
+          address: collection,
+          abi: COLLECTION_ABI,
+          functionName: 'tokenURI',
+          args: [id],
+        })),
+      )
+      for (let index = 0; index < missing.length; index++) {
+        const row = rows[index]
+        if (row?.status !== 'success') continue
         try {
-          const uri = (await client.readContract({
-            address: collection,
-            abi: COLLECTION_ABI,
-            functionName: 'tokenURI',
-            args: [id],
-          })) as string
+          const uri = String(row.result)
           const metadata = uri.startsWith('data:')
             ? decodeJsonDataUri<{ image?: string }>(uri)
             : ((await (await fetch(ipfsUrl(uri))).json()) as { image?: string })
           const image = metadata.image ? ipfsUrl(metadata.image) : ''
-          if (image) imageMemory.set(key, image)
-          return [id.toString(), image] as const
+          if (image) imageMemory.set(`${collection}:${missing[index]}`, image)
         } catch {
-          return [id.toString(), ''] as const
+          // A single broken metadata URI should not block the picker.
         }
-      }),
-    ).then((entries) => setImages(new Map(entries)))
+      }
+      if (cancelled) return
+      setImages(new Map(ids.map((id) => [id.toString(), imageMemory.get(`${collection}:${id}`) ?? ''])))
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [displayOpen, collection, ids])
 
   useEffect(() => {
