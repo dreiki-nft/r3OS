@@ -77,6 +77,18 @@ const NetworkProgram = lazy(() =>
 const DefragProgram = lazy(() =>
   import('../defrag/DefragProgram').then((module) => ({ default: module.DefragProgram })),
 )
+const PageExeProgram = lazy(() =>
+  import('../monadhw/PageExeProgram').then((module) => ({ default: module.PageExeProgram })),
+)
+const BlockCameraProgram = lazy(() =>
+  import('../monadhw/BlockCameraProgram').then((module) => ({ default: module.BlockCameraProgram })),
+)
+const KernelDebuggerProgram = lazy(() =>
+  import('../monadhw/KernelDebuggerProgram').then((module) => ({ default: module.KernelDebuggerProgram })),
+)
+const MonadHardwareProgram = lazy(() =>
+  import('../monadhw/MonadHardwareProgram').then((module) => ({ default: module.MonadHardwareProgram })),
+)
 
 export const programs: ProgramDef[] = [
   {
@@ -232,6 +244,50 @@ export const programs: ProgramDef[] = [
     minSize: { width: 760, height: 520 },
     singleInstance: true,
     hash: '#/defrag',
+  },
+  {
+    id: 'page-exe',
+    title: 'PAGE.EXE',
+    icon: 'floppy',
+    colour: '#5FEDDF',
+    component: PageExeProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/page-exe',
+  },
+  {
+    id: 'block-camera',
+    title: 'Block Camera',
+    icon: 'target',
+    colour: '#FEC343',
+    component: BlockCameraProgram,
+    defaultSize: { width: 980, height: 744 },
+    minSize: { width: 700, height: 520 },
+    singleInstance: true,
+    hash: '#/block-camera',
+  },
+  {
+    id: 'kernel-debugger',
+    title: 'Kernel Debugger',
+    icon: 'bomb',
+    colour: '#C52020',
+    component: KernelDebuggerProgram,
+    defaultSize: { width: 920, height: 700 },
+    minSize: { width: 680, height: 520 },
+    singleInstance: true,
+    hash: '#/kernel-debugger',
+  },
+  {
+    id: 'monad-hw',
+    title: 'Monad Hardware',
+    icon: 'lightning',
+    colour: '#FFFFFF',
+    component: MonadHardwareProgram,
+    defaultSize: { width: 980, height: 700 },
+    minSize: { width: 700, height: 520 },
+    singleInstance: true,
+    hash: '#/monad-hw',
   },
   {
     id: 'xray',

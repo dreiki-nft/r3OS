@@ -18,12 +18,16 @@ export function StartMenu({
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const programs = visiblePrograms(releases)
+  const hardwareIds = new Set(['page-exe', 'block-camera', 'kernel-debugger', 'monad-hw'])
+  const regularPrograms = programs.filter((program) => !hardwareIds.has(program.id))
+  const hardwarePrograms = programs.filter((program) => hardwareIds.has(program.id))
   const visible = (id: string) => {
     const program = programById(id)
     return Boolean(program && programIsVisible(program, releases))
   }
   const [choosing, setChoosing] = useState(false)
   const [programsOpen, setProgramsOpen] = useState(false)
+  const [hardwareOpen, setHardwareOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -48,6 +52,10 @@ export function StartMenu({
       if (event.key === 'ArrowRight' && active?.dataset.programsRoot === '1') {
         event.preventDefault()
         setProgramsOpen(true)
+      }
+      if (event.key === 'ArrowRight' && active?.dataset.hardwareRoot === '1') {
+        event.preventDefault()
+        setHardwareOpen(true)
       }
     }
     window.addEventListener('pointerdown', pointer)
@@ -82,7 +90,7 @@ export function StartMenu({
           </button>
           {programsOpen && (
             <div className="submenu raised">
-              {programs.map((program) => (
+              {regularPrograms.map((program) => (
                 <button data-start-item key={program.id} onClick={() => open(program.id)}>
                   <Icon name={program.icon} size={24} colour={program.colour} />
                   {program.title}
@@ -91,6 +99,28 @@ export function StartMenu({
             </div>
           )}
         </div>
+        {hardwarePrograms.length > 0 && (
+          <div
+            className="programs-sub"
+            onMouseEnter={() => setHardwareOpen(true)}
+            onMouseLeave={() => setHardwareOpen(false)}
+          >
+            <button data-start-item data-hardware-root="1" onClick={() => setHardwareOpen(!hardwareOpen)}>
+              <Icon name="lightning" size={24} colour="#FFFFFF" />
+              Monad Hardware ▸
+            </button>
+            {hardwareOpen && (
+              <div className="submenu raised">
+                {hardwarePrograms.map((program) => (
+                  <button data-start-item key={program.id} onClick={() => open(program.id)}>
+                    <Icon name={program.icon} size={24} colour={program.colour} />
+                    {program.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {visible('pass') && (
           <button data-start-item onClick={() => open('pass')}>
             <Icon name="computer" size={24} />

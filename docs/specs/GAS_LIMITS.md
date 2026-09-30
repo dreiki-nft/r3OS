@@ -103,3 +103,19 @@ Use `eth_estimateGas + 10%` for `recycle(ids)`. Cost scales with the number of f
 Use `eth_estimateGas + 10%` for `burnCD(frameIds, label)`. Minting samples the top-left pixel of every 8 × 8 source block, keeps only compact per-track metadata plus colour pairs, and writes one small `FrameStore` snapshot. Cost still scales with the submitted 1–12 tracks, so quote the exact list.
 
 The 12-track Foundry regression target is **≤ 3.5M gas** (measured 3.1M). `tokenURI` is a view call; the full 12-track Labs `tokenURI` has a separate **≤ 9M gas** regression target (measured 8.3M, under the 14M Lab gas cap).
+
+
+## Kernel Debugger
+
+`R3tardsKernelDebugger.ping()` and `run()` deliberately use fixed limits and **must not** use `eth_estimateGas`:
+
+```ts
+const KERNEL_PING_GAS = 40_000n
+const KERNEL_RUN_GAS = 160_000n
+```
+
+The process key creates the meaningful reserve context by sending `ping` and `run` back-to-back with consecutive nonces. Estimating `run` in isolation simulates an emptying transaction and may choose the wrong branch. The UI therefore quotes fees from the fixed limit and the current max fee.
+
+`BURST NAIVE` is intentionally a possible revert path. The user must be warned before submission that Monad charges the submitted gas limit even when the chain rejects the uncorrected reserve dip at transaction end. `BURST GRACEFUL` uses the same fixed limit but refunds/unwinds value when the reserve device reports a dip.
+
+PAGE.EXE `writePage` and Block Camera `capture` use the normal `eth_estimateGas + 10%` policy. PAGE.EXE benchmark writes are `eth_call` measurements that always revert with `BenchWriteResult` and are never wallet transactions.

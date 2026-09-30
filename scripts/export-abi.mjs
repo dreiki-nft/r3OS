@@ -21,6 +21,9 @@ const contracts = [
   ['R3TARDS_SLEEPWALKER_ABI', 'R3tardsSleepwalker.sol/R3tardsSleepwalker.json'],
   ['R3TARDS_RECYCLE_BIN_ABI', 'R3tardsRecycleBin.sol/R3tardsRecycleBin.json'],
   ['R3TARDS_CD_BURNER_ABI', 'R3tardsCDBurner.sol/R3tardsCDBurner.json'],
+  ['R3TARDS_PAGE_EXE_ABI', 'R3tardsPageExe.sol/R3tardsPageExe.json'],
+  ['R3TARDS_BLOCK_CAMERA_ABI', 'R3tardsBlockCamera.sol/R3tardsBlockCamera.json'],
+  ['R3TARDS_KERNEL_DEBUGGER_ABI', 'R3tardsKernelDebugger.sol/R3tardsKernelDebugger.json'],
 ]
 
 const sections = ['// GENERATED FILE. DO NOT EDIT.', '// Sources: contracts/out Foundry artifacts', '']

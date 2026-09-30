@@ -174,3 +174,16 @@ Bid deposits stay escrowed until settlement because a bidder who looks outbid at
 `R3tardsQuests` uses `Ownable2Step`, but its owner power is **append-only**: the owner may add a new display quest and may transfer ownership, but cannot edit, delete, revoke or retroactively complete an existing quest. Quests grant no pixels, NFT control, budgets, auction rights, Lab rights, funds or other protocol permissions.
 
 Quest conditions are read-only `staticcall`s with a fixed gas cap and copy only one requested 32-byte return word. Reverting targets, missing words and return-bomb attempts therefore fail the condition without giving an external contract an unbounded metadata/claim callback. Completion is stored on the resolved painter address; active session keys can claim for their owner but cannot redirect the completion.
+
+
+## Monad hardware experiments
+
+The Monad hardware suite is removable and grants no new authority over the Paint core. `R3tardsPageExe` has no owner/admin, holds no funds and can write only the caller's deterministic 128-word page. Its benchmark write path always reverts, so benchmark state cannot accumulate. The page log deliberately publishes the written words; page contents are public onchain data and must never be treated as private storage.
+
+`R3tardsBlockCamera` can mint only through its bound `R3tardsLabs` experiment id. Proposer/validator id is **not randomness**: a proposer can influence transaction inclusion, and the portrait uses proposer identity only as art/provenance. Parent hash, epoch and proposer availability are recorded with explicit known/unknown flags so a missing precompile does not silently become a fake zero-valued device.
+
+`R3tardsKernelDebugger` has no admin. It may retain only `credits[msg.sender]`, which that same sender can withdraw. Its optional state step is an external self-call so a failure is isolated from the primary frame. A graceful reserve-dip path must successfully refund before it can continue; a rejecting refund receiver therefore reverts the whole run rather than pretending the unwind succeeded.
+
+The Kernel **process key is a hot localStorage key**, in the same risk class as the Paint burner but in a separate namespace: `r3os.kernel.key.<chainId>.<owner>`. Browser compromise or malicious same-origin script can steal it. It must be funded only with the tiny amount needed for the experiment, kept below 10 MON, and swept back after use. It has no Paint session authority.
+
+The naive burst is intentionally expected to revert when Monad enforces an uncorrected reserve dip. Because a reverted transaction has no surviving `ProcessReport`, the frontend may say only that the receipt is *consistent with* the reserve rule; it must label that statement as inference and must not fabricate a measured reserve result.

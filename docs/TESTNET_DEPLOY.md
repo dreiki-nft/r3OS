@@ -50,6 +50,21 @@ The script prints every address. The deploy block is the first receipt's block:
 python3 -c "import json;d=json.load(open('broadcast/Deploy.s.sol/10143/run-latest.json'));print(min(int(r['blockNumber'],16) for r in d['receipts']))"
 ```
 
+### 3b. Monad hardware experiments
+
+After the base suite is deployed, export its Paint and Labs addresses and run the add-on script with the same Paint owner account. Do not use a raw private key:
+
+```bash
+export PAINT_ADDRESS=<R3tardsPaint from step 3>
+export LABS_ADDRESS=<R3tardsLabs from step 3>
+
+PAINT_ADDRESS=$PAINT_ADDRESS LABS_ADDRESS=$LABS_ADDRESS \
+forge script script/DeployMonadHW.s.sol:DeployMonadHW \
+  --rpc-url $RPC --account r3tards-deployer --broadcast --slow
+```
+
+Save the three deployed addresses and experiment ids. Then browser-check PAGE.EXE, Block Camera, Kernel Debugger and Monad Hardware. In Kernel Debugger, fund the process key with 0.05 MON and run SINGLE, BURST GRACEFUL and BURST NAIVE. Paste back the actual receipts/statuses; the local Monad anvil exposes the reserve probe but did not enforce the end-of-transaction revert.
+
 ## 4. Chain checks (paste the output to Claude)
 
 ```bash

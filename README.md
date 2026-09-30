@@ -298,6 +298,12 @@ Useful read APIs include:
 
 `regionBlankMask` is deliberately view-only and exists so later Lab contracts such as independent region-local cellular automata can read where births are allowed without the immutable core ever calling those experiments.
 
+### Monad hardware experiments
+
+Phase MONAD-HW adds three removable contracts and four r3tardOS programs without changing the existing core: `PAGE.EXE` (`page-exe`), `Block Camera` (`block-camera`), `Kernel Debugger` (`kernel-debugger`) and the read-only `Monad Hardware` Device Manager. Block Camera mints through the existing `R3tardsLabs`; PAGE.EXE and Kernel Debugger are standalone registry-discovered experiments.
+
+The shared hardware model is documented in [`docs/specs/MONAD_HW.md`](docs/specs/MONAD_HW.md). The UI distinguishes measured/onchain values from protocol specs and never marks a device present unless it has actually been probed.
+
 ## Palette
 
 | # | Hex | Name |

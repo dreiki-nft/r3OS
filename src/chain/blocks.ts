@@ -1,4 +1,4 @@
-import { zeroAddress, type Address } from 'viem'
+import { zeroAddress, type Address, type Hex } from 'viem'
 import { publicClient, wsClient } from './clients'
 import { demoConstants, readCoreConstants } from './contracts'
 
@@ -8,12 +8,14 @@ export interface BlockHeaderSnapshot {
   number: bigint
   timestamp: bigint
   miner: Address
+  hash?: Hex
 }
 
 export interface BlockSnapshot {
   block: bigint
   timestamp: bigint
   miner: Address
+  hash?: Hex
   blockTimeMs: number
   storm: boolean
   stormId?: bigint
@@ -64,11 +66,17 @@ export function stormCountdown(
 }
 
 export function normalizeHeader(value: unknown): BlockHeaderSnapshot {
-  const header = value as { number?: bigint | null; timestamp?: bigint; miner?: Address | null }
+  const header = value as {
+    number?: bigint | null
+    timestamp?: bigint
+    miner?: Address | null
+    hash?: Hex | null
+  }
   return {
     number: header.number ?? 0n,
     timestamp: header.timestamp ?? 0n,
     miner: header.miner ?? zeroAddress,
+    ...(header.hash ? { hash: header.hash } : {}),
   }
 }
 
@@ -101,6 +109,7 @@ function accept(header: BlockHeaderSnapshot, mode: BlockSnapshot['mode']) {
     block: header.number,
     timestamp: header.timestamp,
     miner: header.miner,
+    hash: header.hash ?? snapshot.hash,
     storm,
     stormId,
     stormStart,
