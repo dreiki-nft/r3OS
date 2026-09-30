@@ -13,10 +13,11 @@ contract DeployMonadHW is Script {
     function run() external {
         R3tardsPaint paint = R3tardsPaint(vm.envAddress("PAINT_ADDRESS"));
         R3tardsLabs labs = R3tardsLabs(vm.envAddress("LABS_ADDRESS"));
+        address cardMemory = vm.envOr("CARD_MEMORY_ADDRESS", address(0));
 
         vm.startBroadcast();
         R3tardsPageExe page = new R3tardsPageExe();
-        R3tardsBlockCamera camera = new R3tardsBlockCamera(address(paint), address(labs));
+        R3tardsBlockCamera camera = new R3tardsBlockCamera(address(paint), address(labs), cardMemory);
         R3tardsKernelDebugger kernel = new R3tardsKernelDebugger();
 
         uint256 pageId = paint.addExperiment(address(page), "page-exe", "");
@@ -28,6 +29,7 @@ contract DeployMonadHW is Script {
         console.log("R3tardsPageExe", address(page));
         console.log("R3tardsBlockCamera", address(camera));
         console.log("R3tardsKernelDebugger", address(kernel));
+        console.log("Block Camera CARD_MEMORY", cardMemory);
         console.log("page-exe experiment id", pageId);
         console.log("block-camera experiment id", cameraId);
         console.log("kernel-debugger experiment id", kernelId);

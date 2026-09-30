@@ -50,20 +50,46 @@ The script prints every address. The deploy block is the first receipt's block:
 python3 -c "import json;d=json.load(open('broadcast/Deploy.s.sol/10143/run-latest.json'));print(min(int(r['blockNumber'],16) for r in d['receipts']))"
 ```
 
-### 3b. Monad hardware experiments
+### 3b. Monad Card driver
 
-After the base suite is deployed, export its Paint and Labs addresses and run the add-on script with the same Paint owner account. Do not use a raw private key:
+Monad Cards do not exist on testnet, so deploy the local-only mock, claim one card, then deploy CARD.DRV and append its experiment, Pass stamp source and quest. Use the same deployer/owner account and no raw private key:
 
 ```bash
+forge create test/MockMonadCard.sol:MockMonadCard \
+  --rpc-url $RPC --account r3tards-deployer --broadcast
+export MONAD_CARD=<MockMonadCard deployed address>
+
+cast send $MONAD_CARD "claim()" --rpc-url $RPC --account r3tards-deployer
+
 export PAINT_ADDRESS=<R3tardsPaint from step 3>
+export PASS_ADDRESS=<R3tardsPainterPass from step 3>
+export QUESTS_ADDRESS=<R3tardsQuests from step 3>
+
+MONAD_CARD_ADDRESS=$MONAD_CARD \
+PAINT_ADDRESS=$PAINT_ADDRESS PASS_ADDRESS=$PASS_ADDRESS QUESTS_ADDRESS=$QUESTS_ADDRESS \
+forge script script/DeployMonadCard.s.sol:DeployMonadCard \
+  --rpc-url $RPC --account r3tards-deployer --broadcast --slow
+
+export CARD_MEMORY_ADDRESS=<R3tardsCardMemory from DeployMonadCard output>
+```
+
+CARD.DRV is now discoverable as `card-drv`. On testnet the hardware screen must label the card as a mock/unknown manufacturer rather than presenting it as the official chain-143 device.
+
+### 3c. Monad hardware experiments
+
+After CARD.DRV is deployed, run the Monad Hardware add-on so Block Camera receives the CARD.DRV address in its constructor:
+
+```bash
 export LABS_ADDRESS=<R3tardsLabs from step 3>
 
-PAINT_ADDRESS=$PAINT_ADDRESS LABS_ADDRESS=$LABS_ADDRESS \
+PAINT_ADDRESS=$PAINT_ADDRESS LABS_ADDRESS=$LABS_ADDRESS CARD_MEMORY_ADDRESS=$CARD_MEMORY_ADDRESS \
 forge script script/DeployMonadHW.s.sol:DeployMonadHW \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
-Save the three deployed addresses and experiment ids. Then browser-check PAGE.EXE, Block Camera, Kernel Debugger and Monad Hardware. In Kernel Debugger, fund the process key with 0.05 MON and run SINGLE, BURST GRACEFUL and BURST NAIVE. Paste back the actual receipts/statuses; the local Monad anvil exposes the reserve probe but did not enforce the end-of-transaction revert.
+Save the three hardware addresses and experiment ids. Browser-check PAGE.EXE, CARDMEM.EXE, Block Camera, Kernel Debugger and Monad Hardware. Program the mock card once, confirm the same page appears in PAGE.EXE and Kernel Debugger, and capture a card-enabled Block Camera shot both with and without the optional canvas hash.
+
+In Kernel Debugger, also fund the process key with 0.05 MON and run SINGLE, BURST GRACEFUL and BURST NAIVE. Paste back the actual receipts/statuses; the local Monad anvil exposes the reserve probe but did not enforce the end-of-transaction revert.
 
 ## 4. Chain checks (paste the output to Claude)
 

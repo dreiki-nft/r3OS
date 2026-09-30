@@ -66,4 +66,25 @@ describe('readHeavy', () => {
     expect(peak).toBe(2)
     expect(client.readContract).toHaveBeenCalledTimes(5)
   })
+
+  it('runs bounded arbitrary RPC tasks without multicalling them', async () => {
+    let active = 0
+    let peak = 0
+    const task = () => ({
+      run: async () => {
+        active++
+        peak = Math.max(peak, active)
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        active--
+        return 7n
+      },
+    })
+    const rows = await readHeavyUsing({}, [task(), task(), task()], { concurrency: 2 })
+    expect(peak).toBeLessThanOrEqual(2)
+    expect(rows).toEqual([
+      { status: 'success', result: 7n },
+      { status: 'success', result: 7n },
+      { status: 'success', result: 7n },
+    ])
+  })
 })

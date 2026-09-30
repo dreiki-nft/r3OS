@@ -1,18 +1,25 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { formatEther, parseEther, type Address } from 'viem'
+import { formatEther, parseEther, toHex, type Address, type Hex } from 'viem'
 import { publicClient } from '../chain/clients'
-import { readMany } from '../chain/readMany'
+import { readHeavy, readMany } from '../chain/readMany'
 import { useRefreshTick } from '../chain/refreshTick'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_KERNEL_DEBUGGER_ABI } from '../lib/generated/abi'
+import { R3TARDS_CARD_MEMORY_ABI, R3TARDS_KERNEL_DEBUGGER_ABI } from '../lib/generated/abi'
 import { errorText, labAddress, shortAddress } from '../labs/labCommon'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { HardwareBus } from '../os/ui/HardwareBus'
 import { IntroBar } from '../os/ui/IntroBar'
 import { MessageBox } from '../os/ui/MessageBox'
-import { buildKernelLines } from './kernel'
+import {
+  buildKernelLines,
+  formatDeviceLines,
+  formatDumpLines,
+  parseKernelCommand,
+  storageVerificationLine,
+  type KernelCardInfo,
+} from './kernel'
 import {
   createProcessKey,
   KERNEL_PING_GAS,
@@ -50,11 +57,20 @@ export function KernelDebuggerProgram() {
   const [naiveConfirm, setNaiveConfirm] = useState(false)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
+  const [cardDriver, setCardDriver] = useState<Address>()
+  const [command, setCommand] = useState('')
+  const [lastCommand, setLastCommand] = useState('')
 
   useEffect(() => {
     void labAddress('kernel-debugger')
       .then(setAddress)
       .catch(() => setMissing(true))
+  }, [])
+
+  useEffect(() => {
+    void labAddress('card-drv')
+      .then(setCardDriver)
+      .catch(() => setCardDriver(undefined))
   }, [])
 
   useEffect(() => {
@@ -186,6 +202,113 @@ export function KernelDebuggerProgram() {
     }
   }
 
+  async function executeCommand() {
+    const parsed = parseKernelCommand(command)
+    const echo = `C:\\KERNEL>${command}`
+    setLastCommand(command)
+    setCommand('')
+    if (parsed.kind === 'cls') {
+      setLines([])
+      return
+    }
+    if (parsed.kind === 'help') {
+      setLines((current) => [...current, echo, 'help', 'cls', 'device <id>', 'dump <id> [word] [count]'])
+      return
+    }
+    if (parsed.kind === 'error') {
+      setLines((current) => [...current, echo, parsed.message])
+      return
+    }
+    if (!cardDriver || !publicClient) {
+      setLines((current) => [...current, echo, 'CARD.DRV not installed'])
+      return
+    }
+    try {
+      if (parsed.kind === 'device') {
+        const rows = await readMany(
+          [
+            {
+              address: cardDriver,
+              abi: R3TARDS_CARD_MEMORY_ABI,
+              functionName: 'cardInfo',
+              args: [parsed.cardId],
+            },
+            {
+              address: cardDriver,
+              abi: R3TARDS_CARD_MEMORY_ABI,
+              functionName: 'pageHash',
+              args: [parsed.cardId],
+            },
+          ],
+          { allowFailure: false },
+        )
+        const raw = rows[0] as any
+        const info: KernelCardInfo = {
+          owner: raw.owner ?? raw[0],
+          exists: Boolean(raw.exists ?? raw[1]),
+          pageBaseSlot: BigInt(raw.pageBaseSlot ?? raw[2]),
+          pageIndex: BigInt(raw.pageIndex ?? raw[3]),
+          formatted: Boolean(raw.formatted ?? raw[4]),
+          version: Number(raw.version ?? raw[5]),
+          writes: Number(raw.writes ?? raw[6]),
+          firstWriteBlock: BigInt(raw.firstWriteBlock ?? raw[7]),
+          lastWriteBlock: BigInt(raw.lastWriteBlock ?? raw[8]),
+        }
+        setLines((current) => [
+          ...current,
+          echo,
+          ...formatDeviceLines(parsed.cardId, info, rows[1] as string),
+        ])
+        return
+      }
+
+      const dumpRows = await readHeavy([
+        {
+          address: cardDriver,
+          abi: R3TARDS_CARD_MEMORY_ABI,
+          functionName: 'readWords',
+          args: [parsed.cardId, BigInt(parsed.word), BigInt(parsed.count)],
+        },
+        {
+          address: cardDriver,
+          abi: R3TARDS_CARD_MEMORY_ABI,
+          functionName: 'readPage',
+          args: [parsed.cardId],
+        },
+      ])
+      if (dumpRows[0]?.status !== 'success') throw dumpRows[0]?.error ?? new Error('dump failed')
+      if (dumpRows[1]?.status !== 'success') throw dumpRows[1]?.error ?? new Error('page verification failed')
+      const base = BigInt(
+        (
+          await readMany(
+            [
+              {
+                address: cardDriver,
+                abi: R3TARDS_CARD_MEMORY_ABI,
+                functionName: 'pageBaseSlot',
+                args: [parsed.cardId],
+              },
+            ],
+            { allowFailure: false },
+          )
+        )[0] as bigint,
+      )
+      const storage = await publicClient.getStorageAt({
+        address: cardDriver,
+        slot: toHex(base, { size: 32 }),
+      })
+      const page = dumpRows[1].result as readonly Hex[]
+      setLines((current) => [
+        ...current,
+        echo,
+        ...formatDumpLines(base, parsed.word, dumpRows[0].result as readonly string[]),
+        storageVerificationLine(page[0], storage),
+      ])
+    } catch (error) {
+      setLines((current) => [...current, echo, errorText(error)])
+    }
+  }
+
   if (missing)
     return (
       <div className="monadhw-program">
@@ -305,6 +428,27 @@ export function KernelDebuggerProgram() {
           {lines.map((line, index) => (
             <div key={`${index}-${line}`}>{line}</div>
           ))}
+          <form
+            className="kernel-command-line"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void executeCommand()
+            }}
+          >
+            <span>C:\KERNEL&gt;</span>
+            <input
+              value={command}
+              spellCheck={false}
+              autoComplete="off"
+              onChange={(event) => setCommand(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  setCommand(lastCommand)
+                }
+              }}
+            />
+          </form>
         </div>
         {message && <p className="hw-message">{message}</p>}
       </div>

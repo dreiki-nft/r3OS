@@ -89,6 +89,9 @@ const KernelDebuggerProgram = lazy(() =>
 const MonadHardwareProgram = lazy(() =>
   import('../monadhw/MonadHardwareProgram').then((module) => ({ default: module.MonadHardwareProgram })),
 )
+const CardMemProgram = lazy(() =>
+  import('../monadhw/CardMemProgram').then((module) => ({ default: module.CardMemProgram })),
+)
 
 export const programs: ProgramDef[] = [
   {
@@ -255,6 +258,17 @@ export const programs: ProgramDef[] = [
     minSize: { width: 760, height: 520 },
     singleInstance: true,
     hash: '#/page-exe',
+  },
+  {
+    id: 'card-mem',
+    title: 'CARDMEM.EXE',
+    icon: 'chip',
+    colour: '#5FEDDF',
+    component: CardMemProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/card-mem',
   },
   {
     id: 'block-camera',

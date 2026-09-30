@@ -16,6 +16,7 @@ const rules: Record<string, string> = {
   GARDENER: '5 plants or 25 ticks',
   FORKER: '3 distinct forks painted',
   'BLOCK DNA': '3 verifications',
+  'MONAD CARD': 'hold a Monad Card',
 }
 
 export async function loadLabStamps(pass: Address, owner: Address) {

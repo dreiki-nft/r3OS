@@ -304,6 +304,12 @@ Phase MONAD-HW adds three removable contracts and four r3tardOS programs without
 
 The shared hardware model is documented in [`docs/specs/MONAD_HW.md`](docs/specs/MONAD_HW.md). The UI distinguishes measured/onchain values from protocol specs and never marks a device present unless it has actually been probed.
 
+### Monad Card (CARD.DRV)
+
+Phase MONAD CARD adds `R3tardsCardMemory`, registered as `card-drv`, and the `CARDMEM.EXE` EEPROM programmer. Every Monad Card id addresses one hashed, aligned 4 KiB page; only the card's current `ownerOf(cardId)` may write it. The card contract itself is never modified, wrapped or escrowed.
+
+The same page is visible to PAGE.EXE, Kernel Debugger, Block Camera and Monad Hardware. The driver is also appended as the `MONAD CARD` Painter Pass stamp source and supplies the two-condition `CARD CARRIER` quest. Monad Cards are mainnet-only, so local/testnet deployments use `MockMonadCard`; the official chain-143 address is enforced by the driver constructor. See [`docs/specs/MONAD_CARD.md`](docs/specs/MONAD_CARD.md).
+
 ## Palette
 
 | # | Hex | Name |

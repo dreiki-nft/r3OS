@@ -16,6 +16,7 @@ contract R3tardsBlockCamera is ILabTokenSource {
 
     IR3tardsPaintData public immutable PAINT;
     R3tardsLabs public immutable LABS;
+    address public immutable CARD_MEMORY;
     uint256 public experimentId = type(uint256).max;
 
     struct Shot {
@@ -34,7 +35,18 @@ contract R3tardsBlockCamera is ILabTokenSource {
         bytes32 parentHash;
     }
 
+    struct CardShot {
+        uint256 cardId;
+        bytes32 cardPageHash;
+        bytes32 canvasHash;
+        // packed into one slot
+        uint32 cardWrites;
+        bool hasCanvas;
+        bool present;
+    }
+
     mapping(uint256 => Shot) private _shots;
+    mapping(uint256 => CardShot) private _cardShots;
     mapping(address => uint48) public lastCaptureBlock;
 
     error ZeroAddress();
@@ -44,6 +56,10 @@ contract R3tardsBlockCamera is ILabTokenSource {
     error AlreadyCapturedThisBlock();
     error SeasonTooLarge(uint256 season);
     error ShotDoesNotExist(uint256 tokenId);
+    error CardCaptureDisabled();
+    error CardDoesNotExist(uint256 cardId);
+    error NotCardOwner(uint256 cardId, address owner);
+    error CardMemoryReadFailed();
 
     event Captured(
         uint256 indexed tokenId,
@@ -53,11 +69,18 @@ contract R3tardsBlockCamera is ILabTokenSource {
         uint64 proposerValId,
         bytes32 parentHash
     );
+    event CardCaptured(
+        uint256 indexed tokenId,
+        uint256 indexed cardId,
+        bytes32 cardPageHash,
+        bytes32 canvasHash
+    );
 
-    constructor(address paintCore, address labs) {
+    constructor(address paintCore, address labs, address cardMemory) {
         if (paintCore == address(0) || labs == address(0)) revert ZeroAddress();
         PAINT = IR3tardsPaintData(paintCore);
         LABS = R3tardsLabs(labs);
+        CARD_MEMORY = cardMemory;
     }
 
     function bindExperimentId(uint256 id) external {
@@ -68,12 +91,57 @@ contract R3tardsBlockCamera is ILabTokenSource {
     }
 
     function capture() external returns (uint256 tokenId) {
+        (tokenId,) = _capture();
+    }
+
+    function captureCard(uint256 cardId, bool withCanvas) external returns (uint256 tokenId) {
+        if (CARD_MEMORY == address(0)) revert CardCaptureDisabled();
+        uint32 season_;
+        (tokenId, season_) = _capture();
+
+        (bool ownerOk, bytes memory ownerData) = CARD_MEMORY.staticcall(
+            abi.encodeWithSignature("cardOwner(uint256)", cardId)
+        );
+        if (!ownerOk || ownerData.length < 64) revert CardMemoryReadFailed();
+        (address owner, bool exists) = abi.decode(ownerData, (address, bool));
+        if (!exists) revert CardDoesNotExist(cardId);
+        if (owner != msg.sender) revert NotCardOwner(cardId, owner);
+
+        (bool hashOk, bytes memory hashData) = CARD_MEMORY.staticcall(
+            abi.encodeWithSignature("pageHash(uint256)", cardId)
+        );
+        if (!hashOk || hashData.length < 32) revert CardMemoryReadFailed();
+        bytes32 cardPageHash = abi.decode(hashData, (bytes32));
+
+        (bool infoOk, bytes memory infoData) = CARD_MEMORY.staticcall(
+            abi.encodeWithSignature("cardInfo(uint256)", cardId)
+        );
+        if (!infoOk || infoData.length < 9 * 32) revert CardMemoryReadFailed();
+        (,,,,,, uint32 cardWrites,,) = abi.decode(
+            infoData,
+            (address, bool, uint256, uint256, bool, uint8, uint32, uint48, uint48)
+        );
+
+        bytes32 canvasHash = withCanvas ? keccak256(PAINT.getCanvas(uint256(season_))) : bytes32(0);
+        _cardShots[tokenId] = CardShot({
+            cardId: cardId,
+            cardPageHash: cardPageHash,
+            canvasHash: canvasHash,
+            cardWrites: cardWrites,
+            hasCanvas: withCanvas,
+            present: true
+        });
+        emit CardCaptured(tokenId, cardId, cardPageHash, canvasHash);
+    }
+
+    function _capture() internal returns (uint256 tokenId, uint32 season32) {
         uint256 id = experimentId;
         if (id == type(uint256).max) revert ExperimentNotBound();
         if (lastCaptureBlock[msg.sender] == uint48(block.number)) revert AlreadyCapturedThisBlock();
 
         uint256 season_ = PAINT.currentSeason();
         if (season_ > type(uint32).max) revert SeasonTooLarge(season_);
+        season32 = uint32(season_);
 
         (uint64 proposerValId_, bool proposerKnown_) = MonadHW.proposerValId();
         (uint64 epoch_, bool inDelay_, bool epochKnown_) = MonadHW.epoch();
@@ -85,7 +153,7 @@ contract R3tardsBlockCamera is ILabTokenSource {
             blockNumber: uint48(block.number),
             epoch: epoch_,
             proposerValId: proposerValId_,
-            season: uint32(season_),
+            season: season32,
             timestamp: uint48(block.timestamp),
             capturer: msg.sender,
             inEpochDelay: inDelay_,
@@ -101,6 +169,11 @@ contract R3tardsBlockCamera is ILabTokenSource {
         Shot memory value = _shots[tokenId];
         if (value.capturer == address(0)) revert ShotDoesNotExist(tokenId);
         return value;
+    }
+
+    function cardShot(uint256 tokenId) external view returns (bool present, CardShot memory value) {
+        value = _cardShots[tokenId];
+        present = value.present;
     }
 
     function previewPortrait(
@@ -148,9 +221,6 @@ contract R3tardsBlockCamera is ILabTokenSource {
 
         kind = "block portrait";
         description = "one monad block, photographed as proposer, epoch and parent-hash pixels.";
-        imageSvg = _render(pixels);
-        dominantColour = dominant;
-        coloursUsed = used;
 
         string memory proposer = value.proposerKnown
             ? string.concat("validator ", uint256(value.proposerValId).toString())
@@ -169,6 +239,28 @@ contract R3tardsBlockCamera is ILabTokenSource {
                 ',{"trait_type":"Staking Device","value":"', (value.proposerKnown || value.epochKnown) ? "present" : "absent", '"}'
             )
         );
+
+        CardShot memory card = _cardShots[tokenId];
+        if (card.present) {
+            _applyCardHash(pixels, card.cardPageHash);
+            (dominant, used) = _stats(pixels);
+            description = "one monad block, photographed as proposer, epoch and parent-hash pixels. this shot also commits the owner's CARD.DRV page hash at capture time.";
+            attributes = string(
+                abi.encodePacked(
+                    attributes,
+                    ',{"trait_type":"Card slot","value":"#', card.cardId.toString(), '"}',
+                    ',{"trait_type":"Card page hash","value":"', Strings.toHexString(uint256(card.cardPageHash), 32), '"}',
+                    ',{"trait_type":"Card writes","display_type":"number","value":', uint256(card.cardWrites).toString(), '}',
+                    ',{"trait_type":"Canvas hash","value":"',
+                    card.hasCanvas ? Strings.toHexString(uint256(card.canvasHash), 32) : "not captured",
+                    '"}'
+                )
+            );
+        }
+
+        imageSvg = _render(pixels);
+        dominantColour = dominant;
+        coloursUsed = used;
     }
 
     function canBurn(uint256 tokenId) external view returns (bool) {
@@ -240,6 +332,18 @@ contract R3tardsBlockCamera is ILabTokenSource {
             pixels[31 * 32 + x] = colour;
         }
 
+        (dominantColour, coloursUsed) = _stats(pixels);
+    }
+
+    function _applyCardHash(uint8[1024] memory pixels, bytes32 cardPageHash) private pure {
+        for (uint256 i; i < 16; ++i) {
+            uint8 value = uint8(cardPageHash[i]);
+            pixels[31 * 32 + i * 2] = value >> 4;
+            pixels[31 * 32 + i * 2 + 1] = value & 0x0f;
+        }
+    }
+
+    function _stats(uint8[1024] memory pixels) private pure returns (uint8 dominantColour, uint8 coloursUsed) {
         uint256[16] memory counts;
         for (uint256 i; i < 1024; ++i) ++counts[pixels[i]];
         uint256 best;

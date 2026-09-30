@@ -359,12 +359,33 @@ export async function readMonadHardware(): Promise<MonadHardwareSnapshot> {
   return { loading: false, ...staticProbe, staking }
 }
 
+let sharedHardwareRead: { tick: number; promise: Promise<MonadHardwareSnapshot> } | undefined
+let lastHardware: MonadHardwareSnapshot | undefined
+
+/** Every HardwareBus and hardware program shares one consensus probe per refresh tick. */
+function readMonadHardwareShared(tick: number) {
+  if (sharedHardwareRead?.tick === tick) return sharedHardwareRead.promise
+  const promise = readMonadHardware().then((value) => {
+    lastHardware = value
+    return value
+  })
+  sharedHardwareRead = { tick, promise }
+  promise.catch(() => {
+    if (sharedHardwareRead?.promise === promise) sharedHardwareRead = undefined
+  })
+  return promise
+}
+
 export function useMonadHardware() {
   const refreshTick = useRefreshTick(30)
-  const [state, setState] = useState<MonadHardwareSnapshot>(EMPTY)
+  const [state, setState] = useState<MonadHardwareSnapshot>(() => lastHardware ?? EMPTY)
   useEffect(() => {
     let cancelled = false
-    void readMonadHardware().then((next) => !cancelled && setState(next))
+    readMonadHardwareShared(refreshTick)
+      .then((next) => {
+        if (!cancelled) setState(next)
+      })
+      .catch(() => undefined)
     return () => {
       cancelled = true
     }
@@ -374,4 +395,6 @@ export function useMonadHardware() {
 
 export function __resetMonadHardwareForTests() {
   staticProbePromise = undefined
+  sharedHardwareRead = undefined
+  lastHardware = undefined
 }

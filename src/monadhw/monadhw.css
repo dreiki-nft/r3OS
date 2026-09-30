@@ -18,7 +18,7 @@
 .hardware-bus {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   border-top: 1px solid var(--bevel-light);
   border-bottom: 1px solid var(--bevel-dark);
   background: var(--face-2);
@@ -383,7 +383,7 @@
 
 @media (max-width: 760px) {
   .hardware-bus {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   .hardware-bus button {
     border-bottom: 1px solid var(--bevel-light-2);
@@ -406,10 +406,203 @@
 }
 
 .monadhw-program input:not([type='checkbox']):not([type='range']),
-.monadhw-program select {
+.monadhw-program select,
+.monadhw-program textarea {
   min-height: 26px;
   border: 1px solid var(--bevel-outer);
   background: var(--field);
   color: var(--text);
   padding: 3px 6px;
+}
+
+/* MONAD CARD / CARD.DRV */
+.page-source-switch {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.card-page-hexdump > div {
+  grid-template-columns: 28px max-content max-content max-content;
+}
+
+.card-page-hexdump em {
+  font-style: normal;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.card-region-header,
+.card-region-flags,
+.card-region-card-bus {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.card-traffic-table {
+  margin-top: 8px;
+  max-height: 220px;
+  overflow: auto;
+  background: var(--field);
+}
+
+.card-traffic-table > div {
+  display: grid;
+  grid-template-columns: 120px 60px 60px 70px 110px 90px;
+  gap: 8px;
+  padding: 3px 5px;
+  border-bottom: 1px solid var(--bevel-dark);
+  align-items: center;
+}
+
+.card-traffic-head {
+  position: sticky;
+  top: 0;
+  background: var(--face-2);
+  z-index: 1;
+}
+
+.cardmem-overview {
+  display: grid;
+  grid-template-columns: minmax(190px, 260px) 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.card-cartridge {
+  position: relative;
+  min-height: 205px;
+  padding: 12px 12px 25px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  background: var(--face-2);
+  overflow: hidden;
+}
+
+.card-cartridge-icon canvas,
+.card-icon-editor {
+  image-rendering: pixelated;
+}
+
+.card-cartridge-icon canvas {
+  width: 128px;
+  height: 128px;
+}
+
+.card-edge {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 7px;
+  height: 8px;
+  border: 1px solid #000;
+  background: repeating-linear-gradient(90deg, var(--text-muted) 0 5px, #000 5px 7px);
+}
+
+.cardmem-icon-editor {
+  display: grid;
+  gap: 6px;
+  width: min-content;
+}
+
+.card-icon-editor {
+  width: 256px;
+  height: 256px;
+  cursor: crosshair;
+  border: 2px inset var(--bevel-light);
+  background: #000;
+}
+
+.card-flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.card-flags label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.monadhw-program textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: 11px/1.4 var(--font);
+}
+
+.monadhw-program input:disabled,
+.monadhw-program textarea:disabled,
+.monadhw-program select:disabled {
+  opacity: 0.6;
+}
+
+.card-user-hex {
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  font: 11px/1.4 var(--font);
+}
+
+.cardmem-raw-toggle {
+  margin: 8px 0;
+}
+
+.card-write-log {
+  max-height: 180px;
+  overflow: auto;
+}
+
+.card-write-log > div {
+  display: grid;
+  grid-template-columns: 110px 130px 110px 90px;
+  gap: 8px;
+  padding: 3px 5px;
+}
+
+.kernel-command-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.kernel-command-line input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  min-width: 40px;
+}
+
+@media (max-width: 760px) {
+  .cardmem-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .card-page-hexdump > div {
+    grid-template-columns: 28px max-content max-content max-content;
+  }
+}
+
+.camera-card-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin: 8px 0 4px;
+}
+
+.camera-card-options label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.camera-card-options small {
+  color: var(--text-muted);
 }

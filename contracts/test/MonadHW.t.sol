@@ -84,7 +84,7 @@ contract MonadHWTest is Test {
         );
         labs = new R3tardsLabs(address(paint), royalty);
         page = new R3tardsPageExe();
-        camera = new R3tardsBlockCamera(address(paint), address(labs));
+        camera = new R3tardsBlockCamera(address(paint), address(labs), address(0));
         kernel = new R3tardsKernelDebugger();
 
         vm.prank(alice);

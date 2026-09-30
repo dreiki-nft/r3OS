@@ -51,6 +51,7 @@ const DAY_ONE_DETAIL: Record<string, string> = {
   'LAB RAT': 'Lab stamps',
   'PADDLE UP': 'finale-auction bids',
   RECYCLER: 'frames recycled',
+  'CARD CARRIER': 'Monad Card + canvas pixels',
 }
 
 function questSubtitle(name: string, goal: bigint) {
@@ -69,6 +70,7 @@ function questSubtitle(name: string, goal: bigint) {
   if (name === 'PADDLE UP')
     return goal === 1n ? 'place a finale-auction bid' : `place ${n} finale-auction bids`
   if (name === 'RECYCLER') return `burn ${n} frames`
+  if (name === 'CARD CARRIER') return 'hold a Monad Card and paint 143 pixels'
   return `${n} onchain value`
 }
 

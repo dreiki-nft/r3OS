@@ -187,3 +187,15 @@ The Monad hardware suite is removable and grants no new authority over the Paint
 The Kernel **process key is a hot localStorage key**, in the same risk class as the Paint burner but in a separate namespace: `r3os.kernel.key.<chainId>.<owner>`. Browser compromise or malicious same-origin script can steal it. It must be funded only with the tiny amount needed for the experiment, kept below 10 MON, and swept back after use. It has no Paint session authority.
 
 The naive burst is intentionally expected to revert when Monad enforces an uncorrected reserve dip. Because a reverted transaction has no surviving `ProcessReport`, the frontend may say only that the receipt is *consistent with* the reserve rule; it must label that statement as inference and must not fabricate a measured reserve result.
+
+## Monad Card / CARD.DRV
+
+`R3tardsCardMemory` is ownerless and has no upgrade, payable, approval or signature path. A page write is authorized only by the official/mock card contract's current `ownerOf(cardId)` result and exact `msg.sender`; Paint session keys and ERC-721 approvals do not grant CARD.DRV write authority. On chain 143 the constructor rejects every card address except the official Monad Card contract.
+
+CARD.DRV memory is **public and permanently replayable**. `CardWritten` emits the full written words, so overwriting a label, message or USER byte does not erase the old value from chain history. Users must never put secrets, private keys, passwords or private messages in the page. LABEL and MESSAGE are untrusted user text and the frontend renders them only as text; they are never interpreted as HTML.
+
+The testnet identity device is `MockMonadCard`, not the official card. UI provenance must therefore keep manufacturer and soulbound claims `unknown` unless an onchain ERC-5192 probe supports them; only the official chain-143 address may use the documented-spec fallback.
+
+The `MONAD CARD` Painter Pass stamp source performs a gas-capped external staticcall through the existing Pass machinery. CARD.DRV's own `stamp` catches card-contract failure and returns false, so a malformed/unavailable card response cannot brick Pass metadata.
+
+There is no admin path to edit, clear or migrate CARD.DRV pages. The only mutable storage outside the pages is the writer-to-last-card discovery index; it grants no authority and is revalidated against `ownerOf` before the frontend treats it as a present card. Block Camera card shots store the page hash/write count at capture time and never read mutable CARD.DRV state during later rendering.

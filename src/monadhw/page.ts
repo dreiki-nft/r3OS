@@ -68,7 +68,9 @@ export function changedWordRange(before: readonly Hex[], after: readonly Hex[]) 
 }
 
 export function formatAscii(bytes: Uint8Array) {
-  return Array.from(bytes, (value) => (value >= 32 && value <= 126 ? String.fromCharCode(value) : '.')).join('')
+  return Array.from(bytes, (value) => (value >= 32 && value <= 126 ? String.fromCharCode(value) : '.')).join(
+    '',
+  )
 }
 
 export function hexdumpRows(words: readonly Hex[]) {
@@ -130,4 +132,81 @@ export async function measureBenchWrite(
     throw error
   }
   throw new Error('benchWrite unexpectedly returned without BenchWriteResult')
+}
+
+export interface PageTrafficItem {
+  block: bigint
+  txHash: Hex
+  page: bigint
+  words: number
+}
+
+export interface PageTrafficReceipt {
+  transactionHash: Hex
+  gasUsed: bigint
+  status: 'success' | 'reverted'
+}
+
+export interface PageTrafficSummary {
+  block: bigint
+  writes: number
+  distinctPages: number
+  words: number
+  gasUsed: bigint
+  status: 'success' | 'reverted' | 'mixed' | 'unknown'
+}
+
+export function summarizePageTraffic(
+  items: readonly PageTrafficItem[],
+  receipts: readonly PageTrafficReceipt[],
+): PageTrafficSummary[] {
+  const receiptByHash = new Map(receipts.map((receipt) => [receipt.transactionHash.toLowerCase(), receipt]))
+  const grouped = new Map<
+    bigint,
+    {
+      items: PageTrafficItem[]
+      pages: Set<string>
+      statuses: Set<string>
+      gas: bigint
+      gasHashes: Set<string>
+    }
+  >()
+  for (const item of items) {
+    let row = grouped.get(item.block)
+    if (!row) {
+      row = { items: [], pages: new Set(), statuses: new Set(), gas: 0n, gasHashes: new Set() }
+      grouped.set(item.block, row)
+    }
+    row.items.push(item)
+    row.pages.add(item.page.toString())
+    const key = item.txHash.toLowerCase()
+    const receipt = receiptByHash.get(key)
+    if (receipt) {
+      row.statuses.add(receipt.status)
+      if (!row.gasHashes.has(key)) {
+        row.gasHashes.add(key)
+        row.gas += receipt.gasUsed
+      }
+    } else {
+      row.statuses.add('unknown')
+    }
+  }
+  return [...grouped.entries()]
+    .sort(([a], [b]) => (a > b ? -1 : a < b ? 1 : 0))
+    .map(([block, row]) => {
+      const status =
+        row.statuses.size === 1
+          ? ([...row.statuses][0] as PageTrafficSummary['status'])
+          : row.statuses.has('unknown')
+            ? 'unknown'
+            : 'mixed'
+      return {
+        block,
+        writes: row.items.length,
+        distinctPages: row.pages.size,
+        words: row.items.reduce((sum, item) => sum + item.words, 0),
+        gasUsed: row.gas,
+        status,
+      }
+    })
 }

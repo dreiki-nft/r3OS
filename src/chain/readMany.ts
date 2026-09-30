@@ -9,6 +9,10 @@ export interface ReadManyCall {
   args?: readonly unknown[]
 }
 
+export interface HeavyTask {
+  run: () => Promise<unknown>
+}
+
 export type ReadManyResult =
   { status: 'success'; result: unknown } | { status: 'failure'; error: Error; result?: undefined }
 
@@ -82,7 +86,7 @@ export async function readMany(calls: readonly ReadManyCall[], options: { allowF
 
 export async function readHeavyUsing(
   client: any,
-  calls: readonly ReadManyCall[],
+  calls: readonly (ReadManyCall | HeavyTask)[],
   options: { concurrency?: number } = {},
 ) {
   const concurrency = Math.max(1, Math.floor(options.concurrency ?? 2))
@@ -92,15 +96,30 @@ export async function readHeavyUsing(
     while (true) {
       const index = cursor++
       if (index >= calls.length) return
-      results[index] = await fallbackRead(client, calls[index])
+      const call = calls[index]
+      if ('run' in call) {
+        try {
+          results[index] = { status: 'success', result: await call.run() }
+        } catch (error) {
+          results[index] = {
+            status: 'failure',
+            error: error instanceof Error ? error : new Error(String(error)),
+          }
+        }
+      } else {
+        results[index] = await fallbackRead(client, call)
+      }
     }
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, calls.length) }, () => worker()))
   return results
 }
 
-/** Heavy art/metadata reads are individual eth_call requests with bounded concurrency. */
-export async function readHeavy(calls: readonly ReadManyCall[], options: { concurrency?: number } = {}) {
+/** Heavy reads/tasks are individual RPC requests with bounded concurrency, never multicalls. */
+export async function readHeavy(
+  calls: readonly (ReadManyCall | HeavyTask)[],
+  options: { concurrency?: number } = {},
+) {
   if (!publicClient) throw new Error('DEMO_MODE')
   return readHeavyUsing(publicClient, calls, options)
 }
