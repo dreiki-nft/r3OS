@@ -31,10 +31,12 @@ cast send $MOCK "mint(address,uint256)" $DEPLOYER 1 --rpc-url $RPC --account r3t
 
 These pixel numbers are **testnet values** (the same as the core tests). Pick the real launch numbers before mainnet.
 
+`SEASON_START` below is set **29 days 20 hours in the past**, so the first season ends about 4 hours after the deploy. That lets the soak test the whole finale path within two days, instead of waiting 30 days: paint for 4 hours, then mint the finale (holder of #0), list it in the Auction, bid for 24 hours, and settle with the keeper. The next season then runs a normal 30 days. On mainnet, use the real launch time instead.
+
 ```bash
 DEPLOYER_ADDRESS=$DEPLOYER \
 R3TARDS_ADDRESS=$MOCK \
-SEASON_START=$(date +%s) \
+SEASON_START=$(( $(date +%s) - 29*86400 - 20*3600 )) \
 BASE_PIXELS_PER_HOUR=32 PIXELS_PER_ACTIVE_DAY=16 MAX_PIXELS_PER_HOUR=256 \
 MIN_PIXELS_FOR_ACTIVE_DAY=16 HOLDER_PIXELS_PER_DAY=256 \
 forge script script/Deploy.s.sol:Deploy --rpc-url $RPC --account r3tards-deployer --broadcast --slow
@@ -68,7 +70,10 @@ VITE_WS_URL=wss://testnet-rpc.monad.xyz
 VITE_WALLET_RPC_URL=https://testnet-rpc.monad.xyz
 VITE_EXPLORER_URL=https://testnet.monadvision.com
 VITE_PAINT_ADDRESS=<R3tardsPaint address>
+VITE_REVEAL_ALL=true
 ```
+
+`VITE_REVEAL_ALL=true` matters on testnet: without it, the production build follows `public/releases.json` and hides Forks and Block DNA until their November dates, so testers could never reach them. Leave it unset on mainnet.
 
 Leave the other `VITE_*_ADDRESS` overrides blank: the app finds every Lab through the core registry. Multicall3 defaults to the canonical address on 10143.
 
@@ -76,5 +81,6 @@ Leave the other `VITE_*_ADDRESS` overrides blank: the app finds every Lab throug
 
 - Paint, Flipbook (240K fixed), fork paint (250K fixed) and Sleepwalker steps (1M fixed) all confirm. Any out-of-gas revert: send Claude the tx hash.
 - Sleep a dream overnight with a tip; crank from a second wallet in Night Shift; mint it in the morning.
-- Run `scripts/auction-keeper.sh` for the first finale auction (`KEEPER_ACCOUNT` = a keystore name).
+- About 4 hours after the deploy, season 1 ends: mint its finale from My Frames (you hold #0), list it in the Auction, and have testers bid.
+- Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks (about 24 hours).
 - Watch the browser console in dev (`npm run dev` with the same env) for `[r3os rpc / 10s]`: an idle desktop should stay around 1 call/s with the websocket on.
