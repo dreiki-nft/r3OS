@@ -6,14 +6,7 @@ import { eventState, useSystemEvent } from '../../chain/systemEvent'
 import { DEVICE07_COPY } from '../../operator/copy'
 import { openProgram } from '../programs'
 
-export type HardwareDevice =
-  | 'clock'
-  | 'storage'
-  | 'consensus'
-  | 'execution'
-  | 'rom'
-  | 'card'
-  | 'unknown'
+export type HardwareDevice = 'clock' | 'storage' | 'consensus' | 'execution' | 'rom' | 'card' | 'unknown'
 type BusStatus = DeviceStatus | 'idle' | 'armed' | 'condition-met' | 'activated'
 
 const DEVICES: { id: HardwareDevice; label: string }[] = [
@@ -67,12 +60,12 @@ export function HardwareBus({ highlight = [] }: { highlight?: readonly HardwareD
             ? systemEvent.loading
               ? DEVICE07_COPY.unknown
               : eventState(systemEvent) === 'no-driver'
-              ? DEVICE07_COPY.noDriver
-              : eventState(systemEvent) === 'condition-met'
-                ? DEVICE07_COPY.conditionMet
-                : eventState(systemEvent) === 'activated'
-                  ? DEVICE07_COPY.activated
-                  : DEVICE07_COPY.armed
+                ? DEVICE07_COPY.noDriver
+                : eventState(systemEvent) === 'condition-met'
+                  ? DEVICE07_COPY.conditionMet
+                  : eventState(systemEvent) === 'activated'
+                    ? DEVICE07_COPY.activated
+                    : DEVICE07_COPY.armed
             : status === 'idle'
               ? 'empty'
               : status

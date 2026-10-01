@@ -19,6 +19,8 @@ import { IntroBar } from '../os/ui/IntroBar'
 import { MessageBox } from '../os/ui/MessageBox'
 import { KERNEL_OPERATOR_COPY } from '../operator/copy'
 import {
+  DEFAULT_GAS_PER_FRAME,
+  DEFAULT_PROBE_STATIC,
   loadRouterEnvironment,
   runCompare,
   tokenMetadata,
@@ -382,8 +384,9 @@ export function KernelDebuggerProgram() {
           tokenOut: output.address,
           amountIn,
           venues: selectedVenues.slice(0, 8),
-          gasPerFrame: 2_000_000n,
-          probeStatic: true,
+          gasPerFrame: DEFAULT_GAS_PER_FRAME,
+          // a single-venue quote is cheap enough to always include the STATICCALL probe
+          probeStatic: parsed.kind === 'quote' ? true : DEFAULT_PROBE_STATIC,
         })
         const outputLines = traceLines({
           comparison,

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { confirmHigherCost, osConfirm } from '../os/confirm'
 import { hexToBytes, type Address, type Hex } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
@@ -177,7 +178,7 @@ export function WeedsProgram() {
       action: `tick weeds region ${region}`,
       regions: [region],
       successSound: 'success-light',
-      confirmHigherCost: async (_old, next) => window.confirm(`gas went up. continue with ${next.maxCost}?`),
+      confirmHigherCost,
     })
   }
 
@@ -195,11 +196,25 @@ export function WeedsProgram() {
           available.map(async (next) => ({ region: next, quote: await quoteTick(next) })),
         )
         const costs = quoted.map((item) => `region ${item.region}: ${item.quote.maxCost}`).join('\n')
-        if (!window.confirm(`tick ${available.length} regions as separate transactions?\n\n${costs}`)) return
+        if (
+          !(await osConfirm({
+            title: 'Tick regions',
+            message: `Tick ${available.length} regions as separate transactions?\n\n${costs}`,
+            okLabel: 'Tick all',
+          }))
+        )
+          return
         for (const item of quoted) await sendTick(item.region, item.quote)
       } else {
         const quote = await quoteTick(region)
-        if (!window.confirm(`tick region ${region}?\n\n${quote.maxCost}`)) return
+        if (
+          !(await osConfirm({
+            title: 'Tick region',
+            message: `Tick region ${region}?\n\n${quote.maxCost}`,
+            okLabel: 'Tick',
+          }))
+        )
+          return
         await sendTick(region, quote)
       }
       await refresh()
@@ -226,8 +241,7 @@ export function WeedsProgram() {
         action: `plant weeds in region ${selectedRegion}`,
         regions: [selectedRegion],
         successSound: 'success-light',
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       await refresh()
     } catch (error) {

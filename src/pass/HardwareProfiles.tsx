@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { confirmHigherCost } from '../os/confirm'
 import { parseEther } from 'viem'
 import { publicClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
@@ -42,11 +43,11 @@ export function HardwareProfiles() {
   const [error, setError] = useState('')
   const [sessionNonce, setSessionNonce] = useState(0n)
   const [cancelQuote, setCancelQuote] = useState<ActionQuote>()
+  const [cancelQuoteFailed, setCancelQuoteFailed] = useState(false)
+  const [topQuoteNote, setTopQuoteNote] = useState('')
   const [dreamSessionsLeft, setDreamSessionsLeft] = useState(0n)
   const [cancelling, setCancelling] = useState(false)
   const endWorkRef = useRef(false)
-  const confirmHigherCost = async (oldQuote: ActionQuote, nextQuote: ActionQuote) =>
-    window.confirm(`gas moved from ${oldQuote.maxCost} to ${nextQuote.maxCost}. continue?`)
 
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
 
@@ -85,6 +86,7 @@ export function HardwareProfiles() {
 
   useEffect(() => {
     setCancelQuote(undefined)
+    setCancelQuoteFailed(false)
     if (!wallet.account || !config.paintAddress) return
     const account = wallet.account
     let cancelled = false
@@ -100,7 +102,9 @@ export function HardwareProfiles() {
         if (!cancelled) setCancelQuote(quote)
       })
       .catch(() => {
-        if (!cancelled) setCancelQuote(undefined)
+        if (cancelled) return
+        setCancelQuote(undefined)
+        setCancelQuoteFailed(true)
       })
     return () => {
       cancelled = true
@@ -109,11 +113,13 @@ export function HardwareProfiles() {
 
   useEffect(() => {
     if (!topUp || !wallet.account || !live.burner) return
+    setTopQuoteNote('')
     let value: bigint
     try {
       value = parseEther(amount)
     } catch {
       setTopQuote(undefined)
+      setTopQuoteNote('enter a valid MON amount')
       return
     }
     void quoteAction({
@@ -126,7 +132,10 @@ export function HardwareProfiles() {
       action: 'top up burner',
     })
       .then(setTopQuote)
-      .catch(() => setTopQuote(undefined))
+      .catch(() => {
+        setTopQuote(undefined)
+        setTopQuoteNote('quote unavailable')
+      })
   }, [topUp, wallet.account, live.burner, amount])
 
   const active = liveActive(live)
@@ -330,7 +339,11 @@ export function HardwareProfiles() {
         >
           {cancelling ? 'Cancelling…' : 'Cancel unused signatures'}
         </Button>
-        <small>{cancelQuote?.maxCost ?? 'quoting…'}</small>
+        <small className="hardware-quote">
+          {!wallet.account
+            ? 'connect a wallet'
+            : (cancelQuote?.maxCost ?? (cancelQuoteFailed ? 'quote unavailable' : 'quoting…'))}
+        </small>
       </GroupBox>
       <div className="hardware-actions">
         <Button
@@ -362,7 +375,7 @@ export function HardwareProfiles() {
           <label>
             MON <input value={amount} onChange={(event) => setAmount(event.target.value)} />
           </label>
-          <p>max gas: {topQuote?.maxCost ?? 'quoting…'}</p>
+          <p>max gas: {topQuote?.maxCost ?? (topQuoteNote || 'quoting…')}</p>
         </MessageBox>
       )}
       {ending && (

@@ -11,6 +11,9 @@ import { decodeAdapterError } from './mrc17'
 import { ROUTER_COPY } from './copy'
 import {
   DEFAULT_GAS_PER_FRAME,
+  DEFAULT_PROBE_STATIC,
+  LOW_GAS_POOL_LIMIT,
+  compareGas,
   loadRouterEnvironment,
   runCompare,
   runMonoperCrossCheck,
@@ -49,6 +52,10 @@ function pctBps(value: bigint) {
   return `${sign}${whole}.${fraction.toString().padStart(2, '0')}`
 }
 
+function formatGas(value: bigint) {
+  return `${(Number(value) / 1_000_000).toFixed(1)}M`
+}
+
 function staticLabel(value: number) {
   if (value === 1) return 'OK'
   if (value === 2) return 'FAILED'
@@ -75,7 +82,7 @@ export function RouterProgram() {
   const [reverse, setReverse] = useState(false)
   const [amount, setAmount] = useState('1')
   const [gasPerFrame, setGasPerFrame] = useState(DEFAULT_GAS_PER_FRAME)
-  const [probeStatic, setProbeStatic] = useState(true)
+  const [probeStatic, setProbeStatic] = useState(DEFAULT_PROBE_STATIC)
   const [auto, setAuto] = useState(false)
   const [crossCheck, setCrossCheck] = useState(false)
   const [tab, setTab] = useState('ROUTING')
@@ -243,6 +250,7 @@ export function RouterProgram() {
       ? (comparison.reports[Number(comparison.winner)]?.amountOut ?? 0n)
       : 0n
   const selectedError = selectedReport ? decodeAdapterError(selectedReport.revertSelector) : undefined
+  const requestGas = compareGas(Math.max(1, venues.length), gasPerFrame, probeStatic)
   const scopeAllowed = Boolean(env.wrappedNative && tokenIn && same(tokenIn, env.wrappedNative))
   const trace =
     comparison && tokenInMeta && tokenOutMeta
@@ -327,6 +335,10 @@ export function RouterProgram() {
             <Button primary disabled={pending || !tokenInMeta || !tokenOutMeta} onClick={() => void run()}>
               {pending ? 'RUNNING…' : 'RUN'}
             </Button>
+            <p className="router-request">
+              eth_call {formatGas(requestGas)} gas
+              {requestGas > LOW_GAS_POOL_LIMIT ? ' · above 8.1M, slower on public RPCs' : ''}
+            </p>
           </GroupBox>
 
           <GroupBox title="ROUTING BUS">
@@ -417,7 +429,9 @@ export function RouterProgram() {
                     ? `${selectedError.name ?? selectedError.selector} · ${selectedError.meaning ?? 'adapter-specific selector'}`
                     : selectedReport.status === 0
                       ? 'quote decoded successfully'
-                      : 'no adapter-specific decode'}
+                      : selectedReport.status === 5 && gasPerFrame < 5_000_000n
+                        ? 'used its whole gas cap; raise Gas / frame and RUN again to see whether it quotes with more'
+                        : 'no adapter-specific decode'}
                 </span>
                 <span>revert selector</span>
                 <code>{selectedReport.revertSelector}</code>

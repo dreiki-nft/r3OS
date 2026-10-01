@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { confirmHigherCost, osConfirm } from '../os/confirm'
 import { type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
@@ -282,9 +283,12 @@ export function QuestsProgram() {
         .map((item) => `${defs[item.id]?.name ?? `quest ${item.id}`}: ${item.quote.maxCost}`)
         .join('\n')
       if (
-        !window.confirm(
-          `${ids.length === 1 ? 'Claim this badge?' : `Claim ${ids.length} badges as separate transactions?`}\n\n${cost}`,
-        )
+        !(await osConfirm({
+          title: ids.length === 1 ? 'Claim badge' : 'Claim badges',
+          message: `${ids.length === 1 ? 'Claim this badge?' : `Claim ${ids.length} badges as separate transactions?`}\n\n${cost}`,
+          okLabel: 'Claim',
+          kind: 'info',
+        }))
       )
         return
       for (const item of quoted) {
@@ -299,8 +303,7 @@ export function QuestsProgram() {
           quote: item.quote,
           action: `claim quest ${defs[item.id]?.name ?? item.id}`,
           successSound: 'success-heavy',
-          confirmHigherCost: async (_old, next) =>
-            window.confirm(`gas went up. continue with ${next.maxCost}?`),
+          confirmHigherCost,
         })
       }
       await refresh()

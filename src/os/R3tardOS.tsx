@@ -11,6 +11,7 @@ import { playSound } from './sound'
 import { StormScreen } from './StormScreen'
 import { Taskbar } from './Taskbar'
 import { BalloonStack } from './ui/BalloonStack'
+import { ConfirmHost } from './ui/ConfirmHost'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { MessageBox } from './ui/MessageBox'
 import { Window } from './Window'
@@ -164,6 +165,7 @@ export function R3tardOS() {
       })}
       <Assistant />
       <BalloonStack />
+      <ConfirmHost />
       <ErrorBoundary mode="taskbar">
         <Taskbar
           onShutdown={() => {

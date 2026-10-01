@@ -25,7 +25,14 @@ import {
 } from './venues'
 
 export const ROUTER_THROWAWAY = '0x00000000000000000000000000000000000072e3' as Address
-export const DEFAULT_GAS_PER_FRAME = 2_000_000n
+/**
+ * Defaults tuned on mainnet (2026-10-01, 1 WMON → USDC): quotes used 55k–723k gas. 1M per frame with the probe
+ * off keeps a five-venue RUN under Monad RPCs' 8.1M low-gas eth_call pool; raise either when a row hits its cap.
+ */
+export const DEFAULT_GAS_PER_FRAME = 1_000_000n
+export const DEFAULT_PROBE_STATIC = false
+/** eth_call requests above this go to the RPC providers' smaller high-gas pool. */
+export const LOW_GAS_POOL_LIMIT = 8_100_000n
 export const FRAME_OVERHEAD = 60_000n
 export const MAX_VENUES = 8
 
@@ -229,7 +236,8 @@ export function normalizeSimulationReport(value: any): RouterSimReport {
   }
 }
 
-function compareGas(count: number, gasPerFrame: bigint, probeStatic: boolean) {
+/** Gas the RUN eth_call asks for: the lab's preflight budget plus 10%. */
+export function compareGas(count: number, gasPerFrame: bigint, probeStatic: boolean) {
   const need = BigInt(count) * (gasPerFrame * (probeStatic ? 2n : 1n) + FRAME_OVERHEAD) + 100_000n
   return (need * 110n) / 100n
 }

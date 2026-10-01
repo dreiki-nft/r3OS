@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { confirmHigherCost } from '../os/confirm'
 import { formatEther, parseEther, type Hex } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
@@ -83,8 +84,6 @@ export function LiveWizard() {
   const [finished, setFinished] = useState(false)
 
   const close = () => closeWindow('live-wizard')
-  const confirmHigherCost = async (oldQuote: ActionQuote, nextQuote: ActionQuote) =>
-    window.confirm(`gas moved from ${oldQuote.maxCost} to ${nextQuote.maxCost}. continue?`)
   const refreshBalance = useCallback(async () => {
     if (!burnerAddress || !publicClient) return
     const next = await publicClient.getBalance({ address: burnerAddress })

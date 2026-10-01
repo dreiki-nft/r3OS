@@ -1,4 +1,5 @@
 import './frames.css'
+import { confirmHigherCost } from '../os/confirm'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { Address } from 'viem'
 import { publicClient } from '../chain/clients'
@@ -233,8 +234,7 @@ export function FramePropsDialog() {
         account: wallet.account,
         quote,
         action: `set renderer for frame #${tokenId}`,
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       setCurrentRenderer(choice)
       setRendererNote('renderer set · marketplaces refresh on MetadataUpdate')

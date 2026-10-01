@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { confirmHigherCost } from '../os/confirm'
 import { hexToBytes, type Address, type Hex } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
@@ -359,8 +360,7 @@ export function FlipbookProgram() {
         quote: paintQuote,
         action: 'paint Flipbook frame',
         successSound: 'success-light',
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       await refresh()
     } catch (error) {
@@ -383,8 +383,7 @@ export function FlipbookProgram() {
         quote: mintQuote,
         action: 'mint Flipbook reel',
         successSound: 'success-heavy',
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       await refresh()
       await loadReels()

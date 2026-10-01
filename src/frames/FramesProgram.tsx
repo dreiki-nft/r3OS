@@ -1,4 +1,5 @@
 import './frames.css'
+import { confirmHigherCost } from '../os/confirm'
 import {
   useCallback,
   useEffect,
@@ -574,8 +575,7 @@ export function FramesProgram() {
         quote: burnQuote,
         action: `burn frame #${selected}`,
         successSound: 'success-light',
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       setBurnPrompt(false)
       setSelected(undefined)

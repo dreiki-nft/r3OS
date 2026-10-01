@@ -846,6 +846,12 @@ button:disabled {
   overflow: auto;
 }
 
+/* the help page is light paper; its buttons keep the normal dark-face text colour */
+.help-view article button {
+  margin-top: 6px;
+  color: var(--text);
+}
+
 .paint-program {
   height: 100%;
   display: grid;
@@ -2643,4 +2649,9 @@ button:disabled {
   .desktop-icon-new .desktop-icon-art::after {
     animation: none;
   }
+}
+
+.hardware-quote {
+  margin-left: 8px;
+  color: var(--text-muted);
 }

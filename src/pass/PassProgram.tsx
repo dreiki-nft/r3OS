@@ -90,7 +90,9 @@ export function PassProgram() {
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const [tab, setTab] = useState(() => {
     const requested = new URLSearchParams(location.hash.split('?')[1] ?? '').get('tab')
-    return ['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator'].includes(requested ?? '')
+    return ['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator'].includes(
+      requested ?? '',
+    )
       ? requested!
       : 'General'
   })

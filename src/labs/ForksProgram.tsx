@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { confirmHigherCost, osConfirm } from '../os/confirm'
 import { type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
@@ -408,8 +409,7 @@ export function ForksProgram() {
         quote: paintQuote,
         action: `paint fork #${selected}`,
         successSound: 'success-light',
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       invalidateLabsToken(selected)
       setMetaVersion((value) => value + 1)
@@ -437,8 +437,7 @@ export function ForksProgram() {
         quote: createQuote,
         action: createMode === 'fork' ? `fork fork #${createId}` : `fork frame #${createId}`,
         successSound: 'success-heavy',
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       setCreateFrame(0)
       setCreateMode('fork')
@@ -472,8 +471,7 @@ export function ForksProgram() {
         account: wallet.account,
         quote: switchQuote,
         action: `${nextOpen ? 'open' : 'close'} fork #${selected}`,
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       invalidateLabsToken(selected)
       setMetaVersion((value) => value + 1)
@@ -487,7 +485,14 @@ export function ForksProgram() {
 
   async function seal() {
     if (!address || !wallet.account || !selected || !isOwner || info?.isSealed || !sealQuote) return
-    if (!window.confirm('Sealed forks are frozen forever.')) return
+    if (
+      !(await osConfirm({
+        title: 'Seal fork',
+        message: 'Sealed forks are frozen forever. Nobody can add to this fork after it is sealed.',
+        okLabel: 'Seal',
+      }))
+    )
+      return
     setPending(true)
     try {
       await sendAction({
@@ -500,8 +505,7 @@ export function ForksProgram() {
         quote: sealQuote,
         action: `seal fork #${selected}`,
         successSound: 'success-heavy',
-        confirmHigherCost: async (_old, next) =>
-          window.confirm(`gas went up. continue with ${next.maxCost}?`),
+        confirmHigherCost,
       })
       invalidateLabsToken(selected)
       setMetaVersion((value) => value + 1)

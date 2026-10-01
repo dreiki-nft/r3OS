@@ -228,3 +228,9 @@
 .router-frame-list > :nth-child(odd):not(.router-wide) {
   color: var(--text-muted);
 }
+
+.router-request {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 10px;
+}

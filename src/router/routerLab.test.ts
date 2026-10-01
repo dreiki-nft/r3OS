@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { encodeErrorResult } from 'viem'
 import { R3TARDS_ROUTER_LAB_ABI } from '../lib/generated/abi'
 import {
+  DEFAULT_GAS_PER_FRAME,
+  DEFAULT_PROBE_STATIC,
+  LOW_GAS_POOL_LIMIT,
+  compareGas,
   decodeSimulationError,
   normalizeComparison,
   normalizeSimulationReport,
@@ -55,5 +59,13 @@ describe('router-lab frontend decoding', () => {
     const decoded = decodeSimulationError(data)
     expect(decoded.blockNumber).toBe(55n)
     expect(decoded.reports[0].swapOk).toBe(true)
+  })
+
+  it('keeps a default five-venue mainnet RUN inside the low-gas eth_call pool', () => {
+    expect(compareGas(5, DEFAULT_GAS_PER_FRAME, DEFAULT_PROBE_STATIC)).toBeLessThanOrEqual(LOW_GAS_POOL_LIMIT)
+    // the heaviest mainnet quote measured on 2026-10-01 (Hanji, 723,323 gas) fits the default cap
+    expect(DEFAULT_GAS_PER_FRAME).toBeGreaterThan(723_323n)
+    // the probe doubles the per-frame budget
+    expect(compareGas(5, DEFAULT_GAS_PER_FRAME, true)).toBeGreaterThan(LOW_GAS_POOL_LIMIT)
   })
 })

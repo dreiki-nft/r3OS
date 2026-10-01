@@ -97,10 +97,9 @@ async function readStaticEvent() {
     }
 
     const feed = (rows[1] as any).result as Address
-    const descriptionRows = await readMany(
-      [{ address: feed, abi: FEED_ABI, functionName: 'description' }],
-      { allowFailure: true },
-    ).catch(() => [])
+    const descriptionRows = await readMany([{ address: feed, abi: FEED_ABI, functionName: 'description' }], {
+      allowFailure: true,
+    }).catch(() => [])
     const description =
       (descriptionRows[0] as any)?.status === 'success'
         ? String((descriptionRows[0] as any).result)
