@@ -406,6 +406,7 @@ contract FlipbookTest is Test {
         assertEq(vm.parseJsonUint(string(json), ".attributes[2].value"), 1);
         assertGt(bytes(vm.parseJsonString(string(json), ".attributes[9].value")).length, 0);
         assertEq(vm.parseJsonUint(string(json), ".attributes[10].value"), 32);
+        vm.createDir("test-output", true);
         vm.writeFile("test-output/flipbook_reel.txt", uri);
     }
 

@@ -133,6 +133,7 @@ contract CDArtTest is Test {
         bytes memory svg = harness.svg(tokenId, frameIds, bytes(label), mask);
         assertEq(keccak256(raster), rasterHash);
         assertEq(keccak256(svg), svgHash);
+        vm.createDir("test-output", true);
         vm.writeFile(string.concat("test-output/cd-", name, ".svg"), string(svg));
     }
 }

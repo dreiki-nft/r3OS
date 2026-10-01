@@ -131,6 +131,7 @@ contract CoreCanvasTest is Test {
         p.paint(hex"00000F04", new uint256[](0));
         string memory svg = p.renderSVG(0);
         assertGt(bytes(svg).length, 1_000);
+        vm.createDir("test-output", true);
         vm.writeFile("test-output/live.svg", svg);
     }
 

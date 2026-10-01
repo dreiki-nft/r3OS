@@ -553,6 +553,7 @@ contract RecycleBinCDBurnerTest is Test {
         assertTrue(bytes(attributes).length != 0);
         assertLt(dominant, 16);
         assertGt(colours, 0);
+        vm.createDir("test-output", true);
         vm.writeFile("test-output/cd.svg", string(svg));
     }
 
