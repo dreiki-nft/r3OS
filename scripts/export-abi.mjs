@@ -27,6 +27,7 @@ const contracts = [
   ['R3TARDS_CARD_MEMORY_ABI', 'R3tardsCardMemory.sol/R3tardsCardMemory.json'],
   ['R3TARDS_OPERATOR_RECORD_ABI', 'R3tardsOperatorRecord.sol/R3tardsOperatorRecord.json'],
   ['R3TARDS_SYSTEM_EVENT_ABI', 'R3tardsSystemEvent.sol/R3tardsSystemEvent.json'],
+  ['R3TARDS_ROUTER_LAB_ABI', 'R3tardsRouterLab.sol/R3tardsRouterLab.json'],
 ]
 
 const sections = ['// GENERATED FILE. DO NOT EDIT.', '// Sources: contracts/out Foundry artifacts', '']

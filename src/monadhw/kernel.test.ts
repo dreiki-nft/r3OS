@@ -35,7 +35,11 @@ describe('Kernel Debugger helpers', () => {
   })
 
   it('builds the successful graceful report only from report + receipt data', () => {
-    const lines = buildKernelLinesFromReport(report, { status: 'success', blockNumber: 99n }, 'burst-graceful')
+    const lines = buildKernelLinesFromReport(
+      report,
+      { status: 'success', blockNumber: 99n },
+      'burst-graceful',
+    )
     expect(lines.join('\n')).toContain('PROCESS 7 STARTED (block 99)')
     expect(lines.join('\n')).toContain('FAILED (isolated)')
     expect(lines.join('\n')).toContain('RETURNED (deferred)')
@@ -43,7 +47,11 @@ describe('Kernel Debugger helpers', () => {
   })
 
   it('labels the naive reverted case as inference instead of inventing a report', () => {
-    const lines = buildKernelLinesFromReport(undefined, { status: 'reverted', blockNumber: 101n }, 'burst-naive')
+    const lines = buildKernelLinesFromReport(
+      undefined,
+      { status: 'reverted', blockNumber: 101n },
+      'burst-naive',
+    )
     expect(lines.join('\n')).toContain('ROLLED BACK')
     expect(lines.join('\n')).toContain('INFERRED POSSIBLE')
     expect(lines.join('\n')).toContain('consistent with an uncorrected reserve dip')
@@ -73,6 +81,30 @@ describe('Kernel Debugger helpers', () => {
     expect(dump[0]).toContain('LABEL')
     expect(storageVerificationLine('0x01', '0x0001')).toContain('verified')
     expect(storageVerificationLine('0x01', '0x02')).toContain('mismatch')
+  })
+
+  it('parses read-only router commands', () => {
+    expect(parseKernelCommand('venues')).toEqual({ kind: 'venues' })
+    expect(parseKernelCommand('venues WMON USDC')).toEqual({
+      kind: 'venues',
+      tokenIn: 'WMON',
+      tokenOut: 'USDC',
+    })
+    expect(parseKernelCommand('route 1 WMON USDC')).toEqual({
+      kind: 'route',
+      amount: '1',
+      tokenIn: 'WMON',
+      tokenOut: 'USDC',
+    })
+    expect(parseKernelCommand('quote poe-mon-usdc 1 WMON USDC')).toEqual({
+      kind: 'quote',
+      venue: 'poe-mon-usdc',
+      amount: '1',
+      tokenIn: 'WMON',
+      tokenOut: 'USDC',
+    })
+    expect(parseKernelCommand('swap 1 WMON USDC')).toMatchObject({ kind: 'error' })
+    expect(parseKernelCommand('route 1 WMON')).toMatchObject({ kind: 'error' })
   })
 
   it('parses system-event and operator commands', () => {
@@ -119,5 +151,4 @@ describe('Kernel Debugger helpers', () => {
     expect(operatorStorageVerificationLine(record, header)).toContain('verified')
     expect(operatorStorageVerificationLine(record, '0x01')).toContain('mismatch')
   })
-
 })

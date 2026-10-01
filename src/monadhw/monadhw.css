@@ -624,3 +624,22 @@
 .camera-card-options small {
   color: var(--text-muted);
 }
+
+.source-config {
+  background: var(--accent);
+  color: #0b0b0c;
+}
+.source-research {
+  background: #ee93e3;
+  color: #0b0b0c;
+}
+.hw-inline-sources .hw-source {
+  margin-left: 4px;
+}
+
+.hw-source-group {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 3px;
+}

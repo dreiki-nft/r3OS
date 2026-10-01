@@ -322,6 +322,14 @@ My Pass exposes the address's record under the **Operator** tab. Monad Hardware 
 
 Burned CDs open in a Windows 98 CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](docs/specs/CDROM.md).
 
+````markdown
+### ROUTER.EXE
+
+Phase ROUTER adds `R3tardsRouterLab` (`router-lab`), a stateless read-only MRC-17 routing laboratory. One `eth_call` compares up to eight configured adapters against the same block state; every quote executes through an ordinary gas-capped child `CALL` that deliberately reverts so quote-side state cannot persist. ROUTER.EXE reports raw output, gas, bounded revert diagnostics, opaque quote-data metadata and an optional STATICCALL probe, then labels only the **HIGHEST QUOTED OUTPUT**.
+
+The lab has no owner, storage, custody, fees or persistent execution path. Its WMON-only QUOTE SCOPE can preview an immediate adapter execution using temporary `eth_call` value, but the deposit, approval, adapter call and output all live inside frames that always revert. Mainnet venue addresses and runtime-code hashes come from the pinned Monoper deployment manifest; local/testnet uses mock venues. MRC-17 is a draft, and the adapters are third-party integration code under active development. See [`docs/specs/ROUTER_EXE.md`](docs/specs/ROUTER_EXE.md).
+````
+
 ## Palette
 
 | # | Hex | Name |

@@ -209,3 +209,19 @@ The record is **public history**. Its storage page and `OperatorRecorded` events
 `R3tardsSystemEvent` trusts the configured Chainlink MON/USD proxy and one fresh round that satisfies the deployed threshold. On chain 143 the contract hard-requires the verified proxy address. Activation is permissionless and permanent: there is no owner, pause, reset, feed migration or manual fallback. The consequence is intentional liveness risk: if the oracle stops returning fresh rounds before the condition is reached, this deployment cannot be repaired to force activation.
 
 The UI keeps the oracle condition separate from the latch itself: **CONDITION MET** is not **ACTIVATED** until an `activate()` transaction succeeds. After activation, DEVICE 07 still says its driver is not installed and its next stage is unknown. New Operator / DEVICE 07 / Kernel event-copy is centralized and regression-tested against the phase's prohibited marketing vocabulary, and the Operator tab includes the explicit no-promise line required by the product spec.
+
+````markdown
+## ROUTER.EXE / MRC-17 routing lab
+
+`R3tardsRouterLab` treats every configured adapter as hostile. Quote calls run with an explicit gas cap inside an external self-call that always reverts, and the parent accepts only its own structured revert envelope. Adapter revert data is copied only up to 512 bytes; successful quote returndata is rejected above the configured cap and strictly ABI-validated before use. One reverting, gas-burning or malformed venue therefore remains isolated from the other venue reports as long as the top-level call satisfies the lab's preflight gas budget.
+
+The lab never uses `delegatecall`, never pulls user tokens, has no owner/config storage and exposes no persistent routing/execution entry point. `simulateNativeIn` is payable only for an `eth_call` execution preview and always reverts. Its per-venue WMON deposit, exact approval, adapter execution and received output also occur inside a self-call that always reverts. A real transaction to this function must fail, restoring the sender's value; the contract must never retain MON, token balances or allowances after the frame unwinds.
+
+Adapter addresses are external configuration, not trust anchors. Mainnet configuration includes expected runtime-code hashes so the UI can flag code that differs from the pinned deployment manifest, but a matching hash does not make an adapter audited or trustworthy. Upgradeable dependencies beneath an adapter can still change independently. Local/testnet directories are mocks and are labelled as such.
+
+Results are only as honest and complete as the RPC state used for the `eth_call`. ROUTER.EXE pins a RUN to one block number when the provider supports it and explicitly reports when the provider forces a latest-state retry. The optional Monoper comparison is a separate call pinned to the same block, not part of the lab's atomic comparison.
+
+MRC-17's guarantee is sensitive to caller and state. The lab uses itself as `msg.sender` for quote and execution preview so the two paths share caller semantics, but an observed preview is still not a later execution. Liquidity, oracle state, proposer ordering and venue dependencies can change by the next block. A displayed quote or QUOTE SCOPE result must therefore never be presented as a future-block guarantee.
+
+The transaction-forwarding information shown in Monad Hardware is documentation/research context, not an execution guarantee. Monad's local-mempool forwarding reduces the resemblance to Ethereum's global public mempool, but the RPC operator and upcoming leaders see transactions before inclusion. Historical measurements of sandwich activity describe observed attacker behavior in the study window, not impossibility.
+````

@@ -77,5 +77,4 @@ describe('PAGE.EXE helpers', () => {
       { block: 10n, writes: 3, distinctPages: 2, words: 6, gasUsed: 150n, status: 'mixed' },
     ])
   })
-
 })

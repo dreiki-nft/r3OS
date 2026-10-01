@@ -18,7 +18,14 @@ export function StartMenu({
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const programs = visiblePrograms(releases)
-  const hardwareIds = new Set(['page-exe', 'card-mem', 'block-camera', 'kernel-debugger', 'monad-hw'])
+  const hardwareIds = new Set([
+    'page-exe',
+    'card-mem',
+    'block-camera',
+    'kernel-debugger',
+    'router',
+    'monad-hw',
+  ])
   const regularPrograms = programs.filter((program) => !hardwareIds.has(program.id))
   const hardwarePrograms = programs.filter((program) => hardwareIds.has(program.id))
   const visible = (id: string) => {

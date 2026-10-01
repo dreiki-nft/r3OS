@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { formatEther, parseEther, toHex, type Address, type Hex } from 'viem'
+import { formatEther, isAddress, parseEther, toHex, type Address, type Hex } from 'viem'
 import { publicClient } from '../chain/clients'
 import { readHeavy, readMany } from '../chain/readMany'
 import { useRefreshTick } from '../chain/refreshTick'
@@ -18,6 +18,14 @@ import { HardwareBus } from '../os/ui/HardwareBus'
 import { IntroBar } from '../os/ui/IntroBar'
 import { MessageBox } from '../os/ui/MessageBox'
 import { KERNEL_OPERATOR_COPY } from '../operator/copy'
+import {
+  loadRouterEnvironment,
+  runCompare,
+  tokenMetadata,
+  traceLines,
+  venueCodeInfo,
+} from '../router/routerLab'
+import { formatAmount, parseAmount, venuesForPair, type RouterVenue } from '../router/venues'
 import {
   buildKernelLines,
   formatDeviceLines,
@@ -52,6 +60,16 @@ const RULES = [
 
 const FUND = parseEther('0.05')
 const DEFAULT_VALUE = '0.01'
+
+async function kernelToken(symbol: string, venues: readonly RouterVenue[]) {
+  const addresses = Array.from(
+    new Set(venues.flatMap((venue) => [venue.token0, venue.token1]).map((value) => value.toLowerCase())),
+  )
+  const metas = await Promise.all(addresses.map((value) => tokenMetadata(value as Address)))
+  const found = metas.find((meta) => meta.symbol.toUpperCase() === symbol.toUpperCase())
+  if (!found) throw new Error(`unknown router token: ${symbol}`)
+  return found
+}
 
 export function KernelDebuggerProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
@@ -239,6 +257,9 @@ export function KernelDebuggerProgram() {
         'dump <id> [word] [count]',
         KERNEL_OPERATOR_COPY.eventCommand,
         KERNEL_OPERATOR_COPY.operatorCommand,
+        'venues [IN] [OUT]',
+        'route <amount> <IN> <OUT>',
+        'quote <label|0xadapter> <amount> <IN> <OUT>',
       ])
       return
     }
@@ -271,7 +292,12 @@ export function KernelDebuggerProgram() {
         const rows = await readMany(
           [
             { address: driver, abi: R3TARDS_OPERATOR_RECORD_ABI, functionName: 'recordOf', args: [target] },
-            { address: driver, abi: R3TARDS_OPERATOR_RECORD_ABI, functionName: 'recordBaseSlot', args: [target] },
+            {
+              address: driver,
+              abi: R3TARDS_OPERATOR_RECORD_ABI,
+              functionName: 'recordBaseSlot',
+              args: [target],
+            },
           ],
           { allowFailure: false },
         )
@@ -280,13 +306,15 @@ export function KernelDebuggerProgram() {
         const wordIndexes = [0, 1, ...Array.from({ length: 16 }, (_, index) => 16 + index)]
         const storageRows = await readHeavy(
           wordIndexes.map((word) => ({
-            run: () => client.getStorageAt({ address: driver, slot: toHex(base + BigInt(word), { size: 32 }) }),
+            run: () =>
+              client.getStorageAt({ address: driver, slot: toHex(base + BigInt(word), { size: 32 }) }),
           })),
           { concurrency: 4 },
         )
         const entries = wordIndexes.map((word, index) => ({
           word,
-          value: storageRows[index]?.status === 'success' ? String(storageRows[index].result ?? '0x') : undefined,
+          value:
+            storageRows[index]?.status === 'success' ? String(storageRows[index].result ?? '0x') : undefined,
         }))
         setLines((current) => [
           ...current,
@@ -295,6 +323,78 @@ export function KernelDebuggerProgram() {
           ...formatOperatorStorageLines(base, entries),
           operatorStorageVerificationLine(record, entries[0]?.value),
         ])
+      } catch (error) {
+        setLines((current) => [...current, echo, errorText(error)])
+      }
+      return
+    }
+
+    if (parsed.kind === 'venues' || parsed.kind === 'route' || parsed.kind === 'quote') {
+      try {
+        const env = await loadRouterEnvironment()
+        if (!env.lab) {
+          setLines((current) => [...current, echo, 'router-lab driver not installed'])
+          return
+        }
+        if (!env.venues.length && parsed.kind !== 'quote') {
+          setLines((current) => [...current, echo, 'no router venues configured'])
+          return
+        }
+        if (parsed.kind === 'venues') {
+          let listed = env.venues
+          if (parsed.tokenIn && parsed.tokenOut) {
+            const input = await kernelToken(parsed.tokenIn, env.venues)
+            const output = await kernelToken(parsed.tokenOut, env.venues)
+            listed = venuesForPair(input.address, output.address, env.venues)
+          }
+          const entries = await Promise.all(
+            listed.map(async (venue) => {
+              const code = await venueCodeInfo(venue)
+              return `${venue.label.padEnd(22)} ${venue.adapter}  ${code.state}`
+            }),
+          )
+          setLines((current) => [...current, echo, 'ROUTER VENUES', ...entries])
+          return
+        }
+        const input = await kernelToken(parsed.tokenIn, env.venues)
+        const output = await kernelToken(parsed.tokenOut, env.venues)
+        const amountIn = parseAmount(parsed.amount, input.decimals)
+        let selectedVenues = venuesForPair(input.address, output.address, env.venues)
+        if (parsed.kind === 'quote') {
+          const byLabel = env.venues.find((venue) => venue.label.toLowerCase() === parsed.venue.toLowerCase())
+          if (byLabel) selectedVenues = [byLabel]
+          else if (isAddress(parsed.venue)) {
+            selectedVenues = [
+              {
+                label: 'unlisted',
+                adapter: parsed.venue as Address,
+                token0: input.address,
+                token1: output.address,
+                source: 'unlisted',
+              },
+            ]
+          } else throw new Error(`unknown venue: ${parsed.venue}`)
+        }
+        if (!selectedVenues.length) throw new Error('no venues for pair')
+        const comparison = await runCompare({
+          lab: env.lab,
+          tokenIn: input.address,
+          tokenOut: output.address,
+          amountIn,
+          venues: selectedVenues.slice(0, 8),
+          gasPerFrame: 2_000_000n,
+          probeStatic: true,
+        })
+        const outputLines = traceLines({
+          comparison,
+          venues: selectedVenues.slice(0, 8),
+          tokenInSymbol: input.symbol,
+          tokenOutSymbol: output.symbol,
+          amountText: parsed.amount,
+          outputDecimals: output.decimals,
+          formatOutput: formatAmount,
+        })
+        setLines((current) => [...current, echo, ...outputLines])
       } catch (error) {
         setLines((current) => [...current, echo, errorText(error)])
       }

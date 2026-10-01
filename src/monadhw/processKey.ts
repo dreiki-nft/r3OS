@@ -39,11 +39,11 @@ function validRecord(value: unknown): value is ProcessKeyRecord {
   const record = value as Partial<ProcessKeyRecord> | null
   return Boolean(
     record &&
-      typeof record.privateKey === 'string' &&
-      /^0x[0-9a-fA-F]{64}$/.test(record.privateKey) &&
-      typeof record.address === 'string' &&
-      /^0x[0-9a-fA-F]{40}$/.test(record.address) &&
-      typeof record.createdAt === 'number',
+    typeof record.privateKey === 'string' &&
+    /^0x[0-9a-fA-F]{64}$/.test(record.privateKey) &&
+    typeof record.address === 'string' &&
+    /^0x[0-9a-fA-F]{40}$/.test(record.address) &&
+    typeof record.createdAt === 'number',
   )
 }
 

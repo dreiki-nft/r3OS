@@ -98,6 +98,9 @@ const ImagingProgram = lazy(() =>
 const CardMemProgram = lazy(() =>
   import('../monadhw/CardMemProgram').then((module) => ({ default: module.CardMemProgram })),
 )
+const RouterProgram = lazy(() =>
+  import('../router/RouterProgram').then((module) => ({ default: module.RouterProgram })),
+)
 
 export const programs: ProgramDef[] = [
   {
@@ -308,6 +311,17 @@ export const programs: ProgramDef[] = [
     minSize: { width: 680, height: 520 },
     singleInstance: true,
     hash: '#/kernel-debugger',
+  },
+  {
+    id: 'router',
+    title: 'ROUTER.EXE',
+    icon: 'antenna',
+    colour: '#5FEDDF',
+    component: RouterProgram,
+    defaultSize: { width: 1200, height: 744 },
+    minSize: { width: 760, height: 520 },
+    singleInstance: true,
+    hash: '#/router',
   },
   {
     id: 'monad-hw',

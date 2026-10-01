@@ -14,6 +14,8 @@ import { GroupBox } from '../os/ui/GroupBox'
 import { HardwareBus, type HardwareDevice } from '../os/ui/HardwareBus'
 import { R3TARDS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
 import { DEVICE07_COPY } from '../operator/copy'
+import { FORWARDING_COPY } from '../router/copy'
+import { loadRouterEnvironment, type RouterEnvironment } from '../router/routerLab'
 import { IntroBar } from '../os/ui/IntroBar'
 import './monadhw.css'
 
@@ -25,13 +27,13 @@ const RULES = [
 
 const ROM_LIMIT = MONAD_HW_SPEC.contractRomBytes.value
 
-type SourceLabel = HardwareSource | 'measured + spec' | 'onchain + spec' | 'config' | ''
+type SourceLabel = HardwareSource | 'measured + spec' | 'onchain + spec' | ''
 type HwRow = {
   key: string
   device: HardwareDevice
   label: string
   value: ReactNode
-  source: SourceLabel
+  source: SourceLabel | SourceLabel[]
 }
 
 function focusFromHash(): HardwareDevice | undefined {
@@ -62,7 +64,6 @@ function finalityText(trace: ReturnType<typeof getTxTraceSnapshot>['traces'][num
   return `${votedMs} · ${finalMs}`
 }
 
-
 function formatMilliUsd(value?: bigint) {
   if (value == null) return DEVICE07_COPY.unknown
   const whole = value / 1000n
@@ -74,7 +75,8 @@ function eventStatusText(snapshot: ReturnType<typeof useSystemEvent>) {
   if (snapshot.loading) return DEVICE07_COPY.unknown
   const state = eventState(snapshot)
   if (state === 'no-driver') return DEVICE07_COPY.noDriver
-  if (state === 'activated') return `${DEVICE07_COPY.activated} · ${DEVICE07_COPY.block} ${snapshot.activatedBlock}`
+  if (state === 'activated')
+    return `${DEVICE07_COPY.activated} · ${DEVICE07_COPY.block} ${snapshot.activatedBlock}`
   if (state === 'condition-met') return DEVICE07_COPY.conditionMet
   return `${DEVICE07_COPY.armed} · ${snapshot.trigger ?? DEVICE07_COPY.triggerFallback}`
 }
@@ -107,7 +109,19 @@ export function MonadHardwareProgram() {
   const [activationQuote, setActivationQuote] = useState<ActionQuote>()
   const [activationPending, setActivationPending] = useState(false)
   const [activationMessage, setActivationMessage] = useState('')
+  const [routerEnv, setRouterEnv] = useState<RouterEnvironment>()
 
+  useEffect(() => {
+    let cancelled = false
+    void loadRouterEnvironment()
+      .then((value) => {
+        if (!cancelled) setRouterEnv(value)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
   useEffect(() => {
     const onHash = () => setFocus(focusFromHash())
     window.addEventListener('hashchange', onHash)
@@ -268,6 +282,19 @@ export function MonadHardwareProgram() {
         value: hw.p256.status === 'present' ? 'built-in vector: OK' : hw.p256.status,
         source: hw.p256.verified.source,
       },
+
+      {
+        key: 'router',
+        device: 'execution',
+        label: 'Execution router',
+        value: (
+          <>
+            MRC-17 DRAFT · router-lab {routerEnv?.lab ? 'present' : 'not installed'} ·{' '}
+            {routerEnv?.venues.length ?? 0} venues
+          </>
+        ),
+        source: ['spec', routerEnv?.lab ? 'onchain' : 'absent', 'config'],
+      },
       {
         key: 'system-event',
         device: 'unknown',
@@ -290,7 +317,18 @@ export function MonadHardwareProgram() {
         source: card.status === 'present' ? 'onchain' : card.status === 'no-driver' ? 'absent' : 'unknown',
       },
     ]
-  }, [hw, block.blockTimeMs, block.mode, traces.version, cold, warm, card, measuredChainName, systemEvent])
+  }, [
+    hw,
+    block.blockTimeMs,
+    block.mode,
+    traces.version,
+    cold,
+    warm,
+    card,
+    measuredChainName,
+    systemEvent,
+    routerEnv,
+  ])
 
   const official = isOfficialCard(hw.chainId.value, card.cardAddress)
   const cardSources = cardPropertySources({
@@ -322,10 +360,45 @@ export function MonadHardwareProgram() {
               >
                 <b>{row.label}</b>
                 <span>{row.value}</span>
-                <SourceBadge source={row.source} />
+                {Array.isArray(row.source) ? (
+                  <span className="hw-source-group">
+                    {row.source.map((source) => (
+                      <SourceBadge key={source} source={source} />
+                    ))}
+                  </span>
+                ) : (
+                  <SourceBadge source={row.source} />
+                )}
               </div>
             ))}
           </div>
+        </GroupBox>
+
+        <GroupBox title={FORWARDING_COPY.title}>
+          <div className="hardware-device-list sunken">
+            <div className="hardware-device-row">
+              <b>{FORWARDING_COPY.globalLabel}</b>
+              <span>{FORWARDING_COPY.globalValue}</span>
+              <SourceBadge source="spec" />
+            </div>
+            <div className="hardware-device-row">
+              <b>{FORWARDING_COPY.forwardingLabel}</b>
+              <span>{FORWARDING_COPY.forwardingValue}</span>
+              <SourceBadge source="spec" />
+            </div>
+            <div className="hardware-device-row">
+              <b>{FORWARDING_COPY.seenLabel}</b>
+              <span>{FORWARDING_COPY.seenValue}</span>
+              <SourceBadge source="spec" />
+            </div>
+            <div className="hardware-device-row">
+              <b>{FORWARDING_COPY.measuredLabel}</b>
+              <span>{FORWARDING_COPY.measuredValue}</span>
+              <SourceBadge source="research" />
+            </div>
+          </div>
+          <p className="hw-note">{FORWARDING_COPY.sources}</p>
+          <p className="hw-note">{FORWARDING_COPY.footnote}</p>
         </GroupBox>
 
         <GroupBox title={`${DEVICE07_COPY.devicePrefix} ${DEVICE07_COPY.label} · Properties`}>
@@ -351,19 +424,29 @@ export function MonadHardwareProgram() {
                 {systemEvent.loading
                   ? DEVICE07_COPY.unknown
                   : eventState(systemEvent) === 'activated'
-                  ? `${DEVICE07_COPY.activatedAtBlock} ${systemEvent.activatedBlock}`
-                  : eventState(systemEvent) === 'no-driver'
-                    ? DEVICE07_COPY.noDriver
-                    : eventState(systemEvent) === 'condition-met'
-                      ? DEVICE07_COPY.conditionMet
-                      : DEVICE07_COPY.waiting}
+                    ? `${DEVICE07_COPY.activatedAtBlock} ${systemEvent.activatedBlock}`
+                    : eventState(systemEvent) === 'no-driver'
+                      ? DEVICE07_COPY.noDriver
+                      : eventState(systemEvent) === 'condition-met'
+                        ? DEVICE07_COPY.conditionMet
+                        : DEVICE07_COPY.waiting}
               </span>
-              <SourceBadge source={systemEvent.loading ? 'unknown' : systemEvent.address ? 'onchain' : 'absent'} />
+              <SourceBadge
+                source={systemEvent.loading ? 'unknown' : systemEvent.address ? 'onchain' : 'absent'}
+              />
             </div>
             <div className="hardware-device-row">
               <b>{DEVICE07_COPY.activationLabel}</b>
-              <span>{systemEvent.loading ? DEVICE07_COPY.unknown : eventState(systemEvent) === 'activated' ? DEVICE07_COPY.activated : DEVICE07_COPY.armed}</span>
-              <SourceBadge source={systemEvent.loading ? 'unknown' : systemEvent.address ? 'onchain' : 'absent'} />
+              <span>
+                {systemEvent.loading
+                  ? DEVICE07_COPY.unknown
+                  : eventState(systemEvent) === 'activated'
+                    ? DEVICE07_COPY.activated
+                    : DEVICE07_COPY.armed}
+              </span>
+              <SourceBadge
+                source={systemEvent.loading ? 'unknown' : systemEvent.address ? 'onchain' : 'absent'}
+              />
             </div>
             <div className="hardware-device-row">
               <b>{DEVICE07_COPY.triggerLabel}</b>
@@ -404,18 +487,28 @@ export function MonadHardwareProgram() {
             <div className="hardware-device-row">
               <b>{DEVICE07_COPY.operatorRecordLabel}</b>
               <span>{DEVICE07_COPY.operatorRecord}</span>
-              <Button onClick={() => openProgram('pass', true, '#/pass?tab=Operator')}>{DEVICE07_COPY.open}</Button>
+              <Button onClick={() => openProgram('pass', true, '#/pass?tab=Operator')}>
+                {DEVICE07_COPY.open}
+              </Button>
             </div>
           </div>
           {eventState(systemEvent) === 'condition-met' && wallet.account && (
             <div className="hw-toolbar">
-              <Button primary disabled={activationPending || !activationQuote} onClick={() => void activateEvent()}>
+              <Button
+                primary
+                disabled={activationPending || !activationQuote}
+                onClick={() => void activateEvent()}
+              >
                 {DEVICE07_COPY.activateButton}
               </Button>
-              <span>{DEVICE07_COPY.maxCost}: {activationQuote?.maxCost ?? DEVICE07_COPY.quoting}</span>
+              <span>
+                {DEVICE07_COPY.maxCost}: {activationQuote?.maxCost ?? DEVICE07_COPY.quoting}
+              </span>
             </div>
           )}
-          {eventState(systemEvent) === 'condition-met' && <p className="hw-note">{DEVICE07_COPY.activateHelp}</p>}
+          {eventState(systemEvent) === 'condition-met' && (
+            <p className="hw-note">{DEVICE07_COPY.activateHelp}</p>
+          )}
           {activationMessage && <p className="hw-message">{activationMessage}</p>}
         </GroupBox>
 
@@ -532,6 +625,7 @@ export function MonadHardwareProgram() {
             <Button onClick={() => openProgram('block-camera')}>Block Camera · CONSENSUS</Button>
             <Button onClick={() => openProgram('kernel-debugger')}>Kernel Debugger · EXECUTION</Button>
             <Button onClick={() => openProgram('card-mem')}>CARDMEM.EXE · CARD</Button>
+            <Button onClick={() => openProgram('router')}>ROUTER.EXE · EXECUTION</Button>
           </div>
         </GroupBox>
 

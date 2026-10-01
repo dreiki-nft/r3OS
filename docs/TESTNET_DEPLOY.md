@@ -162,3 +162,21 @@ Leave the other `VITE_*_ADDRESS` overrides blank: the app finds every Lab throug
 - About 4 hours after the deploy, season 1 ends: mint its finale from My Frames (you hold #0), list it in the Auction, and have testers bid.
 - Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks (about 24 hours).
 - Watch the browser console in dev (`npm run dev` with the same env) for `[r3os rpc / 10s]`: an idle desktop should stay around 1 call/s with the websocket on.
+
+````markdown
+### 3e. Router lab
+
+Deploy the read-only router lab after Operator. Off mainnet the script deploys its own mock wrapped-native token, mock USD token, diagnostic venue set and `router-mock-venues` directory by default:
+
+```bash
+PAINT_ADDRESS=$PAINT_ADDRESS DEPLOY_MOCK_VENUES=true \
+forge script script/DeployRouterLab.s.sol:DeployRouterLab \
+  --rpc-url $RPC --account r3tards-deployer --broadcast --slow
+```
+
+Save the `R3tardsRouterLab` address and experiment id. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe. On mainnet, run the same script without mock venues; ROUTER.EXE uses its pinned mainnet adapter manifest and verifies runtime-code hashes through RPC reads.
+
+Browser-check ROUTER.EXE on testnet with the mock directory. One RUN must show each mock's exact status while the gas-burning venue does not hide later rows. Enable the STATICCALL probe and confirm the stateful mock reports `STATIC FAILED` while its normal quote remains `OK`. QUOTE SCOPE must show the under-delivering mock's quoted/delivered delta and leave no persistent balances or approvals. Kernel Debugger `venues`, `route` and `quote` must use the same directory. Monad Hardware must show the MRC-17 DRAFT router row and the transaction-forwarding research section.
+
+ROUTER.EXE should produce zero idle polling with Auto disabled. A normal RUN is one block-number read plus one lab `eth_call`; the optional Monoper and QUOTE SCOPE checks are separate calls. Token metadata and adapter code are session-cached.
+````

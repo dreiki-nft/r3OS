@@ -1,4 +1,12 @@
-import { decodeEventLog, formatEther, isAddress, type Abi, type Address, type Log, type TransactionReceipt } from 'viem'
+import {
+  decodeEventLog,
+  formatEther,
+  isAddress,
+  type Abi,
+  type Address,
+  type Log,
+  type TransactionReceipt,
+} from 'viem'
 import type { KernelScenario, KernelScenarioResult } from './processKey'
 import { eventState, formatUsd, type SystemEventSnapshot } from '../chain/systemEvent'
 import { KERNEL_OPERATOR_COPY, SUBSYSTEM_LABELS } from '../operator/copy'
@@ -96,6 +104,9 @@ export type KernelCommand =
   | { kind: 'cls' }
   | { kind: 'event' }
   | { kind: 'operator'; address?: Address }
+  | { kind: 'venues'; tokenIn?: string; tokenOut?: string }
+  | { kind: 'route'; amount: string; tokenIn: string; tokenOut: string }
+  | { kind: 'quote'; venue: string; amount: string; tokenIn: string; tokenOut: string }
   | { kind: 'device'; cardId: bigint }
   | { kind: 'dump'; cardId: bigint; word: number; count: number }
   | { kind: 'error'; message: string }
@@ -118,13 +129,42 @@ export function parseKernelCommand(input: string): KernelCommand {
   if (command === 'cls')
     return parts.length === 1 ? { kind: 'cls' } : { kind: 'error', message: 'usage: cls' }
   if (command === 'event')
-    return parts.length === 1 ? { kind: 'event' } : { kind: 'error', message: KERNEL_OPERATOR_COPY.eventUsage }
+    return parts.length === 1
+      ? { kind: 'event' }
+      : { kind: 'error', message: KERNEL_OPERATOR_COPY.eventUsage }
   if (command === 'operator') {
     if (parts.length > 2) return { kind: 'error', message: KERNEL_OPERATOR_COPY.operatorUsage }
     if (parts.length === 1) return { kind: 'operator' }
     return isAddress(parts[1])
       ? { kind: 'operator', address: parts[1] as Address }
       : { kind: 'error', message: KERNEL_OPERATOR_COPY.invalidAddress }
+  }
+
+  if (command === 'venues') {
+    if (parts.length === 1) return { kind: 'venues' }
+    if (parts.length === 3)
+      return { kind: 'venues', tokenIn: parts[1].toUpperCase(), tokenOut: parts[2].toUpperCase() }
+    return { kind: 'error', message: 'usage: venues [IN] [OUT]' }
+  }
+  if (command === 'route') {
+    if (parts.length !== 4) return { kind: 'error', message: 'usage: route <amount> <IN> <OUT>' }
+    return {
+      kind: 'route',
+      amount: parts[1],
+      tokenIn: parts[2].toUpperCase(),
+      tokenOut: parts[3].toUpperCase(),
+    }
+  }
+  if (command === 'quote') {
+    if (parts.length !== 5)
+      return { kind: 'error', message: 'usage: quote <label|0xadapter> <amount> <IN> <OUT>' }
+    return {
+      kind: 'quote',
+      venue: parts[1],
+      amount: parts[2],
+      tokenIn: parts[3].toUpperCase(),
+      tokenOut: parts[4].toUpperCase(),
+    }
   }
   if (command === 'device') {
     if (parts.length !== 2) return { kind: 'error', message: 'usage: device <id>' }
@@ -211,7 +251,6 @@ export function storageVerificationLine(readPageWord0: string, storageWord0?: st
     : 'storage mismatch: slot base+0 does not match readPage[0]'
 }
 
-
 export interface KernelOperatorRecord {
   firstRecordBlock: bigint
   lastRecordBlock: bigint
@@ -270,10 +309,13 @@ export function operatorObservedLines(record: KernelOperatorRecord) {
     const block = record.firstObserved[index] ?? 0n
     return [`${KERNEL_OPERATOR_COPY.observed} ${label} · ${KERNEL_OPERATOR_COPY.first} ${block.toString()}`]
   })
-  lines.push(...(observed.length ? observed : [`${KERNEL_OPERATOR_COPY.observed} ${KERNEL_OPERATOR_COPY.none}`]))
+  lines.push(
+    ...(observed.length ? observed : [`${KERNEL_OPERATOR_COPY.observed} ${KERNEL_OPERATOR_COPY.none}`]),
+  )
   const seasons: string[] = []
   for (let season = 0; season < 256; season++) {
-    if ((record.seasonsObserved & (1n << BigInt(season))) !== 0n) seasons.push(`${KERNEL_OPERATOR_COPY.seasonPrefix}${season}`)
+    if ((record.seasonsObserved & (1n << BigInt(season))) !== 0n)
+      seasons.push(`${KERNEL_OPERATOR_COPY.seasonPrefix}${season}`)
   }
   lines.push(`${KERNEL_OPERATOR_COPY.seasons} ${seasons.join(', ') || KERNEL_OPERATOR_COPY.none}`)
   return lines

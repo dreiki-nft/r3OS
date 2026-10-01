@@ -15147,3 +15147,637 @@ export const R3TARDS_SYSTEM_EVENT_ABI = [
   }
 ] as const
 
+export const R3TARDS_ROUTER_LAB_ABI = [
+  {
+    "type": "function",
+    "name": "FRAME_OVERHEAD",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "INTERFACE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_GAS_PER_FRAME",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_REVERT_COPY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_SUCCESS_RETURN",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_VENUES",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MIN_GAS_PER_FRAME",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "compare",
+    "inputs": [
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "venues",
+        "type": "tuple[]",
+        "internalType": "struct R3tardsRouterLab.Venue[]",
+        "components": [
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quoteData",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "gasPerFrame",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "probeStatic",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out",
+        "type": "tuple",
+        "internalType": "struct R3tardsRouterLab.Comparison",
+        "components": [
+          {
+            "name": "blockNumber",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokenIn",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "tokenOut",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "amountIn",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "gasPerFrame",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "winner",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "reports",
+            "type": "tuple[]",
+            "internalType": "struct R3tardsRouterLab.QuoteReport[]",
+            "components": [
+              {
+                "name": "adapter",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "status",
+                "type": "uint8",
+                "internalType": "enum R3tardsRouterLab.Status"
+              },
+              {
+                "name": "amountOut",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "gasUsed",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "returnSize",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "revertSelector",
+                "type": "bytes4",
+                "internalType": "bytes4"
+              },
+              {
+                "name": "revertData",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "swapDataLength",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "swapDataHash",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "staticProbe",
+                "type": "uint8",
+                "internalType": "enum R3tardsRouterLab.StaticProbe"
+              },
+              {
+                "name": "staticGasUsed",
+                "type": "uint256",
+                "internalType": "uint256"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "quoteFrame",
+    "inputs": [
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "callData",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "gasCap",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "simFrame",
+    "inputs": [
+      {
+        "name": "wrappedNative",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "quoteData",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "gasPerFrame",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "simQuoteFrame",
+    "inputs": [
+      {
+        "name": "adapter",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "quoteData",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "gasCap",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "simulateNativeIn",
+    "inputs": [
+      {
+        "name": "wrappedNative",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "venues",
+        "type": "tuple[]",
+        "internalType": "struct R3tardsRouterLab.Venue[]",
+        "components": [
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quoteData",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "gasPerFrame",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "error",
+    "name": "BadAmount",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BadGasCap",
+    "inputs": [
+      {
+        "name": "gasPerFrame",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BadVenueCount",
+    "inputs": [
+      {
+        "name": "count",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsufficientGas",
+    "inputs": [
+      {
+        "name": "need",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "available",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OnlySelf",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "QuoteFrame",
+    "inputs": [
+      {
+        "name": "ok",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "gasUsed",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "returnSize",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "decode",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "swapDataLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "swapDataHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "revertSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      },
+      {
+        "name": "revertPrefix",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SameToken",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SimFrame",
+    "inputs": [
+      {
+        "name": "report",
+        "type": "tuple",
+        "internalType": "struct R3tardsRouterLab.SimReport",
+        "components": [
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quoteStatus",
+            "type": "uint8",
+            "internalType": "enum R3tardsRouterLab.Status"
+          },
+          {
+            "name": "quoted",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "quoteGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "swapOk",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "delivered",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "swapGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "swapRevertSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SimQuote",
+    "inputs": [
+      {
+        "name": "status",
+        "type": "uint8",
+        "internalType": "enum R3tardsRouterLab.Status"
+      },
+      {
+        "name": "gasUsed",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "swapData",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "revertSelector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "Simulation",
+    "inputs": [
+      {
+        "name": "blockNumber",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "reports",
+        "type": "tuple[]",
+        "internalType": "struct R3tardsRouterLab.SimReport[]",
+        "components": [
+          {
+            "name": "adapter",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quoteStatus",
+            "type": "uint8",
+            "internalType": "enum R3tardsRouterLab.Status"
+          },
+          {
+            "name": "quoted",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "quoteGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "swapOk",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "delivered",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "swapGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "swapRevertSelector",
+            "type": "bytes4",
+            "internalType": "bytes4"
+          }
+        ]
+      }
+    ]
+  }
+] as const
+

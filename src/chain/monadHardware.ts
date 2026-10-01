@@ -6,7 +6,7 @@ import { discoverContracts, type ContractAddresses } from './contracts'
 import { readHeavy, readMany } from './readMany'
 import { useRefreshTick } from './refreshTick'
 
-export type HardwareSource = 'measured' | 'onchain' | 'spec' | 'absent' | 'unknown'
+export type HardwareSource = 'measured' | 'onchain' | 'spec' | 'config' | 'research' | 'absent' | 'unknown'
 export type DeviceStatus = 'present' | 'absent' | 'unknown'
 
 export interface Sourced<T> {
