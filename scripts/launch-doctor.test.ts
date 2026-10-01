@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   EXPECTED_EXPERIMENTS,
+  aggregateMatches,
+  chainIntentCheck,
+  parseChainId,
   EXPECTED_STAMP_SOURCES,
   OFFICIAL,
   OPERATOR_SOURCES,
@@ -412,5 +415,188 @@ describe('launch doctor: full run against fixtures', () => {
     expect(human).toContain('R3TARDS LAUNCH DOCTOR')
     expect(human).toContain('RESULT')
     expect(human).not.toContain('rpc.example')
+  })
+})
+
+describe('launch doctor: chain intent', () => {
+  it('parses --expected-chain strictly, with env fallback and CLI override', () => {
+    expect(parseArgs(['--expected-chain', '143']).expectedChain).toBe(143)
+    expect(parseArgs(['--expected-chain=10143']).expectedChain).toBe(10143)
+    expect(parseArgs([], { EXPECTED_CHAIN_ID: '143' }).expectedChain).toBe(143)
+    expect(parseArgs(['--expected-chain', '10143'], { EXPECTED_CHAIN_ID: '143' }).expectedChain).toBe(10143)
+    for (const bad of ['foo', '143abc', '-1', '0', 'NaN', '0143', '1.5', ' ', '9007199254740993']) {
+      const args = parseArgs(['--expected-chain', bad])
+      expect(args.errors?.length, bad).toBe(1)
+      expect(args.expectedChain, bad).toBeUndefined()
+    }
+    expect(parseArgs(['--expected-chain']).errors).toEqual(['invalid --expected-chain: value missing'])
+    expect(parseArgs([], { EXPECTED_CHAIN_ID: 'abc' }).errors?.length).toBe(1)
+    expect(parseArgs([], { EXPECTED_CHAIN_ID: '' }).errors).toBeUndefined()
+    expect(parseChainId('143')).toBe(143)
+    expect(parseChainId(undefined)).toBeUndefined()
+  })
+
+  it('classifies intent independently of the actual chain', () => {
+    expect(chainIntentCheck({ actual: 143, expected: 143 }).status).toBe('OK')
+    expect(chainIntentCheck({ actual: 10143, expected: 143 }).status).toBe('FAIL')
+    expect(chainIntentCheck({ actual: 31337, expected: undefined }).status).toBe('WARN')
+    expect(chainIntentCheck({ actual: undefined, expected: 143 }).status).toBe('UNKNOWN')
+  })
+
+  it('A. healthy local with matching intent: no chain FAIL', async () => {
+    const result = await run(healthy(31337), { expectedChain: 31337 })
+    expect(find(result, 'CHAIN', 'Chain match').status).toBe('OK')
+    expect(result.summary.FAIL).toBe(0)
+    expect(result.exitCode).toBe(0)
+    expect(result.chain).toEqual({ id: 31337, name: 'local/other', expectedId: 31337, matchesExpected: true })
+  })
+
+  it('B. wrong chain: FAIL, exit 1, and no mainnet rules applied to testnet data', async () => {
+    const result = await run(healthy(10143), { expectedChain: 143 })
+    expect(find(result, 'CHAIN', 'Chain match').status).toBe('FAIL')
+    expect(result.exitCode).toBe(1)
+    expect(result.chain.matchesExpected).toBe(false)
+    // actual chain is 10143: the mock card / feed are judged as off-mainnet, not as wrong mainnet addresses
+    expect(find(result, 'CARD.DRV', 'Monad Card').value).toContain('off-mainnet')
+    expect(find(result, 'SYSTEM EVENT', 'Feed').value).toContain('off-mainnet')
+    const json = JSON.parse(toJson(result))
+    expect(json.chain).toMatchObject({ id: 10143, expectedId: 143, matchesExpected: false })
+  })
+
+  it('C. no expected chain: visible WARN that does not change the exit code', async () => {
+    const result = await run(healthy(31337))
+    const intent = find(result, 'CHAIN', 'Chain intent')
+    expect(intent.status).toBe('WARN')
+    expect(intent.value).toBe('not specified')
+    expect(result.exitCode).toBe(0)
+    expect(JSON.parse(toJson(result)).chain).toMatchObject({ expectedId: null, matchesExpected: null })
+    expect(formatHuman(result)).toContain('expected not specified')
+  })
+})
+
+describe('launch doctor: aggregates never hide uncertainty', () => {
+  it('aggregateMatches: mismatch dominates, unresolved stays UNKNOWN, only full match is OK', () => {
+    expect(aggregateMatches({ matched: 15, mismatched: 0, unresolved: 0 })).toEqual({
+      status: 'OK',
+      value: 'MATCH',
+    })
+    expect(aggregateMatches({ matched: 14, mismatched: 1, unresolved: 0 }).status).toBe('FAIL')
+    expect(aggregateMatches({ matched: 14, mismatched: 0, unresolved: 1 })).toEqual({
+      status: 'UNKNOWN',
+      value: '14 match · 1 unresolved',
+    })
+    expect(aggregateMatches({ matched: 13, mismatched: 1, unresolved: 1 })).toEqual({
+      status: 'FAIL',
+      value: '13 match · 1 mismatch · 1 unresolved',
+    })
+    expect(aggregateMatches({ matched: 0, mismatched: 0, unresolved: 3 }).status).toBe('UNKNOWN')
+  })
+
+  it('D. one Operator source unreadable: row UNKNOWN, aggregate UNKNOWN (never MATCH)', async () => {
+    const fixture = healthy()
+    fixture.reads.delete(key(lab['operator-record'], 'BLOCK_CAMERA'))
+    const result = await run(fixture, { expectedChain: 31337 })
+    expect(find(result, 'OPERATOR', '→ BLOCK_CAMERA').status).toBe('UNKNOWN')
+    expect(find(result, 'OPERATOR', '→ PAINT').status).toBe('OK')
+    const sources = find(result, 'OPERATOR', 'Sources')
+    expect(sources.status).toBe('UNKNOWN')
+    expect(sources.value).not.toBe('MATCH')
+    expect(result.exitCode).toBe(0)
+  })
+
+  it('expected registry source missing → UNKNOWN; several unknowns stay UNKNOWN', async () => {
+    const fixture = healthy()
+    const index = NAMES.indexOf('kernel-debugger')
+    fixture.reads.set(key(PAINT, 'experimentInfo', [BigInt(index)]), {
+      experiment: lab['kernel-debugger'],
+      name: 'kernel-debugger',
+      uri: '',
+      retired: true,
+    })
+    fixture.reads.delete(key(lab['operator-record'], 'WEEDS'))
+    const result = await run(fixture)
+    expect(find(result, 'OPERATOR', '→ KERNEL_DEBUGGER').status).toBe('UNKNOWN')
+    expect(find(result, 'OPERATOR', 'Sources')).toMatchObject({
+      status: 'UNKNOWN',
+      value: '13 match · 2 unresolved',
+    })
+  })
+
+  it('E/F. a mismatch dominates an unreadable source: aggregate FAIL with both counts', async () => {
+    const fixture = healthy()
+    fixture.reads.set(key(lab['operator-record'], 'FORKS'), hex(0xbad))
+    fixture.reads.delete(key(lab['operator-record'], 'QUESTS'))
+    const result = await run(fixture)
+    expect(find(result, 'OPERATOR', '→ FORKS').status).toBe('FAIL')
+    expect(find(result, 'OPERATOR', '→ QUESTS').status).toBe('UNKNOWN')
+    expect(find(result, 'OPERATOR', 'Sources')).toMatchObject({
+      status: 'FAIL',
+      value: '13 match · 1 mismatch · 1 unresolved',
+    })
+    expect(result.exitCode).toBe(1)
+  })
+
+  it('an unreadable registry slot makes absence unproven instead of OK or FAIL', async () => {
+    const fixture = healthy()
+    fixture.reads.delete(key(PAINT, 'experimentInfo', [BigInt(NAMES.indexOf('router-lab'))]))
+    const result = await run(fixture)
+    expect(find(result, 'REGISTRY', 'Unreadable entries').status).toBe('UNKNOWN')
+    const missing = find(result, 'REGISTRY', 'Missing expected')
+    expect(missing.status).toBe('UNKNOWN')
+    expect(missing.value).toContain('router-lab')
+    expect(find(result, 'REGISTRY', 'Duplicate active names').status).toBe('UNKNOWN')
+  })
+
+  it('an unreadable renderer slot makes a missing renderer UNKNOWN, not FAIL', async () => {
+    const fixture = healthy()
+    fixture.reads.delete(key(PAINT, 'rendererInfo', [3n]))
+    const result = await run(fixture)
+    expect(find(result, 'RENDERERS', 'Expected renderers').status).toBe('UNKNOWN')
+    expect(find(result, 'FREEZE READINESS', 'Renderers expected entries').status).toBe('UNKNOWN')
+  })
+
+  it('an unreadable quest keeps a not-found CARD CARRIER UNKNOWN', async () => {
+    const fixture = healthy()
+    fixture.reads.delete(key(lab.quests, 'questInfo', [1n]))
+    const result = await run(fixture)
+    expect(find(result, 'QUESTS', 'CARD CARRIER').status).toBe('UNKNOWN')
+  })
+
+  it('unknown adapter hashes keep the mainnet hash summary UNKNOWN', async () => {
+    const fixture = healthy(143)
+    const adapter = hex(0x5000)
+    fixture.code.add(adapter)
+    const reader = {
+      ...readerFor(fixture),
+      codeHash: async () => {
+        throw new Error('rpc down')
+      },
+    }
+    const result = await runDoctor({
+      reader,
+      paint: PAINT,
+      expectedOwner: OWNER,
+      expectedChain: 143,
+      venues: [{ label: 'a', adapter, expectedCodeHash: `0x${'00'.repeat(32)}` }],
+      mrcRevision: '6e4f8633',
+      now: NOW,
+    })
+    expect(find(result, 'ROUTER', 'a').status).toBe('UNKNOWN')
+    expect(find(result, 'ROUTER', 'Code hash mismatches').status).toBe('UNKNOWN')
+  })
+
+  it('an unreadable chain id never applies or skips mainnet rules silently', async () => {
+    const fixture = healthy(143)
+    const reader = {
+      ...readerFor(fixture),
+      chainId: async () => {
+        throw new Error('nope')
+      },
+    }
+    const result = await runDoctor({ reader, paint: PAINT, expectedChain: 143, now: NOW })
+    expect(find(result, 'CHAIN', 'Chain match').status).toBe('UNKNOWN')
+    expect(find(result, 'CARD.DRV', 'Monad Card').status).toBe('UNKNOWN')
+    expect(find(result, 'SYSTEM EVENT', 'Feed').status).toBe('UNKNOWN')
+    expect(find(result, 'ROUTER', 'Adapters').status).toBe('UNKNOWN')
   })
 })

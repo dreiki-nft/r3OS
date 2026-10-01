@@ -280,10 +280,50 @@ export function passCapacity({ sourceCount, builtin = PASS_BUILTIN_PINS, maxPins
   }
 }
 
-export function rendererReadiness({ names, frozen }) {
+export function rendererReadiness({ names, frozen, unreadable = 0 }) {
   const missing = EXPECTED_RENDERERS.filter((name) => !names.includes(name))
   const extra = names.filter((name) => !EXPECTED_RENDERERS.includes(name))
-  return { complete: missing.length === 0, missing, extra, frozen: Boolean(frozen) }
+  // A missing name may sit in an unreadable slot: only a fully read registry can prove it absent.
+  const status = missing.length === 0 ? STATUS.OK : unreadable > 0 ? STATUS.UNKNOWN : STATUS.FAIL
+  return { complete: missing.length === 0, missing, extra, frozen: Boolean(frozen), unreadable, status }
+}
+
+/** Strict positive chain id: digits only, no sign, no leading zero, safe integer. */
+export function parseChainId(value) {
+  if (value == null) return undefined
+  const text = String(value).trim()
+  if (!/^[1-9][0-9]{0,15}$/.test(text)) return null
+  const id = Number(text)
+  return Number.isSafeInteger(id) ? id : null
+}
+
+/** Operator intent vs the chain actually queried. Intent never changes which semantic rules apply. */
+export function chainIntentCheck({ actual, expected }) {
+  if (expected == null)
+    return {
+      status: STATUS.WARN,
+      value: 'not specified',
+      detail: 'pass --expected-chain to verify operator intent',
+    }
+  if (actual == null)
+    return { status: STATUS.UNKNOWN, value: `expected ${expected}`, detail: 'actual chain unreadable' }
+  return actual === expected
+    ? { status: STATUS.OK, value: `${actual} = expected` }
+    : { status: STATUS.FAIL, value: `actual ${actual} ≠ expected ${expected}`, detail: 'WRONG CHAIN' }
+}
+
+/**
+ * Aggregate of individually checked items. A proven mismatch dominates; otherwise any unresolved item
+ * keeps the aggregate UNKNOWN. Only a fully resolved, fully matching set is OK.
+ */
+export function aggregateMatches({ matched, mismatched, unresolved }) {
+  const parts = []
+  if (mismatched) parts.push(`${mismatched} mismatch`)
+  if (unresolved) parts.push(`${unresolved} unresolved`)
+  if (matched && (mismatched || unresolved)) parts.unshift(`${matched} match`)
+  if (mismatched) return { status: STATUS.FAIL, value: parts.join(' · ') }
+  if (unresolved) return { status: STATUS.UNKNOWN, value: parts.join(' · ') }
+  return { status: STATUS.OK, value: matched ? 'MATCH' : 'nothing to compare' }
 }
 
 /** releases.json validation. `knownIds` are program ids from src/os/programs.ts. */
@@ -372,7 +412,7 @@ export function formatHuman(result, { secrets = [] } = {}) {
   const width = 30
   const lines = [
     'R3TARDS LAUNCH DOCTOR',
-    `chain ${result.chain.id ?? '?'} (${result.chain.name}) · block ${result.block ?? '?'}`,
+    `chain ${result.chain.id ?? '?'} (${result.chain.name}) · expected ${result.chain.expectedId ?? 'not specified'} · block ${result.block ?? '?'}`,
     'read-only: no transaction, signature or wallet access',
     '',
   ]
@@ -435,6 +475,7 @@ export async function runDoctor({
   reader,
   paint,
   expectedOwner,
+  expectedChain,
   releases,
   knownProgramIds = [],
   venues = [],
@@ -467,10 +508,20 @@ export async function runDoctor({
   const chainName =
     chainId === 143 ? 'mainnet' : chainId === 10143 ? 'testnet' : chainId == null ? 'unknown' : 'local/other'
   report.add(
-    'Chain id',
+    'Actual chain',
     chainId == null ? STATUS.UNKNOWN : STATUS.OK,
     chainId == null ? 'unreadable' : `${chainId} (${chainName})`,
   )
+  report.info('Expected chain', expectedChain == null ? 'not specified' : String(expectedChain))
+  const intent = chainIntentCheck({ actual: chainId, expected: expectedChain })
+  report.add(
+    expectedChain == null ? 'Chain intent' : 'Chain match',
+    intent.status,
+    intent.value,
+    intent.detail,
+  )
+  // Mainnet-only contract rules use the ACTUAL chain; --expected-chain is only an intent check.
+  const chainKnown = chainId != null
   const blockResult = await safe(() => reader.block())
   const block = blockResult.ok ? blockResult.value : undefined
   report.add('Latest block', block ? STATUS.OK : STATUS.UNKNOWN, block ? String(block.number) : 'unreadable')
@@ -480,7 +531,7 @@ export async function runDoctor({
     'Multicall3 (canonical)',
     multicallCode === true
       ? STATUS.OK
-      : multicallCode == null
+      : multicallCode == null || !chainKnown
         ? STATUS.UNKNOWN
         : live
           ? STATUS.FAIL
@@ -493,7 +544,7 @@ export async function runDoctor({
     'EIP-2935 contract',
     historyCode === true
       ? STATUS.OK
-      : historyCode == null
+      : historyCode == null || !chainKnown
         ? STATUS.UNKNOWN
         : live
           ? STATUS.FAIL
@@ -515,7 +566,7 @@ export async function runDoctor({
     codeStatus(paintCode),
     `${short(paint)} · ${paintCode ? 'code' : paintCode === false ? 'NO CODE' : 'unreadable'}`,
   )
-  if (paintCode !== true) return finish(report, { chainId, chainName, block, now })
+  if (paintCode !== true) return finish(report, { chainId, chainName, block, expectedChain })
   const P = (fragment, args) => read(paint, fragment, args)
   const [
     owner,
@@ -638,6 +689,11 @@ export async function runDoctor({
     entries.filter((entry) => !entry.unreadable),
     { chainId },
   )
+  // Absence (missing / no duplicates) is only proven when every registry slot was read.
+  const registryComplete = count.ok && !entries.some((entry) => entry.unreadable)
+  const absent = (found) => (found ? STATUS.FAIL : registryComplete ? STATUS.OK : STATUS.UNKNOWN)
+  const absentValue = (list) =>
+    list.length ? list.join(', ') : registryComplete ? '0' : 'unproven (registry not fully read)'
   report.add(
     'Experiments',
     count.ok ? STATUS.OK : STATUS.UNKNOWN,
@@ -656,33 +712,45 @@ export async function runDoctor({
     )
   report.add(
     'Missing expected',
-    registry.missing.length ? STATUS.FAIL : STATUS.OK,
-    registry.missing.length ? registry.missing.join(', ') : '0',
+    registry.missing.length
+      ? registryComplete
+        ? STATUS.FAIL
+        : STATUS.UNKNOWN
+      : registryComplete
+        ? STATUS.OK
+        : STATUS.UNKNOWN,
+    registry.missing.length
+      ? `${registry.missing.join(', ')}${registryComplete ? '' : ' (may be in an unreadable slot)'}`
+      : absentValue([]),
   )
   report.add(
     'Expected but retired',
-    registry.retiredExpected.length ? STATUS.FAIL : STATUS.OK,
-    registry.retiredExpected.length ? registry.retiredExpected.join(', ') : '0',
+    absent(registry.retiredExpected.length > 0),
+    absentValue(registry.retiredExpected),
   )
   report.add(
     'Duplicate active names',
-    registry.duplicateActiveNames.length ? STATUS.FAIL : STATUS.OK,
-    registry.duplicateActiveNames.length ? registry.duplicateActiveNames.join(', ') : '0',
+    absent(registry.duplicateActiveNames.length > 0),
+    absentValue(registry.duplicateActiveNames),
     registry.duplicateActiveNames.length ? 'the app uses the last active entry for a name' : '',
   )
   report.add(
     'Duplicate active addresses',
-    registry.duplicateActiveAddresses.length ? STATUS.WARN : STATUS.OK,
-    registry.duplicateActiveAddresses.length ? registry.duplicateActiveAddresses.join('; ') : '0',
+    registry.duplicateActiveAddresses.length ? STATUS.WARN : registryComplete ? STATUS.OK : STATUS.UNKNOWN,
+    registry.duplicateActiveAddresses.length ? registry.duplicateActiveAddresses.join('; ') : absentValue([]),
   )
   report.add(
     'Active zero addresses',
-    registry.zeroAddress.length ? STATUS.FAIL : STATUS.OK,
-    registry.zeroAddress.length ? registry.zeroAddress.join(', ') : '0',
+    absent(registry.zeroAddress.length > 0),
+    absentValue(registry.zeroAddress),
   )
   report.add(
     'Active without code',
-    registry.noCode.length ? STATUS.FAIL : registry.unknownCode.length ? STATUS.UNKNOWN : STATUS.OK,
+    registry.noCode.length
+      ? STATUS.FAIL
+      : registry.unknownCode.length || !registryComplete
+        ? STATUS.UNKNOWN
+        : STATUS.OK,
     registry.noCode.length
       ? registry.noCode.join(', ')
       : registry.unknownCode.length
@@ -709,12 +777,14 @@ export async function runDoctor({
   // ---- RENDERERS
   report.section('RENDERERS')
   const rendererNames = []
+  let rendererUnreadable = 0
   if (renderers.ok) {
     for (let i = 0; i < Number(renderers.value) && i < 64; i++) {
       const info = await P('function rendererInfo(uint256) view returns (address renderer,string name_)', [
         BigInt(i),
       ])
       if (!info.ok) {
+        rendererUnreadable++
         report.add(`Renderer #${i}`, STATUS.UNKNOWN, 'unreadable')
         continue
       }
@@ -732,16 +802,18 @@ export async function runDoctor({
       )
     }
   }
-  const readiness = rendererReadiness({ names: rendererNames, frozen: rFrozen.ok && rFrozen.value })
-  report.add(
-    'Expected renderers',
-    !renderers.ok ? STATUS.UNKNOWN : readiness.complete ? STATUS.OK : STATUS.FAIL,
-    !renderers.ok
-      ? 'unreadable'
-      : readiness.complete
-        ? 'COMPLETE'
-        : `missing ${readiness.missing.join(', ')}`,
-  )
+  const readiness = rendererReadiness({
+    names: rendererNames,
+    frozen: rFrozen.ok && rFrozen.value,
+    unreadable: rendererUnreadable,
+  })
+  const rendererStatus = !renderers.ok ? STATUS.UNKNOWN : readiness.status
+  const rendererValue = !renderers.ok
+    ? 'unreadable'
+    : readiness.complete
+      ? 'COMPLETE'
+      : `missing ${readiness.missing.join(', ')}${readiness.unreadable ? ` (${readiness.unreadable} unreadable)` : ''}`
+  report.add('Expected renderers', rendererStatus, rendererValue)
 
   // ---- OWNERSHIP
   report.section('OWNERSHIP')
@@ -867,9 +939,10 @@ export async function runDoctor({
       }
       const expectedOrder = EXPECTED_STAMP_SOURCES.filter((name) => registry.resolved[name])
       const orderOk = expectedOrder.every((name, index) => order[index] === name)
+      const orderUnknown = !orderOk && sources.some((source) => source.address === undefined)
       report.add(
         'Source order',
-        orderOk ? STATUS.OK : STATUS.WARN,
+        orderOk ? STATUS.OK : orderUnknown ? STATUS.UNKNOWN : STATUS.WARN,
         orderOk ? 'matches deploy order' : order.join(', '),
         orderOk ? '' : `expected ${expectedOrder.join(', ')}`,
       )
@@ -902,19 +975,25 @@ export async function runDoctor({
     report.add('Quest count', qc.ok ? STATUS.OK : STATUS.UNKNOWN, qc.ok ? String(qc.value) : 'unreadable')
     if (qc.ok) {
       let carrier
+      let questsUnreadable = 0
       for (let i = 0; i < Number(qc.value) && i < 64; i++) {
         const q = await read(
           questsAddress,
           'function questInfo(uint256) view returns (string name,uint48 startBlock,uint48 endBlock,(address target,bytes4 selector,uint8 word,uint8 op,uint256 threshold)[] conditions)',
           [BigInt(i)],
         )
-        if (!q.ok) continue
+        if (!q.ok) {
+          questsUnreadable++
+          continue
+        }
         const [name, , , conditions] = Array.isArray(q.value)
           ? q.value
           : [q.value.name, 0, 0, q.value.conditions]
         if (name === 'CARD CARRIER') carrier = { id: i, conditions }
       }
-      if (!carrier)
+      if (!carrier && questsUnreadable)
+        report.add('CARD CARRIER', STATUS.UNKNOWN, 'not found', `${questsUnreadable} quest(s) unreadable`)
+      else if (!carrier)
         report.add(
           'CARD CARRIER',
           cardDrv ? STATUS.FAIL : STATUS.WARN,
@@ -949,6 +1028,7 @@ export async function runDoctor({
       read(cardDrv, 'function BUS_WORDS() view returns (uint256)'),
     ])
     if (!monadCard) report.add('Monad Card', STATUS.UNKNOWN, 'unreadable')
+    else if (!chainKnown) report.add('Monad Card', STATUS.UNKNOWN, short(monadCard), 'actual chain unknown')
     else if (chainId === 143)
       report.add(
         'Monad Card',
@@ -1059,11 +1139,12 @@ export async function runDoctor({
       'v1 is fixed; extensions get their own contract',
     )
     const targets = { 'core:paint': paint, 'core:pass': passAddress, 'card:monad-card': monadCard }
-    let mismatches = 0
+    const tally = { matched: 0, mismatched: 0, unresolved: 0 }
     for (const source of OPERATOR_SOURCES) {
       const expected = targets[source.target] ?? lab(source.target)
       const actual = await read(operator, `function ${source.fn}() view returns (address)`)
       if (!actual.ok || !expected) {
+        tally.unresolved++
         report.add(
           `→ ${source.fn}`,
           STATUS.UNKNOWN,
@@ -1072,18 +1153,16 @@ export async function runDoctor({
         continue
       }
       const match = sameAddress(actual.value, expected)
-      if (!match) mismatches++
+      if (match) tally.matched++
+      else tally.mismatched++
       report.add(
         `→ ${source.fn}`,
         match ? STATUS.OK : STATUS.FAIL,
         match ? 'MATCH' : `record ${short(actual.value)} · live ${short(expected)}`,
       )
     }
-    report.add(
-      'Sources',
-      mismatches ? STATUS.FAIL : STATUS.OK,
-      mismatches ? `${mismatches} mismatch` : 'MATCH',
-    )
+    const aggregate = aggregateMatches(tally)
+    report.add('Sources', aggregate.status, aggregate.value)
   }
 
   // ---- SYSTEM EVENT
@@ -1107,6 +1186,7 @@ export async function runDoctor({
       ])
     const feedAddress = addr(feed)
     if (!feedAddress) report.add('Feed', STATUS.UNKNOWN, 'unreadable')
+    else if (!chainKnown) report.add('Feed', STATUS.UNKNOWN, short(feedAddress), 'actual chain unknown')
     else if (chainId === 143)
       report.add(
         'Feed',
@@ -1194,7 +1274,7 @@ export async function runDoctor({
     const ifaceText = iface.ok ? boundString(iface.value, 60) : ''
     report.add(
       'MRC revision',
-      !iface.ok ? STATUS.UNKNOWN : revision && ifaceText.includes(revision) ? STATUS.OK : STATUS.WARN,
+      !iface.ok || !revision ? STATUS.UNKNOWN : ifaceText.includes(revision) ? STATUS.OK : STATUS.WARN,
       iface.ok ? ifaceText : 'unreadable',
       revision && iface.ok && !ifaceText.includes(revision) ? `app pins ${revision}` : '',
     )
@@ -1203,7 +1283,9 @@ export async function runDoctor({
       maxVenues.ok && minGas.ok && maxGas.ok ? STATUS.OK : STATUS.UNKNOWN,
       maxVenues.ok ? `${maxVenues.value} venues · ${minGas.value}–${maxGas.value} gas/frame` : 'unreadable',
     )
-    if (chainId === 143) {
+    if (!chainKnown) {
+      report.add('Adapters', STATUS.UNKNOWN, 'actual chain unknown; adapter rules not applied')
+    } else if (chainId === 143) {
       const counts = { MATCH: 0, DIFFERS: 0, 'NO CODE': 0, UNKNOWN: 0 }
       for (const venue of venues) {
         const code = await safe(() => reader.code(venue.adapter))
@@ -1221,11 +1303,16 @@ export async function runDoctor({
           `${short(venue.adapter)} · ${state}`,
         )
       }
-      report.add('Configured adapters', STATUS.OK, String(venues.length))
+      report.add(
+        'Configured adapters',
+        venues.length ? STATUS.OK : STATUS.UNKNOWN,
+        venues.length ? String(venues.length) : 'manifest not loaded',
+      )
+      const bad = counts.DIFFERS + counts['NO CODE']
       report.add(
         'Code hash mismatches',
-        counts.DIFFERS + counts['NO CODE'] ? STATUS.WARN : STATUS.OK,
-        String(counts.DIFFERS + counts['NO CODE']),
+        bad ? STATUS.WARN : counts.UNKNOWN || !venues.length ? STATUS.UNKNOWN : STATUS.OK,
+        `${bad}${counts.UNKNOWN ? ` · ${counts.UNKNOWN} unknown` : ''}`,
       )
     } else {
       const directory = lab('router-mock-venues')
@@ -1256,11 +1343,7 @@ export async function runDoctor({
     rFrozen.ok ? (rFrozen.value ? 'FROZEN' : 'NOT FROZEN') : 'unreadable',
     rFrozen.ok && !rFrozen.value ? 'decision: REVIEW BEFORE MAINNET (freeze only after verification)' : '',
   )
-  report.add(
-    'Renderers expected entries',
-    renderers.ok ? (readiness.complete ? STATUS.OK : STATUS.FAIL) : STATUS.UNKNOWN,
-    readiness.complete ? 'COMPLETE' : `missing ${readiness.missing.join(', ')}`,
-  )
+  report.add('Renderers expected entries', rendererStatus, rendererValue)
   report.add(
     'Experiments state',
     eFrozen.ok ? (eFrozen.value ? STATUS.WARN : STATUS.OK) : STATUS.UNKNOWN,
@@ -1272,18 +1355,23 @@ export async function runDoctor({
       : '',
   )
 
-  return finish(report, { chainId, chainName, block, now })
+  return finish(report, { chainId, chainName, block, expectedChain })
 }
 
 /** Valid secp256r1 vector (same as src/chain/monadHardware.ts). Returns 32-byte 1 when verified. */
 export const P256_VECTOR =
   '0x84620b4976eefe556d558a13e176b421238988a31fef4ec774cfe5e5e7ad479fe0c14450794f14eb78eabf357b55e7ad08de3bb2e8eb2982a4856328dacf27707bc0d2c6db0305dde670ef690dd4e9bbee8f4e5ba831a0c678997e5b58ee1b0f471c3e758c4904285bba7e53118ed0f524adeb0757d25bd2f8e7b0d76dfa714cdd520f7aca8a8b917acc37f51de8f0c9bbe3ad858382e702dc25a12d09f7a858'
 
-function finish(report, { chainId, chainName, block }) {
+function finish(report, { chainId, chainName, block, expectedChain }) {
   const checks = allChecks(report)
   const summary = summarize(checks)
   return {
-    chain: { id: chainId ?? null, name: chainName },
+    chain: {
+      id: chainId ?? null,
+      name: chainName,
+      expectedId: expectedChain ?? null,
+      matchesExpected: expectedChain == null || chainId == null ? null : chainId === expectedChain,
+    },
     block: block ? block.number : null,
     sections: report.sections,
     external: EXTERNAL_CHECKS,
@@ -1306,6 +1394,8 @@ export function parseArgs(argv, env = {}) {
     else if (arg === '--rpc') out.rpc = next()
     else if (arg === '--paint') out.paint = next()
     else if (arg === '--expected-owner') out.expectedOwner = next()
+    else if (arg === '--expected-chain') out.expectedChainRaw = next() ?? ''
+    else if (arg.startsWith('--expected-chain=')) out.expectedChainRaw = arg.slice(17)
     else if (arg.startsWith('--rpc=')) out.rpc = arg.slice(6)
     else if (arg.startsWith('--paint=')) out.paint = arg.slice(8)
     else if (arg.startsWith('--expected-owner=')) out.expectedOwner = arg.slice(17)
@@ -1314,15 +1404,36 @@ export function parseArgs(argv, env = {}) {
   out.rpc ??= env.RPC_URL
   out.paint ??= env.PAINT_ADDRESS
   out.expectedOwner ??= env.EXPECTED_OWNER
+  // The CLI flag wins over EXPECTED_CHAIN_ID. Malformed values are usage errors, never coerced.
+  const fromFlag = out.expectedChainRaw !== undefined
+  if (!fromFlag) out.expectedChainRaw = env.EXPECTED_CHAIN_ID
+  const raw = out.expectedChainRaw == null ? '' : String(out.expectedChainRaw).trim()
+  if (raw === '') {
+    if (fromFlag) out.errors = [...(out.errors ?? []), 'invalid --expected-chain: value missing']
+  } else {
+    const id = parseChainId(raw)
+    if (id == null)
+      out.errors = [...(out.errors ?? []), 'invalid --expected-chain: use a positive integer chain id']
+    else out.expectedChain = id
+  }
+  delete out.expectedChainRaw
   return out
 }
 
 export const HELP = `r3tards launch doctor: read-only deployment verification
 
 usage:
-  node scripts/launch-doctor.mjs --rpc <url> --paint <0x…> [--expected-owner <0x…>] [--json]
+  node scripts/launch-doctor.mjs \\
+    --rpc <url> \\
+    --paint <address> \\
+    [--expected-owner <address>] \\
+    [--expected-chain <chainId>] \\
+    [--json]
 
-env fallbacks: RPC_URL, PAINT_ADDRESS, EXPECTED_OWNER
+env fallbacks: RPC_URL, PAINT_ADDRESS, EXPECTED_OWNER, EXPECTED_CHAIN_ID
+
+--expected-chain is the chain you INTEND to inspect (143 mainnet, 10143 testnet). a different
+actual chain is a FAIL; omitting it is a WARN. mainnet-only rules always follow the actual chain.
 
 never signs, sends transactions or requests a wallet. the RPC URL is never printed.
 exit code 1 when any check FAILs; WARN and UNKNOWN need manual review.`

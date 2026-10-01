@@ -111,6 +111,7 @@ export function DxDiagProgram() {
           <>
             <GroupBox title="System Information">
               <Row label="Version" value={`r3tardOS 98 · app ${d.appVersion}`} source="config" />
+              <Row label="Build" value={d.buildId ?? 'unknown'} source={d.buildId ? 'config' : 'unknown'} />
               <Row label="Chain" value={`${d.chain.name} · ${d.chain.id}`} source="config" />
               {d.chain.client && <Row label="Client" value={d.chain.client} source="onchain" />}
               <Row

@@ -22,6 +22,8 @@ export interface DriverRow {
 
 export interface DxDiagInput {
   appVersion: string
+  /** Public VITE_BUILD_ID, normalized; undefined when not configured. */
+  buildId?: string
   chain: { id: number; name: string; client?: string }
   block: { number?: bigint; mode: 'live' | 'polling' | 'offline'; blockTimeMs?: number }
   deployBlock: bigint
@@ -57,6 +59,18 @@ export interface DxDiagInput {
   }
   systemEvent: EventState
   card: { driver: DriverState; context: 'official' | 'mock' | 'unknown' }
+}
+
+/**
+ * VITE_BUILD_ID is public by design but still untrusted text: keep a short, printable identifier
+ * (letters, digits, `. _ - + : /`), cap it, and treat anything URL-like as not configured.
+ */
+export function normalizeBuildId(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const text = raw.replace(/[\u0000-\u001f\u007f]/g, '').trim()
+  if (!text || /:\/\//.test(text)) return undefined
+  const clean = text.replace(/[^A-Za-z0-9._+:/-]/g, '').slice(0, 64)
+  return clean || undefined
 }
 
 export function driverState(address: string | undefined, hasCode: boolean | undefined): DriverState {
@@ -101,6 +115,7 @@ export function formatReport(input: DxDiagInput, secrets: readonly string[] = []
   const row = (label: string, value: string | number) => lines.push(`${label}: ${value}`)
   lines.push('R3TARDOS DXDIAG')
   row('version', `r3tardOS 98 · app ${input.appVersion}`)
+  row('build', input.buildId ?? 'unknown')
   row('chain', `${input.chain.name} (${input.chain.id})`)
   row('block', input.block.number == null ? 'unknown' : input.block.number.toString())
   row(

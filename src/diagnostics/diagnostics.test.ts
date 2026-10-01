@@ -4,6 +4,7 @@ import {
   driverState,
   eventLabel,
   formatReport,
+  normalizeBuildId,
   redactReport,
   summarizeCodeHashes,
   type DxDiagInput,
@@ -144,5 +145,27 @@ describe('DXDIAG report model', () => {
     )
     // the report never includes a wallet / connected account field
     expect(formatReport(input())).not.toMatch(/wallet|account/i)
+  })
+
+  it('reports the build id separately from the app version, honestly when absent', () => {
+    const withBuild = formatReport(input({ buildId: 'snapshot-24' }))
+    const lines = withBuild.split('\n')
+    expect(lines[1]).toBe('version: r3tardOS 98 · app 0.1.0')
+    expect(lines[2]).toBe('build: snapshot-24')
+    expect(formatReport(input()).split('\n')[2]).toBe('build: unknown')
+  })
+
+  it('normalizes VITE_BUILD_ID as public but untrusted text', () => {
+    expect(normalizeBuildId('a84f392')).toBe('a84f392')
+    expect(normalizeBuildId('  snapshot-24  ')).toBe('snapshot-24')
+    expect(normalizeBuildId('')).toBeUndefined()
+    expect(normalizeBuildId(undefined)).toBeUndefined()
+    expect(normalizeBuildId('   ')).toBeUndefined()
+    expect(normalizeBuildId('x'.repeat(200))).toHaveLength(64)
+    expect(normalizeBuildId('v1 <script>\u0007')).toBe('v1script')
+    expect(normalizeBuildId('https://user:token@host.example/build')).toBeUndefined()
+    const report = formatReport(input({ buildId: normalizeBuildId('https://secret.example/k') }))
+    expect(report).toContain('build: unknown')
+    expect(report).not.toContain('secret.example')
   })
 })

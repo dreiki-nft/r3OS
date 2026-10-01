@@ -14,6 +14,10 @@ if (args.help) {
   console.log(HELP)
   process.exit(0)
 }
+if (args.errors?.length) {
+  console.error(`${args.errors.join('\n')}\n\n${HELP}`)
+  process.exit(2)
+}
 if (args.unknown?.length) {
   console.error(`unknown argument(s): ${args.unknown.join(' ')}\n\n${HELP}`)
   process.exit(2)
@@ -77,6 +81,7 @@ const result = await runDoctor({
   reader,
   paint: args.paint,
   expectedOwner: args.expectedOwner,
+  expectedChain: args.expectedChain,
   releases: readJson('public/releases.json'),
   knownProgramIds: programIds(),
   venues: manifest?.venues ?? [],

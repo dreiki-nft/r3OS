@@ -14,6 +14,7 @@ import { MRC17_MIP_COMMIT } from '../router/mrc17'
 import { loadRouterEnvironment, venueCodeInfo } from '../router/routerLab'
 import {
   driverState,
+  normalizeBuildId,
   summarizeCodeHashes,
   type CodeHashSummaryState,
   type DriverRow,
@@ -118,6 +119,7 @@ export async function loadDxDiag(force = false): Promise<DxDiagInput> {
 
   return {
     appVersion: packageJson.version,
+    buildId: normalizeBuildId((import.meta.env as Record<string, unknown>).VITE_BUILD_ID),
     chain: { id: config.chainId, name: chainName, client: hardware?.clientVersion.value },
     block: {
       number: block.block > 0n ? block.block : undefined,

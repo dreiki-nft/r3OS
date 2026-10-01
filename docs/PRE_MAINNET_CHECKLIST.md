@@ -2,7 +2,14 @@
 
 The single canonical launch list. Other docs link here instead of repeating it. Order after this phase: **TESTNET → SOAK → MAINNET PRE-FLIGHT → LAUNCH**.
 
-Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x…> --expected-owner <0x…> [--json]`) checks deployment wiring read-only; **DXDIAG.EXE** reports what a browser can see; the two mainnet fork tests check real third-party contracts. None of them turns code presence into proof of chain behaviour; the TESTNET items below need real Monad data.
+Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x…> --expected-owner <0x…> --expected-chain <id> [--json]`) checks deployment wiring read-only; **DXDIAG.EXE** reports what a browser can see; the two mainnet fork tests check real third-party contracts. None of them turns code presence into proof of chain behaviour; the TESTNET items below need real Monad data.
+
+## F0. Architecture decisions (already made; changing one needs a documented decision)
+
+- Operator Record v1 is fixed at 16 domains. Future history uses companion / versioned records, never v1's unused words.
+- The final two Painter Pass visual pins (14, 15) are reserved. No new stamp source for ROUTER or DXDIAG.
+- The experiment registry is intentionally **not frozen** at initial launch (discovery headroom).
+- CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. ROUTER.EXE stays diagnostic.
 
 ## F1. Deployment
 
@@ -12,7 +19,7 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x�
 - [ ] Operator Record + System Event: `DeployOperator.s.sol` (verified MON/USD proxy `0xBcD78f76005B7515837af6b50c7C52BCf73822fb` on 143).
 - [ ] Router Lab: `DeployRouterLab.s.sol` (no mocks on 143).
 - [ ] Record every address, experiment id and the deploy block with the deployment records.
-- [ ] Run the Launch Doctor and keep its JSON report.
+- [ ] Run the Launch Doctor with the chain you **intend** (`--expected-chain 10143` on testnet, `143` on mainnet) and keep its JSON report. A different actual chain is a FAIL; omitting the flag is only a WARN, so never omit it for the real check.
 
 ## F2. Ownership
 
@@ -104,7 +111,7 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 
 - [ ] Desktop and narrow/mobile layout; reload; deep links (`#/…`).
 - [ ] Start → Run… commands, including that an unreleased program still says "not installed yet".
-- [ ] DXDIAG.EXE report copies cleanly (no RPC URL, no wallet).
+- [ ] DXDIAG.EXE report copies cleanly (no RPC URL, no wallet) and shows the deployed `VITE_BUILD_ID` (public; set it per deploy, e.g. the snapshot or commit you deployed).
 - [ ] Program release gating with reveal-all off.
 
 ## F15. Content / operational (decisions, not code)
@@ -118,7 +125,18 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 
 Before the public mainnet announcement:
 
-- [ ] `npm run launch:doctor -- --rpc <mainnet rpc> --paint <Paint> --expected-owner <Safe>`
+```bash
+npm run launch:doctor -- \
+  --rpc "$MONAD_MAINNET_RPC" \
+  --paint "$PAINT_ADDRESS" \
+  --expected-owner "$EXPECTED_OWNER" \
+  --expected-chain 143 \
+  --json > launch-doctor-mainnet.json
+```
+
+- [ ] Run once without `--json` to read it, once with `--json` to keep it. The RPC value is never printed.
+- [ ] `Chain match` is OK (actual chain 143 = expected 143).
 - [ ] **FAIL = 0.**
-- [ ] Every WARN and UNKNOWN reviewed and either fixed or explained.
-- [ ] The `--json` report saved with the deployment records.
+- [ ] Every WARN manually reviewed and either fixed or explained.
+- [ ] Every UNKNOWN manually reviewed: UNKNOWN means a required read failed, not that it passed.
+- [ ] The JSON report saved with the deployment records.

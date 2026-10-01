@@ -147,8 +147,8 @@ ROUTER.EXE should produce zero idle polling with Auto disabled. A normal RUN is 
 Run the read-only Launch Doctor against the deployment. It never signs or sends anything and never prints the RPC URL:
 
 ```bash
-npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER
-npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --json > launch-doctor-testnet.json
+npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --expected-chain 10143
+npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --expected-chain 10143 --json > launch-doctor-testnet.json
 ```
 
 `FAIL` must be 0 before the soak starts. Review every `WARN` and `UNKNOWN`; the canonical list of what still needs real-chain proof is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md). The two raw checks below are also covered by the doctor:
@@ -172,6 +172,7 @@ VITE_WALLET_RPC_URL=https://testnet-rpc.monad.xyz
 VITE_EXPLORER_URL=https://testnet.monadvision.com
 VITE_PAINT_ADDRESS=<R3tardsPaint address>
 VITE_REVEAL_ALL=true
+VITE_BUILD_ID=<public build label, e.g. snapshot-24>
 ```
 
 `VITE_REVEAL_ALL=true` matters on testnet: without it, the production build follows `public/releases.json` and hides Forks and Block DNA until their November dates, so testers could never reach them. Leave it unset on mainnet.
