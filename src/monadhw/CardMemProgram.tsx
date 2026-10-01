@@ -203,14 +203,21 @@ export function CardMemProgram() {
   const routeCard = useRef(false)
 
   useEffect(() => {
-    const query = window.location.hash.split('?')[1] ?? ''
-    const value = new URLSearchParams(query).get('card')
-    if (!value) return
-    const id = parseCardId(value)
-    if (id == null) return
-    routeCard.current = true
-    setCardId(id)
-    setCardIdText(id.toString())
+    // `#/card-mem?card=<id>` on open, and again when Run… or a link changes the hash while CARDMEM is open.
+    const route = () => {
+      const query = window.location.hash.split('?')[1] ?? ''
+      if (!window.location.hash.startsWith('#/card-mem')) return
+      const value = new URLSearchParams(query).get('card')
+      if (!value) return
+      const id = parseCardId(value)
+      if (id == null) return
+      routeCard.current = true
+      setCardId(id)
+      setCardIdText(id.toString())
+    }
+    route()
+    window.addEventListener('hashchange', route)
+    return () => window.removeEventListener('hashchange', route)
   }, [])
 
   useEffect(() => {

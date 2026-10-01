@@ -181,3 +181,8 @@ export function resetReleaseTestState() {
   announced.clear()
   opened.clear()
 }
+
+/** Test hook: replace the release snapshot (status, schedule, clock, reveal-all). */
+export function __setReleaseSnapshotForTests(next: Partial<ReleaseSnapshot>) {
+  emit(next)
+}

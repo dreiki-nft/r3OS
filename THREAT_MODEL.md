@@ -1,6 +1,6 @@
 # Threat model notes
 
-This is the Phase 2d contract-boundary threat model. The full economic wipe/repair analysis remains Phase 5 work and must use real Monad testnet measurements.
+This is the contract-boundary threat model, maintained through Phase LAUNCH. Items that need real chain data are classified in the **Launch status of open items** section and tracked operationally in [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md). Nothing below has been proven on Monad testnet or mainnet merely because it passes on a local Monad-mode chain.
 
 ## Core freeze
 
@@ -48,7 +48,7 @@ A key is rejected if it has already painted as its own identity. The former exte
 
 Owners can call `incrementSessionNonce()` to invalidate signed but not-yet-started authorizations. While active, a stolen burner can spend the remaining signed session allowance painting as the owner. Damage is bounded by both the owner's ordinary budget and `maxUnits`, and the session expires at `expiryBlock`. The owner can revoke it at any time.
 
-An active session key cannot use delegated identity to mint frames, flip face/background, or claim the Painter Pass. Frontend Phase 4 must revoke before sweeping unused MON.
+An active session key cannot use delegated identity to mint frames, flip face/background, or claim the Painter Pass. The frontend revokes before sweeping unused MON (Hardware Profiles → End session).
 
 ## Painter Pass binding
 
@@ -126,16 +126,32 @@ Active core session keys resolve to their owner for Weeds plants/ticks, so a sto
 
 Future guest outlines are an owner-curated surface. Canvas pixels remain permissionless within budget/heat rules, so offensive user-created frames remain possible. Frontend moderation is UI-only and cannot delete onchain frames.
 
-## Deferred Phase 5 analysis
+## Launch status of open items
 
-Phase 5 still needs quantified full-canvas wipe time/gas for 1/100/1,000 wallets, fresh vs aged trust, repair speed, and the final session-key/offensive-content operational analysis using Monad testnet measurements.
+Every item the earlier phases deferred to "Phase 5", classified. **Resolved** means resolved in code or policy, not "observed on Monad".
+
+| Item | Status |
+|---|---|
+| Quantified full-canvas wipe time/gas for 1 / 100 / 1,000 wallets, fresh vs aged trust, repair speed | **TESTNET REQUIRED** (needs real gas and inclusion data; local numbers are not a substitute) |
+| Production gas limits from observed distributions (core paint, Flipbook 240K, fork paint 250K, Sleepwalker 1M, CARD.DRV, Operator RECORD) | **TESTNET REQUIRED** (`docs/specs/GAS_LIMITS.md`) |
+| `block.coinbase` meaning for "Sealed by" | **TESTNET REQUIRED** |
+| Contract `blockhash(n)` vs RPC hashes, 256-block Block DNA catch window | **TESTNET REQUIRED** |
+| EIP-2935 history correctness and 8,191-block window; auction fallback path | **TESTNET REQUIRED** |
+| MIP-4 reserve enforcement (Kernel Debugger BURST NAIVE) | **TESTNET REQUIRED** (local anvil exposes the probe but did not enforce the revert) |
+| Public-RPC load: bounded `getLogs`, idle rate, websocket → polling | **RESOLVED** in code (Phase 5) · **TESTNET REQUIRED** for the soak |
+| Official Monad Card behaviour | **RESOLVED** on a mainnet fork (2026-10-01: soulbound by `Soulbound()` revert, no ERC-5192 interface) |
+| Real MRC-17 adapters and quote isolation | **RESOLVED** on a mainnet fork (2026-10-01, `RouterLabFork`); re-run before launch: **MAINNET FORK REQUIRED** |
+| MON/USD feed freshness and heartbeat | **MAINNET REQUIRED** (oracle check) |
+| Session-key user warnings | **RESOLVED** in UI (Live wizard, Hardware Profiles cancel/revoke) · operational wording **DEFERRED** to the checklist's content/operational section |
+| Offensive canvas content | **DEFERRED** to an operational policy (no onchain censorship mechanism exists or is planned; UI-only hiding cannot delete onchain frames) |
+| Auction keeper and support/recovery process | **DEFERRED** to operational policy (`scripts/auction-keeper.sh` exists; who runs it is an ops decision) |
 
 
 ## Monad gas-limit model
 
 The Foundry suite is pinned to v1.8.3 and runs with MonadTen rules (`network = "monad"`). MIP-8 page storage has been live since 2026-09-02, so the 128-slot-aligned layouts are security/economic assumptions we test directly rather than Ethereum-priced approximations.
 
-Monad charges from the submitted gas limit, including reverted transactions. Over-padding therefore burns real MON. Flipbook paint deliberately uses a fixed 240K limit because whether a transaction lands on the first-paint copy path or later same-block path cannot be predicted reliably by estimating against the previous block. Core paints keep preflight simulation plus explicit DF1 corruption headroom. Testnet soak in Phase 5 must update every production limit from observed distributions.
+Monad charges from the submitted gas limit, including reverted transactions. Over-padding therefore burns real MON. Flipbook paint deliberately uses a fixed 240K limit because whether a transaction lands on the first-paint copy path or later same-block path cannot be predicted reliably by estimating against the previous block. Core paints keep preflight simulation plus explicit DF1 corruption headroom. The testnet soak must update every production limit from observed distributions (**TESTNET REQUIRED**).
 
 ## Forks Lab
 
@@ -157,7 +173,7 @@ A brush may be verified only for the resolved owner whose box contains it. Stamp
 
 Active session keys may catch and verify for their owner. Compromise therefore exposes the owner's box-game actions until session expiry/revocation, but grants no special core paint authority beyond the existing session itself.
 
-Phase 5 must verify that contract `blockhash(n)` matches recent RPC block hashes on Monad and confirm the effective 256-block catch window.
+**TESTNET REQUIRED:** verify that contract `blockhash(n)` matches recent RPC block hashes on Monad and confirm the effective 256-block catch window.
 
 ## Finale Candle Auction
 
@@ -210,7 +226,6 @@ The record is **public history**. Its storage page and `OperatorRecorded` events
 
 The UI keeps the oracle condition separate from the latch itself: **CONDITION MET** is not **ACTIVATED** until an `activate()` transaction succeeds. After activation, DEVICE 07 still says its driver is not installed and its next stage is unknown. New Operator / DEVICE 07 / Kernel event-copy is centralized and regression-tested against the phase's prohibited marketing vocabulary, and the Operator tab includes the explicit no-promise line required by the product spec.
 
-````markdown
 ## ROUTER.EXE / MRC-17 routing lab
 
 `R3tardsRouterLab` treats every configured adapter as hostile. Quote calls run with an explicit gas cap inside an external self-call that always reverts, and the parent accepts only its own structured revert envelope. Adapter revert data is copied only up to 512 bytes; successful quote returndata is rejected above the configured cap and strictly ABI-validated before use. One reverting, gas-burning or malformed venue therefore remains isolated from the other venue reports as long as the top-level call satisfies the lab's preflight gas budget.
@@ -224,4 +239,3 @@ Results are only as honest and complete as the RPC state used for the `eth_call`
 MRC-17's guarantee is sensitive to caller and state. The lab uses itself as `msg.sender` for quote and execution preview so the two paths share caller semantics, but an observed preview is still not a later execution. Liquidity, oracle state, proposer ordering and venue dependencies can change by the next block. A displayed quote or QUOTE SCOPE result must therefore never be presented as a future-block guarantee.
 
 The transaction-forwarding information shown in Monad Hardware is documentation/research context, not an execution guarantee. Monad's local-mempool forwarding reduces the resemblance to Ethereum's global public mempool, but the RPC operator and upcoming leaders see transactions before inclusion. Historical measurements of sandwich activity describe observed attacker behavior in the study window, not impossibility.
-````

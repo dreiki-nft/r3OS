@@ -50,9 +50,22 @@ max cost = gas limit × maxFeePerGas
 
 Do not present gas-used estimates as the amount the user will necessarily be charged.
 
-## Phase 5 testnet task
+## Launch status: what still needs testnet data
 
-Record the observed gas-used distribution for every action on Monad testnet, including fresh/repaint paths and storm/crowd conditions. Update `FLIPBOOK_PAINT_GAS_LIMIT`, `CORRUPTION_WRITE_GAS`, and all other production constants from those measurements before day-1 launch.
+Every number in this file is either a **local Monad-mode measurement** or a **policy**. None is a final production limit until it has been observed on Monad testnet. Before day-1 launch, record the gas-used distribution for each action below on testnet (fresh and repaint paths, storm and crowd conditions) and update the constant if the observed worst case is not comfortably inside it. The canonical tick-list is section F8 of [`docs/PRE_MAINNET_CHECKLIST.md`](../PRE_MAINNET_CHECKLIST.md).
+
+| Action | Current policy | Status |
+|---|---|---|
+| Core paint | preflight simulation + `CORRUPTION_WRITE_GAS` headroom | TESTNET REQUIRED |
+| Flipbook paint | fixed `FLIPBOOK_PAINT_GAS_LIMIT` = 240K | TESTNET REQUIRED |
+| Fork paint | fixed 250K (local worst case about 200K) | TESTNET REQUIRED |
+| Sleepwalker step | fixed 1,000,000 (local worst case about 820K) | TESTNET REQUIRED |
+| Auction `list` / `bid` / `settle` / withdrawals | `eth_estimateGas` + 10% | TESTNET REQUIRED (record distributions, incl. settle via EIP-2935 and fallback) |
+| Kernel Debugger `ping` / `run` | fixed 40K / 160K | TESTNET REQUIRED (with MIP-4 enforcement) |
+| CARD.DRV write, Block Camera capture, Operator RECORD | `eth_estimateGas` + 10% (`estimate` kind; RECORD with all 16 bits new measured 658K locally) | TESTNET REQUIRED |
+| ROUTER.EXE RUN | `eth_call` only, about 5.9M requested for 5 venues at 1M/frame | RESOLVED for mainnet adapters on a fork (2026-10-01); confirm public-RPC acceptance on testnet |
+
+Do not replace a number here with a guess. If a value still lacks real data at launch, say so in the checklist rather than writing a final-looking figure.
 
 ## Forks
 
@@ -74,7 +87,7 @@ Use `eth_estimateGas + 10%` for `forkFrame`, `forkFork`, `setOpen` and `seal`.
 const SLEEPWALKER_STEP_GAS_LIMIT = 1_000_000n
 ```
 
-Do **not** estimate it per step. A ready step can start the next pre-signed session, slice up to 64 stencil pixels, call the core paint path, update dream accounting and pay a tip. In-test Foundry benchmarks (about 505K) under-count it because storage is already warm in a test. A real fresh transaction on a local chain cost **675K** for a step that completed a 61 px dream and refunded the deposit, with Ethereum pricing; Monad-rules cold measurements run about 1.2× Ethereum on this path, so the real worst case is about 820K before a session start. The limit is therefore **1,000,000**. Phase 5 must re-measure the worst path (session start + 64 px + completion + refund) on Monad testnet and tighten it.
+Do **not** estimate it per step. A ready step can start the next pre-signed session, slice up to 64 stencil pixels, call the core paint path, update dream accounting and pay a tip. In-test Foundry benchmarks (about 505K) under-count it because storage is already warm in a test. A real fresh transaction on a local chain cost **675K** for a step that completed a 61 px dream and refunded the deposit, with Ethereum pricing; Monad-rules cold measurements run about 1.2× Ethereum on this path, so the real worst case is about 820K before a session start. The limit is therefore **1,000,000**. **TESTNET REQUIRED:** re-measure the worst path (session start + 64 px + completion + refund) on Monad testnet and tighten it.
 
 `step` wraps the core paint in try/catch, so `eth_estimateGas` is **not** safe here: the estimator finds a lower limit at which the inner paint fails and the step returns `CoreRejected` without painting. Tips should cover the cranker's max cost (`SLEEPWALKER_STEP_GAS_LIMIT × maxFeePerGas`), or nobody will crank. A failed readiness gate is a view/preflight concern and should not be intentionally submitted as a paid transaction.
 
@@ -88,7 +101,7 @@ The UI should preflight verification against the already-rendered live canvas so
 
 ## Finale auction
 
-Use `eth_estimateGas + 10%` for `list`, `bid`, `cancel`, `settle`, `withdraw` and `withdrawCredits`. Settlement cost grows only logarithmically with bid count for winner lookup; Phase 5 still records real testnet distributions. Bid deposits are value, not gas, and remain locked until settlement.
+Use `eth_estimateGas + 10%` for `list`, `bid`, `cancel`, `settle`, `withdraw` and `withdrawCredits`. Settlement cost grows only logarithmically with bid count for winner lookup; real testnet distributions are still **TESTNET REQUIRED**. Bid deposits are value, not gas, and remain locked until settlement.
 
 ## Quests
 

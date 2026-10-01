@@ -96,6 +96,17 @@ export function AuctionProgram() {
   const [address, setAddress] = useState<Address>()
   const [auctionId, setAuctionId] = useState<bigint>(routeNumber('auction'))
   const [sellerToken, setSellerToken] = useState<bigint>(routeNumber('token'))
+
+  // Run… `auction <id>` (or a link) can change `#/auction?auction=<id>` while the window is already open.
+  useEffect(() => {
+    const route = () => {
+      if (!location.hash.startsWith('#/auction')) return
+      const next = routeNumber('auction')
+      if (next > 0n) setAuctionId(next)
+    }
+    window.addEventListener('hashchange', route)
+    return () => window.removeEventListener('hashchange', route)
+  }, [])
   const [info, setInfo] = useState<Info>()
   const [bids, setBids] = useState<AuctionBid[]>([])
   const [minBid, setMinBid] = useState(0n)

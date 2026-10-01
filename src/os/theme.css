@@ -2655,3 +2655,50 @@ button:disabled {
   margin-left: 8px;
   color: var(--text-muted);
 }
+
+/* Start → Run… */
+.run-dialog {
+  height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--face);
+}
+
+.run-dialog-body {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.run-dialog-body p {
+  margin: 0;
+}
+
+.run-dialog-field {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.run-dialog-field input {
+  min-height: 24px;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid var(--bevel-outer);
+  background: var(--field);
+  color: var(--text);
+}
+
+.run-dialog-examples {
+  margin-left: 50px;
+  color: var(--text-muted);
+}
+
+.run-dialog .dialog-actions {
+  justify-content: flex-end;
+}

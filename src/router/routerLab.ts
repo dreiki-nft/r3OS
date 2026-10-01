@@ -140,6 +140,10 @@ export async function loadRouterEnvironment(): Promise<RouterEnvironment> {
       return { lab, directory, venues: [], mock: true }
     }
   })()
+  // A failed discovery (RPC offline) must not be cached for the whole session.
+  envPromise.catch(() => {
+    envPromise = undefined
+  })
   return envPromise
 }
 

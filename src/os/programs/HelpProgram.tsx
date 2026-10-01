@@ -113,6 +113,23 @@ const topics = {
       plays every track, even ones whose frame was later recycled. a CD that leaves your wallet is ejected.
     </>
   ),
+  'DXDIAG.EXE': (
+    <>
+      shows what this browser is connected to and which r3tardOS components it can see: chain, block, block
+      clock mode, how many RPC endpoints are configured, the core contracts, installed drivers, Monad devices,
+      ROUTER venues and the System Event state. it reads once when opened; Refresh reads again. Copy Report
+      puts a plain-text support report on the clipboard with no RPC URL and no wallet in it. it never signs or
+      sends anything.
+    </>
+  ),
+  'Run…': (
+    <>
+      Start → Run… opens a program by name: <code>paint</code>, <code>router</code>, <code>kernel</code>,{' '}
+      <code>hardware</code>, <code>dxdiag</code> and the rest of the desktop. a few typed routes work too:{' '}
+      <code>operator</code>, <code>card 123</code>, <code>frame 12</code>, <code>auction 3</code>. it is not a
+      shell: it won't open web addresses, run scripts or skip a program's release date.
+    </>
+  ),
   credits: (
     <>
       Paint · r3tardOS 98. manufactured and supported by r3tards. built to expose Monad mechanics instead of
@@ -130,6 +147,8 @@ const programFor: Partial<Record<keyof typeof topics, { id: string; label: strin
   'Kernel Debugger': { id: 'kernel-debugger', label: 'Open Kernel Debugger' },
   'ROUTER.EXE': { id: 'router', label: 'Open ROUTER.EXE' },
   'CD-ROM (D:)': { id: 'cdrom', label: 'Open CD-ROM (D:)' },
+  'DXDIAG.EXE': { id: 'dxdiag', label: 'Open DXDIAG.EXE' },
+  'Run…': { id: 'run', label: 'Open Run…' },
 }
 
 export function HelpProgram() {

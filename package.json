@@ -12,7 +12,8 @@
     "outline:export": "node scripts/export-outline.mjs",
     "abi:export": "node scripts/export-abi.mjs",
     "check": "npm run contracts:build && npm run contracts:test && npm run test:web && npm run outline:export && npm run abi:export && npm run build",
-    "test:web": "vitest run"
+    "test:web": "vitest run",
+    "launch:doctor": "node scripts/launch-doctor.mjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",

@@ -134,6 +134,18 @@ A future contract can ask whether a historical fact was established by a particu
 
 `exact` must be respected. For most subsystems, the proof is “observed by this block,” not an exact first-use timestamp.
 
+## Versioning policy: v1 is fixed
+
+**Operator Record v1 represents the original 16 participation domains and is intentionally immutable as a historical primitive.**
+
+- `SUBSYSTEM_COUNT = 16`, `IDENTITY_MASK = 1 << 15`, the `uint16 observedMask`, `uint48[16] firstObserved`, and the fixed-length loops are the v1 ABI. Ids 0–15 are all occupied and **never change meaning**.
+- `usedBefore` and `firstObservedBlock` reject ids ≥ 16, and that is correct: there is no id 16 in v1.
+- The page has unused physical words (W2–W15 and W32–W127). **Unused words are not permission to reinterpret the v1 ABI.** No later contract, frontend or document may assign meaning to them under the v1 name.
+- **ROUTER is not retrofitted into v1.** Neither is any later program.
+- A future extension, if one is ever justified, is a **separate companion contract with its own namespace and version** (for example an `OPERATOR-EXT-1` record keyed by the same operator address). Readers that want the full picture query v1 **plus** the extension contracts and label each fact with the record it came from.
+
+Stable semantics are worth more than infinite extensibility: a v1 record read in five years must mean exactly what it means today.
+
 ## Measured (Monad-mode anvil, 2026-09-30)
 
 - `record()` with every source live and all 16 bits new: about 658,000 gas (16 fresh words dominate). Later records that add nothing only rewrite the header word.

@@ -25,6 +25,10 @@ export interface ProgramDef {
   pinToggle?: boolean
 }
 
+const DxDiagProgram = lazy(() =>
+  import('../diagnostics/DxDiagProgram').then((module) => ({ default: module.DxDiagProgram })),
+)
+const RunDialog = lazy(() => import('./RunDialog').then((module) => ({ default: module.RunDialog })))
 const SoundsProgram = lazy(() =>
   import('./programs/SoundsProgram').then((module) => ({ default: module.SoundsProgram })),
 )
@@ -335,6 +339,17 @@ export const programs: ProgramDef[] = [
     hash: '#/monad-hw',
   },
   {
+    id: 'dxdiag',
+    title: 'DXDIAG.EXE',
+    icon: 'zoom',
+    colour: '#5FEDDF',
+    component: DxDiagProgram,
+    defaultSize: { width: 720, height: 600 },
+    minSize: { width: 520, height: 440 },
+    singleInstance: true,
+    hash: '#/dxdiag',
+  },
+  {
     id: 'xray',
     title: 'Monad X-ray',
     icon: 'eye',
@@ -406,6 +421,21 @@ export const programs: ProgramDef[] = [
     hash: '#/frame-props',
     hidden: true,
     controls: 'help-close',
+  },
+  {
+    id: 'run',
+    title: 'Run',
+    icon: 'rocket',
+    colour: '#FEC343',
+    component: RunDialog,
+    defaultSize: { width: 430, height: 236 },
+    minSize: { width: 430, height: 236 },
+    singleInstance: true,
+    hash: '#/run',
+    hidden: true,
+    alwaysOnTop: true,
+    modal: true,
+    controls: 'close',
   },
   {
     id: 'live-wizard',

@@ -108,14 +108,31 @@ export function FramePropsDialog() {
     if (requested === 'General' || requested === 'Renderer' || requested === 'DF1') setTab(requested)
   }, [params])
 
+  const [loadError, setLoadError] = useState('')
+
   const loadBase = useCallback(async () => {
     if (tokenId <= 0) return
-    const [frame, frameOwner, frameImage, list] = await Promise.all([
-      getFrameInfo(tokenId),
-      readOwner(tokenId),
-      getFrameImage(tokenId),
-      rendererList(),
-    ])
+    setLoadError('')
+    let loaded
+    try {
+      loaded = await Promise.all([
+        getFrameInfo(tokenId),
+        readOwner(tokenId),
+        getFrameImage(tokenId),
+        rendererList(),
+      ])
+    } catch (error) {
+      // A deep link or Run… `frame <id>` can name a frame that was never minted.
+      const text = error instanceof Error ? error.message : String(error)
+      setInfo(undefined)
+      setLoadError(
+        /FrameDoesNotExist|nonexistent|does not exist/i.test(text)
+          ? `frame #${tokenId} does not exist.`
+          : `could not read frame #${tokenId}.`,
+      )
+      return
+    }
+    const [frame, frameOwner, frameImage, list] = loaded
     if (!frame) return
     setInfo(frame)
     setOwner(frameOwner)
@@ -140,7 +157,7 @@ export function FramePropsDialog() {
   }, [tokenId, params])
 
   useEffect(() => {
-    void loadBase()
+    void loadBase().catch(() => undefined)
   }, [loadBase])
 
   useEffect(
@@ -260,6 +277,7 @@ export function FramePropsDialog() {
     <div className="frame-props">
       <Tabs tabs={['General', 'Renderer', 'DF1']} active={tab} onChange={setTab} />
       <div className="frame-props-body">
+        {loadError && <p className="frame-props-empty">{loadError}</p>}
         {tab === 'General' && info && (
           <div className="frame-general">
             <div className="frame-general-thumb sunken">

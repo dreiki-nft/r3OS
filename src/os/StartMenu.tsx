@@ -25,6 +25,7 @@ export function StartMenu({
     'kernel-debugger',
     'router',
     'monad-hw',
+    'dxdiag',
   ])
   const regularPrograms = programs.filter((program) => !hardwareIds.has(program.id))
   const hardwarePrograms = programs.filter((program) => hardwareIds.has(program.id))
@@ -152,6 +153,10 @@ export function StartMenu({
             Help
           </button>
         )}
+        <button data-start-item onClick={() => open('run')}>
+          <Icon name="rocket" size={24} colour="#FEC343" />
+          Run…
+        </button>
         <hr />
         {wallet.account ? (
           <button

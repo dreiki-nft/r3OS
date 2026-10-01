@@ -91,7 +91,6 @@ Save the three hardware addresses and experiment ids. Browser-check PAGE.EXE, CA
 
 In Kernel Debugger, also fund the process key with 0.05 MON and run SINGLE, BURST GRACEFUL and BURST NAIVE. Paste back the actual receipts/statuses; the local Monad anvil exposes the reserve probe but did not enforce the end-of-transaction revert.
 
-````markdown
 ### 3d. Operator record and system event
 
 Testnet uses the mock MON/USD feed. Deploy it with the same keystore account used for the suite, then deploy the two additive Operator contracts:
@@ -126,9 +125,33 @@ cast send $MON_USD_FEED "setAnswer(int256)" 33300000 \
 Use DEVICE 07's `ACTIVATE` button, or send `activate()` permissionlessly from a test account. After the receipt, Monad Hardware, the Operator tab and Kernel Debugger `event` command must all show the same permanent activation block. Reload the app and verify the state remains activated.
 
 For Operator Record, use several real test actions, open **My Pass → Operator**, press `RECORD`, then confirm a second `RECORD` changes only `lastRecordBlock` and emits no `OperatorRecorded` event when no new subsystem or season was added. Kernel Debugger `operator <address>` must show the same OPR1 header as `eth_getStorageAt` for W0.
-````
+### 3e. Router lab
+
+Deploy the read-only router lab after Operator. Off mainnet the script deploys its own mock wrapped-native token, mock USD token, diagnostic venue set and `router-mock-venues` directory by default:
+
+```bash
+PAINT_ADDRESS=$PAINT_ADDRESS DEPLOY_MOCK_VENUES=true \
+forge script script/DeployRouterLab.s.sol:DeployRouterLab \
+  --rpc-url $RPC --account r3tards-deployer --broadcast --slow
+```
+
+Save the `R3tardsRouterLab` address and experiment id. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe. On mainnet, run the same script without mock venues; ROUTER.EXE uses its pinned mainnet adapter manifest and verifies runtime-code hashes through RPC reads.
+
+Browser-check ROUTER.EXE on testnet with the mock directory. One RUN must show each mock's exact status while the gas-burning venue does not hide later rows. Enable the STATICCALL probe and confirm the stateful mock reports `STATIC FAILED` while its normal quote remains `OK`. QUOTE SCOPE must show the under-delivering mock's quoted/delivered delta and leave no persistent balances or approvals. Kernel Debugger `venues`, `route` and `quote` must use the same directory. Monad Hardware must show the MRC-17 DRAFT router row and the transaction-forwarding research section.
+
+ROUTER.EXE should produce zero idle polling with Auto disabled. A normal RUN is one block-number read plus one lab `eth_call`; the optional Monoper and QUOTE SCOPE checks are separate calls. Token metadata and adapter code are session-cached.
+
 
 ## 4. Chain checks (paste the output to Claude)
+
+Run the read-only Launch Doctor against the deployment. It never signs or sends anything and never prints the RPC URL:
+
+```bash
+npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER
+npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --json > launch-doctor-testnet.json
+```
+
+`FAIL` must be 0 before the soak starts. Review every `WARN` and `UNKNOWN`; the canonical list of what still needs real-chain proof is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md). The two raw checks below are also covered by the doctor:
 
 ```bash
 cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url $RPC | head -c 20   # EIP-2935 history: 0x… = present
@@ -162,21 +185,6 @@ Leave the other `VITE_*_ADDRESS` overrides blank: the app finds every Lab throug
 - About 4 hours after the deploy, season 1 ends: mint its finale from My Frames (you hold #0), list it in the Auction, and have testers bid.
 - Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks (about 24 hours).
 - Watch the browser console in dev (`npm run dev` with the same env) for `[r3os rpc / 10s]`: an idle desktop should stay around 1 call/s with the websocket on.
+- Open **Start → Monad Hardware → DXDIAG.EXE** on each tester device and use **Copy Report** when something looks wrong; it contains no RPC URL and no wallet.
+- **Start → Run…** with `forks` must still show "not installed yet" when `VITE_REVEAL_ALL` is off and the release date is in the future.
 
-````markdown
-### 3e. Router lab
-
-Deploy the read-only router lab after Operator. Off mainnet the script deploys its own mock wrapped-native token, mock USD token, diagnostic venue set and `router-mock-venues` directory by default:
-
-```bash
-PAINT_ADDRESS=$PAINT_ADDRESS DEPLOY_MOCK_VENUES=true \
-forge script script/DeployRouterLab.s.sol:DeployRouterLab \
-  --rpc-url $RPC --account r3tards-deployer --broadcast --slow
-```
-
-Save the `R3tardsRouterLab` address and experiment id. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe. On mainnet, run the same script without mock venues; ROUTER.EXE uses its pinned mainnet adapter manifest and verifies runtime-code hashes through RPC reads.
-
-Browser-check ROUTER.EXE on testnet with the mock directory. One RUN must show each mock's exact status while the gas-burning venue does not hide later rows. Enable the STATICCALL probe and confirm the stateful mock reports `STATIC FAILED` while its normal quote remains `OK`. QUOTE SCOPE must show the under-delivering mock's quoted/delivered delta and leave no persistent balances or approvals. Kernel Debugger `venues`, `route` and `quote` must use the same directory. Monad Hardware must show the MRC-17 DRAFT router row and the transaction-forwarding research section.
-
-ROUTER.EXE should produce zero idle polling with Auto disabled. A normal RUN is one block-number read plus one lab `eth_call`; the optional Monoper and QUOTE SCOPE checks are separate calls. Token metadata and adapter code are session-cached.
-````

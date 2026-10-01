@@ -60,6 +60,15 @@ Its generative onchain `r3 pass` image and metadata derive live art/stamps from 
 
 The Pass owner can append view-only `IStampSource` contracts for future Lab badges. These sources are presentation-only, are gas-capped when read, and grant no Paint or Pass permissions.
 
+**Visual pins are scarce.** `PassArt.MAX_PINS` is 16 and only pins below it are drawn. The six built-ins take pins 0–5 and stamp source *i* takes pin `6 + i`. The deployment adds seven Lab sources (Flipbook, Weeds, Forks, Brushes, Quests, Sleepwalker, Recycle Bin) and CARD.DRV adds an eighth, so **14 of 16 visual pins are used and 2 remain**. Policy:
+
+- pins 14 and 15 are deliberately **reserved**; no generic experiment gets a visual pin by default;
+- ROUTER and DXDIAG get no pin;
+- `addStampSource` still accepts further sources, but once the visual capacity is used they become **metadata-only** (the stamp appears in the token's attributes, not in the art). Metadata-only sources are allowed when justified;
+- assigning either reserved visual pin requires an explicit, documented design decision.
+
+The Launch Doctor reports the live count (built-ins, external sources, pins used and remaining, metadata-only overflow).
+
 ### Experimental renderers
 
 - `DiffRenderer`: highlights changed pixels relative to the previous frame record in the same season. The first frame diffs against that season's genesis state; a finale diffs against the last regular frame.
@@ -298,6 +307,10 @@ Useful read APIs include:
 
 `regionBlankMask` is deliberately view-only and exists so later Lab contracts such as independent region-local cellular automata can read where births are allowed without the immutable core ever calling those experiments.
 
+**Registry launch policy: intentionally unfrozen.** `freezeExperiments()` exists, and no deployment script calls it. At initial launch the experiment registry is **left open on purpose**: it is a discovery/display registry, not a Paint permission boundary (see above), and future Monad-native peripherals need to be discoverable through the same architecture. The trade-off is explicit: the Paint owner (the Safe) keeps the ability to append and retire entries. The Launch Doctor reports `EXPERIMENTS · NOT FROZEN · policy INTENTIONAL` rather than a failure, and changing this policy requires a deliberate, documented decision. Renderer freezing is a separate decision, reviewed after full verification.
+
+**Discovery scale.** `src/chain/contracts.ts` reads `experimentCount()` and then every `experimentInfo(i)` once per session and caches the result. At today's 16–17 entries that is cheap. If the registry ever grows significantly, discovery may need pagination, batching or an index in a future phase; nothing needs to change now.
+
 ### Monad hardware experiments
 
 Phase MONAD-HW adds three removable contracts and four r3tardOS programs without changing the existing core: `PAGE.EXE` (`page-exe`), `Block Camera` (`block-camera`), `Kernel Debugger` (`kernel-debugger`) and the read-only `Monad Hardware` Device Manager. Block Camera mints through the existing `R3tardsLabs`; PAGE.EXE and Kernel Debugger are standalone registry-discovered experiments.
@@ -322,13 +335,19 @@ My Pass exposes the address's record under the **Operator** tab. Monad Hardware 
 
 Burned CDs open in a Windows 98 CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](docs/specs/CDROM.md).
 
-````markdown
 ### ROUTER.EXE
 
 Phase ROUTER adds `R3tardsRouterLab` (`router-lab`), a stateless read-only MRC-17 routing laboratory. One `eth_call` compares up to eight configured adapters against the same block state; every quote executes through an ordinary gas-capped child `CALL` that deliberately reverts so quote-side state cannot persist. ROUTER.EXE reports raw output, gas, bounded revert diagnostics, opaque quote-data metadata and an optional STATICCALL probe, then labels only the **HIGHEST QUOTED OUTPUT**.
 
 The lab has no owner, storage, custody, fees or persistent execution path. Its WMON-only QUOTE SCOPE can preview an immediate adapter execution using temporary `eth_call` value, but the deposit, approval, adapter call and output all live inside frames that always revert. Mainnet venue addresses and runtime-code hashes come from the pinned Monoper deployment manifest; local/testnet uses mock venues. MRC-17 is a draft, and the adapters are third-party integration code under active development. See [`docs/specs/ROUTER_EXE.md`](docs/specs/ROUTER_EXE.md).
-````
+
+### Launch tooling: Launch Doctor, DXDIAG.EXE, Run…
+
+- **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x…> [--expected-owner <0x…>] [--json]`) is a read-only Node CLI for the deployer. It verifies ownership and pending owners, immutable wiring, the experiment and renderer registries, Pass pin capacity, CARD.DRV, Block Camera links, every Operator Record source pointer, the System Event feed, ROUTER adapter code hashes on mainnet, the release schedule and freeze readiness. Every check is `OK`, `WARN`, `FAIL` or `UNKNOWN`; the exit code is 1 only when something `FAIL`s. It never signs, never sends a transaction and never prints the RPC URL.
+- **DXDIAG.EXE** (Start → Monad Hardware) shows what this browser is connected to and which r3tardOS components it can see, reads once on open (Refresh to re-read) and copies a plain-text support report without RPC URLs or wallet data.
+- **Run…** (Start menu) opens allowlisted programs and a few typed routes (`operator`, `card <id>`, `frame <id>`, `auction <id>`) through the same release-aware path as every icon. It is not a shell: no URLs, no `javascript:`, no arbitrary hashes.
+
+The canonical launch list is [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md).
 
 ## Palette
 
@@ -445,9 +464,9 @@ After deployment, verify token #0 ownership, immutable royalty receivers and eve
 
 `R3tardsLabs` and the Painter Pass expose ERC-7572 `contractURI()` metadata and owner-controlled external links. Labs royalties are fixed at 5% to `ROYALTY_RECEIVER`; the soulbound Pass reports 0%.
 
-## Phase 5 testnet checklist
+## Testnet and mainnet checklist
 
-Step-by-step deploy commands and the testnet Vercel environment are in [`docs/TESTNET_DEPLOY.md`](docs/TESTNET_DEPLOY.md).
+Step-by-step deploy commands and the testnet Vercel environment are in [`docs/TESTNET_DEPLOY.md`](docs/TESTNET_DEPLOY.md). The single canonical launch list, including freeze policy, Pass capacity and every check that still needs real Monad data, is [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md). The items below are the original contract-level reminders it expands:
 
 Before mainnet:
 
@@ -456,7 +475,7 @@ Before mainnet:
 - verify `block.coinbase` semantics for the validator seal;
 - re-measure all gas policies in `docs/specs/GAS_LIMITS.md`, including Sleepwalker painted/skipped/completing steps;
 - verify the mainnet `ROYALTY_RECEIVER`, `FINAL_OWNER` and `TOKEN_ZERO_RECIPIENT` values before broadcasting, then verify every `pendingOwner` before each Safe `acceptOwnership()`;
-- run the full browser/testnet soak and re-check every registry address before `freezeRenderers()` / `freezeExperiments()` are used.
+- run the full browser/testnet soak and re-check every registry address before `freezeRenderers()` is used. The experiment registry is intentionally **left unfrozen** at initial launch (see the checklist's freeze policy).
 
 ### Public-RPC launch checks
 
@@ -478,7 +497,13 @@ Before mainnet:
 - **5:** docs + testnet soak
 - **day 1:** launch the verified canvas, Labs and showcase together
 
-Later UI work includes block cinema, the 200 BPM Monad heartbeat, validator map, storm UX, the quest board, candle-auction listing/bidding/settlement, Flipbook editor/player, the Lab-aware Lanes visualization, Weeds controls, Fork lineage/editor controls, Block DNA, and the Sleepwalker Tonight/Morning/Night Shift window described in `docs/specs/SLEEPWALKER.md`.
+Everything in the original "later UI work" list has shipped (heartbeat, validator map, storm UX, quest board, candle auction, Flipbook editor/player, Lab-aware Lanes, Weeds, Forks, Block DNA, Sleepwalker). After this phase comes **testnet → soak → mainnet pre-flight → launch**, not another feature phase.
+
+### Post-launch ideas (undefined, not scheduled)
+
+- **CARD BUS:** CARD.DRV words W24–W27 stay reserved by spec; nothing reads or writes them yet.
+- **DEVICE 07 next stage:** intentionally unknown.
+- **Block Cinema:** concept only, POST-LAUNCH / UNDEFINED.
 
 ## Frontend: r3tardOS 98
 
