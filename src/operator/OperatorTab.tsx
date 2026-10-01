@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { decodeEventLog } from 'viem'
-import { useOperatorRecord, recordRows, SUBSYSTEMS } from '../chain/operatorRecord'
+import { useOperatorRecord, recordRows, visibleSubsystems } from '../chain/operatorRecord'
 import { useSystemEvent } from '../chain/systemEvent'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
@@ -87,7 +87,8 @@ export function OperatorTab() {
         }
       }
 
-      const added = SUBSYSTEMS.filter((subsystem) => (addedMask & (1n << BigInt(subsystem.id))) !== 0n)
+      const added = visibleSubsystems()
+        .filter((subsystem) => (addedMask & (1n << BigInt(subsystem.id))) !== 0n)
         .map((subsystem) => subsystem.label)
         .join(', ')
       if (!added && !seasonAdded) {
@@ -127,7 +128,7 @@ export function OperatorTab() {
             </div>
 
             <TreeView label={OPERATOR_COPY.subsystems}>
-              {SUBSYSTEMS.map((subsystem) => {
+              {visibleSubsystems().map((subsystem) => {
                 const answered = (operator.facts!.answeredMask & (1n << BigInt(subsystem.id))) !== 0n
                 const used = answered ? subsystem.used(operator.facts!) : undefined
                 const observed = operator.record!.firstObserved[subsystem.id] ?? 0n

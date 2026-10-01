@@ -11,6 +11,8 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x�
 - The experiment registry is intentionally **not frozen** at initial launch (discovery headroom).
 - CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. ROUTER.EXE stays diagnostic.
 
+- **Retired from the interface (2026-10-01):** Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger, ROUTER.EXE (`src/os/retired.ts`). Their contracts are still deployed unchanged; the app hides them and their quests, Pass stamps and Operator subsystems. CARD.DRV stays deployed (MONAD CARD stamp, CARD CARRIER quest, Block Camera).
+
 ## F1. Deployment
 
 - [ ] Suite: `Deploy.s.sol` (Paint, Labs, Pass, renderers, nine Labs, quests).
@@ -91,7 +93,7 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 
 ## F11. Release schedule
 
-- [ ] `public/releases.json` dates are intentional (currently `forks` 2026-11-08, `brushes` 2026-11-15); the Launch Doctor WARNs on dates already in the past and FAILs on unknown ids or malformed dates.
+- [ ] `public/releases.json` dates are intentional (currently empty: Forks and Block DNA were retired from the interface on 2026-10-01, see `src/os/retired.ts`); the Launch Doctor WARNs on dates already in the past and FAILs on unknown ids or malformed dates.
 - [ ] `VITE_REVEAL_ALL` is set **only** on testnet / preview; unset on mainnet.
 
 ## F12. Public RPC soak
@@ -110,7 +112,7 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 ## F14. Browser / device
 
 - [ ] Desktop and narrow/mobile layout; reload; deep links (`#/…`).
-- [ ] Start → Run… commands, including that an unreleased program still says "not installed yet".
+- [ ] Start → Run… commands; retired programs (`flipbook`, `router`, `kernel`, `card 1`, …) say "cannot find" and their deep links open nothing.
 - [ ] DXDIAG.EXE report copies cleanly (no RPC URL, no wallet) and shows the deployed `VITE_BUILD_ID` (public; set it per deploy, e.g. the snapshot or commit you deployed).
 - [ ] Program release gating with reveal-all off.
 

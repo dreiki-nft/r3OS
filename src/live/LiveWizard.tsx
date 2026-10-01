@@ -419,7 +419,7 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                   <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
                     formatEther(balance),
                   ).toFixed(2)} MON
-paints canvas, flipbook and forks as ${short(wallet.account)}
+paints the canvas as ${short(wallet.account)}
 expires block ${message?.expiryBlock.toString() ?? '—'} (about ${selectedLength?.label ?? '—'})
 allowance ${allowance.toLocaleString()} units`}</pre>
                   {busy && <p>registering the burner…</p>}
@@ -433,7 +433,7 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                   <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
                     formatEther(balance),
                   ).toFixed(2)} MON
-paints canvas, flipbook and forks as ${short(wallet.account)}
+paints the canvas as ${short(wallet.account)}
 expires block ${message?.expiryBlock.toString() ?? '—'} (about ${selectedLength?.label ?? '—'})
 allowance ${allowance.toLocaleString()} units`}</pre>
                 </>

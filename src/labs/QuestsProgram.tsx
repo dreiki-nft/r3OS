@@ -19,6 +19,7 @@ import { errorText, labAddress, shortAddress } from './labCommon'
 import { mapQuestProgress, questLockedByHiddenLab, type QuestProgressState } from './quests'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { useRefreshTick } from '../chain/refreshTick'
+import { questIsRetired, retiredAddresses } from '../os/retired'
 
 const RULES = [
   'each quest reads a number straight from a contract: pixels painted, frames saved, storm paints, and so on.',
@@ -118,6 +119,8 @@ export function QuestsProgram() {
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const [labTargets, setLabTargets] = useState<Record<string, string>>({})
   const [labTargetsReady, setLabTargetsReady] = useState(false)
+  // Quests that read a retired Lab are not shown, counted or claimable here (their contracts are untouched).
+  const [retiredTargets, setRetiredTargets] = useState<ReadonlySet<string>>(new Set())
   const [address, setAddress] = useState<Address>()
   const [missing, setMissing] = useState(false)
   const [defs, setDefs] = useState<QuestDef[]>([])
@@ -144,6 +147,7 @@ export function QuestsProgram() {
           if (target) targets[target.toLowerCase()] = programId
         }
         setLabTargets(targets)
+        setRetiredTargets(retiredAddresses(contracts.labs))
         setLabTargetsReady(true)
       })
       .catch(() => undefined)
@@ -317,8 +321,10 @@ export function QuestsProgram() {
   const locked = (quest: QuestDef) =>
     !labTargetsReady ||
     questLockedByHiddenLab(quest.conditions, labTargets, (id) => !isProgramAvailable(id, releases))
+  const retired = (quest: QuestDef) => questIsRetired(quest.conditions, retiredTargets)
+  const visibleCount = labTargetsReady ? defs.filter((quest) => !retired(quest)).length : defs.length
   const claimableIds = defs
-    .filter((quest) => !locked(quest) && Boolean(claimableMask & (1n << BigInt(quest.id))))
+    .filter((quest) => !retired(quest) && !locked(quest) && Boolean(claimableMask & (1n << BigInt(quest.id))))
     .map((quest) => quest.id)
   const chosenDef = defs[selected]
   const chosenProgress = progress[selected]
@@ -343,7 +349,7 @@ export function QuestsProgram() {
           <span className="badge-placeholder" />
           <div>
             <b>
-              {completedCount.toString()} of {defs.length} badges
+              {completedCount.toString()} of {visibleCount} badges
             </b>
             <small>
               your Pass shows QUESTS {completedCount.toString()} · badges are bragging rights, they grant
@@ -358,6 +364,7 @@ export function QuestsProgram() {
       <div className="quests-main">
         <section className="quest-list sunken">
           {defs.map((quest, index) => {
+            if (retired(quest)) return null
             const row = progress[index]
             const isLocked = locked(quest)
             const claimed = Boolean(completedMask & (1n << BigInt(quest.id)))
@@ -432,6 +439,7 @@ export function QuestsProgram() {
           <GroupBox title="Trophy case">
             <div className="trophy-grid">
               {defs.map((quest) => {
+                if (retired(quest)) return null
                 const isLocked = locked(quest)
                 const claimed = Boolean(completedMask & (1n << BigInt(quest.id)))
                 const ready = Boolean(claimableMask & (1n << BigInt(quest.id)))
@@ -533,7 +541,7 @@ export function QuestsProgram() {
       <footer className="lab-status">
         <span>
           {message ||
-            `${defs.length} quests · conditions and progress read directly from their onchain targets`}
+            `${visibleCount} quests · conditions and progress read directly from their onchain targets`}
         </span>
         <span>{wallet.account ? shortAddress(wallet.account) : 'wallet disconnected'}</span>
         <span>#{block.block.toString()}</span>

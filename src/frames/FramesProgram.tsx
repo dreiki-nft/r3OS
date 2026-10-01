@@ -685,14 +685,6 @@ export function FramesProgram() {
       action: () => openProps('Renderer', 'season timelapse'),
     },
     {
-      label: 'Fork',
-      icon: 'tree' as const,
-      colour: '#9F70DA',
-      enabled: selected != null && selected > 0,
-      reason: 'select a saved frame',
-      action: () => openProgram('forks', true, `#/forks?frame=${selected}`),
-    },
-    {
       label: 'Restore',
       icon: 'brush' as const,
       enabled: filter === 'Hidden' && selected != null && frames.flagged.has(selected),
@@ -947,7 +939,7 @@ export function FramesProgram() {
                   >
                     <Icon name="star" size={36} colour="#5FEDDF" />
                     <b>Labs</b>
-                    <small>reels · forks · dreams · CDs</small>
+                    <small>CDs · block portraits</small>
                   </button>
                 )}
                 {filter === 'Mine' && mineIds.includes(0) && (
@@ -1067,17 +1059,6 @@ export function FramesProgram() {
                 </div>
               </div>
               <hr />
-              <button
-                role="menuitem"
-                disabled={!savedFrame}
-                title={!savedFrame ? 'select a saved frame' : 'fork this frame'}
-                onClick={() => {
-                  openProgram('forks', true, `#/forks?frame=${tokenId}`)
-                  setContextMenu(undefined)
-                }}
-              >
-                Fork this…
-              </button>
               <button
                 role="menuitem"
                 disabled={!savedFrame || !info?.finale || !ownsSelected}

@@ -6,7 +6,6 @@ import {
   formatReport,
   normalizeBuildId,
   redactReport,
-  summarizeCodeHashes,
   type DxDiagInput,
 } from './diagnostics'
 
@@ -27,8 +26,8 @@ function input(overrides: Partial<DxDiagInput> = {}): DxDiagInput {
     },
     drivers: [
       {
-        key: 'page-exe',
-        label: 'PAGE.EXE',
+        key: 'block-camera',
+        label: 'Block Camera',
         state: 'installed',
         source: 'onchain',
         address: '0x0000000000000000000000000000000000002000',
@@ -36,12 +35,6 @@ function input(overrides: Partial<DxDiagInput> = {}): DxDiagInput {
       { key: 'card-drv', label: 'CARD.DRV', state: 'not installed', source: 'onchain' },
     ],
     hardware: { staking: 'present', reserve: 'present', history: 'present', p256: 'present' },
-    router: {
-      revision: '6e4f8633',
-      context: 'mainnet manifest',
-      venues: 14,
-      hashes: { match: 13, differs: 1, 'no-code': 0, unknown: 0 },
-    },
     systemEvent: 'armed',
     card: { driver: 'not installed', context: 'unknown' },
     ...overrides,
@@ -64,12 +57,9 @@ describe('DXDIAG report model', () => {
     expect(a).toContain('block: 109483102')
     expect(a).toContain('block mode: live (websocket)')
     expect(a).toContain('multicall: present')
-    expect(a).toContain('page.exe: installed')
+    expect(a).toContain('block camera: installed')
     expect(a).toContain('card.drv: not installed')
-    expect(a).toContain('MRC-17 DRAFT: 6e4f8633')
-    expect(a).toContain('venues configured: 14 (mainnet manifest)')
-    expect(a).toContain('code hash matches: 13')
-    expect(a).toContain('code differs: 1')
+    expect(a).not.toContain('ROUTER')
   })
 
   it('reports offline / polling honestly and omits production rpc stats', () => {
@@ -85,16 +75,10 @@ describe('DXDIAG report model', () => {
     expect(dev).toContain('rpc calls (dev): 5 in the current 10 s window')
   })
 
-  it('handles missing contracts and mock router context', () => {
+  it('handles missing contracts', () => {
     const report = formatReport(
       input({
         contracts: {},
-        router: {
-          revision: '6e4f8633',
-          context: 'mock directory',
-          venues: 8,
-          hashes: summarizeCodeHashes([]),
-        },
         rpc: { httpEndpoints: 1, wsConfigured: false, multicallConfigured: false },
       }),
     )
@@ -103,26 +87,7 @@ describe('DXDIAG report model', () => {
     expect(report).toContain('renderers frozen: unknown')
     expect(report).toContain('ws configured: no')
     expect(report).toContain('multicall: not configured')
-    expect(report).toContain('code hashes: not pinned (mock venues)')
-  })
-
-  it('keeps unknown router state unknown when the RPC is unreachable', () => {
-    const report = formatReport(
-      input({
-        router: { revision: '6e4f8633', context: 'unknown', venues: 0, hashes: summarizeCodeHashes([]) },
-      }),
-    )
-    expect(report).toContain('venues configured: unknown')
-    expect(report).not.toContain('venues configured: 0')
-  })
-
-  it('summarizes adapter code hashes', () => {
-    expect(summarizeCodeHashes(['match', 'match', 'differs', 'no-code', 'unknown'])).toEqual({
-      match: 2,
-      differs: 1,
-      'no-code': 1,
-      unknown: 1,
-    })
+    expect(report).not.toContain('ROUTER')
   })
 
   it('labels every System Event state', () => {

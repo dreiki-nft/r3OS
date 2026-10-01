@@ -7,6 +7,7 @@ import { readHeavy, readMany } from '../chain/readMany'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
+import { isRetiredProgram } from '../os/retired'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -14,7 +15,7 @@ import { SafeImage } from '../os/ui/SafeImage'
 import { decodeLabsTokenUri, readLabsToken, type LabsTokenData } from '../labs/labsToken'
 
 export type LabsOwnedToken = { id: bigint; data?: LabsTokenData }
-export type LabsFilter = 'All' | 'Reels' | 'Forks' | 'Dreams' | 'CDs'
+export type LabsFilter = 'All' | 'Reels' | 'Forks' | 'Dreams' | 'CDs' | 'Portraits'
 
 function same(a?: string, b?: string) {
   return Boolean(a && b && a.toLowerCase() === b.toLowerCase())
@@ -100,6 +101,7 @@ export function labsBucket(data?: LabsTokenData) {
   if (type.includes('fork')) return 'Forks'
   if (type.includes('dream')) return 'Dreams'
   if (type === 'cd' || type.includes('cd')) return 'CDs'
+  if (type.includes('portrait')) return 'Portraits'
   return 'All'
 }
 
@@ -177,7 +179,9 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
   const targetLab = labFor(chosen?.data)
   const hasWindow =
     targetLab === 'flipbook' || targetLab === 'forks' || targetLab === 'sleepwalker' || targetLab === 'cd'
-  const available = Boolean(targetLab && hasWindow && isProgramAvailable(targetLab, releases))
+  const available = Boolean(
+    targetLab && hasWindow && !isRetiredProgram(targetLab) && isProgramAvailable(targetLab, releases),
+  )
 
   return (
     <div className="labs-folder-view">
@@ -185,7 +189,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
         <Button onClick={onExit}>↑ My Frames</Button>
         <b>Labs</b>
         <div className="labs-type-filter">
-          {(['All', 'Reels', 'Forks', 'Dreams', 'CDs'] as LabsFilter[]).map((item) => (
+          {(['All', 'CDs', 'Portraits'] as LabsFilter[]).map((item) => (
             <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>
               {item}
             </button>
@@ -266,7 +270,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
       )}
       <footer className="labs-folder-status">
         <span>{message || `${shown.length} object${shown.length === 1 ? '' : 's'}`}</span>
-        <span>reels · forks · dreams · CDs</span>
+        <span>CDs · block portraits</span>
       </footer>
     </div>
   )

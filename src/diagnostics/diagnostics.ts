@@ -10,7 +10,6 @@ import type { HardwareSource } from '../chain/monadHardware'
 export type DriverState = 'installed' | 'not installed' | 'unknown'
 export type DeviceState = 'present' | 'absent' | 'unknown'
 export type EventState = 'no-driver' | 'armed' | 'condition-met' | 'activated' | 'unknown'
-export type CodeHashSummaryState = 'match' | 'differs' | 'no-code' | 'unknown'
 
 export interface DriverRow {
   key: string
@@ -51,12 +50,6 @@ export interface DxDiagInput {
     p256: DeviceState
     romContracts?: number
   }
-  router: {
-    revision: string
-    context: 'mainnet manifest' | 'mock directory' | 'none' | 'unknown'
-    venues: number
-    hashes: Record<CodeHashSummaryState, number>
-  }
   systemEvent: EventState
   card: { driver: DriverState; context: 'official' | 'mock' | 'unknown' }
 }
@@ -78,12 +71,6 @@ export function driverState(address: string | undefined, hasCode: boolean | unde
   if (hasCode === true) return 'installed'
   if (hasCode === false) return 'not installed'
   return 'unknown'
-}
-
-export function summarizeCodeHashes(states: readonly CodeHashSummaryState[]) {
-  const out: Record<CodeHashSummaryState, number> = { match: 0, differs: 0, 'no-code': 0, unknown: 0 }
-  for (const state of states) out[state]++
-  return out
 }
 
 export function eventLabel(state: EventState) {
@@ -164,20 +151,5 @@ export function formatReport(input: DxDiagInput, secrets: readonly string[] = []
     'card',
     `${input.card.driver}${input.card.context === 'unknown' ? '' : ` · ${input.card.context} card`}`,
   )
-  lines.push('')
-  lines.push('ROUTER')
-  row('MRC-17 DRAFT', input.router.revision)
-  row(
-    'venues configured',
-    input.router.context === 'unknown'
-      ? 'unknown'
-      : `${input.router.venues}${input.router.context === 'none' ? '' : ` (${input.router.context})`}`,
-  )
-  if (input.router.context === 'mainnet manifest') {
-    row('code hash matches', input.router.hashes.match)
-    row('code differs', input.router.hashes.differs)
-    row('no code', input.router.hashes['no-code'])
-    if (input.router.hashes.unknown) row('hash unknown', input.router.hashes.unknown)
-  } else if (input.router.context === 'mock directory') row('code hashes', 'not pinned (mock venues)')
   return redactReport(lines.join('\n'), secrets)
 }

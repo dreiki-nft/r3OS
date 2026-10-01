@@ -37,7 +37,6 @@ const tools: ToolEntry[] = [
   { id: 'ellipse', label: 'Ellipse', shape: 'ellipse' },
   { id: 'eraser', label: 'Eraser', icon: 'eraser' },
   { id: 'zoom', label: 'Zoom', icon: 'zoom' },
-  { id: 'dna', label: 'Block DNA stamp', icon: 'dna', disabled: true },
 ]
 
 export function Toolbox({

@@ -186,7 +186,7 @@ Leave the other `VITE_*_ADDRESS` overrides blank: the app finds every Lab throug
 - Paint, Flipbook (240K fixed), fork paint (250K fixed) and Sleepwalker steps (1M fixed) all confirm. Any out-of-gas revert: send Claude the tx hash.
 - Sleep a dream overnight with a tip; crank from a second wallet in Night Shift; mint it in the morning.
 - About 4 hours after the deploy, season 1 ends: mint its finale from My Frames (you hold #0), list it in the Auction, and have testers bid.
-- Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks (about 32 hours at ~400 ms blocks).
+- Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks: about 23 hours at the 0.29 s block time measured on testnet (2026-10-01), about 32 hours at 0.4 s.
 - Watch the browser console in dev (`npm run dev` with the same env) for `[r3os rpc / 10s]`: an idle desktop should stay around 1 call/s with the websocket on.
 - Open **Start → Monad Hardware → DXDIAG.EXE** on each tester device and use **Copy Report** when something looks wrong; it contains no RPC URL and no wallet.
 - **Start → Run…** with `forks` must still show "not installed yet" when `VITE_REVEAL_ALL` is off and the release date is in the future.

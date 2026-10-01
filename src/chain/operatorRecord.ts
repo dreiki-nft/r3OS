@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { RETIRED_SUBSYSTEMS } from '../os/retired'
 import { type Address } from 'viem'
 import { R3TARDS_OPERATOR_RECORD_ABI } from '../lib/generated/abi'
 import { discoverContracts, readCoreConstants } from './contracts'
@@ -231,6 +232,16 @@ function normalizeRecord(value: any, firstSeenBlock: bigint): OperatorRecordData
   }
 }
 
+/** Drops subsystems whose only interface was a retired program (src/os/retired.ts) before counting. */
+export function visibleSubsystemMask(mask: bigint) {
+  let out = mask
+  for (const id of RETIRED_SUBSYSTEMS) out &= ~(1n << BigInt(id))
+  return out
+}
+
+/** Subsystems shown in the app: every Operator Record v1 subsystem except the retired ones. */
+export const visibleSubsystems = () => SUBSYSTEMS.filter((subsystem) => !RETIRED_SUBSYSTEMS.has(subsystem.id))
+
 export function subsystemCount(mask: bigint) {
   let value = mask & ~(1n << 15n)
   let count = 0
@@ -380,7 +391,9 @@ export function recordRows(
     },
     {
       label: OPERATOR_COPY.rows.subsystemsUsed,
-      value: usageAnswered ? subsystemCount(liveMask).toString() : OPERATOR_COPY.unknown,
+      value: usageAnswered
+        ? subsystemCount(visibleSubsystemMask(liveMask)).toString()
+        : OPERATOR_COPY.unknown,
       source: usageAnswered ? 'DERIVED' : 'UNKNOWN',
     },
     {
@@ -392,26 +405,6 @@ export function recordRows(
             ? OPERATOR_COPY.present
             : OPERATOR_COPY.notUsed,
       source: sourceFor(facts, 15),
-    },
-    {
-      label: SUBSYSTEM_LABELS[14],
-      value:
-        sourceFor(facts, 14) === 'UNKNOWN'
-          ? OPERATOR_COPY.unknown
-          : facts.cardFound && facts.cardFormatted
-            ? `${OPERATOR_COPY.initialized} · ${facts.cardWrites} ${OPERATOR_COPY.writes}`
-            : OPERATOR_COPY.notUsed,
-      source: sourceFor(facts, 14),
-    },
-    {
-      label: SUBSYSTEM_LABELS[13],
-      value:
-        sourceFor(facts, 13) === 'UNKNOWN'
-          ? OPERATOR_COPY.unknown
-          : facts.pageNonEmpty
-            ? OPERATOR_COPY.usedUpper
-            : OPERATOR_COPY.notUsed,
-      source: sourceFor(facts, 13),
     },
     {
       label: SUBSYSTEM_LABELS[11],

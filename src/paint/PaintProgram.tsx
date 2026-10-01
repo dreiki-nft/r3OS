@@ -848,25 +848,6 @@ export function PaintProgram() {
           action: () => void paintChunks(true),
         },
         {
-          label: 'Dream this…',
-          disabled: patch.pixelWrites === 0 || patch.pixelWrites > 4_096,
-          disabledReason:
-            patch.pixelWrites === 0
-              ? 'draw something first'
-              : patch.pixelWrites > 4_096
-                ? 'dream stencils are capped at 4,096 px'
-                : undefined,
-          action: () => {
-            const draft = setSleepwalkerDraft({
-              runs: patch.hex,
-              pixels: patch.pixelWrites,
-              holderIds: stableHolderIds,
-              onSubmitted: clearPending,
-            })
-            openProgram('sleepwalker', true, `#/sleepwalker?tab=tonight&draft=${draft.version}`)
-          },
-        },
-        {
           label: `Auto-paint strokes ${autoPaint ? '✓' : ''}`,
           disabled: !isLive,
           disabledReason: 'live mode only',

@@ -14,8 +14,6 @@ import { GroupBox } from '../os/ui/GroupBox'
 import { HardwareBus, type HardwareDevice } from '../os/ui/HardwareBus'
 import { R3TARDS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
 import { DEVICE07_COPY } from '../operator/copy'
-import { FORWARDING_COPY } from '../router/copy'
-import { loadRouterEnvironment, type RouterEnvironment } from '../router/routerLab'
 import { IntroBar } from '../os/ui/IntroBar'
 import './monadhw.css'
 
@@ -94,7 +92,7 @@ function cardStatusText(card: ReturnType<typeof useMonadCard>) {
   if (card.status === 'present' && card.cardInfo?.exists) return 'This device is working properly.'
   if (card.status === 'no-driver') return 'The driver for this device is not installed.'
   if (card.status === 'empty' || card.status === 'no-wallet') return 'No card in this slot.'
-  if (card.status === 'unknown-id') return 'Card number unknown. Run CARDMEM.EXE to identify it.'
+  if (card.status === 'unknown-id') return 'Card detected; its number is not indexed yet.'
   return 'Card state unavailable.'
 }
 
@@ -109,19 +107,6 @@ export function MonadHardwareProgram() {
   const [activationQuote, setActivationQuote] = useState<ActionQuote>()
   const [activationPending, setActivationPending] = useState(false)
   const [activationMessage, setActivationMessage] = useState('')
-  const [routerEnv, setRouterEnv] = useState<RouterEnvironment>()
-
-  useEffect(() => {
-    let cancelled = false
-    void loadRouterEnvironment()
-      .then((value) => {
-        if (!cancelled) setRouterEnv(value)
-      })
-      .catch(() => undefined)
-    return () => {
-      cancelled = true
-    }
-  }, [])
   useEffect(() => {
     const onHash = () => setFocus(focusFromHash())
     window.addEventListener('hashchange', onHash)
@@ -248,7 +233,7 @@ export function MonadHardwareProgram() {
         value:
           hw.storage.status === 'present'
             ? `${MONAD_HW_SPEC.storagePageBytes.value.toLocaleString()} bytes / ${MONAD_HW_SPEC.storagePageWords.value} words · cold ${cold ?? '—'} gas · warm ${warm ?? '—'} gas`
-            : `${MONAD_HW_SPEC.storagePageBytes.value.toLocaleString()} bytes / ${MONAD_HW_SPEC.storagePageWords.value} words · PAGE.EXE probe unavailable`,
+            : `${MONAD_HW_SPEC.storagePageBytes.value.toLocaleString()} bytes / ${MONAD_HW_SPEC.storagePageWords.value} words · storage probe unavailable`,
         source: hw.storage.status === 'present' ? 'measured + spec' : 'spec',
       },
       {
@@ -284,18 +269,6 @@ export function MonadHardwareProgram() {
       },
 
       {
-        key: 'router',
-        device: 'execution',
-        label: 'Execution router',
-        value: (
-          <>
-            MRC-17 DRAFT · router-lab {routerEnv?.lab ? 'present' : 'not installed'} ·{' '}
-            {routerEnv?.venues.length ?? 0} venues
-          </>
-        ),
-        source: ['spec', routerEnv?.lab ? 'onchain' : 'absent', 'config'],
-      },
-      {
         key: 'system-event',
         device: 'unknown',
         label: DEVICE07_COPY.eventRow,
@@ -317,18 +290,7 @@ export function MonadHardwareProgram() {
         source: card.status === 'present' ? 'onchain' : card.status === 'no-driver' ? 'absent' : 'unknown',
       },
     ]
-  }, [
-    hw,
-    block.blockTimeMs,
-    block.mode,
-    traces.version,
-    cold,
-    warm,
-    card,
-    measuredChainName,
-    systemEvent,
-    routerEnv,
-  ])
+  }, [hw, block.blockTimeMs, block.mode, traces.version, cold, warm, card, measuredChainName, systemEvent])
 
   const official = isOfficialCard(hw.chainId.value, card.cardAddress)
   const cardSources = cardPropertySources({
@@ -372,33 +334,6 @@ export function MonadHardwareProgram() {
               </div>
             ))}
           </div>
-        </GroupBox>
-
-        <GroupBox title={FORWARDING_COPY.title}>
-          <div className="hardware-device-list sunken">
-            <div className="hardware-device-row">
-              <b>{FORWARDING_COPY.globalLabel}</b>
-              <span>{FORWARDING_COPY.globalValue}</span>
-              <SourceBadge source="spec" />
-            </div>
-            <div className="hardware-device-row">
-              <b>{FORWARDING_COPY.forwardingLabel}</b>
-              <span>{FORWARDING_COPY.forwardingValue}</span>
-              <SourceBadge source="spec" />
-            </div>
-            <div className="hardware-device-row">
-              <b>{FORWARDING_COPY.seenLabel}</b>
-              <span>{FORWARDING_COPY.seenValue}</span>
-              <SourceBadge source="spec" />
-            </div>
-            <div className="hardware-device-row">
-              <b>{FORWARDING_COPY.measuredLabel}</b>
-              <span>{FORWARDING_COPY.measuredValue}</span>
-              <SourceBadge source="research" />
-            </div>
-          </div>
-          <p className="hw-note">{FORWARDING_COPY.sources}</p>
-          <p className="hw-note">{FORWARDING_COPY.footnote}</p>
         </GroupBox>
 
         <GroupBox title={`${DEVICE07_COPY.devicePrefix} ${DEVICE07_COPY.label} · Properties`}>
@@ -619,13 +554,11 @@ export function MonadHardwareProgram() {
           )}
         </GroupBox>
 
-        <GroupBox title="Drivers">
+        <GroupBox title="Programs">
           <div className="driver-list">
-            <Button onClick={() => openProgram('page-exe')}>PAGE.EXE · STORAGE</Button>
             <Button onClick={() => openProgram('block-camera')}>Block Camera · CONSENSUS</Button>
-            <Button onClick={() => openProgram('kernel-debugger')}>Kernel Debugger · EXECUTION</Button>
-            <Button onClick={() => openProgram('card-mem')}>CARDMEM.EXE · CARD</Button>
-            <Button onClick={() => openProgram('router')}>ROUTER.EXE · EXECUTION</Button>
+            <Button onClick={() => openProgram('xray')}>Monad X-ray · BLOCKS</Button>
+            <Button onClick={() => openProgram('dxdiag')}>DXDIAG.EXE · DIAGNOSTICS</Button>
           </div>
         </GroupBox>
 

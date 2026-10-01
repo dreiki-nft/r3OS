@@ -36,6 +36,7 @@ import { TreeView } from '../os/ui/TreeView'
 import { OperatorTab } from '../operator/OperatorTab'
 import { subscribeCanvasActivity } from '../paint/canvasStore'
 import { builtInStamps, loadLabStamps, type StampRow } from './stamps'
+import { retiredAddresses } from '../os/retired'
 
 const COLLECTION_ABI = parseAbi([
   'function tokenURI(uint256 tokenId) view returns (string)',
@@ -252,7 +253,13 @@ export function PassProgram() {
 
   useEffect(() => {
     if (tab !== 'Device Manager' || !passAddress || !wallet.account) return
-    void loadLabStamps(passAddress, wallet.account).then(setLabStamps)
+    // Stamps whose source is a retired Lab are not shown (they can't be earned from the interface).
+    void Promise.all([loadLabStamps(passAddress, wallet.account), discoverContracts()]).then(
+      ([rows, contracts]) => {
+        const retired = retiredAddresses(contracts.labs)
+        setLabStamps(rows.filter((row) => !row.source || !retired.has(row.source.toLowerCase())))
+      },
+    )
   }, [tab, passAddress, wallet.account])
 
   useEffect(() => {

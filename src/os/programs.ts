@@ -4,6 +4,7 @@ import { PassProgram } from '../pass/PassProgram'
 import type { IconName } from './icons'
 import { bottomRightWindowPosition, nextWindowPosition, openWindow } from './windows'
 import { getReleaseSnapshot, isProgramAvailable, markProgramOpened, type ReleaseSnapshot } from './releases'
+import { isRetiredProgram } from './retired'
 
 export type WindowControls = 'full' | 'min-close' | 'help-close' | 'close'
 
@@ -457,7 +458,7 @@ export const programs: ProgramDef[] = [
 export const programById = (id: string) => programs.find((program) => program.id === id)
 
 export function programIsVisible(program: ProgramDef, snapshot: ReleaseSnapshot = getReleaseSnapshot()) {
-  return !program.hidden && isProgramAvailable(program.id, snapshot)
+  return !program.hidden && !isRetiredProgram(program.id) && isProgramAvailable(program.id, snapshot)
 }
 
 export const visiblePrograms = (snapshot: ReleaseSnapshot = getReleaseSnapshot()) =>
@@ -465,7 +466,8 @@ export const visiblePrograms = (snapshot: ReleaseSnapshot = getReleaseSnapshot()
 
 export function openProgram(id: string, updateHash = true, hashOverride?: string) {
   const program = programById(id)
-  if (!program) return false
+  // Retired programs are never opened, by any route (desktop, Start, Run…, deep link, in-app button).
+  if (!program || isRetiredProgram(program.id)) return false
   if (!program.hidden && !isProgramAvailable(program.id)) {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(

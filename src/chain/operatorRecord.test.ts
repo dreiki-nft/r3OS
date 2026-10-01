@@ -4,6 +4,8 @@ import {
   firstSeen,
   lastActive,
   recordRows,
+  visibleSubsystemMask,
+  visibleSubsystems,
   seasonOf,
   subsystemCount,
   type OperatorFacts,
@@ -72,7 +74,10 @@ describe('operator record helpers', () => {
       value: '0',
       source: 'ONCHAIN',
     })
-    expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[13])?.value).toBe(OPERATOR_COPY.notUsed)
+    expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[11])?.value).toBe(OPERATOR_COPY.notUsed)
+    // PAGE.EXE and CARD.DRV were retired from the interface: no rows for them.
+    expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[13])).toBeUndefined()
+    expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[14])).toBeUndefined()
   })
 
   it('renders exact paint history separately from observed history', () => {
@@ -120,15 +125,27 @@ describe('operator record helpers', () => {
       monadCardBalance: 1n,
     })
     const rows = recordRows(f, record({ firstSeenBlock: 10n }))
-    expect(rows.find((row) => row.label === OPERATOR_COPY.rows.subsystemsUsed)?.value).toBe('14')
-    expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[14])?.value).toContain('7')
+    // Only interface subsystems count: PAINT, FRAMES, QUESTS, AUCTION, RECYCLE BIN, BLOCK CAMERA (the retired
+    // FLIPBOOK, WEEDS, FORKS, BLOCK DNA, SLEEPWALKER, KERNEL DEBUGGER, PAGE.EXE and CARD.DRV are not counted).
+    expect(rows.find((row) => row.label === OPERATOR_COPY.rows.subsystemsUsed)?.value).toBe('6')
+    expect(visibleSubsystemMask((1n << 16n) - 1n)).toBe(
+      (1n << 0n) |
+        (1n << 1n) |
+        (1n << 2n) |
+        (1n << 3n) |
+        (1n << 8n) |
+        (1n << 10n) |
+        (1n << 11n) |
+        (1n << 15n),
+    )
+    expect(visibleSubsystems().map((subsystem) => subsystem.id)).toEqual([0, 1, 2, 3, 8, 10, 11, 15])
     expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[15])?.value).toBe(OPERATOR_COPY.present)
   })
 
   it('shows UNKNOWN when a source did not answer', () => {
     const f = facts({ answeredMask: 1n })
     const rows = recordRows(f, record())
-    expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[13])).toMatchObject({
+    expect(rows.find((row) => row.label === SUBSYSTEM_LABELS[11])).toMatchObject({
       value: OPERATOR_COPY.unknown,
       source: 'UNKNOWN',
     })

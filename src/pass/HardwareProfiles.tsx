@@ -282,7 +282,7 @@ export function HardwareProfiles() {
         </button>
         <button className="selected">
           <b>{live.burner ? 'Burner (current)' : 'No burner'}</b> · {short(live.burner?.address)}
-          <small>{live.burner ? 'paints canvas · flipbook · forks' : 'set one up with New burner…'}</small>
+          <small>{live.burner ? 'paints the canvas' : 'set one up with New burner…'}</small>
         </button>
       </div>
       <GroupBox title="Burner status">
@@ -361,8 +361,8 @@ export function HardwareProfiles() {
         </Button>
       </div>
       <p className="muted hardware-footnote">
-        Live mode can't mint frames, reels or forks, change face or background, or claim the Painter Pass.
-        Ending the session revokes the key first, then sends leftover MON back to your wallet.
+        Live mode can't mint frames, change face or background, or claim the Painter Pass. Ending the session
+        revokes the key first, then sends leftover MON back to your wallet.
       </p>
       {topUp && (
         <MessageBox

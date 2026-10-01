@@ -4,11 +4,14 @@
  * Opening always goes through `openProgram`, so release gating applies exactly as it does everywhere else.
  */
 
+import { isRetiredProgram } from './retired'
+
 export type RunTarget = { program: string; hash?: string }
 export type RunParse = { ok: true; target: RunTarget } | { ok: false; error: string }
 
-/** command (or alias) → program id. Every value is a real id in src/os/programs.ts. */
-export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
+/** command (or alias) → program id. Every value is a real id in src/os/programs.ts. Retired programs are
+ * filtered out below, so their names behave like any unknown command. */
+const ALL_RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   paint: 'paint',
   pass: 'pass',
   frames: 'frames',
@@ -44,10 +47,14 @@ export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   dxdiag: 'dxdiag',
 })
 
+export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(Object.entries(ALL_RUN_COMMANDS).filter(([, program]) => !isRetiredProgram(program))),
+)
+
 const UINT256_MAX = (1n << 256n) - 1n
 const MAX_INPUT = 90 // "card " + the 78 digits of uint256 max fits
 
-export const RUN_EXAMPLES = 'paint · router · kernel · card 123'
+export const RUN_EXAMPLES = 'paint · hardware · dxdiag · frame 12'
 
 function notFound(input: string): RunParse {
   const shown = input.length > 40 ? `${input.slice(0, 39)}…` : input
@@ -80,12 +87,6 @@ export function parseRunCommand(raw: string): RunParse {
 
   if (command === 'operator' && arg == null)
     return { ok: true, target: { program: 'pass', hash: '#/pass?tab=Operator' } }
-
-  if (command === 'card' && arg != null) {
-    const id = parseUint(arg, UINT256_MAX)
-    if (id == null) return notFound(input)
-    return { ok: true, target: { program: 'card-mem', hash: `#/card-mem?card=${id}` } }
-  }
 
   if (command === 'frame' && arg != null) {
     // Frame Properties reads the token with Number(), so stay inside the safe-integer range.

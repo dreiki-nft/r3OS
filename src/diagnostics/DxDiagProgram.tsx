@@ -11,7 +11,7 @@ import { loadDxDiag } from './loadDxDiag'
 import '../monadhw/monadhw.css'
 import './diagnostics.css'
 
-const TABS = ['System', 'Drivers', 'Monad', 'Router']
+const TABS = ['System', 'Drivers', 'Monad']
 
 function Badge({ source }: { source: HardwareSource }) {
   return <span className={`hw-source source-${source}`}>{source}</span>
@@ -220,7 +220,7 @@ export function DxDiagProgram() {
               source={d.systemEvent === 'unknown' ? 'unknown' : 'onchain'}
             />
           </GroupBox>
-        ) : tab === 'Monad' ? (
+        ) : (
           <GroupBox title="Monad devices">
             <Row
               label="Staking 0x1000"
@@ -248,30 +248,6 @@ export function DxDiagProgram() {
             <p className="dxdiag-note">
               presence only: Monad Hardware has the full probes and their sources.
             </p>
-          </GroupBox>
-        ) : (
-          <GroupBox title="ROUTER">
-            <Row label="Interface" value={`MRC-17 DRAFT · ${d.router.revision}`} source="spec" />
-            <Row
-              label="Venues"
-              value={
-                d.router.context === 'unknown'
-                  ? 'unknown'
-                  : `${d.router.venues}${d.router.context === 'none' ? '' : ` · ${d.router.context}`}`
-              }
-              source={d.router.context === 'none' || d.router.context === 'unknown' ? 'unknown' : 'config'}
-            />
-            {d.router.context === 'mainnet manifest' ? (
-              <Row
-                label="Code hashes"
-                value={`${d.router.hashes.match} match · ${d.router.hashes.differs} differ · ${d.router.hashes['no-code']} no code${d.router.hashes.unknown ? ` · ${d.router.hashes.unknown} unknown` : ''}`}
-                source="onchain"
-              />
-            ) : d.router.context === 'mock directory' ? (
-              <Row label="Code hashes" value="not pinned (mock venues)" source="config" />
-            ) : (
-              <Row label="Code hashes" value="unknown" source="unknown" />
-            )}
           </GroupBox>
         )}
       </div>

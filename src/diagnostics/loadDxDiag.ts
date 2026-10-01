@@ -10,13 +10,9 @@ import { readMany } from '../chain/readMany'
 import { rpcStatsSnapshot } from '../chain/rpcStats'
 import { eventState, readSystemEventNow } from '../chain/systemEvent'
 import { R3TARDS_CARD_MEMORY_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
-import { MRC17_MIP_COMMIT } from '../router/mrc17'
-import { loadRouterEnvironment, venueCodeInfo } from '../router/routerLab'
 import {
   driverState,
   normalizeBuildId,
-  summarizeCodeHashes,
-  type CodeHashSummaryState,
   type DriverRow,
   type DxDiagInput,
   type EventState,
@@ -24,13 +20,10 @@ import {
 
 /** Registry names DXDIAG reports as drivers, in display order. */
 export const DXDIAG_DRIVERS = [
-  ['page-exe', 'PAGE.EXE'],
   ['block-camera', 'Block Camera'],
-  ['kernel-debugger', 'Kernel Debugger'],
   ['card-drv', 'CARD.DRV'],
   ['operator-record', 'Operator Record'],
   ['system-event', 'System Event'],
-  ['router-lab', 'ROUTER Lab'],
 ] as const
 
 async function hasCode(address?: Address) {
@@ -50,14 +43,14 @@ const settle = <T>(promise: Promise<T>, ms = READ_TIMEOUT_MS) =>
 
 /**
  * One read pass for DXDIAG. Called on open and on REFRESH only: no polling, no log scans, no wallet.
- * Session caches are reused (static hardware probe, router venue code); `force` re-reads the registry.
+ * Session caches are reused (static hardware probe); `force` re-reads the registry.
  */
 export async function loadDxDiag(force = false): Promise<DxDiagInput> {
   const block = getBlockSnapshot()
   const contracts = await settle(discoverContracts(force))
   const paint = contracts?.paint
 
-  const [coreRows, multicallPresent, driverCodes, hardware, event, routerEnv] = await Promise.all([
+  const [coreRows, multicallPresent, driverCodes, hardware, event] = await Promise.all([
     paint && publicClient
       ? settle(
           readMany(
@@ -74,7 +67,6 @@ export async function loadDxDiag(force = false): Promise<DxDiagInput> {
     Promise.all(DXDIAG_DRIVERS.map(([name]) => hasCode(contracts?.labs[name]))),
     settle(readMonadHardware()),
     settle(readSystemEventNow()),
-    settle(loadRouterEnvironment()),
   ])
 
   const row = (index: number) => {
@@ -100,14 +92,6 @@ export async function loadDxDiag(force = false): Promise<DxDiagInput> {
     const card = (cardRows as any[] | undefined)?.[0]
     if (card?.status === 'success')
       cardContext = isOfficialCard(config.chainId, card.result as Address) ? 'official' : 'mock'
-  }
-
-  // Router: mainnet manifest hashes, or the off-mainnet mock directory (hashes not pinned).
-  const venues = routerEnv?.venues ?? []
-  const codeStates: CodeHashSummaryState[] = []
-  if (routerEnv && !routerEnv.mock) {
-    const infos = await Promise.all(venues.map((venue) => settle(venueCodeInfo(venue))))
-    for (const info of infos) codeStates.push((info?.state as CodeHashSummaryState | undefined) ?? 'unknown')
   }
 
   // Without a registry read we cannot say "not installed": unknown stays unknown.
@@ -149,18 +133,6 @@ export async function loadDxDiag(force = false): Promise<DxDiagInput> {
       history: hardware?.history.status ?? 'unknown',
       p256: hardware?.p256.status ?? 'unknown',
       romContracts: hardware?.rom.value.length || undefined,
-    },
-    router: {
-      revision: MRC17_MIP_COMMIT.slice(0, 8),
-      context: !routerEnv
-        ? 'unknown'
-        : !routerEnv.lab && !venues.length
-          ? 'none'
-          : routerEnv.mock
-            ? 'mock directory'
-            : 'mainnet manifest',
-      venues: venues.length,
-      hashes: summarizeCodeHashes(codeStates),
     },
     systemEvent: eventValue,
     card: { driver: drivers.find((driver) => driver.key === 'card-drv')!.state, context: cardContext },
