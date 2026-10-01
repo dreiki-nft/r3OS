@@ -470,16 +470,47 @@ button:disabled {
 
 .programs-sub {
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
+.programs-sub > button {
+  width: 100%;
+}
+
+/* Cascading Start submenu: a vertical Win98 menu placed beside its parent row by placeSubmenu(). */
 .submenu {
+  position: fixed;
+  z-index: 11001;
   display: flex;
-  position: absolute;
-  left: 100%;
-  bottom: 0;
-  width: 220px;
+  flex-direction: column;
+  min-width: 200px;
+  max-width: min(320px, calc(100vw - 8px));
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--face);
   padding: 3px;
+}
+
+.submenu button {
+  white-space: nowrap;
+  min-height: 30px;
+  padding: 3px 10px 3px 6px;
+}
+
+.start-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.start-item-arrow {
+  margin-left: 12px;
+}
+
+.programs-sub > button.expanded {
+  background: var(--accent-soft);
 }
 
 .start-items hr {
@@ -2701,4 +2732,57 @@ button:disabled {
 
 .run-dialog .dialog-actions {
   justify-content: flex-end;
+}
+
+/* Desktop / icon context menu: a tiny Win98 popup. */
+.shell-context-menu {
+  position: fixed;
+  z-index: 1200000001;
+  min-width: 170px;
+  max-width: calc(100vw - 8px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 3px;
+  background: var(--face);
+}
+
+.shell-context-menu > button {
+  min-height: 24px;
+  padding: 3px 22px 3px 22px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.shell-context-menu > button.default {
+  font-weight: 700;
+}
+
+.shell-context-menu > button:hover,
+.shell-context-menu > button:focus {
+  background: var(--accent-soft);
+  outline: 1px dotted var(--text);
+  outline-offset: -1px;
+}
+
+.shell-context-menu > hr {
+  width: 100%;
+  margin: 3px 0;
+  border: 0;
+  border-top: 1px solid #000;
+  border-bottom: 1px solid var(--bevel-light);
+}
+
+/* Desktop icons own long-press: no iOS image/link callout or text selection on them. Inputs are untouched. */
+.desktop-icon {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+@media (pointer: coarse) {
+  .shell-context-menu > button,
+  .submenu button {
+    min-height: 42px;
+  }
 }

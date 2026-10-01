@@ -186,3 +186,8 @@ export function resetReleaseTestState() {
 export function __setReleaseSnapshotForTests(next: Partial<ReleaseSnapshot>) {
   emit(next)
 }
+
+/** Re-evaluate release visibility at the current time (desktop Refresh). No network request. */
+export function refreshReleaseClock() {
+  emit({ now: Date.now() })
+}

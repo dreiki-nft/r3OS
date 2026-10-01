@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { disconnectWallet, getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { openProgram, programById, programIsVisible, visiblePrograms } from './programs'
+import { openProgram, programById, programIsVisible, visiblePrograms, type ProgramDef } from './programs'
+import { placeSubmenu, startMenuKeyAction, toggleSubmenu, type StartSubmenu } from './contextMenu'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
 import { WalletChooser } from './WalletChooser'
@@ -34,37 +35,83 @@ export function StartMenu({
     return Boolean(program && programIsVisible(program, releases))
   }
   const [choosing, setChoosing] = useState(false)
-  const [programsOpen, setProgramsOpen] = useState(false)
-  const [hardwareOpen, setHardwareOpen] = useState(false)
+  const [submenu, setSubmenu] = useState<StartSubmenu | null>(null)
+  const [focusFirst, setFocusFirst] = useState(false)
+  const [placement, setPlacement] = useState<{ left: number; top: number; maxHeight: number }>()
   const root = useRef<HTMLDivElement>(null)
+  const submenuRef = useRef<HTMLDivElement>(null)
+  const parents = useRef<Partial<Record<StartSubmenu, HTMLButtonElement | null>>>({})
+  const hoverTimer = useRef<number | undefined>(undefined)
+  const submenuState = useRef<StartSubmenu | null>(null)
+  submenuState.current = submenu
+
+  const schedule = (fn: () => void, ms: number) => {
+    window.clearTimeout(hoverTimer.current)
+    hoverTimer.current = window.setTimeout(fn, ms)
+  }
+  useEffect(() => () => window.clearTimeout(hoverTimer.current), [])
+
+  // Place the open submenu beside its parent row, inside the viewport (right, else left, else overlay).
+  useLayoutEffect(() => {
+    if (!submenu) return setPlacement(undefined)
+    const parent = parents.current[submenu]
+    const node = submenuRef.current
+    if (!parent || !node) return
+    const rect = parent.getBoundingClientRect()
+    const placed = placeSubmenu(
+      rect,
+      { width: node.offsetWidth, height: node.scrollHeight },
+      { width: window.innerWidth, height: window.innerHeight },
+    )
+    setPlacement({ left: placed.left, top: placed.top, maxHeight: placed.maxHeight })
+  }, [submenu, programs.length])
+
+  useEffect(() => {
+    if (!focusFirst || !placement) return
+    submenuRef.current?.querySelector<HTMLElement>('[data-sub-item]')?.focus()
+    setFocusFirst(false)
+  }, [focusFirst, placement])
 
   useEffect(() => {
     const pointer = (event: PointerEvent) => {
       if (!root.current?.contains(event.target as Node)) onClose()
     }
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
+      const inSubmenu = Boolean(active?.closest('.submenu'))
+      const parentOf = active?.dataset.submenuParent as StartSubmenu | undefined
+      const action = startMenuKeyAction({
+        key: event.key,
+        inSubmenu,
+        onSubmenuParent: Boolean(parentOf),
+        submenuOpen: submenuState.current != null,
+      })
+      if (!action) return
+      event.preventDefault()
+      if (action === 'close-start') {
         onClose()
         returnFocus()
         return
       }
-      const items = [...(root.current?.querySelectorAll<HTMLElement>('[data-start-item]') ?? [])]
-      const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
+      if (action === 'open-submenu' && parentOf) {
+        setSubmenu(parentOf)
+        setFocusFirst(true)
+        return
+      }
+      if (action === 'close-submenu') {
+        const open = submenuState.current
+        setSubmenu(null)
+        if (open) parents.current[open]?.focus()
+        return
+      }
+      // next / prev move within one level: the submenu, or the top-level items (never flattened together).
+      const scope = inSubmenu ? submenuRef.current : root.current
+      const items = [
+        ...(scope?.querySelectorAll<HTMLElement>(inSubmenu ? '[data-sub-item]' : '[data-start-item]') ?? []),
+      ]
       const index = items.indexOf(active as HTMLElement)
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault()
-        const direction = event.key === 'ArrowDown' ? 1 : -1
-        items[(index + direction + items.length) % items.length]?.focus()
-      }
-      if (event.key === 'ArrowRight' && active?.dataset.programsRoot === '1') {
-        event.preventDefault()
-        setProgramsOpen(true)
-      }
-      if (event.key === 'ArrowRight' && active?.dataset.hardwareRoot === '1') {
-        event.preventDefault()
-        setHardwareOpen(true)
-      }
+      const step = action === 'next' ? 1 : -1
+      items[(index + step + items.length) % items.length]?.focus()
     }
     window.addEventListener('pointerdown', pointer)
     window.addEventListener('keydown', key)
@@ -80,86 +127,112 @@ export function StartMenu({
     playSound('select')
   }
 
+  const cascade = (which: StartSubmenu, label: string, icon: ReactNode, items: ProgramDef[]) => (
+    <div
+      className="programs-sub"
+      onPointerEnter={(event) => {
+        if (event.pointerType !== 'mouse') return
+        // Hover opens after a short delay; moving into the submenu cancels any pending close.
+        schedule(() => setSubmenu(which), submenuState.current === which ? 0 : 90)
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== 'mouse') return
+        schedule(() => setSubmenu((current) => (current === which ? null : current)), 350)
+      }}
+    >
+      <button
+        ref={(node) => {
+          parents.current[which] = node
+        }}
+        role="menuitem"
+        aria-haspopup="menu"
+        aria-expanded={submenu === which}
+        data-start-item
+        data-submenu-parent={which}
+        data-programs-root={which === 'programs' ? '1' : undefined}
+        data-hardware-root={which === 'hardware' ? '1' : undefined}
+        className={submenu === which ? 'expanded' : undefined}
+        onClick={() => {
+          window.clearTimeout(hoverTimer.current)
+          setSubmenu((current) => toggleSubmenu(current, which))
+        }}
+      >
+        {icon}
+        <span className="start-item-label">{label}</span>
+        <span className="start-item-arrow" aria-hidden="true">
+          ▸
+        </span>
+      </button>
+      {submenu === which && (
+        <div
+          ref={submenuRef}
+          role="menu"
+          aria-label={label}
+          className="submenu raised"
+          style={
+            placement
+              ? { left: placement.left, top: placement.top, maxHeight: placement.maxHeight }
+              : { visibility: 'hidden' }
+          }
+        >
+          {items.map((program) => (
+            <button role="menuitem" data-sub-item key={program.id} onClick={() => open(program.id)}>
+              <Icon name={program.icon} size={24} colour={program.colour} />
+              <span className="start-item-label">{program.title}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div ref={root} className="start-menu window">
       <div className="start-band">
         <b>r3tardOS</b>
         <span className="start-band-version"> 98</span>
       </div>
-      <div className="start-items">
-        <div
-          className="programs-sub"
-          onMouseEnter={() => setProgramsOpen(true)}
-          onMouseLeave={() => setProgramsOpen(false)}
-        >
-          <button data-start-item data-programs-root="1" onClick={() => setProgramsOpen(!programsOpen)}>
-            <Icon name="briefcase" size={24} />
-            Programs ▸
-          </button>
-          {programsOpen && (
-            <div className="submenu raised">
-              {regularPrograms.map((program) => (
-                <button data-start-item key={program.id} onClick={() => open(program.id)}>
-                  <Icon name={program.icon} size={24} colour={program.colour} />
-                  {program.title}
-                </button>
-              ))}
-            </div>
+      <div className="start-items" role="menu" aria-label="Start">
+        {cascade('programs', 'Programs', <Icon name="briefcase" size={24} />, regularPrograms)}
+        {hardwarePrograms.length > 0 &&
+          cascade(
+            'hardware',
+            'Monad Hardware',
+            <Icon name="lightning" size={24} colour="#FFFFFF" />,
+            hardwarePrograms,
           )}
-        </div>
-        {hardwarePrograms.length > 0 && (
-          <div
-            className="programs-sub"
-            onMouseEnter={() => setHardwareOpen(true)}
-            onMouseLeave={() => setHardwareOpen(false)}
-          >
-            <button data-start-item data-hardware-root="1" onClick={() => setHardwareOpen(!hardwareOpen)}>
-              <Icon name="lightning" size={24} colour="#FFFFFF" />
-              Monad Hardware ▸
-            </button>
-            {hardwareOpen && (
-              <div className="submenu raised">
-                {hardwarePrograms.map((program) => (
-                  <button data-start-item key={program.id} onClick={() => open(program.id)}>
-                    <Icon name={program.icon} size={24} colour={program.colour} />
-                    {program.title}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
         {visible('pass') && (
-          <button data-start-item onClick={() => open('pass')}>
+          <button role="menuitem" data-start-item onClick={() => open('pass')}>
             <Icon name="computer" size={24} />
             My Pass
           </button>
         )}
         {visible('frames') && (
-          <button data-start-item onClick={() => open('frames')}>
+          <button role="menuitem" data-start-item onClick={() => open('frames')}>
             <Icon name="gallery" size={24} />
             My Frames
           </button>
         )}
         {visible('sounds') && (
-          <button data-start-item onClick={() => open('sounds')}>
+          <button role="menuitem" data-start-item onClick={() => open('sounds')}>
             <Icon name="music" size={24} />
             Sounds
           </button>
         )}
         {visible('help') && (
-          <button data-start-item onClick={() => open('help')}>
+          <button role="menuitem" data-start-item onClick={() => open('help')}>
             <Icon name="help" size={24} />
             Help
           </button>
         )}
-        <button data-start-item onClick={() => open('run')}>
+        <button role="menuitem" data-start-item onClick={() => open('run')}>
           <Icon name="rocket" size={24} colour="#FEC343" />
           Run…
         </button>
-        <hr />
+        <hr role="separator" />
         {wallet.account ? (
           <button
+            role="menuitem"
             data-start-item
             onClick={() => {
               disconnectWallet()
@@ -172,14 +245,14 @@ export function StartMenu({
           </button>
         ) : (
           <>
-            <button data-start-item onClick={() => setChoosing(!choosing)}>
+            <button role="menuitem" data-start-item onClick={() => setChoosing(!choosing)}>
               <Icon name="key" size={24} />
               Connect wallet…
             </button>
             {choosing && <WalletChooser onClose={onClose} />}
           </>
         )}
-        <button data-start-item onClick={onShutdown}>
+        <button role="menuitem" data-start-item onClick={onShutdown}>
           <Icon name="flash" size={24} colour="#C52020" />
           Shut Down…
         </button>

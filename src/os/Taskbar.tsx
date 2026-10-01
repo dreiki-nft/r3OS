@@ -2,6 +2,7 @@ import { useRef, useState, useSyncExternalStore } from 'react'
 import { focusWindow, getWindows, minimizeWindow, subscribeWindows } from './windows'
 import { programById, programIsVisible } from './programs'
 import { StartMenu } from './StartMenu'
+import { closeShellMenus } from './ContextMenu'
 import { Tray } from './Tray'
 import { Icon } from './ui/Icon'
 import { SafeImage } from './ui/SafeImage'
@@ -19,7 +20,10 @@ export function Taskbar({ onShutdown }: { onShutdown: () => void }) {
         <button
           ref={startButton}
           className={`start-button raised ${open ? 'pressed' : ''}`}
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            if (!open) closeShellMenus()
+            setOpen(!open)
+          }}
         >
           <SafeImage src="/os/brand/logo.png" alt="r3tards" width={28} height={28} />
           r3tards
