@@ -125,7 +125,7 @@ contract PassArtTest is Test {
         );
     }
 
-    function testPassArtWhaleGas() public {
+    function testPassArtWhaleGas() public view {
         uint256 gasBefore = gasleft();
         bytes memory rendered = harness.svg(_whale());
         uint256 used = gasBefore - gasleft();

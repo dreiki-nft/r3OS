@@ -120,7 +120,7 @@ contract GasBenchmarksTest is Test {
         assertLt(used, 8_500_000);
     }
 
-    function testGasTokenURIUnder11M() public {
+    function testGasTokenURIUnder11M() public view {
         uint256 g = gasleft();
         prod.tokenURI(0);
         uint256 used = g - gasleft();

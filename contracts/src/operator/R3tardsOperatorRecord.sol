@@ -500,6 +500,7 @@ contract R3tardsOperatorRecord {
     function _pageNonEmpty(address operator) private view returns (bool ok, bool nonEmpty) {
         if (PAGE_EXE == address(0) || PAGE_EXE.code.length == 0) return (false, false);
         (bool success, bytes memory data) =
+            // forge-lint: disable-next-line(return-bomb)
             PAGE_EXE.staticcall{gas: PAGE_GAS}(abi.encodeWithSelector(READ_PAGE, operator));
         if (!success || data.length < PAGE_WORDS * 32) return (false, false);
         ok = true;
@@ -513,6 +514,7 @@ contract R3tardsOperatorRecord {
     /// @dev Gas-capped staticcall; a missing target, revert or out-of-gas returns ok = false.
     function _call(address target, bytes memory data, uint256 gasCap) private view returns (bool ok, bytes memory r) {
         if (target == address(0) || target.code.length == 0) return (false, r);
+        // forge-lint: disable-next-line(return-bomb)
         (ok, r) = target.staticcall{gas: gasCap}(data);
     }
 
@@ -527,6 +529,7 @@ contract R3tardsOperatorRecord {
         returns (bool ok, uint256 value)
     {
         if (target == address(0) || target.code.length == 0) return (false, 0);
+        // forge-lint: disable-next-line(return-bomb)
         (bool success, bytes memory result) = target.staticcall{gas: gasCap}(data);
         uint256 offset = wordIndex * 32;
         if (!success || result.length < offset + 32) return (false, 0);

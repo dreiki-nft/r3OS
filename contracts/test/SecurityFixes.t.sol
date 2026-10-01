@@ -224,7 +224,7 @@ contract SecurityFixesTest is Test {
         uint256 maxUnits,
         uint256 nonce,
         uint256 deadline
-    ) private returns (bytes memory) {
+    ) private view returns (bytes memory) {
         bytes32 structHash = keccak256(
             abi.encode(paint.SESSION_TYPEHASH(), alice, sessionKey, expiry, maxUnits, nonce, deadline)
         );

@@ -222,6 +222,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
 
         address key = _ensureKey(owner);
         StoredSession storage first = _sessions[owner][0];
+        // forge-lint: disable-start(reentrancy-no-eth)
         SleepwalkerKey(key).start(
             owner,
             first.expiryBlock,
@@ -230,6 +231,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
             first.deadline,
             first.sig
         );
+        // forge-lint: disable-end(reentrancy-no-eth)
         dream.nextSession = 1;
         dream.sessionsUsed = 1;
         emit SessionStarted(owner, key, 0, first.nonce);
@@ -255,6 +257,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
 
         key = _ensureKey(owner);
         StoredSession storage first = _sessions[owner][0];
+        // forge-lint: disable-start(reentrancy-no-eth)
         SleepwalkerKey(key).start(
             owner,
             first.expiryBlock,
@@ -263,6 +266,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
             first.deadline,
             first.sig
         );
+        // forge-lint: disable-end(reentrancy-no-eth)
         dream.nextSession = 1;
         ++dream.sessionsUsed;
         emit SessionStarted(owner, key, 0, first.nonce);
@@ -328,6 +332,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         uint32 cursorTo = dream.cursor + requestedPixels;
 
         uint32 beforePixels = _pixelsToday(owner);
+        // forge-lint: disable-next-line(reentrancy-no-eth)
         try SleepwalkerKey(key).paint(chunk, holderIds) {
             uint32 afterPixels = _pixelsToday(owner);
             uint32 painted = afterPixels >= beforePixels ? afterPixels - beforePixels : 0;
@@ -592,6 +597,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         key = keyOf(owner);
         if (key.code.length == 0) {
             key = Clones.cloneDeterministic(KEY_IMPLEMENTATION, _keySalt(owner));
+            // forge-lint: disable-next-line(reentrancy-no-eth)
             SleepwalkerKey(key).initialize(address(PAINT));
         }
     }
@@ -874,7 +880,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
                 if (PAINT.pixelAt(scan.season, x, y) == colour) {
                     ++scan.survived;
                 } else {
-                    scan.mismatchMask |= uint128(1) << scan.sampleIndex;
+                    scan.mismatchMask |= uint128(uint256(1) << scan.sampleIndex); // sampleIndex < MAX_SURVIVAL_SAMPLES (128)
                 }
                 ++scan.sampleIndex;
             }
@@ -938,7 +944,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
                 for (uint256 x = x0; x <= x1 && sampleIndex < count; ++x) {
                     uint256 target = count == 1 ? 0 : (sampleIndex * (uint256(totalPixels) - 1)) / (count - 1);
                     if (ordinal == target) {
-                        if ((mismatchMask & (uint128(1) << sampleIndex)) != 0) {
+                        if ((uint256(mismatchMask) & (uint256(1) << sampleIndex)) != 0) {
                             out = out.p(bytes('<rect x="'), bytes(x.toString()), bytes('" y="'));
                             out = out.p(
                                 bytes(y.toString()),
@@ -991,6 +997,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         uint256 amount = refunds[owner];
         if (amount == 0) revert NoRefund();
         refunds[owner] = 0;
+        // forge-lint: disable-next-line(arbitrary-send-eth, reentrancy-eth)
         (bool ok,) = payable(to).call{value: amount}("");
         if (!ok) revert RefundFailed();
         emit RefundWithdrawn(owner, amount);
@@ -1030,6 +1037,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
     }
 
     function _refundOrCredit(address owner, uint256 amount) private {
+        // forge-lint: disable-next-line(arbitrary-send-eth, return-bomb)
         (bool ok,) = payable(owner).call{value: amount, gas: REFUND_GAS_LIMIT}("");
         if (!ok) {
             refunds[owner] += amount;
@@ -1038,6 +1046,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
     }
 
     function _send(address to, uint256 amount, bool refund) private {
+        // forge-lint: disable-next-line(arbitrary-send-eth)
         (bool ok,) = payable(to).call{value: amount}("");
         if (!ok) {
             if (refund) revert RefundFailed();

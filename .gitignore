@@ -10,3 +10,5 @@ contracts/broadcast/
 contracts/.env
 *.tsbuildinfo
 contracts/test-output/
+contracts/out-deploy/
+contracts/cache-deploy/

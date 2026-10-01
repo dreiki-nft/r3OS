@@ -445,7 +445,7 @@ Mainnet chain ID 143 additionally requires `CONFIRM_MAINNET=true` after the same
 Example:
 
 ```bash
-forge script script/Deploy.s.sol:Deploy \
+FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy \
   --rpc-url "$MONAD_TESTNET_RPC_URL" \
   --account r3tards-deployer \
   --broadcast
@@ -454,7 +454,7 @@ forge script script/Deploy.s.sol:Deploy \
 or:
 
 ```bash
-forge script script/Deploy.s.sol:Deploy \
+FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy \
   --rpc-url "$MONAD_TESTNET_RPC_URL" \
   --ledger \
   --broadcast

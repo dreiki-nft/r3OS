@@ -9,6 +9,8 @@ foundryup -i 1.8.3          # the repo builds with Foundry 1.8.3
 cd contracts && forge build  # first build takes a few minutes (via-IR)
 ```
 
+Every `forge script` below runs with `FOUNDRY_PROFILE=deploy`: same compiler settings, separate artifact folders (`out-deploy/`, `cache-deploy/`), so test-only build artifacts never mix with deployment artifacts and the script output stays warning-free.
+
 ## 1. Deployer key and test MON
 
 ```bash
@@ -39,7 +41,7 @@ R3TARDS_ADDRESS=$MOCK \
 SEASON_START=$(( $(date +%s) - 29*86400 - 20*3600 )) \
 BASE_PIXELS_PER_HOUR=32 PIXELS_PER_ACTIVE_DAY=16 MAX_PIXELS_PER_HOUR=256 \
 MIN_PIXELS_FOR_ACTIVE_DAY=16 HOLDER_PIXELS_PER_DAY=256 \
-forge script script/Deploy.s.sol:Deploy --rpc-url $RPC --account r3tards-deployer --broadcast --slow
+FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
 On testnet, `TOKEN_ZERO_RECIPIENT`, `ROYALTY_RECEIVER` and `FINAL_OWNER` can stay unset (they default to the deployer). On mainnet they must be the Safe.
@@ -67,7 +69,7 @@ export QUESTS_ADDRESS=<R3tardsQuests from step 3>
 
 MONAD_CARD_ADDRESS=$MONAD_CARD \
 PAINT_ADDRESS=$PAINT_ADDRESS PASS_ADDRESS=$PASS_ADDRESS QUESTS_ADDRESS=$QUESTS_ADDRESS \
-forge script script/DeployMonadCard.s.sol:DeployMonadCard \
+FOUNDRY_PROFILE=deploy forge script script/DeployMonadCard.s.sol:DeployMonadCard \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 
 export CARD_MEMORY_ADDRESS=<R3tardsCardMemory from DeployMonadCard output>
@@ -83,7 +85,7 @@ After CARD.DRV is deployed, run the Monad Hardware add-on so Block Camera receiv
 export LABS_ADDRESS=<R3tardsLabs from step 3>
 
 PAINT_ADDRESS=$PAINT_ADDRESS LABS_ADDRESS=$LABS_ADDRESS CARD_MEMORY_ADDRESS=$CARD_MEMORY_ADDRESS \
-forge script script/DeployMonadHW.s.sol:DeployMonadHW \
+FOUNDRY_PROFILE=deploy forge script script/DeployMonadHW.s.sol:DeployMonadHW \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
@@ -104,7 +106,7 @@ PAINT_ADDRESS=$PAINT_ADDRESS \
 MON_USD_FEED=$MON_USD_FEED \
 MON_PRICE_TRIGGER_MILLI_USD=333 \
 MON_FEED_MAX_AGE=90000 \
-forge script script/DeployOperator.s.sol:DeployOperator \
+FOUNDRY_PROFILE=deploy forge script script/DeployOperator.s.sol:DeployOperator \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
@@ -131,7 +133,7 @@ Deploy the read-only router lab after Operator. Off mainnet the script deploys i
 
 ```bash
 PAINT_ADDRESS=$PAINT_ADDRESS DEPLOY_MOCK_VENUES=true \
-forge script script/DeployRouterLab.s.sol:DeployRouterLab \
+FOUNDRY_PROFILE=deploy forge script script/DeployRouterLab.s.sol:DeployRouterLab \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 

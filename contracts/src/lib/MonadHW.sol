@@ -15,9 +15,11 @@ library MonadHW {
     uint256 private constant PRECOMPILE_GAS = 20_000;
 
     function proposerValId() internal returns (uint64 id, bool ok) {
+        // forge-lint: disable-start(return-bomb)
         (bool success, bytes memory data) = STAKING.call{gas: PRECOMPILE_GAS}(
             abi.encodeWithSelector(bytes4(keccak256("getProposerValId()")))
         );
+        // forge-lint: disable-end(return-bomb)
         ok = success && data.length >= 32;
         if (ok) {
             uint256 word;
@@ -27,9 +29,11 @@ library MonadHW {
     }
 
     function epoch() internal returns (uint64 epoch_, bool inDelay, bool ok) {
+        // forge-lint: disable-start(return-bomb)
         (bool success, bytes memory data) = STAKING.call{gas: PRECOMPILE_GAS}(
             abi.encodeWithSelector(bytes4(keccak256("getEpoch()")))
         );
+        // forge-lint: disable-end(return-bomb)
         ok = success && data.length >= 64;
         if (ok) {
             uint256 epochWord;
@@ -44,9 +48,11 @@ library MonadHW {
     }
 
     function dippedIntoReserve() internal returns (bool dipped, bool ok) {
+        // forge-lint: disable-start(return-bomb)
         (bool success, bytes memory data) = RESERVE.call{gas: PRECOMPILE_GAS}(
             abi.encodeWithSelector(bytes4(keccak256("dippedIntoReserve()")))
         );
+        // forge-lint: disable-end(return-bomb)
         ok = success && data.length >= 32;
         if (ok) {
             uint256 word;

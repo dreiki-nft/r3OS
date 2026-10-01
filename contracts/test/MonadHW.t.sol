@@ -10,7 +10,7 @@ import {R3tardsKernelDebugger} from "../src/monadhw/R3tardsKernelDebugger.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract ReserveBalanceMock {
-    function dippedIntoReserve() external returns (bool) {
+    function dippedIntoReserve() external view returns (bool) {
         return tx.origin.balance < 1 ether;
     }
 }

@@ -152,9 +152,11 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         uint8 dominantColour;
         uint8 coloursUsed;
 
+        // forge-lint: disable-start(return-bomb)
         (bool tokenOk, bytes memory tokenData) = data.lab.staticcall{gas: LAB_TOKEN_GAS_LIMIT}(
             abi.encodeCall(ILabTokenSource.labToken, (tokenId))
         );
+        // forge-lint: disable-end(return-bomb)
         if (tokenOk && _validLabTokenReturn(tokenData)) {
             (
                 string memory sourceKind,
@@ -192,9 +194,11 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         }
 
         string memory tokenName = string.concat("r3tards labs ", _lower(kind), " #", tokenId.toString());
+        // forge-lint: disable-start(return-bomb)
         (bool nameOk, bytes memory nameData) = data.lab.staticcall{gas: LAB_TOKEN_NAME_GAS_LIMIT}(
             abi.encodeCall(ILabTokenNameSource.labTokenName, (tokenId))
         );
+        // forge-lint: disable-end(return-bomb)
         if (nameOk && _validAbiString(nameData)) {
             string memory sourceName = abi.decode(nameData, (string));
             if (bytes(sourceName).length != 0) tokenName = sourceName;

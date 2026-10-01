@@ -105,7 +105,6 @@ contract FinaleAuctionTest is Test {
 
     function testBidRulesTopupsAndRoundedMinimum() public {
         uint256 id = _list(100);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         uint48 futureStart = uint48(vm.getBlockNumber() + 10);
         // Use a fresh listing with a future start.
         _cancelAsSeller(id);

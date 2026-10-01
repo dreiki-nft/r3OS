@@ -219,6 +219,7 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
         uint128 winningPrice;
         uint128 royaltyAmount;
         if (lo == 0) {
+            // forge-lint: disable-next-line(reentrancy-no-eth)
             IERC721(CORE).transferFrom(address(this), a.seller, a.tokenId);
         } else {
             Bid storage winningBid = bids[lo - 1];
@@ -233,6 +234,7 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
             if (royaltyAmount != 0) credits[receiver] += royaltyAmount;
             credits[a.seller] += uint256(winningPrice) - royaltyAmount;
             unchecked { ++bidderStats[winningBidder].auctionsWon; }
+            // forge-lint: disable-next-line(reentrancy-no-eth)
             IERC721(CORE).transferFrom(address(this), winningBidder, a.tokenId);
         }
 
@@ -252,6 +254,7 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
         uint256 amount = _deposits[auctionId][msg.sender];
         if (amount == 0) revert NothingToWithdraw();
         _deposits[auctionId][msg.sender] = 0;
+        // forge-lint: disable-next-line(reentrancy-eth)
         (bool ok,) = msg.sender.call{value: amount}("");
         if (!ok) revert TransferFailed();
         emit Withdrawn(auctionId, msg.sender, amount);
@@ -261,6 +264,7 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
         uint256 amount = credits[msg.sender];
         if (amount == 0) revert NothingToWithdraw();
         credits[msg.sender] = 0;
+        // forge-lint: disable-next-line(reentrancy-eth)
         (bool ok,) = msg.sender.call{value: amount}("");
         if (!ok) revert TransferFailed();
         emit CreditsWithdrawn(msg.sender, amount);

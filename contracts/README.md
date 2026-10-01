@@ -60,16 +60,16 @@ Copy `contracts/.env.example` to `contracts/.env` and load the variables into yo
 Testnet with a Ledger:
 
 ```bash
-forge script contracts/script/Deploy.s.sol:Deploy --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --ledger
+cd contracts && FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --ledger
 ```
 
 Or use a Foundry keystore:
 
 ```bash
-forge script contracts/script/Deploy.s.sol:Deploy --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --account <keystore-name>
+cd contracts && FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --account <keystore-name>
 ```
 
-The broadcaster must be `DEPLOYER_ADDRESS`, which must equal `TOKEN_ZERO_RECIPIENT` and `ROYALTY_RECEIVER`. Mainnet chain ID 143 requires `CONFIRM_MAINNET=true` after testnet validation. The script deploys Paint, the shared Labs collection, Painter Pass, three renderers, Flipbook, Weeds, Forks, Brushes, Finale Auction, Quests, the SleepwalkerKey implementation, Sleepwalker, Recycle Bin and CD Burner. It registers all three optional renderers, nine Lab experiments, seven display-only Lab stamp sources, and all thirteen day-one quests. Sleepwalker is registered after Quests so it is stamp source #6 (zero-based source index 5) and therefore Pass visual pin 11. Every deployment uses `vm.deployCode`, so the deployment script runtime does not embed every contract creation blob. Ownable contracts may later move to a hardware-wallet address through `Ownable2Step`; Sleepwalker and its key clones, Recycle Bin and CD Burner are adminless.
+The broadcaster must be `DEPLOYER_ADDRESS`. `TOKEN_ZERO_RECIPIENT`, `ROYALTY_RECEIVER` and `FINAL_OWNER` default to it and may be different addresses (token #0 is transferred and ownership handed over at the end). Mainnet chain ID 143 requires `CONFIRM_MAINNET=true` after testnet validation. The script deploys Paint, the shared Labs collection, Painter Pass, three renderers, Flipbook, Weeds, Forks, Brushes, Finale Auction, Quests, the SleepwalkerKey implementation, Sleepwalker, Recycle Bin and CD Burner. It registers all three optional renderers, nine Lab experiments, seven display-only Lab stamp sources, and all thirteen day-one quests. Sleepwalker is registered after Quests so it is stamp source #6 (zero-based source index 5) and therefore Pass visual pin 11. Every deployment uses `vm.deployCode`, so the deployment script runtime does not embed every contract creation blob. Ownable contracts may later move to a hardware-wallet address through `Ownable2Step`; Sleepwalker and its key clones, Recycle Bin and CD Burner are adminless.
 
 Before mainnet, verify on Monad testnet what `block.coinbase` represents. Frame metadata calls it `Sealed by`; the product copy must describe it as validator beneficiary only if testnet evidence supports that interpretation.
 

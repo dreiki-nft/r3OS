@@ -46,12 +46,10 @@ contract MockMonadCard is ERC721 {
         revert Soulbound();
     }
 
-    function transferFrom(address, address, uint256) public pure override {
-        revert Soulbound();
-    }
-
-
-    function safeTransferFrom(address, address, uint256, bytes memory) public pure override {
-        revert Soulbound();
+    /// @dev Soulbound like the official card: any move of an existing token reverts with Soulbound(),
+    /// before OpenZeppelin's approval checks, so owners and non-owners see the same error.
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+        if (_ownerOf(tokenId) != address(0)) revert Soulbound();
+        return super._update(to, tokenId, auth);
     }
 }

@@ -8,8 +8,8 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - run: npm install
@@ -25,6 +25,7 @@ jobs:
       - name: Deploy script simulation
         working-directory: contracts
         env:
+          FOUNDRY_PROFILE: deploy
           DEPLOYER_ADDRESS: "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38"
           TOKEN_ZERO_RECIPIENT: "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38"
           ROYALTY_RECEIVER: "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38"

@@ -212,7 +212,7 @@ contract SessionsTest is Test {
         uint256 maxUnits,
         uint256 nonce,
         uint256 deadline
-    ) internal returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         bytes32 typehash = paint.SESSION_TYPEHASH();
         bytes32 structHash = keccak256(abi.encode(typehash, owner_, sessionKey, expiry, maxUnits, nonce, deadline));
         bytes32 domain = keccak256(abi.encode(

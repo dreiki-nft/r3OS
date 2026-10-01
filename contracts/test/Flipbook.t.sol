@@ -36,7 +36,7 @@ contract FlipbookTest is Test {
         flipbook.bindExperimentId(experimentId);
     }
 
-    function testGenesisExistsAndMatchesConstructorBytes() public {
+    function testGenesisExistsAndMatchesConstructorBytes() public view {
         (bytes memory pixels, uint48 blockNumber, address proposer, uint16 painted, uint8 painters) = flipbook.frame(0);
         assertEq(pixels, _genesis());
         assertEq(blockNumber, uint48(block.number));
@@ -499,7 +499,7 @@ contract FlipbookTest is Test {
         return flipbook.recentFrames(32);
     }
 
-    function _genesis() internal returns (bytes memory) {
+    function _genesis() internal view returns (bytes memory) {
         return vm.parseBytes(vm.trim(vm.readFile("script/flipbook-genesis.hex")));
     }
 

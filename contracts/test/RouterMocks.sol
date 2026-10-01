@@ -121,7 +121,7 @@ contract RevertBubbleVenue is MockVenueBase {
 
     function getAmountOut(address, address, uint256 amountIn, bytes calldata)
         external
-        returns (uint256 amountOut, bytes memory swapData)
+        view returns (uint256 amountOut, bytes memory swapData)
     {
         try this._simulate(amountIn) {
             revert("expected revert");
@@ -209,8 +209,9 @@ contract GasBurnerVenue is MockVenueBase {
     function getAmountOut(address, address, uint256, bytes calldata)
         external
         pure
-        returns (uint256, bytes memory)
+        returns (uint256 amountOut, bytes memory swapData)
     {
+        (amountOut, swapData) = (0, "");
         assembly ("memory-safe") {
             for { } 1 { } { }
         }

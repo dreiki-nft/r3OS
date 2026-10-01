@@ -446,6 +446,7 @@ contract R3tardsFlipbook is IStampSource, ILabTokenSource {
         uint256 boundExperimentId = experimentId;
         if (boundExperimentId == type(uint256).max) revert ExperimentNotBound();
         traits.mintBlock = uint48(block.number);
+        // forge-lint: disable-next-line(reentrancy-no-eth)
         id = LABS.mint(msg.sender, boundExperimentId);
         _reels[id] = Reel({
             pointer: pointer,

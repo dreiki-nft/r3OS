@@ -158,9 +158,11 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
         bytes memory extraAttributes;
         for (uint256 i; i < _stampSources.length; ++i) {
             if (!_stampSourceEnabled[i]) continue;
+            // forge-lint: disable-start(return-bomb)
             (bool ok, bytes memory data) = _stampSources[i].staticcall{gas: STAMP_SOURCE_GAS_LIMIT}(
                 abi.encodeCall(IStampSource.stamp, (tokenOwner))
             );
+            // forge-lint: disable-end(return-bomb)
             if (!ok || !_validStampReturn(data)) continue;
             (string memory name, bool earned) = abi.decode(data, (string, bool));
             if (earned) {

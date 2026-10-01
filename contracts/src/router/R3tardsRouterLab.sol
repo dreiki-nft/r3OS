@@ -219,6 +219,7 @@ contract R3tardsRouterLab {
             try this.simFrame{gas: outerGas}(
                 wrappedNative,
                 tokenOut,
+                // forge-lint: disable-next-line(msg-value-loop)
                 msg.value,
                 venues[i].adapter,
                 venues[i].quoteData,
@@ -255,6 +256,7 @@ contract R3tardsRouterLab {
 
     /// @dev Non-payable self-call. It spends the temporary balance already held by simulateNativeIn.
     function simFrame(
+        // forge-lint: disable-next-line(missing-zero-check)
         address wrappedNative,
         address tokenOut,
         uint256 amountIn,
@@ -267,9 +269,11 @@ contract R3tardsRouterLab {
         SimReport memory report;
         report.adapter = adapter;
 
+        // forge-lint: disable-start(arbitrary-send-eth, return-bomb)
         (bool depositOk,) = wrappedNative.call{value: amountIn, gas: 120_000}(
             abi.encodeWithSelector(IWrappedNative.deposit.selector)
         );
+        // forge-lint: disable-end(arbitrary-send-eth, return-bomb)
         if (!depositOk) {
             report.quoteStatus = Status.FRAME_ERROR;
             revert SimFrame(report);
@@ -465,6 +469,7 @@ contract R3tardsRouterLab {
     function _approve(address token, address spender, uint256 amount) private returns (bool ok, bytes4 selector) {
         bytes memory data = abi.encodeWithSelector(IWrappedNative.approve.selector, spender, amount);
         bytes memory result;
+        // forge-lint: disable-next-line(return-bomb)
         (ok, result) = token.call{gas: 120_000}(data);
         if (!ok) return (false, result.length >= 4 ? _selector(result) : bytes4(0));
         if (result.length == 0) return (true, bytes4(0));
@@ -479,9 +484,11 @@ contract R3tardsRouterLab {
     }
 
     function _balanceOf(address token, address owner) private view returns (uint256 value) {
+        // forge-lint: disable-start(return-bomb)
         (bool ok, bytes memory data) = token.staticcall{gas: 120_000}(
             abi.encodeWithSelector(IERC20Balance.balanceOf.selector, owner)
         );
+        // forge-lint: disable-end(return-bomb)
         if (!ok || data.length < 32) return 0;
         value = abi.decode(data, (uint256));
     }

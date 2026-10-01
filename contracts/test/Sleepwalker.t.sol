@@ -445,9 +445,8 @@ contract SleepwalkerTest is Test {
             uint256 pk = 0x10000 + i;
             address painter = vm.addr(pk);
             vm.deal(painter, 10 ether);
-            uint256 kind = uint256(keccak256(abi.encode(i, block.number))) % 5;
+            uint256 kind = uint256(keccak256(abi.encode(i, vm.getBlockNumber()))) % 5;
             uint8 humanY = uint8(40 + i * 2);
-            uint8 dreamY = humanY + 1;
 
             if (kind != 0) {
                 if (kind == 2) {
@@ -710,6 +709,7 @@ contract SleepwalkerTest is Test {
 
     function _signedSessions(uint256 count, uint256 maxUnits)
         private
+        view
         returns (R3tardsSleepwalker.StartSessionAuthorization[] memory sessions)
     {
         return _signedSessionsFor(ownerPk, owner, count, maxUnits);
@@ -717,7 +717,7 @@ contract SleepwalkerTest is Test {
 
     function _signedSessionsFor(uint256 pk, address signer, uint256 count, uint256 maxUnits)
         private
-        returns (R3tardsSleepwalker.StartSessionAuthorization[] memory sessions)
+        view returns (R3tardsSleepwalker.StartSessionAuthorization[] memory sessions)
     {
         sessions = new R3tardsSleepwalker.StartSessionAuthorization[](count);
         address key = sleepwalker.keyOf(signer);
@@ -739,7 +739,7 @@ contract SleepwalkerTest is Test {
 
     function _signatureFor(address sessionKey, uint256 expiry, uint256 maxUnits, uint256 nonce, uint256 deadline)
         private
-        returns (bytes memory)
+        view returns (bytes memory)
     {
         return _signatureForSigner(ownerPk, owner, sessionKey, expiry, maxUnits, nonce, deadline);
     }
@@ -752,7 +752,7 @@ contract SleepwalkerTest is Test {
         uint256 maxUnits,
         uint256 nonce,
         uint256 deadline
-    ) private returns (bytes memory) {
+    ) private view returns (bytes memory) {
         bytes32 structHash = keccak256(
             abi.encode(paint.SESSION_TYPEHASH(), signer, sessionKey, expiry, maxUnits, nonce, deadline)
         );

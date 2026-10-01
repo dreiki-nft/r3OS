@@ -19,3 +19,30 @@ remappings = [
   "forge-std/=../node_modules/forge-std/src/",
   "solady/=../node_modules/solady/src/"
 ]
+
+# Deploy scripts use their own artifact folders so test-only build artifacts (Foundry's generated
+# test-linking helpers) never sit next to deployment artifacts. Every other setting is inherited from default.
+#   FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy ...
+[profile.deploy]
+out = "out-deploy"
+cache_path = "cache-deploy"
+
+# forge-lint runs on every build. The categories below were reviewed across src/ before launch and are
+# by-design for this codebase (see docs/specs/STATIC_ANALYSIS.md). Security-relevant categories stay on
+# and are silenced only per line, after review, with `forge-lint: disable-next-line(...)`.
+[lint]
+exclude_lints = [
+  "unsafe-typecast",            # every narrowing cast is bounds-checked or range-bounded by construction
+  "uninitialized-local",        # zero-default locals are intentional
+  "boolean-cst",                # (ok, value) style returns with literal bools
+  "reentrancy-events",          # events after external calls; state is final before the call
+  "calls-loop",                 # bounded loops over registries / venues / stamp sources
+  "require-revert-in-loop",     # validation loops are meant to revert the whole call
+  "encode-packed-collision",    # only used to build JSON / SVG strings, never hashed
+  "block-timestamp",            # season / open times and signature deadlines
+  "unused-return",              # tuple reads that intentionally ignore fields
+  "unsafe-oz-erc721-mint",      # _mint on purpose: no receiver callbacks in the paint path
+  "weak-prng",                  # block-number buckets and visual seeds; nothing of value depends on them
+  "divide-before-multiply",     # integer pixel quantisation in art libraries
+  "incorrect-strict-equality",  # balanceOf != 0 holder checks
+]

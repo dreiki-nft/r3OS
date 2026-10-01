@@ -410,6 +410,7 @@ contract R3tardsForks is IStampSource, ILabTokenSource {
     ) private returns (uint256 forkId) {
         uint256 boundExperimentId = experimentId;
         if (boundExperimentId == type(uint256).max) revert ExperimentNotBound();
+        // forge-lint: disable-next-line(reentrancy-no-eth)
         forkId = LABS.mint(creator, boundExperimentId);
         ++forkCount;
         uint256 base = forkBase(forkId);

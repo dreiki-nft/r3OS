@@ -42,6 +42,7 @@ contract R3tardsKernelDebugger is ReentrancyGuard {
         (bool dipAtEntry, bool reserveOk) = MonadHW.dippedIntoReserve();
 
         bool optionalOk;
+        // forge-lint: disable-next-line(reentrancy-no-eth)
         try this.optionalStep(msg.sender, failOptional) {
             optionalOk = true;
         } catch {
@@ -52,6 +53,7 @@ contract R3tardsKernelDebugger is ReentrancyGuard {
         bool valueKept;
         if (msg.value > 0) {
             if (graceful && reserveOk && dipAtEntry) {
+                // forge-lint: disable-next-line(return-bomb)
                 (bool refunded,) = payable(msg.sender).call{value: msg.value, gas: 10_000}("");
                 if (!refunded) revert RefundFailed();
                 (dipAfter,) = MonadHW.dippedIntoReserve();
@@ -85,6 +87,7 @@ contract R3tardsKernelDebugger is ReentrancyGuard {
         uint256 value = credits[msg.sender];
         if (value == 0) revert NothingToWithdraw();
         credits[msg.sender] = 0;
+        // forge-lint: disable-next-line(reentrancy-eth)
         (bool ok,) = payable(msg.sender).call{value: value}("");
         if (!ok) revert WithdrawFailed();
         emit Withdrawn(msg.sender, value);

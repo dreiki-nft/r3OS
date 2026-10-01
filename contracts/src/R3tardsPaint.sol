@@ -1836,9 +1836,11 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         uint256 rendererId = _tokenRenderer[tokenId];
         if (rendererId != 0 && rendererId < _renderers.length) {
             address renderer = _renderers[rendererId].renderer;
+            // forge-lint: disable-start(return-bomb)
             (bool ok, bytes memory data) = renderer.staticcall{gas: RENDERER_GAS_LIMIT}(
                 abi.encodeCall(IFrameRenderer.tokenURI, (address(this), tokenId))
             );
+            // forge-lint: disable-end(return-bomb)
             if (ok && _validAbiString(data)) {
                 string memory uri = abi.decode(data, (string));
                 if (bytes(uri).length != 0) return uri;

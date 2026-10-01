@@ -76,6 +76,7 @@ contract R3tardsBlockCamera is ILabTokenSource {
         bytes32 canvasHash
     );
 
+    // forge-lint: disable-next-line(missing-zero-check)
     constructor(address paintCore, address labs, address cardMemory) {
         if (paintCore == address(0) || labs == address(0)) revert ZeroAddress();
         PAINT = IR3tardsPaintData(paintCore);
