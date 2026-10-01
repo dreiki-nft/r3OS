@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { disconnectWallet, getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { openProgram, programById, programIsVisible, visiblePrograms, type ProgramDef } from './programs'
-import { placeSubmenu, startMenuKeyAction, toggleSubmenu, type StartSubmenu } from './contextMenu'
+import { placeSubmenu, startMenuKeyAction, toggleSubmenu, type StartSubmenu } from './shellMenus'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
 import { WalletChooser } from './WalletChooser'

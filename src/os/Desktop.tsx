@@ -17,7 +17,7 @@ import {
   movedBeyondThreshold,
   type DesktopTarget,
   type ShellAction,
-} from './contextMenu'
+} from './shellMenus'
 import { refreshReleaseClock } from './releases'
 
 /** Decorative layers of the desktop surface: a right-click / long-press here belongs to the desktop. */

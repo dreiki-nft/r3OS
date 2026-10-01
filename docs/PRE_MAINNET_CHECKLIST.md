@@ -126,15 +126,14 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 Before the public mainnet announcement:
 
 ```bash
-npm run launch:doctor -- \
-  --rpc "$MONAD_MAINNET_RPC" \
+RPC_URL="$MONAD_MAINNET_RPC" npm run -s launch:doctor -- \
   --paint "$PAINT_ADDRESS" \
   --expected-owner "$EXPECTED_OWNER" \
   --expected-chain 143 \
   --json > launch-doctor-mainnet.json
 ```
 
-- [ ] Run once without `--json` to read it, once with `--json` to keep it. The RPC value is never printed.
+- [ ] Run once without `--json` to read it, once with `--json` to keep it. Pass the RPC through `RPC_URL` with `npm run -s` (as above): the doctor never prints it, but `npm run` without `-s` echoes every `--rpc` argument, which would leak a private provider key.
 - [ ] `Chain match` is OK (actual chain 143 = expected 143).
 - [ ] **FAIL = 0.**
 - [ ] Every WARN manually reviewed and either fixed or explained.

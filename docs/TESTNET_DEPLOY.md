@@ -149,8 +149,8 @@ ROUTER.EXE should produce zero idle polling with Auto disabled. A normal RUN is 
 Run the read-only Launch Doctor against the deployment. It never signs or sends anything and never prints the RPC URL:
 
 ```bash
-npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --expected-chain 10143
-npm run launch:doctor -- --rpc $RPC --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --expected-chain 10143 --json > launch-doctor-testnet.json
+RPC_URL=$RPC npm run -s launch:doctor -- --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --expected-chain 10143
+RPC_URL=$RPC npm run -s launch:doctor -- --paint $PAINT_ADDRESS --expected-owner $DEPLOYER --expected-chain 10143 --json > launch-doctor-testnet.json
 ```
 
 `FAIL` must be 0 before the soak starts. Review every `WARN` and `UNKNOWN`; the canonical list of what still needs real-chain proof is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md). The two raw checks below are also covered by the doctor:
@@ -186,7 +186,7 @@ Leave the other `VITE_*_ADDRESS` overrides blank: the app finds every Lab throug
 - Paint, Flipbook (240K fixed), fork paint (250K fixed) and Sleepwalker steps (1M fixed) all confirm. Any out-of-gas revert: send Claude the tx hash.
 - Sleep a dream overnight with a tip; crank from a second wallet in Night Shift; mint it in the morning.
 - About 4 hours after the deploy, season 1 ends: mint its finale from My Frames (you hold #0), list it in the Auction, and have testers bid.
-- Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks (about 24 hours).
+- Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks (about 32 hours at ~400 ms blocks).
 - Watch the browser console in dev (`npm run dev` with the same env) for `[r3os rpc / 10s]`: an idle desktop should stay around 1 call/s with the websocket on.
 - Open **Start → Monad Hardware → DXDIAG.EXE** on each tester device and use **Copy Report** when something looks wrong; it contains no RPC URL and no wallet.
 - **Start → Run…** with `forks` must still show "not installed yet" when `VITE_REVEAL_ALL` is off and the release date is in the future.

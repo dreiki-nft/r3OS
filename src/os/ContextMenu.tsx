@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { clampMenuPosition, type ShellAction, type ShellMenuItem } from './contextMenu'
+import { clampMenuPosition, type ShellAction, type ShellMenuItem } from './shellMenus'
 
 /** Other shell menus (Start menu, a new context menu) ask open context menus to close with this event. */
 export const CLOSE_MENUS_EVENT = 'r3os:close-menus'
