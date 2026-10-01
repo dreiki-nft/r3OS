@@ -1,5 +1,7 @@
-import { decodeEventLog, formatEther, type Abi, type Log, type TransactionReceipt } from 'viem'
+import { decodeEventLog, formatEther, isAddress, type Abi, type Address, type Log, type TransactionReceipt } from 'viem'
 import type { KernelScenario, KernelScenarioResult } from './processKey'
+import { eventState, formatUsd, type SystemEventSnapshot } from '../chain/systemEvent'
+import { KERNEL_OPERATOR_COPY, SUBSYSTEM_LABELS } from '../operator/copy'
 
 export interface ProcessReportData {
   owner: string
@@ -92,6 +94,8 @@ export function buildKernelLines(result: KernelScenarioResult, abi: Abi | readon
 export type KernelCommand =
   | { kind: 'help' }
   | { kind: 'cls' }
+  | { kind: 'event' }
+  | { kind: 'operator'; address?: Address }
   | { kind: 'device'; cardId: bigint }
   | { kind: 'dump'; cardId: bigint; word: number; count: number }
   | { kind: 'error'; message: string }
@@ -113,6 +117,15 @@ export function parseKernelCommand(input: string): KernelCommand {
     return parts.length === 1 ? { kind: 'help' } : { kind: 'error', message: 'usage: help' }
   if (command === 'cls')
     return parts.length === 1 ? { kind: 'cls' } : { kind: 'error', message: 'usage: cls' }
+  if (command === 'event')
+    return parts.length === 1 ? { kind: 'event' } : { kind: 'error', message: KERNEL_OPERATOR_COPY.eventUsage }
+  if (command === 'operator') {
+    if (parts.length > 2) return { kind: 'error', message: KERNEL_OPERATOR_COPY.operatorUsage }
+    if (parts.length === 1) return { kind: 'operator' }
+    return isAddress(parts[1])
+      ? { kind: 'operator', address: parts[1] as Address }
+      : { kind: 'error', message: KERNEL_OPERATOR_COPY.invalidAddress }
+  }
   if (command === 'device') {
     if (parts.length !== 2) return { kind: 'error', message: 'usage: device <id>' }
     const cardId = parseUnsigned(parts[1])
@@ -196,4 +209,100 @@ export function storageVerificationLine(readPageWord0: string, storageWord0?: st
   return normalize(readPageWord0) === normalize(storageWord0)
     ? 'storage verified: slot base+0 matches readPage[0]'
     : 'storage mismatch: slot base+0 does not match readPage[0]'
+}
+
+
+export interface KernelOperatorRecord {
+  firstRecordBlock: bigint
+  lastRecordBlock: bigint
+  observedMask: bigint
+  seasonsObserved: bigint
+  firstObserved: bigint[]
+}
+
+export function normalizeKernelOperatorRecord(value: any): KernelOperatorRecord {
+  const firstObservedRaw = value?.firstObserved ?? value?.[4] ?? []
+  return {
+    firstRecordBlock: BigInt(value?.firstRecordBlock ?? value?.[0] ?? 0),
+    lastRecordBlock: BigInt(value?.lastRecordBlock ?? value?.[1] ?? 0),
+    observedMask: BigInt(value?.observedMask ?? value?.[2] ?? 0),
+    seasonsObserved: BigInt(value?.seasonsObserved ?? value?.[3] ?? 0),
+    firstObserved: Array.from({ length: 16 }, (_, index) => BigInt(firstObservedRaw?.[index] ?? 0)),
+  }
+}
+
+function formatMilliThreshold(value?: bigint) {
+  if (value == null) return KERNEL_OPERATOR_COPY.unknown
+  return `$${value / 1000n}.${(value % 1000n).toString().padStart(3, '0')}`
+}
+
+export function formatEventLines(snapshot: SystemEventSnapshot) {
+  const state = eventState(snapshot)
+  const status =
+    state === 'no-driver'
+      ? KERNEL_OPERATOR_COPY.noDriverState
+      : state === 'condition-met'
+        ? KERNEL_OPERATOR_COPY.conditionMet
+        : state === 'activated'
+          ? KERNEL_OPERATOR_COPY.activated
+          : KERNEL_OPERATOR_COPY.armed
+  const decimals = snapshot.feedDecimals
+  return [
+    KERNEL_OPERATOR_COPY.eventTitle,
+    `${KERNEL_OPERATOR_COPY.trigger}   ${snapshot.trigger ?? KERNEL_OPERATOR_COPY.unknown}`,
+    `${KERNEL_OPERATOR_COPY.status}    ${status}`,
+    `${KERNEL_OPERATOR_COPY.threshold} ${formatMilliThreshold(snapshot.thresholdMilliUsd)}`,
+    `${KERNEL_OPERATOR_COPY.feed}      ${snapshot.feedDescription ?? KERNEL_OPERATOR_COPY.unknown} · ${snapshot.feed ?? KERNEL_OPERATOR_COPY.unknown}`,
+    `${KERNEL_OPERATOR_COPY.answer}    ${decimals == null ? KERNEL_OPERATOR_COPY.unknown : formatUsd(snapshot.condition.answer, decimals)}`,
+    `${KERNEL_OPERATOR_COPY.updated}   ${snapshot.condition.updatedAt.toString()}`,
+    `${KERNEL_OPERATOR_COPY.activation} ${snapshot.activatedBlock > 0n ? `${KERNEL_OPERATOR_COPY.block} ${snapshot.activatedBlock} · ${decimals == null ? snapshot.activationAnswer.toString() : formatUsd(snapshot.activationAnswer, decimals)}` : KERNEL_OPERATOR_COPY.none}`,
+  ]
+}
+
+export function operatorObservedLines(record: KernelOperatorRecord) {
+  const lines = [
+    KERNEL_OPERATOR_COPY.operatorTitle,
+    `${KERNEL_OPERATOR_COPY.first}   ${record.firstRecordBlock.toString()}`,
+    `${KERNEL_OPERATOR_COPY.last}    ${record.lastRecordBlock.toString()}`,
+  ]
+  const observed = SUBSYSTEM_LABELS.flatMap((label, index) => {
+    if ((record.observedMask & (1n << BigInt(index))) === 0n) return []
+    const block = record.firstObserved[index] ?? 0n
+    return [`${KERNEL_OPERATOR_COPY.observed} ${label} · ${KERNEL_OPERATOR_COPY.first} ${block.toString()}`]
+  })
+  lines.push(...(observed.length ? observed : [`${KERNEL_OPERATOR_COPY.observed} ${KERNEL_OPERATOR_COPY.none}`]))
+  const seasons: string[] = []
+  for (let season = 0; season < 256; season++) {
+    if ((record.seasonsObserved & (1n << BigInt(season))) !== 0n) seasons.push(`${KERNEL_OPERATOR_COPY.seasonPrefix}${season}`)
+  }
+  lines.push(`${KERNEL_OPERATOR_COPY.seasons} ${seasons.join(', ') || KERNEL_OPERATOR_COPY.none}`)
+  return lines
+}
+
+export function formatOperatorStorageLines(
+  baseSlot: bigint,
+  entries: readonly { word: number; value?: string }[],
+) {
+  return entries.map(({ word, value }) => {
+    const hex = (value ?? '0x').replace(/^0x/, '').padStart(64, '0').slice(-64)
+    return `W${word.toString().padStart(2, '0')} 0x${(baseSlot + BigInt(word)).toString(16).padStart(64, '0')} ${hex}`
+  })
+}
+
+export function operatorHeaderWord(record: KernelOperatorRecord) {
+  if (record.firstRecordBlock === 0n && record.lastRecordBlock === 0n && record.observedMask === 0n) {
+    return `0x${'0'.repeat(64)}`
+  }
+  const magic = 0x4f505231n << 224n
+  const first = (record.firstRecordBlock & ((1n << 48n) - 1n)) << 176n
+  const last = (record.lastRecordBlock & ((1n << 48n) - 1n)) << 128n
+  const mask = (record.observedMask & 0xffffn) << 112n
+  return `0x${(magic | first | last | mask).toString(16).padStart(64, '0')}`
+}
+
+export function operatorStorageVerificationLine(record: KernelOperatorRecord, storageWord0?: string) {
+  const normalize = (value?: string) => (value ?? '0x0').toLowerCase().replace(/^0x0*/, '0x')
+  return normalize(operatorHeaderWord(record)) === normalize(storageWord0)
+    ? KERNEL_OPERATOR_COPY.storageVerified
+    : KERNEL_OPERATOR_COPY.storageMismatch
 }

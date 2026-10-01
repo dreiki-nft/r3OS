@@ -3,6 +3,12 @@ import {
   buildKernelLinesFromReport,
   formatDeviceLines,
   formatDumpLines,
+  formatEventLines,
+  formatOperatorStorageLines,
+  normalizeKernelOperatorRecord,
+  operatorHeaderWord,
+  operatorObservedLines,
+  operatorStorageVerificationLine,
   parseKernelCommand,
   storageVerificationLine,
   type ProcessReportData,
@@ -67,6 +73,51 @@ describe('Kernel Debugger helpers', () => {
     expect(dump[0]).toContain('LABEL')
     expect(storageVerificationLine('0x01', '0x0001')).toContain('verified')
     expect(storageVerificationLine('0x01', '0x02')).toContain('mismatch')
+  })
+
+  it('parses system-event and operator commands', () => {
+    expect(parseKernelCommand('event')).toEqual({ kind: 'event' })
+    expect(parseKernelCommand('operator')).toEqual({ kind: 'operator' })
+    expect(parseKernelCommand('operator 0x0000000000000000000000000000000000000001')).toEqual({
+      kind: 'operator',
+      address: '0x0000000000000000000000000000000000000001',
+    })
+    expect(parseKernelCommand('operator nope')).toMatchObject({ kind: 'error' })
+  })
+
+  it('formats the event without inventing a post-activation stage', () => {
+    const lines = formatEventLines({
+      loading: false,
+      address: '0x0000000000000000000000000000000000000001',
+      trigger: 'MON_PRICE_TRIGGER',
+      feed: '0x0000000000000000000000000000000000000002',
+      feedDecimals: 8,
+      thresholdMilliUsd: 333n,
+      maxAge: 90_000n,
+      feedDescription: 'MON / USD',
+      activatedBlock: 99n,
+      activationAnswer: 33_300_000n,
+      condition: { met: true, fresh: true, answer: 33_400_000n, updatedAt: 123n, roundId: 7n },
+    })
+    expect(lines.join('\n')).toContain('MON_PRICE_TRIGGER')
+    expect(lines.join('\n')).toContain('$0.333')
+    expect(lines.join('\n')).toContain('block 99')
+  })
+
+  it('formats and verifies operator storage words', () => {
+    const raw = [10n, 20n, 5n, 2n, [10n, 0n, 12n, ...Array.from({ length: 13 }, () => 0n)]]
+    const record = normalizeKernelOperatorRecord(raw)
+    expect(operatorObservedLines(record).join('\n')).toContain('PAINT')
+    expect(operatorObservedLines(record).join('\n')).toContain('PASS')
+    const header = operatorHeaderWord(record)
+    const storage = formatOperatorStorageLines(0x1000n, [
+      { word: 0, value: header },
+      { word: 1, value: '0x02' },
+    ])
+    expect(storage[0]).toContain('W00')
+    expect(storage[1]).toContain('W01')
+    expect(operatorStorageVerificationLine(record, header)).toContain('verified')
+    expect(operatorStorageVerificationLine(record, '0x01')).toContain('mismatch')
   })
 
 })

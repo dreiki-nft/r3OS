@@ -91,6 +91,43 @@ Save the three hardware addresses and experiment ids. Browser-check PAGE.EXE, CA
 
 In Kernel Debugger, also fund the process key with 0.05 MON and run SINGLE, BURST GRACEFUL and BURST NAIVE. Paste back the actual receipts/statuses; the local Monad anvil exposes the reserve probe but did not enforce the end-of-transaction revert.
 
+````markdown
+### 3d. Operator record and system event
+
+Testnet uses the mock MON/USD feed. Deploy it with the same keystore account used for the suite, then deploy the two additive Operator contracts:
+
+```bash
+forge create test/MockMonUsdFeed.sol:MockMonUsdFeed \
+  --rpc-url $RPC --account r3tards-deployer --broadcast
+export MON_USD_FEED=<MockMonUsdFeed deployed address>
+
+PAINT_ADDRESS=$PAINT_ADDRESS \
+MON_USD_FEED=$MON_USD_FEED \
+MON_PRICE_TRIGGER_MILLI_USD=333 \
+MON_FEED_MAX_AGE=90000 \
+forge script script/DeployOperator.s.sol:DeployOperator \
+  --rpc-url $RPC --account r3tards-deployer --broadcast --slow
+```
+
+Save the `R3tardsOperatorRecord` and `R3tardsSystemEvent` addresses and experiment ids. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe instead of pretending registration succeeded.
+
+Soak the latch through all three visible states:
+
+```bash
+cast send $MON_USD_FEED "setAnswer(int256)" 3000000 \
+  --rpc-url $RPC --account r3tards-deployer
+# r3tardOS: DEVICE 07 must show ARMED.
+
+cast send $MON_USD_FEED "setAnswer(int256)" 33300000 \
+  --rpc-url $RPC --account r3tards-deployer
+# r3tardOS: DEVICE 07 must show CONDITION MET before activation.
+```
+
+Use DEVICE 07's `ACTIVATE` button, or send `activate()` permissionlessly from a test account. After the receipt, Monad Hardware, the Operator tab and Kernel Debugger `event` command must all show the same permanent activation block. Reload the app and verify the state remains activated.
+
+For Operator Record, use several real test actions, open **My Pass → Operator**, press `RECORD`, then confirm a second `RECORD` changes only `lastRecordBlock` and emits no `OperatorRecorded` event when no new subsystem or season was added. Kernel Debugger `operator <address>` must show the same OPR1 header as `eth_getStorageAt` for W0.
+````
+
 ## 4. Chain checks (paste the output to Claude)
 
 ```bash

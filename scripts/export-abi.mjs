@@ -25,6 +25,8 @@ const contracts = [
   ['R3TARDS_BLOCK_CAMERA_ABI', 'R3tardsBlockCamera.sol/R3tardsBlockCamera.json'],
   ['R3TARDS_KERNEL_DEBUGGER_ABI', 'R3tardsKernelDebugger.sol/R3tardsKernelDebugger.json'],
   ['R3TARDS_CARD_MEMORY_ABI', 'R3tardsCardMemory.sol/R3tardsCardMemory.json'],
+  ['R3TARDS_OPERATOR_RECORD_ABI', 'R3tardsOperatorRecord.sol/R3tardsOperatorRecord.json'],
+  ['R3TARDS_SYSTEM_EVENT_ABI', 'R3tardsSystemEvent.sol/R3tardsSystemEvent.json'],
 ]
 
 const sections = ['// GENERATED FILE. DO NOT EDIT.', '// Sources: contracts/out Foundry artifacts', '']

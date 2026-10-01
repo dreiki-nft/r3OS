@@ -154,7 +154,21 @@ export function openWindow(
   emit()
 }
 
+/** Drop `#/<id>` from the URL when that window closes, without firing hashchange, so the
+ *  closed program is not reopened by routing or by a page reload. */
+function clearHashFor(id: string) {
+  if (typeof window === 'undefined' || typeof location === 'undefined') return
+  const current = location.hash.split('/')[1]?.split('?')[0]
+  if (current !== id) return
+  try {
+    history.replaceState(history.state, '', `${location.pathname}${location.search}`)
+  } catch {
+    // ignore: some embedded contexts forbid history writes
+  }
+}
+
 export function closeWindow(id: string) {
+  clearHashFor(id)
   const remaining = state.windows.filter((win) => win.id !== id)
   state = {
     ...state,

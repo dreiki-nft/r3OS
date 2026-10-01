@@ -33,6 +33,7 @@ import { HardwareProfiles } from './HardwareProfiles'
 import { SafeImage } from '../os/ui/SafeImage'
 import { Tabs } from '../os/ui/Tabs'
 import { TreeView } from '../os/ui/TreeView'
+import { OperatorTab } from '../operator/OperatorTab'
 import { subscribeCanvasActivity } from '../paint/canvasStore'
 import { builtInStamps, loadLabStamps, type StampRow } from './stamps'
 
@@ -89,7 +90,9 @@ export function PassProgram() {
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const [tab, setTab] = useState(() => {
     const requested = new URLSearchParams(location.hash.split('?')[1] ?? '').get('tab')
-    return requested === 'Hardware Profiles' ? requested : 'General'
+    return ['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator'].includes(requested ?? '')
+      ? requested!
+      : 'General'
   })
   const [passAddress, setPassAddress] = useState<Address>()
   const [collection, setCollection] = useState<Address>()
@@ -176,7 +179,7 @@ export function PassProgram() {
       const requested = new URLSearchParams(location.hash.split('?')[1] ?? '').get('tab')
       if (
         requested &&
-        ['General', 'Device Manager', 'Hardware Profiles', 'Performance'].includes(requested)
+        ['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator'].includes(requested)
       ) {
         setTab(requested)
       }
@@ -343,7 +346,7 @@ export function PassProgram() {
   return (
     <div className="pass-program">
       <Tabs
-        tabs={['General', 'Device Manager', 'Hardware Profiles', 'Performance']}
+        tabs={['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator']}
         active={tab}
         onChange={setTab}
       />
@@ -508,6 +511,7 @@ export function PassProgram() {
           </div>
         )}
         {tab === 'Hardware Profiles' && <HardwareProfiles />}
+        {tab === 'Operator' && <OperatorTab />}
         {tab === 'Performance' && (
           <>
             <GroupBox title="Performance status">

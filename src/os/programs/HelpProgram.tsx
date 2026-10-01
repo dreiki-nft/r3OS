@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ListBox } from '../ui/ListBox'
+import { SYSTEM_LOG_LINES } from '../../operator/copy'
 
 const topics = {
   'what this is': (
@@ -33,6 +34,16 @@ const topics = {
       the owner may set future-season outlines, append/freeze the renderer registry, manage the display-only
       Lab registry, bind the Painter Pass once, and add Pass stamp sources. the owner cannot paint for free,
       edit a running/past season, rewrite frames, force your renderer choice, or mutate Lab state.
+    </>
+  ),
+  'system.log': (
+    <>
+      {SYSTEM_LOG_LINES.map((line, index) => (
+        <span key={line}>
+          <code>{line}</code>
+          {index < SYSTEM_LOG_LINES.length - 1 && <br />}
+        </span>
+      ))}
     </>
   ),
   credits: (

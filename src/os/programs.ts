@@ -89,6 +89,12 @@ const KernelDebuggerProgram = lazy(() =>
 const MonadHardwareProgram = lazy(() =>
   import('../monadhw/MonadHardwareProgram').then((module) => ({ default: module.MonadHardwareProgram })),
 )
+const CdromProgram = lazy(() =>
+  import('../cdrom/CdromProgram').then((module) => ({ default: module.CdromProgram })),
+)
+const ImagingProgram = lazy(() =>
+  import('../cdrom/ImagingProgram').then((module) => ({ default: module.ImagingProgram })),
+)
 const CardMemProgram = lazy(() =>
   import('../monadhw/CardMemProgram').then((module) => ({ default: module.CardMemProgram })),
 )
@@ -192,6 +198,17 @@ export const programs: ProgramDef[] = [
     minSize: { width: 760, height: 520 },
     singleInstance: true,
     hash: '#/cd',
+  },
+  {
+    id: 'cdrom',
+    title: 'CD-ROM (D:)',
+    icon: 'cdrom',
+    colour: '#C9C9C9',
+    component: CdromProgram,
+    defaultSize: { width: 860, height: 560 },
+    minSize: { width: 620, height: 420 },
+    singleInstance: true,
+    hash: '#/cdrom',
   },
   {
     id: 'lanes',
@@ -350,6 +367,18 @@ export const programs: ProgramDef[] = [
     minSize: { width: 760, height: 520 },
     singleInstance: true,
     hash: '#/bin',
+  },
+  {
+    id: 'imaging',
+    title: 'Imaging',
+    icon: 'gallery',
+    colour: '#EE93E3',
+    component: ImagingProgram,
+    defaultSize: { width: 760, height: 620 },
+    minSize: { width: 520, height: 460 },
+    singleInstance: true,
+    hash: '#/imaging',
+    hidden: true,
   },
   {
     id: 'frame-props',

@@ -18,7 +18,7 @@
 .hardware-bus {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   border-top: 1px solid var(--bevel-light);
   border-bottom: 1px solid var(--bevel-dark);
   background: var(--face-2);
@@ -63,8 +63,26 @@
 .hardware-light.absent {
   background: #c52020;
 }
-.hardware-light.unknown {
+.hardware-light.unknown,
+.hardware-light.condition-met {
   background: #fec343;
+}
+.hardware-light.activated {
+  background: var(--accent);
+}
+.hardware-light.armed {
+  background: #877549;
+  animation: hardware-armed 2s steps(2, end) infinite;
+}
+@keyframes hardware-armed {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hardware-light.armed {
+    animation: none;
+  }
 }
 
 .hw-banner {
@@ -383,7 +401,7 @@
 
 @media (max-width: 760px) {
   .hardware-bus {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
   .hardware-bus button {
     border-bottom: 1px solid var(--bevel-light-2);

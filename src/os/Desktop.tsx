@@ -6,6 +6,8 @@ import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { R3TARDS_RECYCLE_BIN_ABI } from '../lib/generated/abi'
 import { getReleaseSnapshot, programNeedsSparkle, subscribeReleases } from './releases'
+import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { currentDisc, getCdromVersion, subscribeCdrom, volumeLabel } from '../cdrom/cdromStore'
 
 export function desktopRows(height = typeof innerHeight === 'number' ? innerHeight : 900) {
   return Math.max(1, Math.floor((height - 48 - 16) / 88))
@@ -17,6 +19,9 @@ export function Desktop() {
   const [selected, setSelected] = useState(0)
   const rows = useMemo(() => desktopRows(), [])
   const [binFull, setBinFull] = useState(false)
+  const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
+  useSyncExternalStore(subscribeCdrom, getCdromVersion)
+  const disc = currentDisc(wallet.account)
 
   useEffect(() => {
     let stop: (() => void) | undefined
@@ -98,10 +103,16 @@ export function Desktop() {
           onDoubleClick={() => open(index)}
         >
           <span className="desktop-icon-art">
-            <Icon name={program.icon} size={36} colour={program.colour} />
+            <Icon
+              name={program.id === 'cdrom' && disc ? 'disc' : program.icon}
+              size={36}
+              colour={program.colour}
+            />
             {program.id === 'bin' && binFull && <i className="desktop-bin-paper" aria-label="full" />}
           </span>
-          <span className="desktop-icon-label">{program.title}</span>
+          <span className="desktop-icon-label">
+            {program.id === 'cdrom' && disc ? `${volumeLabel(disc.label)} (D:)` : program.title}
+          </span>
         </button>
       ))}
     </div>

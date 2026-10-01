@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, useSyncExternalStore } from 'react'
+import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { disconnectWallet } from '../chain/wallet'
 import { getBlockSnapshot, startBlockClock, subscribeBlocks } from '../chain/blocks'
 import { startCanvasStore } from '../paint/canvasStore'
@@ -57,15 +57,22 @@ export function R3tardOS() {
     return () => window.removeEventListener('r3os:not-installed', locked)
   }, [])
 
+  // The hash opens a program once: on first load (after releases load) and on a real hashchange.
+  // Release-store refreshes (every minute) must not reopen a window the user already closed.
+  const routedHash = useRef<string | undefined>(undefined)
   useEffect(() => {
-    const route = () => {
-      const id = location.hash.split('/')[1]?.split('?')[0]
+    const route = (force: boolean) => {
+      const hash = location.hash
+      if (!force && hash === routedHash.current) return
+      const id = hash.split('/')[1]?.split('?')[0]
       if (!id || !programById(id) || releases.status === 'loading') return
+      routedHash.current = hash
       if (openProgram(id, false)) setNotInstalled(undefined)
     }
-    route()
-    window.addEventListener('hashchange', route)
-    return () => window.removeEventListener('hashchange', route)
+    route(false)
+    const onHashChange = () => route(true)
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
   }, [releases.version])
 
   useEffect(() => {

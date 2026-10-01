@@ -1,0 +1,98 @@
+.operator-tab {
+  display: grid;
+  gap: 8px;
+}
+
+.operator-rows {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 8px;
+  font: 11px/1.4 var(--font);
+}
+
+.operator-rows > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.operator-label {
+  flex: 0 0 auto;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.operator-leader {
+  flex: 1 1 auto;
+  min-width: 12px;
+  border-bottom: 1px dotted var(--bevel-light-2);
+  transform: translateY(-3px);
+}
+
+.operator-value {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.operator-source {
+  flex: 0 0 auto;
+  width: 58px;
+  padding: 1px 4px;
+  border: 1px solid var(--bevel-light-2);
+  background: var(--face);
+  color: var(--text);
+  font: 9px/1.2 var(--font);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.operator-source-onchain {
+  background: var(--bevel-light);
+}
+
+.operator-source-derived {
+  border-color: #5feddf;
+  color: #5feddf;
+}
+
+.operator-source-config {
+  background: #fec343;
+  color: #0b0b0c;
+}
+
+.operator-source-unknown {
+  background: #877549;
+  color: #ffffff;
+}
+
+.operator-tab [role='treeitem'] {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font: 11px/1.5 var(--font);
+  color: var(--text-muted);
+}
+
+.operator-tab [role='treeitem'].operator-used {
+  color: var(--text);
+}
+
+.operator-subsystem {
+  text-transform: uppercase;
+}
+
+.operator-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.operator-record-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

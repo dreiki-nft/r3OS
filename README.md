@@ -310,6 +310,18 @@ Phase MONAD CARD adds `R3tardsCardMemory`, registered as `card-drv`, and the `CA
 
 The same page is visible to PAGE.EXE, Kernel Debugger, Block Camera and Monad Hardware. The driver is also appended as the `MONAD CARD` Painter Pass stamp source and supplies the two-condition `CARD CARRIER` quest. Monad Cards are mainnet-only, so local/testnet deployments use `MockMonadCard`; the official chain-143 address is enforced by the driver constructor. See [`docs/specs/MONAD_CARD.md`](docs/specs/MONAD_CARD.md).
 
+### Operator record and system event
+
+Phase OPERATOR adds two removable, adminless contracts. `R3tardsOperatorRecord` (`operator-record`) reads objective per-address facts from the existing Paint/Lab/hardware contracts and stores only the first block at which each subsystem was observed plus a prospective bitmap of paint seasons observed. Existing counters stay in their source contracts; there is no aggregate score or repetition counter.
+
+`R3tardsSystemEvent` (`system-event`) is the permanent DEVICE 07 latch. On Monad mainnet it accepts only the Chainlink MON/USD proxy and can be activated permissionlessly once one fresh round is at or above the deployed milli-USD threshold (`333` by default, or `$0.333`). It has no owner, reset or fallback activation path.
+
+My Pass exposes the address's record under the **Operator** tab. Monad Hardware exposes **DEVICE 07 · UNKNOWN DEVICE**, and Kernel Debugger adds `event` and `operator [address]`. These screens distinguish live onchain facts, derived values, deployment configuration and unknown data. The phase makes no promise about what, if anything, the record or event will be used for. See [`docs/specs/OPERATOR_RECORD.md`](docs/specs/OPERATOR_RECORD.md) and [`docs/specs/SYSTEM_EVENT.md`](docs/specs/SYSTEM_EVENT.md).
+
+### CD-ROM (D:)
+
+Burned CDs open in a Windows 98 CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](docs/specs/CDROM.md).
+
 ## Palette
 
 | # | Hex | Name |

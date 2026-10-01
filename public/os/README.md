@@ -4,7 +4,7 @@ Drop this folder into the web app's `public/` as `public/os/`. Everything here i
 
 ```
 os/
-  icons/       58 pixel icons, white on transparent, 36 px (name.png) and 72 px (name@2x.png)
+  icons/       60 pixel icons, white on transparent, 36 px (name.png) and 72 px (name@2x.png)
   sfx/         12 sound effects, mp3, loudness-matched (about -24 dB mean, -1.5 dB peak)
   wallpaper/   wallpaper-dark.webp  (emo wallpaper with the purple background swapped for charcoal)
   badges/      12 quest badges, q00 … q11 (see Quest badges)
@@ -83,6 +83,9 @@ Colour mapping (all from the r3tards 16-colour palette):
 | Sounds | `music` | `#EE93E3` pink |
 | Help | `help` | `#FFFFFF` |
 | Recycle Bin | `trash` | `#877549` olive |
+| CD-ROM (D:), empty drive | `cdrom` | `#C9C9C9` silver |
+| CD-ROM (D:), disc inserted | `disc` | `#C9C9C9` silver |
+| Imaging (track viewer) | `gallery` | `#EE93E3` pink |
 | Tools: pencil, brush, fill, picker, eraser, zoom | `pencil` `brush` `bucket` `picker` `eraser` `zoom` | `#F2EFE9` |
 | Tool: Block DNA stamp | `dna` | `#C864AA` |
 | Tray: sound | `speaker` | `#F2EFE9` |

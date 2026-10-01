@@ -3,19 +3,30 @@ import { formatEther, parseEther, toHex, type Address, type Hex } from 'viem'
 import { publicClient } from '../chain/clients'
 import { readHeavy, readMany } from '../chain/readMany'
 import { useRefreshTick } from '../chain/refreshTick'
+import { readSystemEventNow } from '../chain/systemEvent'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_CARD_MEMORY_ABI, R3TARDS_KERNEL_DEBUGGER_ABI } from '../lib/generated/abi'
+import {
+  R3TARDS_CARD_MEMORY_ABI,
+  R3TARDS_KERNEL_DEBUGGER_ABI,
+  R3TARDS_OPERATOR_RECORD_ABI,
+} from '../lib/generated/abi'
 import { errorText, labAddress, shortAddress } from '../labs/labCommon'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { HardwareBus } from '../os/ui/HardwareBus'
 import { IntroBar } from '../os/ui/IntroBar'
 import { MessageBox } from '../os/ui/MessageBox'
+import { KERNEL_OPERATOR_COPY } from '../operator/copy'
 import {
   buildKernelLines,
   formatDeviceLines,
   formatDumpLines,
+  formatEventLines,
+  formatOperatorStorageLines,
+  normalizeKernelOperatorRecord,
+  operatorObservedLines,
+  operatorStorageVerificationLine,
   parseKernelCommand,
   storageVerificationLine,
   type KernelCardInfo,
@@ -58,6 +69,7 @@ export function KernelDebuggerProgram() {
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
   const [cardDriver, setCardDriver] = useState<Address>()
+  const [operatorDriver, setOperatorDriver] = useState<Address>()
   const [command, setCommand] = useState('')
   const [lastCommand, setLastCommand] = useState('')
 
@@ -71,6 +83,12 @@ export function KernelDebuggerProgram() {
     void labAddress('card-drv')
       .then(setCardDriver)
       .catch(() => setCardDriver(undefined))
+  }, [])
+
+  useEffect(() => {
+    void labAddress('operator-record')
+      .then(setOperatorDriver)
+      .catch(() => setOperatorDriver(undefined))
   }, [])
 
   useEffect(() => {
@@ -212,11 +230,74 @@ export function KernelDebuggerProgram() {
       return
     }
     if (parsed.kind === 'help') {
-      setLines((current) => [...current, echo, 'help', 'cls', 'device <id>', 'dump <id> [word] [count]'])
+      setLines((current) => [
+        ...current,
+        echo,
+        'help',
+        'cls',
+        'device <id>',
+        'dump <id> [word] [count]',
+        KERNEL_OPERATOR_COPY.eventCommand,
+        KERNEL_OPERATOR_COPY.operatorCommand,
+      ])
       return
     }
     if (parsed.kind === 'error') {
       setLines((current) => [...current, echo, parsed.message])
+      return
+    }
+    if (parsed.kind === 'event') {
+      try {
+        const snapshot = await readSystemEventNow()
+        setLines((current) => [...current, echo, ...formatEventLines(snapshot)])
+      } catch (error) {
+        setLines((current) => [...current, echo, errorText(error)])
+      }
+      return
+    }
+    if (parsed.kind === 'operator') {
+      const target = parsed.address ?? wallet.account
+      if (!target) {
+        setLines((current) => [...current, echo, KERNEL_OPERATOR_COPY.connectOrAddress])
+        return
+      }
+      if (!operatorDriver || !publicClient) {
+        setLines((current) => [...current, echo, KERNEL_OPERATOR_COPY.driverMissing])
+        return
+      }
+      try {
+        const driver = operatorDriver
+        const client = publicClient
+        const rows = await readMany(
+          [
+            { address: driver, abi: R3TARDS_OPERATOR_RECORD_ABI, functionName: 'recordOf', args: [target] },
+            { address: driver, abi: R3TARDS_OPERATOR_RECORD_ABI, functionName: 'recordBaseSlot', args: [target] },
+          ],
+          { allowFailure: false },
+        )
+        const record = normalizeKernelOperatorRecord(rows[0])
+        const base = BigInt(rows[1] as bigint)
+        const wordIndexes = [0, 1, ...Array.from({ length: 16 }, (_, index) => 16 + index)]
+        const storageRows = await readHeavy(
+          wordIndexes.map((word) => ({
+            run: () => client.getStorageAt({ address: driver, slot: toHex(base + BigInt(word), { size: 32 }) }),
+          })),
+          { concurrency: 4 },
+        )
+        const entries = wordIndexes.map((word, index) => ({
+          word,
+          value: storageRows[index]?.status === 'success' ? String(storageRows[index].result ?? '0x') : undefined,
+        }))
+        setLines((current) => [
+          ...current,
+          echo,
+          ...operatorObservedLines(record),
+          ...formatOperatorStorageLines(base, entries),
+          operatorStorageVerificationLine(record, entries[0]?.value),
+        ])
+      } catch (error) {
+        setLines((current) => [...current, echo, errorText(error)])
+      }
       return
     }
     if (!cardDriver || !publicClient) {

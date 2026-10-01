@@ -199,3 +199,13 @@ The testnet identity device is `MockMonadCard`, not the official card. UI proven
 The `MONAD CARD` Painter Pass stamp source performs a gas-capped external staticcall through the existing Pass machinery. CARD.DRV's own `stamp` catches card-contract failure and returns false, so a malformed/unavailable card response cannot brick Pass metadata.
 
 There is no admin path to edit, clear or migrate CARD.DRV pages. The only mutable storage outside the pages is the writer-to-last-card discovery index; it grants no authority and is revalidated against `ownerOf` before the frontend treats it as a present card. Block Camera card shots store the page hash/write count at capture time and never read mutable CARD.DRV state during later rendering.
+
+## Operator record and system event
+
+`R3tardsOperatorRecord` is permissionless to record but cannot accept caller-supplied facts. Each observation is reconstructed with gas-capped `staticcall`s against the configured source contracts, and a first-observed block can move only from zero to the block in which the predicate was actually observed. Repeating the same action does not add another subsystem bit. Missing, reverting, malformed or gas-burning sources are treated as unanswered rather than converted into false facts.
+
+The record is **public history**. Its storage page and `OperatorRecorded` events are readable by anyone, and the Operator tab says so explicitly. It must not be described as private analytics. Session-key-capable sources already attribute their state to the Paint owner; contract-wallet addresses remain valid operators and do not need to originate the recording transaction themselves.
+
+`R3tardsSystemEvent` trusts the configured Chainlink MON/USD proxy and one fresh round that satisfies the deployed threshold. On chain 143 the contract hard-requires the verified proxy address. Activation is permissionless and permanent: there is no owner, pause, reset, feed migration or manual fallback. The consequence is intentional liveness risk: if the oracle stops returning fresh rounds before the condition is reached, this deployment cannot be repaired to force activation.
+
+The UI keeps the oracle condition separate from the latch itself: **CONDITION MET** is not **ACTIVATED** until an `activate()` transaction succeeds. After activation, DEVICE 07 still says its driver is not installed and its next stage is unknown. New Operator / DEVICE 07 / Kernel event-copy is centralized and regression-tested against the phase's prohibited marketing vocabulary, and the Operator tab includes the explicit no-promise line required by the product spec.

@@ -4,11 +4,16 @@ import { MONAD_NAMES, config } from '../chain/config'
 import { cardPropertySources, isOfficialCard, useMonadCard } from '../chain/monadCard'
 import { MONAD_HW_SPEC, useMonadHardware, type HardwareSource } from '../chain/monadHardware'
 import { getTxTraceSnapshot, subscribeTxTrace } from '../chain/txTrace'
+import { eventState, formatUsd, useSystemEvent } from '../chain/systemEvent'
+import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
+import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import packageJson from '../../package.json'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { HardwareBus, type HardwareDevice } from '../os/ui/HardwareBus'
+import { R3TARDS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
+import { DEVICE07_COPY } from '../operator/copy'
 import { IntroBar } from '../os/ui/IntroBar'
 import './monadhw.css'
 
@@ -20,7 +25,7 @@ const RULES = [
 
 const ROM_LIMIT = MONAD_HW_SPEC.contractRomBytes.value
 
-type SourceLabel = HardwareSource | 'measured + spec' | 'onchain + spec' | ''
+type SourceLabel = HardwareSource | 'measured + spec' | 'onchain + spec' | 'config' | ''
 type HwRow = {
   key: string
   device: HardwareDevice
@@ -32,7 +37,7 @@ type HwRow = {
 function focusFromHash(): HardwareDevice | undefined {
   if (typeof location === 'undefined') return undefined
   const value = location.hash.split('/')[2]
-  return ['clock', 'storage', 'consensus', 'execution', 'rom', 'card'].includes(value)
+  return ['clock', 'storage', 'consensus', 'execution', 'rom', 'card', 'unknown'].includes(value)
     ? (value as HardwareDevice)
     : undefined
 }
@@ -57,6 +62,32 @@ function finalityText(trace: ReturnType<typeof getTxTraceSnapshot>['traces'][num
   return `${votedMs} · ${finalMs}`
 }
 
+
+function formatMilliUsd(value?: bigint) {
+  if (value == null) return DEVICE07_COPY.unknown
+  const whole = value / 1000n
+  const fraction = (value % 1000n).toString().padStart(3, '0')
+  return `$${whole}.${fraction}`
+}
+
+function eventStatusText(snapshot: ReturnType<typeof useSystemEvent>) {
+  if (snapshot.loading) return DEVICE07_COPY.unknown
+  const state = eventState(snapshot)
+  if (state === 'no-driver') return DEVICE07_COPY.noDriver
+  if (state === 'activated') return `${DEVICE07_COPY.activated} · ${DEVICE07_COPY.block} ${snapshot.activatedBlock}`
+  if (state === 'condition-met') return DEVICE07_COPY.conditionMet
+  return `${DEVICE07_COPY.armed} · ${snapshot.trigger ?? DEVICE07_COPY.triggerFallback}`
+}
+
+function feedAge(updatedAt: bigint, now: bigint) {
+  if (updatedAt === 0n) return DEVICE07_COPY.feedUnavailable
+  const seconds = now > updatedAt ? now - updatedAt : 0n
+  if (seconds < 60n) return DEVICE07_COPY.updatedNow
+  const minutes = seconds / 60n
+  if (minutes < 120n) return `${minutes} ${DEVICE07_COPY.updatedMinutes}`
+  return `${minutes / 60n} ${DEVICE07_COPY.updatedHours}`
+}
+
 function cardStatusText(card: ReturnType<typeof useMonadCard>) {
   if (card.status === 'present' && card.cardInfo?.exists) return 'This device is working properly.'
   if (card.status === 'no-driver') return 'The driver for this device is not installed.'
@@ -68,9 +99,14 @@ function cardStatusText(card: ReturnType<typeof useMonadCard>) {
 export function MonadHardwareProgram() {
   const hw = useMonadHardware()
   const card = useMonadCard()
+  const systemEvent = useSystemEvent()
+  const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const traces = useSyncExternalStore(subscribeTxTrace, getTxTraceSnapshot)
   const [focus, setFocus] = useState<HardwareDevice | undefined>(() => focusFromHash())
+  const [activationQuote, setActivationQuote] = useState<ActionQuote>()
+  const [activationPending, setActivationPending] = useState(false)
+  const [activationMessage, setActivationMessage] = useState('')
 
   useEffect(() => {
     const onHash = () => setFocus(focusFromHash())
@@ -78,6 +114,49 @@ export function MonadHardwareProgram() {
     onHash()
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  useEffect(() => {
+    setActivationQuote(undefined)
+    if (eventState(systemEvent) !== 'condition-met' || !systemEvent.address || !wallet.account) return
+    const eventAddress = systemEvent.address
+    const account = wallet.account
+    let cancelled = false
+    void quoteAction({
+      kind: 'estimate',
+      address: eventAddress,
+      abi: R3TARDS_SYSTEM_EVENT_ABI,
+      functionName: 'activate',
+      account,
+      action: DEVICE07_COPY.activateAction,
+    })
+      .then((quote) => !cancelled && setActivationQuote(quote))
+      .catch(() => !cancelled && setActivationQuote(undefined))
+    return () => {
+      cancelled = true
+    }
+  }, [systemEvent.address, systemEvent.activatedBlock, systemEvent.condition.met, wallet.account])
+
+  async function activateEvent() {
+    if (!systemEvent.address || !wallet.account || !activationQuote || activationPending) return
+    setActivationPending(true)
+    setActivationMessage('')
+    try {
+      await sendAction({
+        kind: 'estimate',
+        address: systemEvent.address,
+        abi: R3TARDS_SYSTEM_EVENT_ABI,
+        functionName: 'activate',
+        account: wallet.account,
+        quote: activationQuote,
+        action: DEVICE07_COPY.activateAction,
+      })
+      setActivationMessage(DEVICE07_COPY.activated)
+    } catch (error) {
+      setActivationMessage(error instanceof Error ? error.message : String(error))
+    } finally {
+      setActivationPending(false)
+    }
+  }
 
   const pageOverhead = hw.storage.overhead.value ?? 0n
   const cold =
@@ -190,6 +269,20 @@ export function MonadHardwareProgram() {
         source: hw.p256.verified.source,
       },
       {
+        key: 'system-event',
+        device: 'unknown',
+        label: DEVICE07_COPY.eventRow,
+        value: eventStatusText(systemEvent),
+        source: systemEvent.loading ? 'unknown' : systemEvent.address ? 'onchain' : 'absent',
+      },
+      {
+        key: 'device-07',
+        device: 'unknown',
+        label: `${DEVICE07_COPY.devicePrefix} ${DEVICE07_COPY.label}`,
+        value: DEVICE07_COPY.name,
+        source: '',
+      },
+      {
         key: 'card',
         device: 'card',
         label: card.cardId == null ? 'Monad Card' : `Monad Card #${card.cardId}`,
@@ -197,7 +290,7 @@ export function MonadHardwareProgram() {
         source: card.status === 'present' ? 'onchain' : card.status === 'no-driver' ? 'absent' : 'unknown',
       },
     ]
-  }, [hw, block.blockTimeMs, block.mode, traces.version, cold, warm, card, measuredChainName])
+  }, [hw, block.blockTimeMs, block.mode, traces.version, cold, warm, card, measuredChainName, systemEvent])
 
   const official = isOfficialCard(hw.chainId.value, card.cardAddress)
   const cardSources = cardPropertySources({
@@ -217,7 +310,7 @@ export function MonadHardwareProgram() {
         monad="chain probes and measured timings sit beside protocol specs instead of pretending they are the same thing."
         rules={RULES}
       />
-      <HardwareBus highlight={['clock', 'storage', 'consensus', 'execution', 'rom', 'card']} />
+      <HardwareBus highlight={['clock', 'storage', 'consensus', 'execution', 'rom', 'card', 'unknown']} />
       <div className="monadhw-scroll">
         <GroupBox title="System Information">
           <div className="hardware-device-list sunken">
@@ -233,6 +326,97 @@ export function MonadHardwareProgram() {
               </div>
             ))}
           </div>
+        </GroupBox>
+
+        <GroupBox title={`${DEVICE07_COPY.devicePrefix} ${DEVICE07_COPY.label} · Properties`}>
+          <div className="hardware-device-list sunken">
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.deviceTypeLabel}</b>
+              <span>{DEVICE07_COPY.deviceType}</span>
+              <SourceBadge source="" />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.manufacturerLabel}</b>
+              <span>{DEVICE07_COPY.manufacturer}</span>
+              <SourceBadge source="" />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.driverLabel}</b>
+              <span>{DEVICE07_COPY.driver}</span>
+              <SourceBadge source="" />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.statusLabel}</b>
+              <span>
+                {systemEvent.loading
+                  ? DEVICE07_COPY.unknown
+                  : eventState(systemEvent) === 'activated'
+                  ? `${DEVICE07_COPY.activatedAtBlock} ${systemEvent.activatedBlock}`
+                  : eventState(systemEvent) === 'no-driver'
+                    ? DEVICE07_COPY.noDriver
+                    : eventState(systemEvent) === 'condition-met'
+                      ? DEVICE07_COPY.conditionMet
+                      : DEVICE07_COPY.waiting}
+              </span>
+              <SourceBadge source={systemEvent.loading ? 'unknown' : systemEvent.address ? 'onchain' : 'absent'} />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.activationLabel}</b>
+              <span>{systemEvent.loading ? DEVICE07_COPY.unknown : eventState(systemEvent) === 'activated' ? DEVICE07_COPY.activated : DEVICE07_COPY.armed}</span>
+              <SourceBadge source={systemEvent.loading ? 'unknown' : systemEvent.address ? 'onchain' : 'absent'} />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.triggerLabel}</b>
+              <span>{systemEvent.trigger ?? DEVICE07_COPY.unknown}</span>
+              <SourceBadge source={systemEvent.address ? 'onchain' : 'unknown'} />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.conditionLabel}</b>
+              <span>
+                {systemEvent.thresholdMilliUsd == null
+                  ? DEVICE07_COPY.unknown
+                  : `${DEVICE07_COPY.marketCondition} ${formatMilliUsd(systemEvent.thresholdMilliUsd)}`}
+              </span>
+              <SourceBadge source={systemEvent.thresholdMilliUsd == null ? 'unknown' : 'config'} />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.feedLabel}</b>
+              <span>
+                {systemEvent.loading || !systemEvent.feed
+                  ? DEVICE07_COPY.unknown
+                  : `${systemEvent.feedDescription ?? DEVICE07_COPY.unknown} · ${
+                      systemEvent.feedDecimals == null
+                        ? DEVICE07_COPY.unknown
+                        : formatUsd(systemEvent.condition.answer, systemEvent.feedDecimals)
+                    } · ${
+                      systemEvent.condition.fresh
+                        ? feedAge(systemEvent.condition.updatedAt, block.timestamp)
+                        : `${DEVICE07_COPY.stale} (${feedAge(systemEvent.condition.updatedAt, block.timestamp)})`
+                    }`}
+              </span>
+              <SourceBadge source={systemEvent.feed ? 'onchain' : 'unknown'} />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.nextStageLabel}</b>
+              <span>{DEVICE07_COPY.nextStage}</span>
+              <SourceBadge source="" />
+            </div>
+            <div className="hardware-device-row">
+              <b>{DEVICE07_COPY.operatorRecordLabel}</b>
+              <span>{DEVICE07_COPY.operatorRecord}</span>
+              <Button onClick={() => openProgram('pass', true, '#/pass?tab=Operator')}>{DEVICE07_COPY.open}</Button>
+            </div>
+          </div>
+          {eventState(systemEvent) === 'condition-met' && wallet.account && (
+            <div className="hw-toolbar">
+              <Button primary disabled={activationPending || !activationQuote} onClick={() => void activateEvent()}>
+                {DEVICE07_COPY.activateButton}
+              </Button>
+              <span>{DEVICE07_COPY.maxCost}: {activationQuote?.maxCost ?? DEVICE07_COPY.quoting}</span>
+            </div>
+          )}
+          {eventState(systemEvent) === 'condition-met' && <p className="hw-note">{DEVICE07_COPY.activateHelp}</p>}
+          {activationMessage && <p className="hw-message">{activationMessage}</p>}
         </GroupBox>
 
         <GroupBox title={card.cardId == null ? 'Card Properties' : `Monad Card #${card.cardId} · Properties`}>
