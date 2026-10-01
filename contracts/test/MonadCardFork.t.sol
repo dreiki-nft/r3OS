@@ -62,6 +62,62 @@ contract MonadCardForkTest is Test {
         _logString("symbol()", abi.encodeWithSignature("symbol()"));
     }
 
+    /// @dev Observation only: ERC-5192 is not advertised, so check whether the owner can actually move the card.
+    /// Runs on a local fork; nothing is sent to mainnet.
+    function testOfficialMonadCardTransferProbe() public {
+        string memory rpc = vm.envOr("MONAD_MAINNET_RPC", string(""));
+        if (bytes(rpc).length == 0) {
+            vm.skip(true);
+            return;
+        }
+
+        vm.createSelectFork(rpc);
+        uint256 cardId = vm.envUint("CARD_ID");
+        address owner = IOfficialMonadCard(OFFICIAL).ownerOf(cardId);
+        address receiver = makeAddr("receiver");
+
+        _probeTransfer(
+            "transferFrom",
+            owner,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", owner, receiver, cardId),
+            cardId,
+            receiver
+        );
+        _probeTransfer(
+            "safeTransferFrom",
+            owner,
+            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", owner, receiver, cardId),
+            cardId,
+            receiver
+        );
+        _probeTransfer(
+            "approve",
+            owner,
+            abi.encodeWithSignature("approve(address,uint256)", receiver, cardId),
+            cardId,
+            receiver
+        );
+    }
+
+    function _probeTransfer(string memory label, address owner, bytes memory data, uint256 cardId, address receiver)
+        private
+    {
+        uint256 snapshot = vm.snapshotState();
+        vm.prank(owner);
+        (bool ok, bytes memory result) = OFFICIAL.call(data);
+        if (ok) {
+            (bool readOk, bytes memory ownerData) = OFFICIAL.staticcall(
+                abi.encodeWithSelector(IOfficialMonadCard.ownerOf.selector, cardId)
+            );
+            bool moved = readOk && ownerData.length >= 32 && abi.decode(ownerData, (address)) == receiver;
+            console2.log(label, "succeeded; card moved:", moved);
+        } else {
+            console2.log(label, "reverted; data:");
+            console2.logBytes(result);
+        }
+        vm.revertToState(snapshot);
+    }
+
     function _logString(string memory label, bytes memory data) private view {
         (bool ok, bytes memory out) = OFFICIAL.staticcall(data);
         if (ok && out.length >= 64) console2.log(label, abi.decode(out, (string)));
