@@ -5,7 +5,8 @@ import { confirmHigherCost, osConfirm } from '../os/confirm'
 import { type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient, wsClient } from '../chain/clients'
-import { quoteAction, sendAction } from '../chain/tx'
+import { sendActions, walletCanBatch } from '../chain/batch'
+import { quoteAction } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { discoverContracts } from '../chain/contracts'
 import { readMany } from '../chain/readMany'
@@ -290,37 +291,52 @@ export function QuestsProgram() {
     setPending(true)
     setMessage('')
     try {
+      const signer = liveActive(live) ? 'burner' : 'wallet'
       const quoted = await quoteClaims(ids)
+      const batched = ids.length > 1 && signer === 'wallet' && (await walletCanBatch(wallet.account))
       const cost = quoted
         .map((item) => `${defs[item.id]?.name ?? `quest ${item.id}`}: ${item.quote.maxCost}`)
         .join('\n')
+      const how =
+        ids.length === 1
+          ? 'Claim this badge?'
+          : signer === 'burner'
+            ? `Claim ${ids.length} badges? Live mode sends them, no wallet prompts.`
+            : batched
+              ? `Claim ${ids.length} badges in one wallet prompt?`
+              : `Claim ${ids.length} badges? Your wallet asks once per badge.`
       if (
         !(await osConfirm({
           title: ids.length === 1 ? 'Claim badge' : 'Claim badges',
-          message: `${ids.length === 1 ? 'Claim this badge?' : `Claim ${ids.length} badges as separate transactions?`}\n\n${cost}`,
+          message: `${how}\n\n${cost}`,
           okLabel: 'Claim',
           kind: 'info',
         }))
       )
         return
-      for (const item of quoted) {
-        await sendAction({
-          kind: 'estimate',
+      await sendActions(
+        quoted.map((item) => ({
+          kind: 'estimate' as const,
           address,
           abi: R3TARDS_QUESTS_ABI,
           functionName: 'claim',
           args: [BigInt(item.id)],
-          account: wallet.account,
-          signer: liveActive(live) ? 'burner' : 'wallet',
+          account: wallet.account!,
+          signer,
           quote: item.quote,
           action: `claim quest ${defs[item.id]?.name ?? item.id}`,
-          successSound: 'success-heavy',
+          successSound: 'success-heavy' as const,
           confirmHigherCost,
-        })
-      }
+        })),
+        {
+          action:
+            ids.length === 1 ? `claim quest ${defs[ids[0]]?.name ?? ids[0]}` : `claim ${ids.length} quests`,
+        },
+      )
       await refresh()
     } catch (error) {
       setMessage(errorText(error))
+      await refresh()
     } finally {
       setPending(false)
     }

@@ -11,6 +11,10 @@ export interface BalloonNotice {
   href?: string
   hrefLabel?: string
   sound?: SoundName
+  /** Buttons under the text. Each one runs, then closes the balloon. */
+  actions?: { label: string; run: () => void }[]
+  /** Stay until closed instead of fading after 8 s (for a question). */
+  sticky?: boolean
 }
 
 type BalloonInput = Omit<BalloonNotice, 'id'> & { id?: BalloonNotice['id'] }

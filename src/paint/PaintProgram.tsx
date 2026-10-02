@@ -849,6 +849,12 @@ export function PaintProgram() {
           action: () => void paintChunks(true),
         },
         {
+          label: isLive ? 'Live mode is on ✓' : 'Live mode (no wallet popups)…',
+          disabled: isLive,
+          disabledReason: 'end the session in My Pass › Hardware Profiles',
+          action: () => openProgram('live-wizard'),
+        },
+        {
           label: `Auto-paint strokes ${autoPaint ? '✓' : ''}`,
           disabled: !isLive,
           disabledReason: 'live mode only',

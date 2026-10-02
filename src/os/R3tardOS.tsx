@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet } from '../chain/wallet'
 import { Welcome } from './Welcome'
 import { getBlockSnapshot, startBlockClock, subscribeBlocks } from '../chain/blocks'
@@ -43,6 +44,7 @@ export function R3tardOS() {
   useEffect(() => {
     initSound()
     initWalletDiscovery()
+    initLiveNudge()
     void initReleases()
     void startBlockClock()
     void startCanvasStore()

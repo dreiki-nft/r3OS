@@ -217,12 +217,17 @@ const pages: Record<HelpSlug, ReactNode> = {
   'live-mode': (
     <>
       <p>
-        sign once and paint without a wallet popup for every stroke. you approve a temporary burner key that
-        can only paint, for a limited time and a limited number of pixels.
+        stop confirming every stroke. Live mode makes a burner key in this browser that can only paint (and
+        claim quests), for a limited time and a limited number of pixels.
       </p>
       <p>
-        the burner needs a little MON for gas. end the session, and sweep leftover MON back, from My Pass ›
-        Hardware Profiles.
+        <b>quick start</b> (Paint › File › Live mode…): your wallet asks twice, once to sign the session and
+        once to send the burner a little MON for gas. after that, paints land with no popups for about 2
+        hours. if the burner still has MON from last time, it's only one prompt.
+      </p>
+      <p>
+        the burner can't mint frames, claim the Pass, recycle or move your tokens. end the session, and get
+        leftover MON back, from My Pass › Hardware Profiles.
       </p>
     </>
   ),

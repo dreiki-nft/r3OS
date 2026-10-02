@@ -54,6 +54,11 @@ button {
   border: 0;
 }
 
+/* Without this, a select uses the browser's white field with our light text: unreadable. */
+select {
+  background-color: var(--field);
+}
+
 .raised {
   box-shadow:
     inset -1px -1px 0 var(--bevel-outer),
@@ -743,6 +748,17 @@ button:disabled {
 
 .balloon p {
   margin: 4px 0;
+}
+
+.balloon-actions .r3-button {
+  color: var(--text);
+}
+
+.balloon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .assistant {
@@ -1578,6 +1594,87 @@ button:disabled {
 .live-wizard-step input,
 .live-wizard-step select {
   width: 100%;
+}
+
+.live-quick {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  margin: 10px 0 4px;
+  background: var(--field);
+}
+
+.live-quick b {
+  grid-column: 1;
+}
+
+.live-quick span {
+  grid-column: 1;
+  color: var(--text-muted);
+}
+
+.live-quick button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.live-quick-steps {
+  list-style: none;
+  margin: 6px 0 12px;
+  padding: 0;
+}
+
+.live-quick-steps li {
+  position: relative;
+  padding: 5px 0 5px 24px;
+  color: var(--text-muted);
+}
+
+.live-quick-steps li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--text-muted);
+  text-align: center;
+  line-height: 12px;
+  font-size: 11px;
+}
+
+.live-quick-steps li.current {
+  color: var(--text);
+  font-weight: bold;
+}
+
+.live-quick-steps li.current::before {
+  content: '›';
+  border-color: var(--text);
+}
+
+.live-quick-steps li.done {
+  color: var(--text);
+}
+
+.live-quick-steps li.done::before {
+  content: '✓';
+  border-color: var(--text);
+}
+
+.live-quick-steps li.failed::before {
+  content: '×';
+  color: #c00;
+  border-color: #c00;
+}
+
+.live-quick-steps small {
+  display: block;
+  font-weight: normal;
+  color: var(--text-muted);
 }
 
 .live-summary {

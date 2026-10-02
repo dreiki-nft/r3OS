@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { BalloonNotice } from '../balloons'
 import { dismissBalloon } from '../balloons'
 import { playSound } from '../sound'
+import { Button } from './Button'
 import { Icon } from './Icon'
 
 export function Balloon({ notice }: { notice: BalloonNotice }) {
@@ -17,10 +18,10 @@ export function Balloon({ notice }: { notice: BalloonNotice }) {
   }, [notice.id])
 
   useEffect(() => {
-    if (hovered) return
+    if (hovered || notice.sticky) return
     const timer = window.setTimeout(() => closeRef.current(), 8_000)
     return () => window.clearTimeout(timer)
-  }, [hovered, notice.id])
+  }, [hovered, notice.id, notice.sticky])
 
   return (
     <div className="balloon" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
@@ -51,6 +52,22 @@ export function Balloon({ notice }: { notice: BalloonNotice }) {
             </>
           )}
         </div>
+        {notice.actions?.length ? (
+          <div className="balloon-actions">
+            {notice.actions.map((action, index) => (
+              <Button
+                key={action.label}
+                primary={index === 0}
+                onClick={() => {
+                  dismissBalloon(notice.id)
+                  action.run()
+                }}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   )

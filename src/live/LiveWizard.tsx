@@ -8,12 +8,11 @@ import { friendlyError } from '../chain/errors'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
-import { encodeChangedRuns } from '../lib/patch'
-import { getCanvasSnapshot } from '../paint/canvasStore'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
 import { SafeImage } from '../os/ui/SafeImage'
 import { createBurner, loadBurner } from './burner'
+import { QUICK_ALLOWANCE, samplePaint64, startLiveQuick, type QuickProgress } from './quickStart'
 import {
   buildStartSessionTypedData,
   fundingSuggestion,
@@ -31,27 +30,6 @@ const SESSION_LENGTHS = [
   { label: '30 minutes', blocks: 6_000n },
 ]
 const ALLOWANCES = [5_000n, 2_000n, 10_000n]
-
-function samplePaint64() {
-  const canvas = getCanvasSnapshot()
-  const working = canvas.background.slice()
-  let changed = 0
-  for (let index = 0; index < working.length && changed < 64; index += 257) {
-    if (canvas.outline[index]) continue
-    const current = canvas.background[index]
-    working[index] = current === 1 ? 2 : 1
-    changed++
-  }
-  if (changed < 64) {
-    for (let index = 0; index < working.length && changed < 64; index++) {
-      if (canvas.outline[index] || working[index] !== canvas.background[index]) continue
-      const current = canvas.background[index]
-      working[index] = current === 1 ? 2 : 1
-      changed++
-    }
-  }
-  return encodeChangedRuns(canvas.background, working)
-}
 
 function short(address?: string) {
   return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '—'
@@ -82,6 +60,7 @@ export function LiveWizard() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [finished, setFinished] = useState(false)
+  const [quick, setQuick] = useState<QuickProgress>()
 
   const close = () => closeWindow('live-wizard')
   const refreshBalance = useCallback(async () => {
@@ -315,6 +294,30 @@ export function LiveWizard() {
     }
   }
 
+  async function quickStart() {
+    if (!wallet.account) return
+    setBusy(true)
+    setError('')
+    setQuick({ phase: 'prepare', prompts: 2 })
+    try {
+      await startLiveQuick(wallet.account, setQuick)
+      setFinished(true)
+    } catch (caught) {
+      setError(friendlyError(caught, 'startSession').message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const quickOrder = ['prepare', 'sign', 'fund', 'start', 'done'] as const
+  const quickClass = (phase: (typeof quickOrder)[number]) => {
+    if (!quick) return ''
+    const at = quickOrder.indexOf(quick.phase)
+    const mine = quickOrder.indexOf(phase)
+    if (at > mine) return 'done'
+    return at === mine ? (error ? 'failed' : 'current') : ''
+  }
+
   const selectedLength = SESSION_LENGTHS.find((option) => option.blocks === length)
 
   return (
@@ -324,118 +327,176 @@ export function LiveWizard() {
           <SafeImage src="/os/brand/pfp-main.webp" alt="r3tards" width={168} height={338} />
         </div>
         <section className="live-wizard-step">
-          <small>STEP {step} OF 4</small>
-          {step === 1 && (
+          {quick ? (
             <>
-              <h2>Welcome to live mode</h2>
-              <p>
-                This wizard makes a burner key that lives in this browser. It paints for you, so strokes land
-                without a wallet prompt each time.
-              </p>
-              <label>
-                Session length
-                <select value={length.toString()} onChange={(event) => setLength(BigInt(event.target.value))}>
-                  {SESSION_LENGTHS.map((option) => (
-                    <option key={option.blocks.toString()} value={option.blocks.toString()}>
-                      {option.label} (about {about(option.blocks, block.blockTimeMs)})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Pixel allowance
-                <select
-                  value={allowance.toString()}
-                  onChange={(event) => setAllowance(BigInt(event.target.value))}
-                >
-                  {ALLOWANCES.map((value) => (
-                    <option key={value.toString()} value={value.toString()}>
-                      {value.toLocaleString()} units
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="muted">
-                It still spends your normal hourly budget and holder quota. The allowance is an extra cap on
-                top.
-              </p>
+              <small>QUICK START</small>
+              <h2>{finished ? 'Live mode is on' : 'Starting live mode'}</h2>
+              <ol className="live-quick-steps">
+                <li className={quickClass('sign')}>
+                  Sign the session
+                  <small>wallet prompt 1 · a signature, it can't move funds</small>
+                </li>
+                {quick.prompts !== 1 && (
+                  <li className={quickClass('fund')}>
+                    Send the burner its gas money
+                    <small>
+                      wallet prompt 2 ·{' '}
+                      {quick.funding ? `${quick.funding} MON` : 'enough for about 100 paints'}
+                    </small>
+                  </li>
+                )}
+                <li className={quickClass('start')}>
+                  The burner registers itself
+                  <small>no prompt</small>
+                </li>
+              </ol>
+              {finished ? (
+                <p>
+                  Paint away: strokes land with no wallet popup for about {about(24_000n, block.blockTimeMs)}{' '}
+                  or {QUICK_ALLOWANCE.toLocaleString()} units. End the session in My Pass › Hardware Profiles
+                  to get leftover MON back.
+                </p>
+              ) : (
+                !error && <p className="muted">keep this window open. confirm each prompt in your wallet.</p>
+              )}
             </>
-          )}
-          {step === 2 && (
+          ) : (
             <>
-              <h2>Sign the session</h2>
-              <p>
-                Your wallet signs one message. It names the burner, the expiry block and the pixel allowance.
-                It can't move funds and it can't mint.
-              </p>
-              <pre className="live-summary sunken">{`owner ${short(wallet.account)}
+              <small>STEP {step} OF 4</small>
+              {step === 1 && (
+                <>
+                  <h2>Welcome to live mode</h2>
+                  <p>
+                    Live mode makes a burner key that lives in this browser. It paints for you, so strokes
+                    land without a wallet prompt each time.
+                  </p>
+                  <div className="live-quick sunken">
+                    <b>Quick start</b>
+                    <span>
+                      about {about(24_000n, block.blockTimeMs)} · {QUICK_ALLOWANCE.toLocaleString()} units · 2
+                      wallet prompts, then no more popups
+                    </span>
+                    <Button
+                      primary
+                      disabled={busy || !wallet.account}
+                      title={wallet.account ? undefined : 'connect a wallet first'}
+                      onClick={() => void quickStart()}
+                    >
+                      Start live mode
+                    </Button>
+                  </div>
+                  <p className="muted">or pick your own limits and press Next.</p>
+                  <label>
+                    Session length
+                    <select
+                      value={length.toString()}
+                      onChange={(event) => setLength(BigInt(event.target.value))}
+                    >
+                      {SESSION_LENGTHS.map((option) => (
+                        <option key={option.blocks.toString()} value={option.blocks.toString()}>
+                          {option.label} (about {about(option.blocks, block.blockTimeMs)})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Pixel allowance
+                    <select
+                      value={allowance.toString()}
+                      onChange={(event) => setAllowance(BigInt(event.target.value))}
+                    >
+                      {ALLOWANCES.map((value) => (
+                        <option key={value.toString()} value={value.toString()}>
+                          {value.toLocaleString()} units
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="muted">
+                    It still spends your normal hourly budget and holder quota. The allowance is an extra cap
+                    on top.
+                  </p>
+                </>
+              )}
+              {step === 2 && (
+                <>
+                  <h2>Sign the session</h2>
+                  <p>
+                    Your wallet signs one message. It names the burner, the expiry block and the pixel
+                    allowance. It can't move funds and it can't mint.
+                  </p>
+                  <pre className="live-summary sunken">{`owner ${short(wallet.account)}
 burner ${short(burnerAddress)}
 expires block ${message?.expiryBlock.toString() ?? (block.block + length).toString()}
 allowance ${allowance.toLocaleString()} units`}</pre>
-              <Button primary disabled={busy || !wallet.client} onClick={() => void signSession()}>
-                Sign in wallet
-              </Button>
-              <p>{signature ? 'signed ✓' : 'not signed yet'}</p>
-            </>
-          )}
-          {step === 3 && (
-            <>
-              <h2>Fund the burner</h2>
-              <p>
-                The burner pays its own gas, so it needs a little MON. Monad charges the gas limit, so each
-                live paint costs a fixed small amount.
-              </p>
-              <label>
-                Send
-                <input
-                  value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
-                  inputMode="decimal"
-                />{' '}
-                MON
-              </label>
-              <small>≈ 100 paints</small>
-              <p>max cost: {fundQuote ? `${amount} MON + ${fundQuote.maxCost}` : 'quoting…'}</p>
-              <Button disabled={busy || !fundQuote} onClick={() => void fund()}>
-                Send
-              </Button>
-              {sentAmount && (
-                <p>
-                  {sentAmount} MON sent to {short(burnerAddress)} ✓
-                </p>
-              )}
-              <p className="muted">Ending the session later sends whatever is left back to your wallet.</p>
-            </>
-          )}
-          {step === 4 && (
-            <>
-              <h2>Finish</h2>
-              {!finished ? (
-                <>
-                  <p>
-                    Ready to start. The burner sends its own startSession transaction. After that, strokes
-                    commit on pointer-up.
-                  </p>
-                  <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
-                    formatEther(balance),
-                  ).toFixed(2)} MON
-paints the canvas as ${short(wallet.account)}
-expires block ${message?.expiryBlock.toString() ?? '—'} (about ${selectedLength?.label ?? '—'})
-allowance ${allowance.toLocaleString()} units`}</pre>
-                  {busy && <p>registering the burner…</p>}
+                  <Button primary disabled={busy || !wallet.client} onClick={() => void signSession()}>
+                    Sign in wallet
+                  </Button>
+                  <p>{signature ? 'signed ✓' : 'not signed yet'}</p>
                 </>
-              ) : (
+              )}
+              {step === 3 && (
                 <>
+                  <h2>Fund the burner</h2>
                   <p>
-                    Live mode is on. Paint away. The tray key icon shows the session; End session lives in
-                    System Properties › Hardware Profiles.
+                    The burner pays its own gas, so it needs a little MON. Monad charges the gas limit, so
+                    each live paint costs a fixed small amount.
                   </p>
-                  <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
-                    formatEther(balance),
-                  ).toFixed(2)} MON
+                  <label>
+                    Send
+                    <input
+                      value={amount}
+                      onChange={(event) => setAmount(event.target.value)}
+                      inputMode="decimal"
+                    />{' '}
+                    MON
+                  </label>
+                  <small>≈ 100 paints</small>
+                  <p>max cost: {fundQuote ? `${amount} MON + ${fundQuote.maxCost}` : 'quoting…'}</p>
+                  <Button disabled={busy || !fundQuote} onClick={() => void fund()}>
+                    Send
+                  </Button>
+                  {sentAmount && (
+                    <p>
+                      {sentAmount} MON sent to {short(burnerAddress)} ✓
+                    </p>
+                  )}
+                  <p className="muted">
+                    Ending the session later sends whatever is left back to your wallet.
+                  </p>
+                </>
+              )}
+              {step === 4 && (
+                <>
+                  <h2>Finish</h2>
+                  {!finished ? (
+                    <>
+                      <p>
+                        Ready to start. The burner sends its own startSession transaction. After that, strokes
+                        commit on pointer-up.
+                      </p>
+                      <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
+                        formatEther(balance),
+                      ).toFixed(2)} MON
 paints the canvas as ${short(wallet.account)}
 expires block ${message?.expiryBlock.toString() ?? '—'} (about ${selectedLength?.label ?? '—'})
 allowance ${allowance.toLocaleString()} units`}</pre>
+                      {busy && <p>registering the burner…</p>}
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        Live mode is on. Paint away. The tray key icon shows the session; End session lives in
+                        System Properties › Hardware Profiles.
+                      </p>
+                      <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
+                        formatEther(balance),
+                      ).toFixed(2)} MON
+paints the canvas as ${short(wallet.account)}
+expires block ${message?.expiryBlock.toString() ?? '—'} (about ${selectedLength?.label ?? '—'})
+allowance ${allowance.toLocaleString()} units`}</pre>
+                    </>
+                  )}
                 </>
               )}
             </>
@@ -444,30 +505,60 @@ allowance ${allowance.toLocaleString()} units`}</pre>
         </section>
       </div>
       <footer className="live-wizard-footer">
-        <Button disabled={step === 1 || busy || finished} onClick={() => setStep((value) => value - 1)}>
-          &lt; Back
-        </Button>
-        {step < 4 ? (
-          <Button
-            primary
-            disabled={busy || (step === 2 && !signature) || (step === 3 && !enough)}
-            onClick={() => {
-              if (step === 1) void prepareBurner()
-              else setStep((value) => value + 1)
-            }}
-          >
-            Next &gt;
-          </Button>
-        ) : finished ? (
-          <Button primary onClick={close}>
-            Close
-          </Button>
+        {quick ? (
+          <>
+            <Button
+              disabled={busy || finished}
+              onClick={() => {
+                setQuick(undefined)
+                setError('')
+              }}
+            >
+              &lt; Options
+            </Button>
+            {finished ? (
+              <Button primary onClick={close}>
+                Close
+              </Button>
+            ) : (
+              <Button primary disabled={busy} onClick={() => void quickStart()}>
+                {busy ? 'Working…' : 'Try again'}
+              </Button>
+            )}
+            {!finished && (
+              <Button disabled={busy} onClick={close}>
+                Cancel
+              </Button>
+            )}
+          </>
         ) : (
-          <Button primary disabled={busy || !enough || !startQuote} onClick={() => void finish()}>
-            Finish
-          </Button>
+          <>
+            <Button disabled={step === 1 || busy || finished} onClick={() => setStep((value) => value - 1)}>
+              &lt; Back
+            </Button>
+            {step < 4 ? (
+              <Button
+                primary={step > 1}
+                disabled={busy || (step === 2 && !signature) || (step === 3 && !enough)}
+                onClick={() => {
+                  if (step === 1) void prepareBurner()
+                  else setStep((value) => value + 1)
+                }}
+              >
+                Next &gt;
+              </Button>
+            ) : finished ? (
+              <Button primary onClick={close}>
+                Close
+              </Button>
+            ) : (
+              <Button primary disabled={busy || !enough || !startQuote} onClick={() => void finish()}>
+                Finish
+              </Button>
+            )}
+            {!finished && <Button onClick={close}>Cancel</Button>}
+          </>
         )}
-        {!finished && <Button onClick={close}>Cancel</Button>}
       </footer>
     </div>
   )

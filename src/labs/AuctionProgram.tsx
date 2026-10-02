@@ -7,7 +7,9 @@ import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { readMany } from '../chain/readMany'
+import { promptCountLabel, sendActions, walletCanBatch, type BatchItem } from '../chain/batch'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
+import { confirmHigherCost } from '../os/confirm'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_FINALE_AUCTION_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { HISTORY_STORAGE_ADDRESS, auctionSettleWindow, winnerAt, type AuctionBid } from '../lib/auction'
@@ -124,6 +126,10 @@ export function AuctionProgram() {
   const [quote, setQuote] = useState<ActionQuote>()
   const [listQuote, setListQuote] = useState<ActionQuote>()
   const [approveQuote, setApproveQuote] = useState<ActionQuote>()
+  const [approved, setApproved] = useState<boolean>()
+  const [canBatch, setCanBatch] = useState(false)
+  const [listStep, setListStep] = useState('')
+  const [listNonce, setListNonce] = useState(0)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
   const [historyAvailable, setHistoryAvailable] = useState(false)
@@ -276,9 +282,22 @@ export function AuctionProgram() {
   }, [address, wallet.account, info?.state, topup, deposit, minBid, auctionId])
 
   useEffect(() => {
+    let cancelled = false
+    void walletCanBatch(wallet.account).then((value) => {
+      if (!cancelled) setCanBatch(value)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [wallet.account, wallet.client])
+
+  // Listing needs the auction approved for the finale first. `list` can't be simulated before that, so it is
+  // only priced once approved; until then the single button sends approve + list (one prompt when batched).
+  useEffect(() => {
     setApproveQuote(undefined)
     setListQuote(undefined)
-    if (!address || !wallet.account || !sellerToken || !config.paintAddress) return
+    setApproved(undefined)
+    if (!address || !wallet.account || !sellerToken || !config.paintAddress || !publicClient) return
     let reserveWei: bigint
     try {
       reserveWei = parseEther(reserve || '0')
@@ -286,29 +305,58 @@ export function AuctionProgram() {
       return
     }
     if (reserveWei <= 0n) return
-    void quoteAction({
-      kind: 'estimate',
-      address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
-      functionName: 'approve',
-      args: [address, sellerToken],
-      account: wallet.account,
-      action: 'approve finale auction',
+    const client = publicClient
+    const paint = config.paintAddress
+    const account = wallet.account
+    let cancelled = false
+    void (async () => {
+      const [single, all] = await Promise.all([
+        client.readContract({
+          address: paint,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'getApproved',
+          args: [sellerToken],
+        }),
+        client.readContract({
+          address: paint,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'isApprovedForAll',
+          args: [account, address],
+        }),
+      ])
+      const isApproved = sameAddress(single as Address, address) || Boolean(all)
+      if (cancelled) return
+      setApproved(isApproved)
+      if (isApproved) {
+        const next = await quoteAction({
+          kind: 'estimate',
+          address,
+          abi: R3TARDS_FINALE_AUCTION_ABI,
+          functionName: 'list',
+          args: [sellerToken, reserveWei, 0],
+          account,
+          action: 'list finale',
+        })
+        if (!cancelled) setListQuote(next)
+      } else {
+        const next = await quoteAction({
+          kind: 'estimate',
+          address: paint,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'approve',
+          args: [address, sellerToken],
+          account,
+          action: 'approve finale auction',
+        })
+        if (!cancelled) setApproveQuote(next)
+      }
+    })().catch((error) => {
+      if (!cancelled) setMessage(errorText(error))
     })
-      .then(setApproveQuote)
-      .catch(() => undefined)
-    void quoteAction({
-      kind: 'estimate',
-      address,
-      abi: R3TARDS_FINALE_AUCTION_ABI,
-      functionName: 'list',
-      args: [sellerToken, reserveWei, 0],
-      account: wallet.account,
-      action: 'list finale',
-    })
-      .then(setListQuote)
-      .catch(() => undefined)
-  }, [address, wallet.account, sellerToken, reserve])
+    return () => {
+      cancelled = true
+    }
+  }, [address, wallet.account, sellerToken, reserve, listNonce])
 
   async function send(
     functionName: string,
@@ -351,32 +399,69 @@ export function AuctionProgram() {
     }
   }
 
-  async function approve() {
-    if (!wallet.account || !address || !config.paintAddress || !approveQuote) return
-    setPending(true)
+  /** One click: list right away when approved, otherwise approve + list (one wallet prompt if it batches). */
+  async function listFinale() {
+    if (!wallet.account || !address || !config.paintAddress || approved == null) return
+    let reserveWei: bigint
     try {
-      await sendAction({
-        kind: 'estimate',
-        address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'approve',
-        args: [address, sellerToken],
-        account: wallet.account,
-        quote: approveQuote,
-        action: 'approve finale auction',
+      reserveWei = parseEther(reserve)
+    } catch {
+      setMessage('enter a reserve in MON')
+      return
+    }
+    const listItem: BatchItem = {
+      kind: 'estimate',
+      address,
+      abi: R3TARDS_FINALE_AUCTION_ABI,
+      functionName: 'list',
+      args: [sellerToken, reserveWei, 0],
+      account: wallet.account,
+      quote: listQuote,
+      confirmHigherCost,
+      action: 'list finale',
+      successSound: 'success-heavy',
+    }
+    const items: BatchItem[] = approved
+      ? [listItem]
+      : [
+          {
+            kind: 'estimate',
+            address: config.paintAddress,
+            abi: R3TARDS_PAINT_ABI,
+            functionName: 'approve',
+            args: [address, sellerToken],
+            account: wallet.account,
+            quote: approveQuote,
+            confirmHigherCost,
+            action: 'approve finale auction',
+          },
+          listItem,
+        ]
+    setPending(true)
+    setMessage('')
+    try {
+      await sendActions(items, {
+        action: approved ? 'list finale' : 'approve and list finale',
+        successSound: 'success-heavy',
+        onStep: ({ index, total, batched }) =>
+          setListStep(
+            batched
+              ? 'confirm approve + list in your wallet (1 prompt)'
+              : total > 1
+                ? `${index + 1} of ${total} · confirm ${index === 0 ? 'the approval' : 'the listing'} in your wallet`
+                : 'confirm the listing in your wallet',
+          ),
       })
+      setSellerToken(0n)
+      await refresh()
     } catch (error) {
       setMessage(errorText(error))
+      // A sequential approve may have landed before the list failed: re-read so the button says "List now".
+      setListNonce((value) => value + 1)
     } finally {
       setPending(false)
+      setListStep('')
     }
-  }
-
-  async function list() {
-    if (!listQuote) return
-    const reserveWei = parseEther(reserve)
-    await send('list', [sellerToken, reserveWei, 0], listQuote)
-    setSellerToken(0n)
   }
 
   const nowPct = info ? auctionBarPosition(block.block, info.startBlock, info.closeBlock) : 0
@@ -436,15 +521,34 @@ export function AuctionProgram() {
                 Reserve <input value={reserve} onChange={(e) => setReserve(e.target.value)} /> MON
               </label>
               <div className="lab-action-row">
-                <Button disabled={pending || !approveQuote} onClick={approve}>
-                  Approve
-                </Button>
-                <Button primary disabled={pending || !listQuote} onClick={list}>
-                  List now
+                <Button
+                  primary
+                  disabled={pending || (approved ? !listQuote : !approveQuote)}
+                  title={
+                    pending
+                      ? 'waiting for your wallet'
+                      : approved == null
+                        ? 'checking approval…'
+                        : approved
+                          ? listQuote
+                            ? undefined
+                            : 'quoting…'
+                          : approveQuote
+                            ? undefined
+                            : 'quoting…'
+                  }
+                  onClick={() => void listFinale()}
+                >
+                  {approved === false ? 'Approve and list' : 'List now'}
                 </Button>
               </div>
               <small>
-                approval {approveQuote?.maxCost ?? 'quoting…'} · list {listQuote?.maxCost ?? 'quoting…'}
+                {listStep ||
+                  (approved == null
+                    ? 'checking approval…'
+                    : approved
+                      ? `list ${listQuote?.maxCost ?? 'quoting…'} · 1 wallet prompt`
+                      : `approval ${approveQuote?.maxCost ?? 'quoting…'} + listing · ${promptCountLabel(2, canBatch)}`)}
               </small>
             </GroupBox>
           )}
