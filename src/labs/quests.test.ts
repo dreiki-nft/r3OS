@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { mapQuestProgress, questLockedByHiddenLab } from './quests'
+import { QUEST_HOW, mapQuestProgress, questGroup, questLockedByHiddenLab } from './quests'
+import { programById } from '../os/programs'
+import { isRetiredProgram } from '../os/retired'
 import { badgeSrc } from './QuestsProgram'
 
 describe('quest progress mapping', () => {
@@ -48,5 +50,22 @@ describe('quest progress mapping', () => {
       claimable: false,
       claimed: true,
     })
+  })
+})
+
+describe('quest discovery helpers', () => {
+  it('groups by whether a quest only reads the Paint core', () => {
+    const paint = '0xA513E6E4b8f2a923D98304ec87F64353C4D5C853'
+    expect(questGroup([{ target: paint.toLowerCase() }], paint)).toBe('canvas')
+    expect(questGroup([{ target: paint }, { target: '0x01' }], paint)).toBe('around')
+    expect(questGroup([{ target: '0x02' }], paint)).toBe('around')
+    expect(questGroup([{ target: paint }], undefined)).toBe('around')
+  })
+
+  it('only links to real, non-retired programs', () => {
+    for (const [name, how] of Object.entries(QUEST_HOW)) {
+      expect(programById(how.program), name).toBeTruthy()
+      expect(isRetiredProgram(how.program), name).toBe(false)
+    }
   })
 })

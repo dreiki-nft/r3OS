@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { openProgram, visiblePrograms } from './programs'
+import { openProgram, programById, programIsVisible, type ProgramDef } from './programs'
+import { desktopProgramIds } from './layout'
+import { useAuctionLive } from '../labs/auctionLive'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
 import { publicClient, wsClient } from '../chain/clients'
@@ -58,7 +60,18 @@ export function desktopRows(height = typeof innerHeight === 'number' ? innerHeig
 
 export function Desktop() {
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
-  const programs = visiblePrograms(releases)
+  const auctionLive = useAuctionLive()
+  // Only the programs that define r3tardOS sit on the desktop; the rest live in Start (src/os/layout.ts).
+  const programs = useMemo(
+    () =>
+      desktopProgramIds((id) => {
+        const program = programById(id)
+        return Boolean(program && programIsVisible(program, releases))
+      }, auctionLive)
+        .map((id) => programById(id))
+        .filter((program): program is ProgramDef => Boolean(program)),
+    [releases, auctionLive],
+  )
   const [selected, setSelected] = useState(0)
   const rows = useMemo(() => desktopRows(), [])
   const [binFull, setBinFull] = useState(false)

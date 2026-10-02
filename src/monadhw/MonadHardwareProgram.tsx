@@ -15,6 +15,8 @@ import { HardwareBus, type HardwareDevice } from '../os/ui/HardwareBus'
 import { R3TARDS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
 import { DEVICE07_COPY } from '../operator/copy'
 import { IntroBar } from '../os/ui/IntroBar'
+import { Tabs } from '../os/ui/Tabs'
+import { ExploreMonad } from './ExploreMonad'
 import './monadhw.css'
 
 const RULES = [
@@ -99,7 +101,31 @@ function cardStatusText(card: ReturnType<typeof useMonadCard>) {
   return 'Card state unavailable.'
 }
 
+const TABS = ['Explore', 'System Information'] as const
+
+/**
+ * Explore Monad: hands-on experiments first; the full Device Manager view stays one tab away. The System
+ * Information tab only mounts (and only probes the chain) when it is opened. A `#/monad-hw/<device>` link from
+ * the hardware bus opens it directly.
+ */
 export function MonadHardwareProgram() {
+  const [tab, setTab] = useState<string>(() => (focusFromHash() ? TABS[1] : TABS[0]))
+  useEffect(() => {
+    const onHash = () => {
+      if (focusFromHash()) setTab(TABS[1])
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+  return (
+    <div className="monadhw-program hardware-program">
+      <Tabs tabs={[...TABS]} active={tab} onChange={setTab} />
+      {tab === TABS[0] ? <ExploreMonad onSystemInfo={() => setTab(TABS[1])} /> : <SystemInformation />}
+    </div>
+  )
+}
+
+function SystemInformation() {
   const hw = useMonadHardware()
   const card = useMonadCard()
   const systemEvent = useSystemEvent()
@@ -307,7 +333,7 @@ export function MonadHardwareProgram() {
     card.erc5192 === true && card.locked != null ? (card.locked ? 'Yes' : 'No') : official ? 'Yes' : 'unknown'
 
   return (
-    <div className="monadhw-program hardware-program">
+    <div className="monadhw-sysinfo">
       <IntroBar
         lead="Device Manager, except the devices are Monad."
         monad="chain probes and measured timings sit beside protocol specs instead of pretending they are the same thing."

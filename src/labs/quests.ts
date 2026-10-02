@@ -51,3 +51,32 @@ export function questLockedByHiddenLab(
     return Boolean(programId && isHidden(programId))
   })
 }
+
+/**
+ * Where to go to work on a quest: a plain "try it" link, by the quest's onchain name. Unknown names get none.
+ * Purely navigation; the onchain definitions are unchanged.
+ */
+export const QUEST_HOW: Readonly<Record<string, { program: string; label: string; hash?: string }>> = {
+  'MONTH IN': { program: 'paint', label: 'Open Paint' },
+  'STORM REGULAR': { program: 'paint', label: 'Open Paint' },
+  '10K PIXELS': { program: 'paint', label: 'Open Paint' },
+  ARCHIVIST: { program: 'paint', label: 'Open Paint' },
+  'LIVE WIRE': { program: 'live-wizard', label: 'Turn on Live mode' },
+  'PADDLE UP': { program: 'auction', label: 'Open Auction' },
+  RECYCLER: { program: 'bin', label: 'Open Recycle Bin' },
+  'CARD CARRIER': { program: 'paint', label: 'Open Paint' },
+}
+
+export type QuestGroup = 'canvas' | 'around'
+
+/** Quests that read the Paint core are "on the canvas"; everything else is "around r3tardOS". */
+export function questGroup(conditions: readonly { target: string }[], paintAddress?: string): QuestGroup {
+  if (!paintAddress || !conditions.length) return 'around'
+  const paint = paintAddress.toLowerCase()
+  return conditions.every((condition) => condition.target.toLowerCase() === paint) ? 'canvas' : 'around'
+}
+
+export const QUEST_GROUP_TITLES: Record<QuestGroup, string> = {
+  canvas: 'ON THE CANVAS',
+  around: 'AROUND r3tardOS',
+}

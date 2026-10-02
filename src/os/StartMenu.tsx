@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { disconnectWallet, getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { openProgram, programById, programIsVisible, visiblePrograms, type ProgramDef } from './programs'
+import { startMenuGroups } from './layout'
+import { openProgram, programById, programIsVisible, type ProgramDef } from './programs'
 import { placeSubmenu, startMenuKeyAction, toggleSubmenu, type StartSubmenu } from './shellMenus'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
@@ -18,14 +19,17 @@ export function StartMenu({
 }) {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
-  const programs = visiblePrograms(releases)
-  const hardwareIds = new Set(['block-camera', 'monad-hw', 'dxdiag', 'xray'])
-  const regularPrograms = programs.filter((program) => !hardwareIds.has(program.id))
-  const hardwarePrograms = programs.filter((program) => hardwareIds.has(program.id))
   const visible = (id: string) => {
     const program = programById(id)
     return Boolean(program && programIsVisible(program, releases))
   }
+  // Programs ▸ · Explore Monad · System Tools ▸ · Help · Run… (src/os/layout.ts).
+  const groups = startMenuGroups(visible)
+  const toDefs = (ids: string[]) =>
+    ids.map((id) => programById(id)).filter((program): program is ProgramDef => Boolean(program))
+  const regularPrograms = toDefs(groups.programs)
+  const toolPrograms = toDefs(groups.tools)
+  const explore = groups.explore ? programById(groups.explore) : undefined
   const [choosing, setChoosing] = useState(false)
   const [submenu, setSubmenu] = useState<StartSubmenu | null>(null)
   const [focusFirst, setFocusFirst] = useState(false)
@@ -56,7 +60,7 @@ export function StartMenu({
       { width: window.innerWidth, height: window.innerHeight },
     )
     setPlacement({ left: placed.left, top: placed.top, maxHeight: placed.maxHeight })
-  }, [submenu, programs.length])
+  }, [submenu, regularPrograms.length, toolPrograms.length])
 
   useEffect(() => {
     if (!focusFirst || !placement) return
@@ -142,7 +146,7 @@ export function StartMenu({
         data-start-item
         data-submenu-parent={which}
         data-programs-root={which === 'programs' ? '1' : undefined}
-        data-hardware-root={which === 'hardware' ? '1' : undefined}
+        data-tools-root={which === 'tools' ? '1' : undefined}
         className={submenu === which ? 'expanded' : undefined}
         onClick={() => {
           window.clearTimeout(hoverTimer.current)
@@ -186,32 +190,15 @@ export function StartMenu({
       </div>
       <div className="start-items" role="menu" aria-label="Start">
         {cascade('programs', 'Programs', <Icon name="briefcase" size={24} />, regularPrograms)}
-        {hardwarePrograms.length > 0 &&
-          cascade(
-            'hardware',
-            'Monad Hardware',
-            <Icon name="lightning" size={24} colour="#FFFFFF" />,
-            hardwarePrograms,
-          )}
-        {visible('pass') && (
-          <button role="menuitem" data-start-item onClick={() => open('pass')}>
-            <Icon name="computer" size={24} />
-            My Pass
+        {explore && (
+          <button role="menuitem" data-start-item onClick={() => open(explore.id)}>
+            <Icon name={explore.icon} size={24} colour={explore.colour} />
+            {explore.title}
           </button>
         )}
-        {visible('frames') && (
-          <button role="menuitem" data-start-item onClick={() => open('frames')}>
-            <Icon name="gallery" size={24} />
-            My Frames
-          </button>
-        )}
-        {visible('sounds') && (
-          <button role="menuitem" data-start-item onClick={() => open('sounds')}>
-            <Icon name="music" size={24} />
-            Sounds
-          </button>
-        )}
-        {visible('help') && (
+        {toolPrograms.length > 0 &&
+          cascade('tools', 'System Tools', <Icon name="chip" size={24} />, toolPrograms)}
+        {groups.help && (
           <button role="menuitem" data-start-item onClick={() => open('help')}>
             <Icon name="help" size={24} />
             Help

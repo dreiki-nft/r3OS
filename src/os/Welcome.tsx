@@ -6,6 +6,7 @@ import { useRefreshTick } from '../chain/refreshTick'
 import { getTxTraceSnapshot, subscribeTxTrace } from '../chain/txTrace'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI, R3TARDS_PAINTER_PASS_ABI } from '../lib/generated/abi'
+import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { helpHash } from './helpTopics'
 import { openProgram } from './programs'
 import { playSound } from './sound'
@@ -47,6 +48,7 @@ export function Welcome() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const traces = useSyncExternalStore(subscribeTxTrace, getTxTraceSnapshot)
   const tick = useRefreshTick(30)
+  const firstRunOpen = useSyncExternalStore(subscribeFirstRun, isFirstRunOpen)
   const [hidden, setHidden] = useState(storedHidden)
   const [choosing, setChoosing] = useState(false)
   const [facts, setFacts] = useState<Omit<WelcomeFacts, 'connected'> & { account?: string }>({})
@@ -98,7 +100,7 @@ export function Welcome() {
     // Re-read after any transaction the app sends, and on the slow refresh tick.
   }, [hidden, account, tick, traces.version])
 
-  if (hidden) return null
+  if (hidden || firstRunOpen) return null
 
   const close = () => {
     storeHidden(true)

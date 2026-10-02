@@ -330,9 +330,9 @@ export const programs: ProgramDef[] = [
   },
   {
     id: 'monad-hw',
-    title: 'Monad Hardware',
+    title: 'Explore Monad',
     icon: 'lightning',
-    colour: '#FFFFFF',
+    colour: '#5FEDDF',
     component: MonadHardwareProgram,
     defaultSize: { width: 980, height: 700 },
     minSize: { width: 700, height: 520 },

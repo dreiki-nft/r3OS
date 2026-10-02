@@ -252,7 +252,7 @@ export function DxDiagProgram() {
               />
             )}
             <p className="dxdiag-note">
-              presence only: Monad Hardware has the full probes and their sources.
+              presence only: Explore Monad › System Information has the full probes and their sources.
             </p>
           </GroupBox>
         )}

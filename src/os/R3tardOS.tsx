@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { FirstRun } from './FirstRun'
 import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet } from '../chain/wallet'
 import { Welcome } from './Welcome'
@@ -134,6 +135,7 @@ export function R3tardOS() {
       <span className="heart">♡</span>
       <Desktop />
       <Welcome />
+      <FirstRun />
       {windows.windows.some((win) => programById(win.id)?.modal && !win.minimized) && (
         <div className="modal-program-shade" />
       )}

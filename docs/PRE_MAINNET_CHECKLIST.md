@@ -12,6 +12,7 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x�
 - CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. ROUTER.EXE stays diagnostic.
 
 - **Retired from the interface (2026-10-01):** Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger, ROUTER.EXE (`src/os/retired.ts`). Their contracts are still deployed unchanged; the app hides them and their quests, Pass stamps and Operator subsystems. CARD.DRV stays deployed (MONAD CARD stamp, CARD CARRIER quest, Block Camera).
+- **PAGE.EXE and ROUTER-LAB must still be deployed on mainnet:** Explore Monad's Storage race calls PAGE.EXE `benchRead`/`probePage`, and its Liquidity race calls ROUTER-LAB `compare` (no mock venues on 143). After deploy, open Explore Monad on mainnet, press Run test and Compare, and confirm real numbers (Storage race ratio ≫ 1; at least one venue quoting).
 
 ## F1. Deployment
 

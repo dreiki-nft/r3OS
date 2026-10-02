@@ -32,6 +32,7 @@ import {
 } from '../live/liveStore'
 import { HardwareProfiles } from './HardwareProfiles'
 import { SafeImage } from '../os/ui/SafeImage'
+import { WalletChooser } from '../os/WalletChooser'
 import { Tabs } from '../os/ui/Tabs'
 import { TreeView } from '../os/ui/TreeView'
 import { OperatorTab } from '../operator/OperatorTab'
@@ -57,6 +58,7 @@ const EMPTY_STATS = {
 
 const imageMemory = new Map<string, string>()
 const passImageMemory = new Map<string, string>()
+const PASS_TABS = ['General', 'Stamps', 'Hardware Profiles', 'Performance', 'Operator']
 
 function short(address?: string) {
   return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '—'
@@ -91,12 +93,10 @@ export function PassProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const [tab, setTab] = useState(() => {
-    const requested = new URLSearchParams(location.hash.split('?')[1] ?? '').get('tab')
-    return ['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator'].includes(
-      requested ?? '',
-    )
-      ? requested!
-      : 'General'
+    const raw = new URLSearchParams(location.hash.split('?')[1] ?? '').get('tab')
+    // 'Device Manager' was the old name of the Stamps tab; old links still land there.
+    const requested = raw === 'Device Manager' ? 'Stamps' : raw
+    return PASS_TABS.includes(requested ?? '') ? requested! : 'General'
   })
   const [passAddress, setPassAddress] = useState<Address>()
   const [collection, setCollection] = useState<Address>()
@@ -106,6 +106,7 @@ export function PassProgram() {
   const [stats, setStats] = useState(EMPTY_STATS)
   const [claimQuote, setClaimQuote] = useState<ActionQuote>()
   const [passImage, setPassImage] = useState<string>()
+  const [choosingWallet, setChoosingWallet] = useState(false)
   const [displayId, setDisplayId] = useState<bigint | null>(null)
   const [displayOpen, setDisplayOpen] = useState(false)
   const [images, setImages] = useState(new Map<string, string>())
@@ -113,7 +114,6 @@ export function PassProgram() {
   const [selectedStamp, setSelectedStamp] = useState<StampRow>()
   const [budget, setBudget] = useState<readonly bigint[]>([0n, 0n, 0n, 0n, 0n])
   const [box, setBox] = useState<{ title: string; message: string; kind?: 'info' | 'warning' | 'error' }>()
-  const [showStampInfo, setShowStampInfo] = useState(false)
 
   const loadIdentity = useCallback(async () => {
     if (!wallet.account || !publicClient) return
@@ -180,13 +180,9 @@ export function PassProgram() {
 
   useEffect(() => {
     const route = () => {
-      const requested = new URLSearchParams(location.hash.split('?')[1] ?? '').get('tab')
-      if (
-        requested &&
-        ['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator'].includes(requested)
-      ) {
-        setTab(requested)
-      }
+      const raw = new URLSearchParams(location.hash.split('?')[1] ?? '').get('tab')
+      const requested = raw === 'Device Manager' ? 'Stamps' : raw
+      if (requested && PASS_TABS.includes(requested)) setTab(requested)
     }
     window.addEventListener('hashchange', route)
     return () => window.removeEventListener('hashchange', route)
@@ -253,7 +249,8 @@ export function PassProgram() {
   }, [tab, passAddress, passId, statsKey])
 
   useEffect(() => {
-    if (tab !== 'Device Manager' || !passAddress || !wallet.account) return
+    // General shows the stamp count too, so both tabs need the Lab stamps (one load per open).
+    if ((tab !== 'Stamps' && tab !== 'General') || !passAddress || !wallet.account) return
     // Stamps whose source is a retired Lab are not shown (they can't be earned from the interface).
     void Promise.all([loadLabStamps(passAddress, wallet.account), discoverContracts()]).then(
       ([rows, contracts]) => {
@@ -355,11 +352,7 @@ export function PassProgram() {
 
   return (
     <div className="pass-program">
-      <Tabs
-        tabs={['General', 'Device Manager', 'Hardware Profiles', 'Performance', 'Operator']}
-        active={tab}
-        onChange={setTab}
-      />
+      <Tabs tabs={PASS_TABS} active={tab} onChange={setTab} />
       <div className="pass-tab">
         {tab === 'General' && (
           <>
@@ -375,25 +368,40 @@ export function PassProgram() {
                         ? 'paint at least one pixel first, then come back to claim.'
                         : 'this address already claimed once.'}
                 </p>
-                <p>max cost: {claimQuote?.maxCost ?? (eligible ? 'quoting…' : '—')}</p>
-                <Button
-                  primary
-                  disabled={!eligible || !claimQuote}
-                  title={
-                    !wallet.account
-                      ? 'connect a wallet first'
-                      : !eligible
-                        ? stats.paintCount === 0n
-                          ? 'paint at least one pixel first'
-                          : 'this address already claimed'
-                        : !claimQuote
-                          ? 'checking the cost…'
-                          : 'claim your Painter Pass'
-                  }
-                  onClick={() => void claim()}
-                >
-                  Claim Painter Pass
-                </Button>
+                {!wallet.account ? (
+                  <>
+                    <p>
+                      your Pass is a free, soulbound badge that fills with stamps as you paint, save frames
+                      and explore. one per wallet.
+                    </p>
+                    <Button primary onClick={() => setChoosingWallet(true)}>
+                      Connect wallet
+                    </Button>
+                    {choosingWallet && <WalletChooser onClose={() => setChoosingWallet(false)} />}
+                  </>
+                ) : (
+                  <>
+                    <p>max cost: {claimQuote?.maxCost ?? (eligible ? 'quoting…' : '—')}</p>
+                    <Button
+                      primary
+                      disabled={!eligible || !claimQuote}
+                      title={
+                        !wallet.account
+                          ? 'connect a wallet first'
+                          : !eligible
+                            ? stats.paintCount === 0n
+                              ? 'paint at least one pixel first'
+                              : 'this address already claimed'
+                            : !claimQuote
+                              ? 'checking the cost…'
+                              : 'claim your Painter Pass'
+                      }
+                      onClick={() => void claim()}
+                    >
+                      Claim Painter Pass
+                    </Button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="pass-general">
@@ -471,16 +479,19 @@ export function PassProgram() {
                     session paints {stats.sessionPaints.toString()} · storm paints{' '}
                     {stats.stormPaints.toString()} · first paint block {stats.firstPaintBlock.toString()}
                   </p>
-                  <Button onClick={() => setShowStampInfo(true)}>Stamp Information...</Button>
-                  {showStampInfo && passImage && (
+                  {passImage && (
                     <SafeImage
                       className="pass-svg"
                       src={passImage}
-                      alt="Painter Pass onchain SVG"
+                      alt="your Painter Pass, drawn onchain"
                       width={180}
                       height={180}
                     />
                   )}
+                  <p>
+                    stamps {stamps.filter((stamp) => stamp.earned).length} of {stamps.length}{' '}
+                    <Button onClick={() => setTab('Stamps')}>See stamps…</Button>
+                  </p>
                 </div>
                 <div className="manufacturer">
                   <span>Manufactured and supported by:</span>
@@ -490,7 +501,7 @@ export function PassProgram() {
             )}
           </>
         )}
-        {tab === 'Device Manager' && (
+        {tab === 'Stamps' && (
           <div className="device-manager">
             <label>
               <input type="radio" defaultChecked name="view" /> View stamps by type

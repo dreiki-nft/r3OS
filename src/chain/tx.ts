@@ -30,6 +30,8 @@ export interface ActionQuote {
 export interface ActionResult {
   hash: Hex
   blockNumber: bigint
+  /** ms from the RPC accepting the transaction to this app holding its receipt */
+  receiptMs: number
   gasLimit: bigint
   maxFeePerGas: bigint
   maxCost: string
@@ -260,6 +262,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     })
     playSound('confirm')
     const receipt = await client.waitForTransactionReceipt({ hash, pollingInterval: 250 })
+    const receiptAt = typeof performance === 'undefined' ? Date.now() : performance.now()
     markTraceReceipt(hash, {
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed,
@@ -276,6 +279,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     return {
       hash,
       blockNumber: receipt.blockNumber,
+      receiptMs: receiptAt - sentAt,
       gasLimit: quote.gasLimit,
       maxFeePerGas: quote.maxFeePerGas,
       maxCost: quote.maxCost,

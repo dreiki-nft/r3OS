@@ -139,14 +139,19 @@ export function CDBurnerProgram() {
       setBurner(address)
       const ids = await mineTokenIds(wallet.account)
       const infos = await getFrameInfoBatch(ids.filter((id) => id > 0))
-      setFrames(
-        cdEligibleFrames(
-          ids
-            .filter((id) => id > 0)
-            .map((id) => ({ id, info: infos.get(id)! }))
-            .filter((item) => item.info),
-        ),
+      const eligible = cdEligibleFrames(
+        ids
+          .filter((id) => id > 0)
+          .map((id) => ({ id, info: infos.get(id)! }))
+          .filter((item) => item.info),
       )
+      setFrames(eligible)
+      // Opened from My Frames with a frame selected (#/cd?frame=12): start with that frame as track 1.
+      const rawRouteFrame = new URLSearchParams(location.hash.split('?')[1] ?? '').get('frame')
+      if (rawRouteFrame && /^\d+$/.test(rawRouteFrame)) {
+        const routed = eligible.find((track) => track.id === Number(rawRouteFrame))
+        if (routed) setTracks((current) => (current.length ? current : [routed]))
+      }
       setFramesFor(wallet.account)
       const labs = await labsAddress()
       const total = BigInt(

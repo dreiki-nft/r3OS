@@ -7,6 +7,7 @@ import {
   subscribeAssistant,
 } from './assistantStore'
 import { getBalloons, subscribeBalloons } from './balloons'
+import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { playSound } from './sound'
 import { getWindows, subscribeWindows } from './windows'
 import { SafeImage } from './ui/SafeImage'
@@ -41,6 +42,7 @@ export function Assistant() {
   const eventTip = useSyncExternalStore(subscribeAssistant, getAssistantTip)
   const balloons = useSyncExternalStore(subscribeBalloons, getBalloons)
   const windows = useSyncExternalStore(subscribeWindows, getWindows)
+  const firstRunOpen = useSyncExternalStore(subscribeFirstRun, isFirstRunOpen)
   const [manualHidden, setManualHidden] = useState(() => {
     try {
       return localStorage.getItem('r3os.assistantHidden') === '1'
@@ -95,7 +97,7 @@ export function Assistant() {
   }, [eventTip, tipIndex, manualHidden])
 
   const overlapped = assistantOverlapsWindows(windows.windows, viewport.width, viewport.height)
-  if (manualHidden || autoHidden || overlapped) return null
+  if (manualHidden || autoHidden || overlapped || firstRunOpen) return null
   const text = eventTip ?? tips[tipIndex]
   return (
     <aside className="assistant">

@@ -37,7 +37,8 @@ const pages: Record<HelpSlug, ReactNode> = {
         <b>claim your Pass</b> in <b>My Pass</b>. it collects stamps for what you do.
       </li>
       <li>
-        then try <b>Quests</b>, <b>Burn a CD</b> and <b>Block Camera</b>.
+        then try <b>Explore Monad</b>, <b>Quests</b> and <b>Block Camera</b>. to burn frames onto a CD, use
+        Burn CD in <b>My Frames</b>.
       </li>
       <li style={{ listStyle: 'none', marginLeft: -18 }}>
         <Button onClick={() => window.dispatchEvent(new Event(SHOW_WELCOME_EVENT))}>
@@ -167,14 +168,27 @@ const pages: Record<HelpSlug, ReactNode> = {
   ),
   'monad-hw': (
     <>
+      <p>small experiments you can run with one button, each showing something Monad does differently:</p>
+      <ul>
+        <li>
+          <b>Block speed</b>: watch new blocks arrive, about every 0.3 seconds.
+        </li>
+        <li>
+          <b>Storage race</b>: read the same amount of data from one storage page and from many. Monad warms a
+          whole 4 KiB page at once (MIP-8), so the first way is far cheaper.
+        </li>
+        <li>
+          <b>Block camera</b>: turn the current block into a picture.
+        </li>
+        <li>
+          <b>Liquidity race</b> (mainnet): ask several Monad markets for the same quote in one simulation.
+          nothing is traded.
+        </li>
+      </ul>
       <p>
-        Device Manager for the chain underneath r3tardOS: block clock, storage, staking, history, crypto and
-        your Monad Card.
-      </p>
-      <p>
-        every value says where it came from: <code>ONCHAIN</code> was read from the chain just now,{' '}
-        <code>MEASURED</code> was timed by this app, <code>SPEC</code> comes from Monad's docs.{' '}
-        <code>UNKNOWN</code> means it couldn't be confirmed (yet).
+        every result is read from the chain or measured live. the <b>System Information</b> tab has the full
+        device list: <code>ONCHAIN</code> was read from the chain just now, <code>MEASURED</code> was timed by
+        this app, <code>SPEC</code> comes from Monad's docs, <code>UNKNOWN</code> couldn't be confirmed.
       </p>
     </>
   ),
@@ -241,8 +255,8 @@ const pages: Record<HelpSlug, ReactNode> = {
   run: (
     <p>
       Start › Run… opens a program by name: <code>paint</code>, <code>frames</code>, <code>camera</code>,{' '}
-      <code>hardware</code>, <code>dxdiag</code> and the rest of the desktop. a few shortcuts work too:{' '}
-      <code>frame 12</code> opens a frame's properties and <code>auction 3</code> opens an auction.
+      <code>explore</code>, <code>dxdiag</code> and the rest. a few shortcuts work too: <code>frame 12</code>{' '}
+      opens a frame's properties and <code>auction 3</code> opens an auction.
     </p>
   ),
   'owner-powers': (

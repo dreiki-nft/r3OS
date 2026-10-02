@@ -38,6 +38,8 @@ const ALL_RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   kernel: 'kernel-debugger',
   'kernel-debugger': 'kernel-debugger',
   router: 'router',
+  explore: 'monad-hw',
+  monad: 'monad-hw',
   hardware: 'monad-hw',
   'monad-hw': 'monad-hw',
   xray: 'xray',
@@ -54,7 +56,7 @@ export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze(
 const UINT256_MAX = (1n << 256n) - 1n
 const MAX_INPUT = 90 // "card " + the 78 digits of uint256 max fits
 
-export const RUN_EXAMPLES = 'paint · hardware · dxdiag · frame 12'
+export const RUN_EXAMPLES = 'paint · explore · camera · frame 12'
 
 function notFound(input: string): RunParse {
   const shown = input.length > 40 ? `${input.slice(0, 39)}…` : input

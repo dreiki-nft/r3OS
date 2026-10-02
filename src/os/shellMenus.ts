@@ -88,7 +88,7 @@ export function desktopMenuItems(): ShellMenuItem[] {
     { kind: 'item', id: 'refresh', label: 'Refresh', action: { type: 'refresh' } },
     { kind: 'separator', id: 'sep-1' },
     { kind: 'item', id: 'run', label: 'Run…', action: { type: 'open', program: 'run' } },
-    { kind: 'item', id: 'monad-hw', label: 'Monad Hardware', action: { type: 'open', program: 'monad-hw' } },
+    { kind: 'item', id: 'monad-hw', label: 'Explore Monad', action: { type: 'open', program: 'monad-hw' } },
     { kind: 'item', id: 'dxdiag', label: 'DXDIAG.EXE', action: { type: 'open', program: 'dxdiag' } },
     { kind: 'separator', id: 'sep-2' },
     { kind: 'item', id: 'properties', label: 'Properties', action: { type: 'open', program: 'pass' } },
@@ -140,7 +140,7 @@ export function movedBeyondThreshold(
 // Start menu cascade state
 // ---------------------------------------------------------------------------
 
-export type StartSubmenu = 'programs' | 'hardware'
+export type StartSubmenu = 'programs' | 'tools'
 
 /** Only one cascading submenu is ever open: opening one replaces the other; clicking the open one closes it. */
 export function toggleSubmenu(current: StartSubmenu | null, which: StartSubmenu): StartSubmenu | null {

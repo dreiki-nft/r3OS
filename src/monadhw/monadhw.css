@@ -643,3 +643,254 @@
   justify-content: flex-end;
   gap: 3px;
 }
+
+/* ---------------------------------------------------------------------------
+   Explore Monad (first tab of the monad-hw window)
+   --------------------------------------------------------------------------- */
+
+.monadhw-program > .tabs {
+  flex: 0 0 auto;
+  padding-top: 6px;
+}
+
+.monadhw-sysinfo,
+.explore-monad {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--bevel-light);
+}
+
+.explore-monad {
+  overflow: auto;
+  padding: 8px 10px 10px;
+  container-type: inline-size;
+}
+
+.explore-intro {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+}
+
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+  align-items: start;
+}
+
+.explore-grid .group-box {
+  margin: 10px 0 0;
+  min-width: 0;
+}
+
+.explore-grid .group-box legend {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.explore-lead {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.explore-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.explore-actions .muted,
+.explore-intro,
+.explore-result-line span {
+  color: var(--text-muted);
+}
+
+.explore-result-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.explore-big {
+  font-size: 22px;
+  color: var(--accent);
+}
+
+.explore-why {
+  margin: 6px 0;
+  line-height: 1.45;
+}
+
+.block-ticker {
+  height: 150px;
+  overflow: hidden;
+  padding: 6px 8px;
+  background: var(--field);
+  font-variant-numeric: tabular-nums;
+}
+
+.block-ticker > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.block-ticker > div.newest {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.race-bars {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.race-row {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.race-row > span {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.race-row code {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.race-track {
+  height: 16px;
+  background: var(--field);
+  padding: 2px;
+}
+
+.race-track i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.race-track i.slow {
+  background: #c52020;
+}
+
+.race-row.highest > span::after {
+  content: ' ★';
+  color: var(--accent);
+}
+
+.camera-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--field);
+}
+
+.camera-card b,
+.camera-card small {
+  display: block;
+}
+
+.camera-card small {
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.camera-card-lens {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--text);
+  box-shadow:
+    inset 0 0 0 6px var(--face),
+    inset 0 0 0 9px var(--accent);
+  background: #000;
+}
+
+.explore-details {
+  margin-top: 8px;
+}
+
+.explore-details summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.explore-details[open] summary {
+  color: var(--text);
+}
+
+.explore-details-body {
+  margin-top: 6px;
+  padding: 8px;
+  background: var(--field);
+  overflow-wrap: anywhere;
+}
+
+.explore-details-body p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+}
+
+.explore-dl {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 4px 8px;
+  margin: 0;
+}
+
+.explore-dl dt {
+  color: var(--text-muted);
+}
+
+.explore-dl dd {
+  margin: 0;
+}
+
+.explore-dl .hw-source {
+  margin-left: 4px;
+}
+
+.explore-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+@container (max-width: 720px) {
+  .explore-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .explore-dl {
+    grid-template-columns: 1fr;
+  }
+  .explore-dl dt {
+    margin-top: 4px;
+  }
+  .race-row {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+  .race-row code {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  .explore-actions .r3-button {
+    min-height: 36px;
+  }
+}

@@ -702,6 +702,14 @@ export function FramesProgram() {
       },
     },
     {
+      label: 'Burn CD',
+      icon: 'disc' as const,
+      enabled: Boolean(wallet.account),
+      reason: 'connect a wallet to burn your frames onto a CD',
+      action: () =>
+        openProgram('cd', true, selectedRegular && ownsSelected ? `#/cd?frame=${selected}` : '#/cd'),
+    },
+    {
       label: 'List',
       icon: 'gavel' as const,
       enabled: Boolean(selectedInfo?.finale && ownsSelected),

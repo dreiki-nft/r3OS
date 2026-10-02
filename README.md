@@ -344,7 +344,7 @@ The lab has no owner, storage, custody, fees or persistent execution path. Its W
 ### Launch tooling: Launch Doctor, DXDIAG.EXE, Run…
 
 - **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x…> [--expected-owner <0x…>] [--expected-chain <id>] [--json]`) is a read-only Node CLI for the deployer. It verifies ownership and pending owners, immutable wiring, the experiment and renderer registries, Pass pin capacity, CARD.DRV, Block Camera links, every Operator Record source pointer, the System Event feed, ROUTER adapter code hashes on mainnet, the release schedule and freeze readiness. Every check is `OK`, `WARN`, `FAIL` or `UNKNOWN`; the exit code is 1 only when something `FAIL`s. It never signs, never sends a transaction and never prints the RPC URL.
-- **DXDIAG.EXE** (Start → Monad Hardware) shows what this browser is connected to and which r3tardOS components it can see, reads once on open (Refresh to re-read) and copies a plain-text support report without RPC URLs or wallet data.
+- **DXDIAG.EXE** (Start → System Tools) shows what this browser is connected to and which r3tardOS components it can see, reads once on open (Refresh to re-read) and copies a plain-text support report without RPC URLs or wallet data.
 - **Run…** (Start menu) opens allowlisted programs and a few typed routes (`operator`, `card <id>`, `frame <id>`, `auction <id>`) through the same release-aware path as every icon. It is not a shell: no URLs, no `javascript:`, no arbitrary hashes.
 
 The canonical launch list is [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md).
@@ -549,3 +549,17 @@ Set `VITE_DEPLOY_BLOCK` to the deployment block before testnet/mainnet soak. Eve
 `VITE_WALLET_RPC_URL` remains separate and is still the only endpoint exposed through wallet chain metadata. None of the app fallback RPCs are sent to the wallet.
 
 Demo mode now means either no app RPC URL is configured at all (`VITE_RPC_URL` and `VITE_RPC_URLS` are both empty) or the Paint address is missing.
+
+
+## Shell layout (2026-10-02 simplification)
+
+The desktop holds only what defines r3tardOS: **Paint, Explore Monad, My Pass, My Frames, Quests, Block Camera, CD-ROM (D:)** and the **Recycle Bin**. **Auction** joins them only while a finale auction is live onchain. Start has **Programs ▸** (everything a person uses, including Burn a CD and Auction), **Explore Monad**, **System Tools ▸** (Monad X-ray, Validators, DXDIAG.EXE, Sounds), Help and Run…. Burn a CD is also a toolbar button in My Frames. The layout lives in `src/os/layout.ts`; retired programs stay retired (`src/os/retired.ts`).
+
+**Explore Monad** (the `monad-hw` program) opens on four one-button experiments; the previous Device Manager view is its **System Information** tab:
+
+- **Block speed** reads the app's existing block stream (no extra RPC) and shows the cadence this browser measured next to the ~300 ms spec.
+- **Storage race** runs three `eth_call`s on press: PAGE.EXE `benchRead` over 128 slots on one page vs one slot on 128 pages, plus `probePage`. It shows the measured gas and ratio (MIP-8); nothing is sent.
+- **Block camera** shows the live block number and producer from the block stream and opens Block Camera (which owns the expensive viewfinder).
+- **Liquidity race** (mainnet) runs one ROUTER-LAB `compare` `eth_call` over the MRC-17 adapters in the venue manifest for 1 WMON → USDC and ranks the **highest quoted output**; no approval, swap or transaction. Off mainnet it shows "MAINNET DEMO" (a dev build can run it against the test venues, labelled as such).
+
+A first visit to the bare desktop shows one small welcome dialog (Paint together · Explore Monad · View my Pass), stored in `r3os.firstRun.done`.

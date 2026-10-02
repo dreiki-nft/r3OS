@@ -77,7 +77,7 @@ describe('desktop / icon menu models', () => {
     const items = desktopMenuItems()
     expect(
       items.filter((item) => item.kind === 'item').map((item) => item.kind === 'item' && item.label),
-    ).toEqual(['Refresh', 'Run…', 'Monad Hardware', 'DXDIAG.EXE', 'Properties'])
+    ).toEqual(['Refresh', 'Run…', 'Explore Monad', 'DXDIAG.EXE', 'Properties'])
     for (const item of items) {
       if (item.kind === 'item' && item.action.type === 'open')
         expect(programById(item.action.program), item.label).toBeTruthy()
@@ -126,8 +126,8 @@ describe('long press', () => {
 describe('Start menu cascade state and keys', () => {
   it('only one submenu is open at a time', () => {
     expect(toggleSubmenu(null, 'programs')).toBe('programs')
-    expect(toggleSubmenu('programs', 'hardware')).toBe('hardware')
-    expect(toggleSubmenu('hardware', 'programs')).toBe('programs')
+    expect(toggleSubmenu('programs', 'tools')).toBe('tools')
+    expect(toggleSubmenu('tools', 'programs')).toBe('programs')
     expect(toggleSubmenu('programs', 'programs')).toBeNull()
   })
 

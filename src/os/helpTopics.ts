@@ -15,7 +15,7 @@ export const HELP_TOPICS = [
   { slug: 'bin', title: 'Recycle Bin', group: 'programs', program: 'bin' },
   { slug: 'validators', title: 'Validators', group: 'programs', program: 'validators' },
   { slug: 'block-camera', title: 'Block Camera', group: 'monad', program: 'block-camera' },
-  { slug: 'monad-hw', title: 'Monad Hardware', group: 'monad', program: 'monad-hw' },
+  { slug: 'monad-hw', title: 'Explore Monad', group: 'monad', program: 'monad-hw' },
   { slug: 'xray', title: 'Monad X-ray', group: 'monad', program: 'xray' },
   { slug: 'dxdiag', title: 'DXDIAG.EXE', group: 'monad', program: 'dxdiag' },
   { slug: 'seasons', title: 'seasons & finales', group: 'basics' },

@@ -1,4 +1,5 @@
 import { helpHash } from '../os/helpTopics'
+import { paintedText, type LastPaint } from './paintedText'
 import {
   useCallback,
   useEffect,
@@ -124,6 +125,13 @@ export function PaintProgram() {
   const [paintQuote, setPaintQuote] = useState<ActionQuote>()
   const [quotes, setQuotes] = useState<Record<string, ActionQuote | string>>({})
   const [busy, setBusy] = useState(false)
+  const [lastPaint, setLastPaint] = useState<LastPaint>()
+  // The "painted in block" line stays for a few seconds, then the status bar goes back to normal.
+  useEffect(() => {
+    if (!lastPaint) return
+    const timer = window.setTimeout(() => setLastPaint(undefined), 12_000)
+    return () => window.clearTimeout(timer)
+  }, [lastPaint])
   const [autoPaint, setAutoPaint] = useState(true)
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null)
   const [box, setBox] = useState<{
@@ -683,6 +691,8 @@ export function PaintProgram() {
         const inFlight = beginInFlight(bytes)
         try {
           const result = await sendAction(options)
+          // Measured by the tx pipeline: from the RPC accepting the transaction to this app holding its receipt.
+          setLastPaint({ block: result.blockNumber, receiptMs: result.receiptMs })
           await settleInFlight(inFlight, result.blockNumber)
           await refreshBudget()
           let corruptions = new Uint8Array()
@@ -1057,11 +1067,13 @@ export function PaintProgram() {
         <span>
           {busy
             ? 'painting…'
-            : isLive && live.burner
-              ? `LIVE · burner ${short(live.burner.address)} · ${formatBurnerBalance(live.balance)}`
-              : config.demo
-                ? 'demo canvas'
-                : `ready · ${short(wallet.account)}`}
+            : lastPaint
+              ? paintedText(lastPaint)
+              : isLive && live.burner
+                ? `LIVE · burner ${short(live.burner.address)} · ${formatBurnerBalance(live.balance)}`
+                : config.demo
+                  ? 'demo canvas'
+                  : `ready · ${short(wallet.account)}`}
         </span>
         <span>
           {hover.x}, {hover.y}

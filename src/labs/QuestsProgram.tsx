@@ -19,7 +19,16 @@ import { IntroBar } from '../os/ui/IntroBar'
 import { MenuBar } from '../os/ui/MenuBar'
 import { SafeImage } from '../os/ui/SafeImage'
 import { errorText, labAddress, labLoadError, LabNotDeployedError, shortAddress } from './labCommon'
-import { mapQuestProgress, questLockedByHiddenLab, type QuestProgressState } from './quests'
+import {
+  QUEST_GROUP_TITLES,
+  QUEST_HOW,
+  mapQuestProgress,
+  questGroup,
+  questLockedByHiddenLab,
+  type QuestGroup,
+  type QuestProgressState,
+} from './quests'
+import { config } from '../chain/config'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { useRefreshTick } from '../chain/refreshTick'
 import { questIsRetired, retiredAddresses } from '../os/retired'
@@ -416,6 +425,16 @@ export function QuestsProgram() {
         <section className="quest-list sunken">
           {defs.map((quest, index) => {
             if (retired(quest)) return null
+            // Group header ("ON THE CANVAS" / "AROUND r3tardOS") when the group changes.
+            const group: QuestGroup = questGroup(quest.conditions, config.paintAddress)
+            const previous = defs
+              .slice(0, index)
+              .filter((item) => !retired(item))
+              .at(-1)
+            const header =
+              !previous || questGroup(previous.conditions, config.paintAddress) !== group
+                ? QUEST_GROUP_TITLES[group]
+                : undefined
             const row = progress[index]
             const isLocked = locked(quest)
             const claimed = Boolean(completedMask & (1n << BigInt(quest.id)))
@@ -428,60 +447,62 @@ export function QuestsProgram() {
                 : (quest.conditions[0]?.threshold ?? 1n))
             const percent = goal > 0n ? Math.min(100, Number((value * 100n) / goal)) : 0
             return (
-              <div
-                key={quest.id}
-                role="button"
-                tabIndex={0}
-                className={`quest-row ${selected === index ? 'selected' : ''} ${isLocked ? 'locked' : ''}`}
-                onClick={() => setSelected(index)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setSelected(index)
-                  }
-                }}
-              >
-                <SafeImage
-                  className="quest-mini-badge"
-                  src={badgeSrc(quest.id)}
-                  alt={isLocked ? 'locked quest' : quest.name}
-                  width={34}
-                  height={34}
-                  style={isLocked ? { filter: 'grayscale(1)', opacity: 0.35 } : undefined}
-                />
-                <span className="quest-name">
-                  <b>{isLocked ? '???' : quest.name}</b>
-                  <small>{isLocked ? 'coming soon' : questSubtitle(quest.name, goal)}</small>
-                </span>
-                <span className="quest-progress">
-                  <i>
-                    <em style={{ width: isLocked ? '0%' : `${percent}%` }} />
-                  </i>
-                </span>
-                <span className="quest-value">
-                  {isLocked ? '—' : `${value.toString()} / ${goal.toString()}`}
-                </span>
-                <span
-                  className={`quest-state ${!isLocked && claimed ? 'claimed' : !isLocked && claimable ? 'ready' : ''}`}
+              <div key={quest.id} className="quest-row-wrap">
+                {header && <div className="quest-group">{header}</div>}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={`quest-row ${selected === index ? 'selected' : ''} ${isLocked ? 'locked' : ''}`}
+                  onClick={() => setSelected(index)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      setSelected(index)
+                    }
+                  }}
                 >
-                  {isLocked ? (
-                    'coming soon'
-                  ) : claimed ? (
-                    'claimed ✓'
-                  ) : claimable ? (
-                    <Button
-                      disabled={pending}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        void claimIds([quest.id])
-                      }}
-                    >
-                      Claim
-                    </Button>
-                  ) : (
-                    'in progress'
-                  )}
-                </span>
+                  <SafeImage
+                    className="quest-mini-badge"
+                    src={badgeSrc(quest.id)}
+                    alt={isLocked ? 'locked quest' : quest.name}
+                    width={34}
+                    height={34}
+                    style={isLocked ? { filter: 'grayscale(1)', opacity: 0.35 } : undefined}
+                  />
+                  <span className="quest-name">
+                    <b>{isLocked ? '???' : quest.name}</b>
+                    <small>{isLocked ? 'coming soon' : questSubtitle(quest.name, goal)}</small>
+                  </span>
+                  <span className="quest-progress">
+                    <i>
+                      <em style={{ width: isLocked ? '0%' : `${percent}%` }} />
+                    </i>
+                  </span>
+                  <span className="quest-value">
+                    {isLocked ? '—' : `${value.toString()} / ${goal.toString()}`}
+                  </span>
+                  <span
+                    className={`quest-state ${!isLocked && claimed ? 'claimed' : !isLocked && claimable ? 'ready' : ''}`}
+                  >
+                    {isLocked ? (
+                      'coming soon'
+                    ) : claimed ? (
+                      'claimed ✓'
+                    ) : claimable ? (
+                      <Button
+                        disabled={pending}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void claimIds([quest.id])
+                        }}
+                      >
+                        Claim
+                      </Button>
+                    ) : (
+                      'in progress'
+                    )}
+                  </span>
+                </div>
               </div>
             )
           })}
@@ -579,6 +600,16 @@ export function QuestsProgram() {
                     active blocks {chosenDef.startBlock.toString()}–
                     {chosenDef.endBlock === 0n ? '∞' : chosenDef.endBlock.toString()}
                   </small>
+                )}
+                {QUEST_HOW[chosenDef.name] && !chosenProgress?.claimed && (
+                  <Button
+                    onClick={() => {
+                      const how = QUEST_HOW[chosenDef.name]
+                      openProgram(how.program, true, how.hash)
+                    }}
+                  >
+                    {QUEST_HOW[chosenDef.name].label}
+                  </Button>
                 )}
                 <p className="muted">
                   claim once and your Pass counts it for good. new quests can be added later; existing ones
