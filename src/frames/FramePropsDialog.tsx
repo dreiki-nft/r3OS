@@ -1,4 +1,6 @@
 import './frames.css'
+import { screenSafeMessage } from '../chain/errors'
+import { safeRouteInt } from '../lib/route'
 import { confirmHigherCost } from '../os/confirm'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { Address } from 'viem'
@@ -83,7 +85,7 @@ async function rendererPreview(renderer: RendererInfo, tokenId: number, info: Fr
 export function FramePropsDialog() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const params = useRouteParams()
-  const tokenId = Math.max(0, Number(params.get('token') ?? 0))
+  const tokenId = safeRouteInt(params.get('token'))
   const initialTab = params.get('tab')
   const [tab, setTab] = useState(initialTab === 'Renderer' || initialTab === 'DF1' ? initialTab : 'General')
   const [info, setInfo] = useState<FrameInfo>()
@@ -123,7 +125,7 @@ export function FramePropsDialog() {
       ])
     } catch (error) {
       // A deep link or Run… `frame <id>` can name a frame that was never minted.
-      const text = error instanceof Error ? error.message : String(error)
+      const text = screenSafeMessage(error)
       setInfo(undefined)
       setLoadError(
         /FrameDoesNotExist|nonexistent|does not exist/i.test(text)
@@ -256,7 +258,7 @@ export function FramePropsDialog() {
       setCurrentRenderer(choice)
       setRendererNote('renderer set · marketplaces refresh on MetadataUpdate')
     } catch (error) {
-      setRendererNote(error instanceof Error ? error.message : String(error))
+      setRendererNote(screenSafeMessage(error))
     } finally {
       setSetting(false)
     }

@@ -15,7 +15,9 @@ import { createBurner, loadBurner } from './burner'
 import { QUICK_ALLOWANCE, samplePaint64, startLiveQuick, type QuickProgress } from './quickStart'
 import {
   buildStartSessionTypedData,
+  burnerFundTooLarge,
   fundingSuggestion,
+  MAX_BURNER_FUND,
   getLiveSnapshot,
   isSessionSignatureExpired,
   liveActive,
@@ -130,7 +132,8 @@ export function LiveWizard() {
         setStartQuote(quote)
         if (!amount && corePaintGas != null) {
           const suggestion = fundingSuggestion(corePaintGas, quote.gasLimit, quote.maxFeePerGas)
-          setAmount(formatEther(suggestion))
+          // A suggestion above the cap means the fee quote is off: leave the box empty rather than prefill it.
+          if (!burnerFundTooLarge(suggestion)) setAmount(formatEther(suggestion))
         }
       })
       .catch((caught) => setError(friendlyError(caught, 'startSession').message))
@@ -218,6 +221,10 @@ export function LiveWizard() {
       value = parseEther(amount)
     } catch {
       setError('enter a valid MON amount')
+      return
+    }
+    if (burnerFundTooLarge(value)) {
+      setError(`a burner should only hold pocket change: send at most ${formatEther(MAX_BURNER_FUND)} MON`)
       return
     }
     setBusy(true)

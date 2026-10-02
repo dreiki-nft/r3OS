@@ -143,7 +143,9 @@ export function R3tardOS() {
         const program = programById(win.id)
         if (!program || (!program.hidden && !programIsVisible(program, releases))) return null
         const Component = program.component
-        const frameToken = new URLSearchParams(location.hash.split('?')[1] ?? '').get('token') ?? '?'
+        const rawToken = new URLSearchParams(location.hash.split('?')[1] ?? '').get('token') ?? ''
+        // Only digits reach the title bar: a shared link can't write its own words into the OS chrome.
+        const frameToken = /^\d{1,78}$/.test(rawToken) ? rawToken : '?'
         return (
           <Window
             key={win.id}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { screenSafeMessage } from '../chain/errors'
 import { confirmHigherCost } from '../os/confirm'
-import { parseEther } from 'viem'
+import { formatEther, parseEther } from 'viem'
 import { publicClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { useRefreshTick } from '../chain/refreshTick'
@@ -15,7 +16,9 @@ import { Icon } from '../os/ui/Icon'
 import { MessageBox } from '../os/ui/MessageBox'
 import { deleteBurner } from '../live/burner'
 import {
+  burnerFundTooLarge,
   formatBurnerBalance,
+  MAX_BURNER_FUND,
   formatLiveTime,
   getLiveSnapshot,
   liveActive,
@@ -122,6 +125,11 @@ export function HardwareProfiles() {
       setTopQuoteNote('enter a valid MON amount')
       return
     }
+    if (burnerFundTooLarge(value)) {
+      setTopQuote(undefined)
+      setTopQuoteNote(`a burner should only hold pocket change: at most ${formatEther(MAX_BURNER_FUND)} MON`)
+      return
+    }
     void quoteAction({
       type: 'transfer',
       kind: 'estimate',
@@ -161,7 +169,7 @@ export function HardwareProfiles() {
       setTopUp(false)
       await refreshLiveStatus(wallet.account)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
+      setError(screenSafeMessage(caught))
     }
   }
 
@@ -190,7 +198,7 @@ export function HardwareProfiles() {
         }),
       )
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
+      setError(screenSafeMessage(caught))
     } finally {
       setCancelling(false)
     }
@@ -202,27 +210,30 @@ export function HardwareProfiles() {
     endWorkRef.current = true
     setError('')
     try {
-      setEndProgress('1 of 3 · revoking burner…')
-      const revokeQuote = await quoteAction({
-        kind: 'estimate',
-        address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'revokeSession',
-        args: [live.burner.address],
-        account: wallet.account,
-        action: 'end live session',
-      })
-      await sendAction({
-        kind: 'estimate',
-        address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'revokeSession',
-        args: [live.burner.address],
-        account: wallet.account,
-        quote: revokeQuote,
-        confirmHigherCost,
-        action: 'end live session',
-      })
+      // An expired or already revoked session needs no revoke: just sweep the MON and forget the key.
+      if (active) {
+        setEndProgress('1 of 3 · revoking burner…')
+        const revokeQuote = await quoteAction({
+          kind: 'estimate',
+          address: config.paintAddress,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'revokeSession',
+          args: [live.burner.address],
+          account: wallet.account,
+          action: 'end live session',
+        })
+        await sendAction({
+          kind: 'estimate',
+          address: config.paintAddress,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'revokeSession',
+          args: [live.burner.address],
+          account: wallet.account,
+          quote: revokeQuote,
+          confirmHigherCost,
+          action: 'end live session',
+        })
+      }
 
       setEndProgress('2 of 3 · sweeping leftover MON…')
       const balance = await publicClient.getBalance({ address: live.burner.address })
@@ -260,7 +271,7 @@ export function HardwareProfiles() {
       setEnding(false)
       setEndProgress('')
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
+      setError(screenSafeMessage(caught))
       endWorkRef.current = false
       setEnding(false)
     }
@@ -356,8 +367,13 @@ export function HardwareProfiles() {
         <Button disabled={!live.burner} onClick={() => setTopUp(true)}>
           Top up…
         </Button>
-        <Button className="danger-text" disabled={!active} onClick={() => setEnding(true)}>
-          End session…
+        <Button
+          className="danger-text"
+          disabled={!live.burner || (!active && live.balance === 0n)}
+          title={!live.burner ? 'no burner in this browser' : undefined}
+          onClick={() => setEnding(true)}
+        >
+          {active || !live.burner ? 'End session…' : 'Sweep leftover MON…'}
         </Button>
       </div>
       <p className="muted hardware-footnote">
@@ -382,7 +398,11 @@ export function HardwareProfiles() {
         <MessageBox
           title="End live session"
           kind="warning"
-          message="Revoke the burner and send its leftover MON back to your wallet?"
+          message={
+            active
+              ? 'Revoke the burner and send its leftover MON back to your wallet?'
+              : 'This session is over. Send the burner’s leftover MON back to your wallet and remove its key from this browser?'
+          }
           onClose={() => {
             if (!endWorkRef.current) setEnding(false)
           }}

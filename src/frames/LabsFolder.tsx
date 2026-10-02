@@ -1,4 +1,5 @@
 import '../labs/phase3c2a.css'
+import { screenSafeMessage } from '../chain/errors'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { zeroAddress, type Address } from 'viem'
 import { publicClient, wsClient } from '../chain/clients'
@@ -136,7 +137,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
       setTokens(rows)
       if (routeToken != null && rows.some((token) => token.id === routeToken)) setSelected(routeToken)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     }
   }, [labs, wallet.account, routeToken])
 

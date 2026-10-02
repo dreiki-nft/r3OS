@@ -91,8 +91,10 @@ export function auctionActions(info: Info | undefined, head: bigint, deposit: bi
   }
 }
 
-function routeNumber(name: string) {
-  return BigInt(new URLSearchParams(location.hash.split('?')[1] ?? '').get(name) || 0)
+/** A positive integer from the hash query; anything else (letters, decimals, huge values) is 0. */
+export function routeNumber(name: string, hash = typeof location === 'undefined' ? '' : location.hash) {
+  const raw = new URLSearchParams(hash.split('?')[1] ?? '').get(name) ?? ''
+  return /^\d{1,78}$/.test(raw) ? BigInt(raw) : 0n
 }
 
 export function AuctionProgram() {

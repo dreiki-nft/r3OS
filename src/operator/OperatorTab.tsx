@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { screenSafeMessage } from '../chain/errors'
 import { decodeEventLog } from 'viem'
 import { useOperatorRecord, recordRows, visibleSubsystems } from '../chain/operatorRecord'
 import { useSystemEvent } from '../chain/systemEvent'
@@ -100,7 +101,7 @@ export function OperatorTab() {
         setMessage(parts.join(' · '))
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     } finally {
       setPending(false)
     }

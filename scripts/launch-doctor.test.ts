@@ -324,6 +324,8 @@ describe('launch doctor: pure helpers', () => {
     const args = parseArgs(['--paint', PAINT, '--json'], { RPC_URL: 'http://x', EXPECTED_OWNER: OWNER })
     expect(args).toMatchObject({ paint: PAINT, json: true, rpc: 'http://x', expectedOwner: OWNER })
     expect(parseArgs(['--what']).unknown).toEqual(['--what'])
+    // Foundry's spelling of the flag must not echo the URL (it can carry an API key).
+    expect(parseArgs(['--rpc-url=https://rpc.example/v2/SECRETKEY']).unknown).toEqual(['--rpc-url'])
   })
 })
 

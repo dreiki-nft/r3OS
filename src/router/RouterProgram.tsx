@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { screenSafeMessage } from '../chain/errors'
 import type { Address } from 'viem'
 import { config } from '../chain/config'
 import { useRefreshTick } from '../chain/refreshTick'
@@ -100,7 +101,7 @@ export function RouterProgram() {
     let cancelled = false
     void loadRouterEnvironment()
       .then((value) => !cancelled && setEnv(value))
-      .catch((error) => !cancelled && setMessage(error instanceof Error ? error.message : String(error)))
+      .catch((error) => !cancelled && setMessage(screenSafeMessage(error)))
     return () => {
       cancelled = true
     }
@@ -188,11 +189,11 @@ export function RouterProgram() {
           setMonoper(reference)
         } catch (error) {
           setMonoper(undefined)
-          setMessage(`Monoper cross-check: ${error instanceof Error ? error.message : String(error)}`)
+          setMessage(`Monoper cross-check: ${screenSafeMessage(error)}`)
         }
       } else setMonoper(undefined)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     } finally {
       if (showPending) setPending(false)
     }
@@ -233,7 +234,7 @@ export function RouterProgram() {
       })
       setSimulation(next)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     } finally {
       setPending(false)
     }

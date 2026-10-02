@@ -12,3 +12,15 @@ contracts/.env
 contracts/test-output/
 contracts/out-deploy/
 contracts/cache-deploy/
+
+# Secrets and local config: never commit
+.env.*
+!.env.example
+contracts/.env*
+!contracts/.env.example
+*.keystore
+keystore/
+keystores/
+*password*.txt
+*.pem
+launch-doctor-*.json

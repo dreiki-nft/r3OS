@@ -1399,7 +1399,8 @@ export function parseArgs(argv, env = {}) {
     else if (arg.startsWith('--rpc=')) out.rpc = arg.slice(6)
     else if (arg.startsWith('--paint=')) out.paint = arg.slice(8)
     else if (arg.startsWith('--expected-owner=')) out.expectedOwner = arg.slice(17)
-    else out.unknown = [...(out.unknown ?? []), arg.startsWith('--') ? arg : '(positional)']
+    // Only the flag NAME is ever echoed: `--rpc-url=https://…/KEY` must not print its value.
+    else out.unknown = [...(out.unknown ?? []), arg.startsWith('--') ? arg.split('=')[0] : '(positional)']
   }
   out.rpc ??= env.RPC_URL
   out.paint ??= env.PAINT_ADDRESS

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { requestRecycle } from './programs/recycleIntent'
 import { openProgram, programById, programIsVisible, type ProgramDef } from './programs'
 import { desktopProgramIds } from './layout'
 import { useAuctionLive } from '../labs/auctionLive'
@@ -262,7 +263,7 @@ export function Desktop() {
               const id = Number(event.dataTransfer.getData('application/x-r3-frame'))
               if (id > 0) {
                 event.preventDefault()
-                openProgram('bin', true, `#/bin?recycle=${id}`)
+                recycleFrame(Number(id))
               }
             }}
             onClick={() => {
@@ -306,4 +307,10 @@ export function Desktop() {
       )}
     </>
   )
+}
+
+/** Open the Recycle Bin with this frame ready to confirm (in-memory request; see recycleIntent.ts). */
+function recycleFrame(id: number) {
+  requestRecycle(id)
+  openProgram('bin')
 }

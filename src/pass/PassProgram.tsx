@@ -1,4 +1,5 @@
 import { helpHash } from '../os/helpTopics'
+import { screenSafeMessage } from '../chain/errors'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { parseAbi, type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
@@ -341,7 +342,7 @@ export function PassProgram() {
     } catch (error) {
       setBox({
         title: 'Painter Pass',
-        message: error instanceof Error ? error.message : String(error),
+        message: screenSafeMessage(error),
         kind: 'error',
       })
     }

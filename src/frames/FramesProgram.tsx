@@ -1,4 +1,7 @@
 import { helpHash } from '../os/helpTopics'
+import { screenSafeMessage } from '../chain/errors'
+import { safeRouteInt } from '../lib/route'
+import { requestRecycle } from '../os/programs/recycleIntent'
 import './frames.css'
 import { confirmHigherCost } from '../os/confirm'
 import {
@@ -204,7 +207,7 @@ export function FramesProgram() {
     void routeVersion
     return routeParams()
   }, [routeVersion])
-  const routeFrame = Number(params.get('frame') ?? 0)
+  const routeFrame = safeRouteInt(params.get('frame'))
   const routeSeason = params.get('season')
   const [filter, setFilter] = useState<Filter>(() => {
     const requested = params.get('filter')
@@ -214,7 +217,7 @@ export function FramesProgram() {
   })
   const [labsView, setLabsView] = useState(params.get('labs') === '1')
   const [season, setSeason] = useState<number | undefined>(
-    routeSeason == null ? undefined : Number(routeSeason),
+    routeSeason == null || !/^\d{1,6}$/.test(routeSeason) ? undefined : Number(routeSeason),
   )
   const [history, setHistory] = useState<(number | undefined)[]>([])
   const [ids, setIds] = useState<number[]>([])
@@ -330,7 +333,7 @@ export function FramesProgram() {
   }, [])
 
   useEffect(() => {
-    if (routeSeason != null) setSeason(Number(routeSeason))
+    if (routeSeason != null && /^\d{1,6}$/.test(routeSeason)) setSeason(Number(routeSeason))
     if (routeFrame > 0) setSelected(routeFrame)
     setLabsView(params.get('labs') === '1')
   }, [routeSeason, routeFrame, params])
@@ -592,7 +595,7 @@ export function FramesProgram() {
     } catch (error) {
       setBox({
         title: 'Burn failed',
-        message: error instanceof Error ? error.message : String(error),
+        message: screenSafeMessage(error),
         kind: 'error',
       })
     }
@@ -620,7 +623,7 @@ export function FramesProgram() {
       ownsSelected
     ) {
       event.preventDefault()
-      openProgram('bin', true, `#/bin?recycle=${selected}`)
+      recycleFrame(Number(selected))
       return
     }
     if (event.altKey && event.key === 'Enter' && selected != null && selected !== 0) {
@@ -737,7 +740,7 @@ export function FramesProgram() {
     } catch (error) {
       setBox({
         title: 'Mint finale',
-        message: error instanceof Error ? error.message : String(error),
+        message: screenSafeMessage(error),
         kind: 'error',
       })
     } finally {
@@ -807,7 +810,7 @@ export function FramesProgram() {
           <button
             className="frames-burn"
             title="send this frame to the Recycle Bin"
-            onClick={() => openProgram('bin', true, `#/bin?recycle=${selected}`)}
+            onClick={() => recycleFrame(Number(selected))}
           >
             <Icon name="trash" size={24} colour="#877549" />
             <span>Recycle</span>
@@ -1145,7 +1148,7 @@ export function FramesProgram() {
                 }
                 onClick={() => {
                   setContextMenu(undefined)
-                  openProgram('bin', true, `#/bin?recycle=${tokenId}`)
+                  recycleFrame(Number(tokenId))
                 }}
               >
                 Send to Recycle Bin
@@ -1156,4 +1159,10 @@ export function FramesProgram() {
       {box && <MessageBox {...box} onClose={() => setBox(undefined)} />}
     </div>
   )
+}
+
+/** Open the Recycle Bin with this frame ready to confirm (in-memory request; see recycleIntent.ts). */
+function recycleFrame(id: number) {
+  requestRecycle(id)
+  openProgram('bin')
 }

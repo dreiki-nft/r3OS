@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { screenSafeMessage } from '../chain/errors'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import type { HardwareSource } from '../chain/monadHardware'
 import { closeWindow } from '../os/windows'
@@ -63,7 +64,7 @@ export function DxDiagProgram() {
     try {
       setData(await loadDxDiag(force, setStep))
     } catch (error) {
-      setNote(`could not read: ${error instanceof Error ? error.message.slice(0, 120) : 'unknown error'}`)
+      setNote(`could not read: ${screenSafeMessage(error).slice(0, 120)}`)
     } finally {
       setLoading(false)
     }

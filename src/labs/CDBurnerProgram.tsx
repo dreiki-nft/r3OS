@@ -1,4 +1,5 @@
 import { helpHash } from '../os/helpTopics'
+import { screenSafeMessage } from '../chain/errors'
 import './phase3c2c.css'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { hexToBytes, parseEventLogs, type Address, type Hex, type Log } from 'viem'
@@ -172,7 +173,7 @@ export function CDBurnerProgram() {
         if (routed?.data) setMinted({ id: routed.id, data: routed.data })
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     }
   }, [wallet.account])
 
@@ -188,7 +189,7 @@ export function CDBurnerProgram() {
     let cancelled = false
     void Promise.all(tracks.map((track) => countsForFrame(track.id, track.info)))
       .then((counts) => !cancelled && setDiscMask(discMaskFromCounts(counts)))
-      .catch((error) => !cancelled && setMessage(error instanceof Error ? error.message : String(error)))
+      .catch((error) => !cancelled && setMessage(screenSafeMessage(error)))
     return () => {
       cancelled = true
     }
@@ -223,7 +224,7 @@ export function CDBurnerProgram() {
       action: 'burn mix CD-R',
     })
       .then((next) => !cancelled && setQuote(next))
-      .catch((error) => !cancelled && setMessage(error instanceof Error ? error.message : String(error)))
+      .catch((error) => !cancelled && setMessage(screenSafeMessage(error)))
     return () => {
       cancelled = true
     }
@@ -289,7 +290,7 @@ export function CDBurnerProgram() {
       setPreviewToken(id + 1n)
       setCds((current) => [{ id, data }, ...current.filter((token) => token.id !== id)])
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
       setTxState('idle')
     } finally {
       burningRef.current = false

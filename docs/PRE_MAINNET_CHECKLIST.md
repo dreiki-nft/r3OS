@@ -12,6 +12,7 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x�
 - CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. ROUTER.EXE stays diagnostic.
 
 - **Retired from the interface (2026-10-01):** Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger, ROUTER.EXE (`src/os/retired.ts`). Their contracts are still deployed unchanged; the app hides them and their quests, Pass stamps and Operator subsystems. CARD.DRV stays deployed (MONAD CARD stamp, CARD CARRIER quest, Block Camera).
+- **Security audit 2026-10-02** ([`SECURITY_AUDIT_2026-10-02.md`](SECURITY_AUDIT_2026-10-02.md)): before mainnet, (1) `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty (EIP-2935 history, auction settle window); (2) the mainnet r3tards collection is a plain non-upgradeable, non-pausable ERC-721 (frame/finale mint calls its `balanceOf`); (3) decide whether the UI-retired labs are deployed/registered on mainnet; (4) `SystemEvent` `MAX_AGE` = feed heartbeat + buffer; (5) the Vercel CSP is live (`curl -sI <site> | grep -i content-security-policy`).
 - **PAGE.EXE and ROUTER-LAB must still be deployed on mainnet:** Explore Monad's Storage race calls PAGE.EXE `benchRead`/`probePage`, and its Liquidity race calls ROUTER-LAB `compare` (no mock venues on 143). After deploy, open Explore Monad on mainnet, press Run test and Compare, and confirm real numbers (Storage race ratio ≫ 1; at least one venue quoting).
 
 ## F1. Deployment

@@ -1,4 +1,5 @@
 import { helpHash } from '../helpTopics'
+import { screenSafeMessage } from '../../chain/errors'
 import '../../labs/phase3c2c.css'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import {
@@ -18,6 +19,7 @@ import { getLogsWindow, scanBackward } from '../../chain/logs'
 import { discoverContracts } from '../../chain/contracts'
 import { readMany } from '../../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../../chain/tx'
+import { describeFrames, subscribeRecycleRequests, takeRecycleRequest } from './recycleIntent'
 import { formatMaxCost, withTenPercent } from '../../chain/gas'
 import { getWalletSnapshot, subscribeWallet } from '../../chain/wallet'
 import { getFrameInfoBatch, mineTokenIds, refreshFrameIndex, type FrameInfo } from '../../frames/framesStore'
@@ -290,7 +292,7 @@ export function RecycleBin() {
       setBin(address)
       await Promise.all([loadSidebar(address, wallet.account), loadRows(address)])
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     }
   }, [loadRows, loadSidebar, wallet.account])
 
@@ -358,12 +360,17 @@ export function RecycleBin() {
     })
   }, [bin, loadSidebar, wallet.account])
 
+  // Only in-app requests (My Frames, the desktop Bin) open the confirm dialog. A `?recycle=` in a shared
+  // link is ignored on purpose: a link must never pre-arm a burn.
   useEffect(() => {
-    const id = Number(new URLSearchParams(location.hash.split('?')[1] ?? '').get('recycle') ?? 0)
-    if (id > 0) {
+    const take = () => {
+      const id = takeRecycleRequest()
+      if (id == null) return
       setPicked([id])
       setConfirmOpen(true)
     }
+    take()
+    return subscribeRecycleRequests(take)
   }, [])
 
   const openPicker = async () => {
@@ -384,7 +391,7 @@ export function RecycleBin() {
       setEligible(choices)
     } catch (error) {
       setEligible([])
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     }
   }
 
@@ -451,7 +458,7 @@ export function RecycleBin() {
           if (!cancelled) setRecycleQuote(preview)
         }
       }
-    })().catch((error) => !cancelled && setMessage(error instanceof Error ? error.message : String(error)))
+    })().catch((error) => !cancelled && setMessage(screenSafeMessage(error)))
     return () => {
       cancelled = true
     }
@@ -530,7 +537,7 @@ export function RecycleBin() {
       setConfirmOpen(false)
       setPickerOpen(false)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error))
+      setMessage(screenSafeMessage(error))
     } finally {
       setBusy(false)
     }
@@ -760,7 +767,7 @@ export function RecycleBin() {
         <MessageBox
           title="Confirm recycle"
           kind="warning"
-          message={`Are you sure you want to send these ${picked.length} frame${picked.length === 1 ? '' : 's'} to the Recycle Bin? Recycling burns them forever. This can't be undone.`}
+          message={`Are you sure you want to send ${describeFrames(picked)} to the Recycle Bin? Recycling burns ${picked.length === 1 ? 'it' : 'them'} forever. This can't be undone.`}
           details={
             picked.length > 1 && !operatorApproved
               ? `one-time permission so the Bin can burn frames you pick\napproval max cost: ${quote?.maxCost ?? 'quoting…'}\nrecycle max cost: ${recycleQuote?.maxCost ?? 'quoted immediately after approval, before the second wallet prompt'}\nconfirming this batch continues straight from approval into recycle.`

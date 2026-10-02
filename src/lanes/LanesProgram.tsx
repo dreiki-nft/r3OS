@@ -1,4 +1,5 @@
 import '../network/phase4a.css'
+import { screenSafeMessage } from '../chain/errors'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Address, Log } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
@@ -113,7 +114,7 @@ export function LanesProgram() {
           quests: contracts.labs.quests,
         })
       })
-      .catch((error) => setMessage(error instanceof Error ? error.message : String(error)))
+      .catch((error) => setMessage(screenSafeMessage(error)))
     return () => {
       cancelled = true
     }
@@ -132,7 +133,7 @@ export function LanesProgram() {
         setTxs(decoded)
         lastPolled.current = clock.block
       })
-      .catch((error) => setMessage(error instanceof Error ? error.message : String(error)))
+      .catch((error) => setMessage(screenSafeMessage(error)))
     return () => {
       cancelled = true
     }

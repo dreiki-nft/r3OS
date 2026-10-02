@@ -20,3 +20,15 @@ describe('quickFunding', () => {
     expect(quickFunding(parseEther('0.4'), 200_000n, 150_000n, 100n * GWEI)).toBeGreaterThan(0n)
   })
 })
+
+describe('burner funding cap', () => {
+  it('refuses to move more than pocket change into a browser-held key', async () => {
+    const { burnerFundTooLarge, MAX_BURNER_FUND } = await import('./liveStore')
+    expect(MAX_BURNER_FUND).toBe(parseEther('10'))
+    expect(burnerFundTooLarge(parseEther('2.1'))).toBe(false)
+    expect(burnerFundTooLarge(parseEther('10'))).toBe(false)
+    expect(burnerFundTooLarge(parseEther('10.1'))).toBe(true)
+    // An absurd fee quote (10,000 gwei) makes the suggestion blow past the cap: quick start refuses it.
+    expect(burnerFundTooLarge(quickFunding(0n, 200_000n, 150_000n, 10_000n * GWEI))).toBe(true)
+  })
+})

@@ -1,5 +1,6 @@
 import { bytesToHex, hexToBytes, type Address, type Hex } from 'viem'
 import { discoverContracts } from '../chain/contracts'
+import { screenSafeMessage } from '../chain/errors'
 import { PALETTE } from '../lib/palette'
 import { playSound } from '../os/sound'
 
@@ -34,8 +35,9 @@ export function asHex(bytes: Uint8Array): Hex {
   return bytesToHex(bytes)
 }
 
+/** On-screen error text: viem's short message, never an RPC URL (see screenSafeMessage). */
 export function errorText(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+  return screenSafeMessage(error)
 }
 
 export function colourButtons(selected: number, onSelect: (index: number) => void) {

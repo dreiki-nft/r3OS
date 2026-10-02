@@ -10,6 +10,7 @@ import { getCanvasSnapshot } from '../paint/canvasStore'
 import { confirmHigherCost } from '../os/confirm'
 import { burnerStatus, createBurner, loadBurner } from './burner'
 import {
+  burnerFundTooLarge,
   buildStartSessionTypedData,
   fundingSuggestion,
   refreshLiveStatus,
@@ -180,6 +181,11 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
 
   // Prompt 2: gas money for the burner, unless it already has enough left from an earlier session.
   const value = quickFunding(balanceBefore, paintGas, startQuote.gasLimit, startQuote.maxFeePerGas)
+  if (burnerFundTooLarge(value)) {
+    throw new Error(
+      `the gas quote asks for ${formatEther(value)} MON for the burner, which looks wrong. nothing was sent; try again later.`,
+    )
+  }
   if (value > 0n) {
     report({ phase: 'fund', funding: formatEther(value) })
     const transfer = {

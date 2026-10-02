@@ -200,6 +200,17 @@ export function sweepAmount(balance: bigint, maxFeePerGas: bigint) {
   return balance > gas ? balance - gas : 0n
 }
 
+/**
+ * The most MON the app will ever move into a browser-held burner in one go. A burner key lives in
+ * localStorage, so it should only ever hold pocket change; a fee quote that asks for more is treated as a
+ * broken or hostile RPC, not followed.
+ */
+export const MAX_BURNER_FUND = 10n * 10n ** 18n
+
+export function burnerFundTooLarge(value: bigint) {
+  return value > MAX_BURNER_FUND
+}
+
 export function fundingSuggestion(corePaintGas: bigint, startSessionGas: bigint, maxFeePerGas: bigint) {
   const wei = (100n * corePaintGas + startSessionGas) * maxFeePerGas
   const tenth = 100_000_000_000_000_000n

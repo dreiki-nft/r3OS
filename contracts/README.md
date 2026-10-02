@@ -111,7 +111,7 @@ Gas regression targets: `catchBrush <160k`, one-region verify `<250k`, four-regi
 
 ## Finale Candle Auction
 
-`R3tardsFinaleAuction` has no owner/admin. Finale owners approve and escrow a finale, then bidding remains open for 288,000 blocks. After close, the contract derives the real candle end from the closing block hash inside a 256-block reveal window; settling later falls back to the public close block rather than using a grindable later hash. Winner selection is a binary search over historical standing bids. Deposits and seller/royalty proceeds use pull payments guarded by `ReentrancyGuard`; settlement transfers the NFT with `transferFrom`.
+`R3tardsFinaleAuction` has no owner/admin. Finale owners approve and escrow a finale, then bidding remains open for 288,000 blocks. After close, the contract derives the real candle end from the closing block hash: native `blockhash` for 256 blocks, then Monad's EIP-2935 history contract for up to 8,191 blocks. Settling after that falls back to `candleStartBlock` (never a grindable later hash), which favours whoever led at the candle start, so the seller or a keeper (`scripts/auction-keeper.sh`) should settle within ~8,191 blocks of close. Winner selection is a binary search over historical standing bids. Deposits and seller/royalty proceeds use pull payments guarded by `ReentrancyGuard`; settlement transfers the NFT with `transferFrom`.
 
 Regression targets: `list <300k`, each bid/top-up `<250k`, settlement with 43 bids `<350k`, and deposit withdrawal `<100k`.
 

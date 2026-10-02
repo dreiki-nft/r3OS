@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { screenSafeMessage } from '../chain/errors'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { MONAD_NAMES, config } from '../chain/config'
 import { cardPropertySources, isOfficialCard, useMonadCard } from '../chain/monadCard'
@@ -180,7 +181,7 @@ function SystemInformation() {
       })
       setActivationMessage(DEVICE07_COPY.activated)
     } catch (error) {
-      setActivationMessage(error instanceof Error ? error.message : String(error))
+      setActivationMessage(screenSafeMessage(error))
     } finally {
       setActivationPending(false)
     }

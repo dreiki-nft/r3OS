@@ -45,3 +45,15 @@ describe('friendly errors', () => {
     expect(friendlyError(error).details).toBe(raw)
   })
 })
+
+describe('screenSafeMessage', () => {
+  it('never shows an RPC URL', async () => {
+    const { screenSafeMessage } = await import('./errors')
+    const error = new Error(
+      'HTTP request failed.\n\nURL: https://rpc.example.com/v2/SECRETKEY\nRequest body: {}',
+    )
+    expect(screenSafeMessage(error)).not.toContain('SECRETKEY')
+    expect(screenSafeMessage(error)).toContain('[rpc]')
+    expect(screenSafeMessage('wss://x.example/ws?key=abc down')).toBe('[rpc] down')
+  })
+})

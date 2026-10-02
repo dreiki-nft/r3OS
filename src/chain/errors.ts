@@ -162,5 +162,15 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
   if (message === 'NO_BURNER') {
     return { name: 'NoBurner', message: 'no burner key is stored for this wallet.' }
   }
-  return { name: 'Unknown', message, details: raw }
+  return { name: 'Unknown', message: screenSafeMessage(error), details: raw }
+}
+
+/**
+ * Raw errors from viem embed the RPC URL ("URL: https://…/v2/KEY") and long request dumps. On screen we show
+ * viem's short message, with any URL removed, so a screenshot of an error never leaks an endpoint.
+ */
+export function screenSafeMessage(error: unknown) {
+  const short = error instanceof BaseError ? error.shortMessage : undefined
+  const text = short || (error instanceof Error ? error.message : String(error))
+  return text.replace(/\b(?:https?|wss?):\/\/[^\s"'<>)]+/gi, '[rpc]').slice(0, 300)
 }
