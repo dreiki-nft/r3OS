@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { BootScreen } from './BootScreen'
 import { FirstRun } from './FirstRun'
 import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet } from '../chain/wallet'
@@ -193,6 +194,7 @@ export function R3tardOS() {
           onClose={() => setNotInstalled(undefined)}
         />
       )}
+      <BootScreen />
       {shutdown && (
         <MessageBox
           title="Shut Down"

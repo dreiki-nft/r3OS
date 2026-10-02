@@ -3153,3 +3153,129 @@ button:disabled {
     flex-wrap: wrap;
   }
 }
+
+/* Power-on: BIOS text, then the r3tardOS 98 splash with the scrolling bar, then a fade to the desktop. */
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background: #000;
+  color: #c8c8c8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.boot-screen.phase-fade {
+  animation: boot-fade 0.3s ease-in forwards;
+}
+
+@keyframes boot-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+.boot-post {
+  margin: 0;
+  padding: max(24px, 4vh) max(16px, 4vw);
+  font: 15px/1.55 var(--font);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.boot-cursor {
+  animation: boot-blink 0.8s steps(1) infinite;
+}
+
+@keyframes boot-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.boot-splash {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(95, 237, 223, 0.12), transparent 60%),
+    linear-gradient(#0b0b0c, #050506);
+}
+
+.boot-mark {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  animation: boot-rise 0.6s ease-out both;
+}
+
+.boot-mark img {
+  width: clamp(96px, 22vw, 168px);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.boot-mark b {
+  display: block;
+  font: 700 clamp(30px, 7vw, 56px) / 1 var(--font);
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.boot-mark sup {
+  margin-left: 4px;
+  font-size: 0.45em;
+  color: var(--accent);
+  vertical-align: super;
+}
+
+.boot-mark span {
+  display: block;
+  margin-top: 8px;
+  font: 14px var(--font);
+  color: var(--text-muted);
+}
+
+@keyframes boot-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.boot-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px;
+  background: repeating-linear-gradient(90deg, #5feddf 0, #ee93e3 18vw, #f7931a 36vw, #5feddf 54vw);
+  background-size: 54vw 100%;
+  animation: boot-bar 1.1s linear infinite;
+}
+
+@keyframes boot-bar {
+  to {
+    background-position: 54vw 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .boot-post {
+    font-size: 11px;
+  }
+  .boot-mark {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-bar,
+  .boot-cursor,
+  .boot-mark {
+    animation: none;
+  }
+}

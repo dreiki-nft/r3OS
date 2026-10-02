@@ -60,7 +60,8 @@ function BlockSpeed() {
   }, [block.block, watching])
 
   const offline = block.mode === 'offline' || block.block === 0n
-  const observed = observedBlockMs(samples)
+  // The oldest sample is when this panel opened, not a block arrival: measure from the arrivals after it.
+  const observed = samples.length >= 3 ? observedBlockMs(samples.slice(0, -1)) : undefined
   return (
     <GroupBox title="Block speed">
       <p className="explore-lead">Watch Monad make new blocks.</p>
@@ -83,7 +84,14 @@ function BlockSpeed() {
         <span>per block, seen by this browser</span>
       </div>
       <div className="explore-actions">
-        <Button onClick={() => setWatching((value) => !value)} disabled={offline}>
+        <Button
+          onClick={() => {
+            // Resuming starts a fresh measurement: the paused gap is not block time.
+            if (!watching) setSamples([])
+            setWatching((value) => !value)
+          }}
+          disabled={offline}
+        >
           {watching ? 'Pause' : 'Watch'}
         </Button>
         <Button onClick={() => openProgram('validators')}>Who makes them?</Button>
@@ -96,7 +104,7 @@ function BlockSpeed() {
           </dd>
           <dt>seen here</dt>
           <dd>
-            {formatBlockMs(observed)} over the last {Math.max(0, samples.length - 1)} gaps{' '}
+            {formatBlockMs(observed)} over the last {Math.max(0, samples.length - 2)} gaps{' '}
             <Tag kind="measured" />
           </dd>
           <dt>app average</dt>

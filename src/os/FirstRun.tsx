@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { isBooting, subscribeBooting } from './bootState'
 import {
   FIRST_RUN_CHOICES,
   rememberFirstRun,
@@ -24,6 +25,7 @@ export function FirstRun() {
     shouldShowFirstRun(storage(), typeof location === 'undefined' ? '' : location.hash),
   )
   const [dontShow, setDontShow] = useState(true)
+  const booting = useSyncExternalStore(subscribeBooting, isBooting)
 
   const close = (choice?: FirstRunChoice) => {
     rememberFirstRun(storage(), dontShow)
@@ -40,13 +42,13 @@ export function FirstRun() {
   useEffect(() => {
     if (!show) return
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close()
+      if (event.key === 'Escape' && !isBooting()) close()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  if (!show) return null
+  if (!show || booting) return null
 
   return (
     <div className="first-run-shade">

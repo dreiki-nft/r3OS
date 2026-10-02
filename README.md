@@ -562,4 +562,4 @@ The desktop holds only what defines r3tardOS: **Paint, Explore Monad, My Pass, M
 - **Block camera** shows the live block number and producer from the block stream and opens Block Camera (which owns the expensive viewfinder).
 - **Liquidity race** (mainnet) runs one ROUTER-LAB `compare` `eth_call` over the MRC-17 adapters in the venue manifest for 1 WMON → USDC and ranks the **highest quoted output**; no approval, swap or transaction. Off mainnet it shows "MAINNET DEMO" (a dev build can run it against the test venues, labelled as such).
 
-A first visit to the bare desktop shows one small welcome dialog (Paint together · Explore Monad · View my Pass), stored in `r3os.firstRun.done`.
+Each new tab powers on like a 1998 PC (`src/os/BootScreen.tsx`): a BIOS screen that prints the real chain, latest block and measured block clock (pausing until they arrive, capped), then the r3tardOS 98 splash, then the desktop; any key or click skips it, DEL opens DXDIAG ("SETUP"), and reduced-motion users get a short static splash. A first visit to the bare desktop then shows one small welcome dialog (Paint together · Explore Monad · View my Pass), stored in `r3os.firstRun.done`.
