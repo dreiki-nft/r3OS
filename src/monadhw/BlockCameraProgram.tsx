@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useMemo, useState, useSyncExternalStore } from 'react'
 import { decodeEventLog, hexToString, zeroAddress, zeroHash, type Address, type Hex } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { config } from '../chain/config'
@@ -11,7 +11,7 @@ import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { scanOwnedLabs } from '../frames/LabsFolder'
 import { R3TARDS_BLOCK_CAMERA_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
-import { errorText, labAddress } from '../labs/labCommon'
+import { errorText, labAddress, labLoadError, LabNotDeployedError } from '../labs/labCommon'
 import { playSound } from '../os/sound'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -42,7 +42,8 @@ export function BlockCameraProgram() {
   const hw = useMonadHardware()
   const card = useMonadCard()
   const [address, setAddress] = useState<Address>()
-  const [missing, setMissing] = useState(false)
+  const [missing, setMissing] = useState<{ text: string; offline: boolean }>()
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [labs, setLabs] = useState<Address>()
   const [season, setSeason] = useState(0n)
   const [preview, setPreview] = useState('')
@@ -59,8 +60,10 @@ export function BlockCameraProgram() {
   useEffect(() => {
     void labAddress('block-camera')
       .then(setAddress)
-      .catch(() => setMissing(true))
-  }, [])
+      .catch((error) =>
+        setMissing({ text: labLoadError(error), offline: !(error instanceof LabNotDeployedError) }),
+      )
+  }, [loadAttempt])
 
   const refreshBasics = useCallback(async () => {
     if (!address) return
@@ -116,25 +119,42 @@ export function BlockCameraProgram() {
     ],
   )
 
+  // Viewfinder: blocks arrive every ~0.3 s, faster than a preview eth_call returns. Keep exactly one preview
+  // read in flight, always show the newest finished picture, then read again with the latest block. (Dropping
+  // every answer that arrived after the next block left the viewfinder on "acquiring block…" forever.)
+  const latestPreviewArgs = useRef(previewArgs)
+  const previewBusy = useRef(false)
+  const mounted = useRef(true)
   useEffect(() => {
-    if (!address) return
-    let cancelled = false
-    void readHeavy([
-      {
-        address,
-        abi: R3TARDS_BLOCK_CAMERA_ABI,
-        functionName: 'previewPortrait',
-        args: previewArgs,
-      },
-    ])
-      .then((rows) => {
-        if (cancelled || rows[0]?.status !== 'success') return
-        setPreview(hexToString(rows[0].result as Hex))
-      })
-      .catch(() => {})
+    mounted.current = true
     return () => {
-      cancelled = true
+      mounted.current = false
     }
+  }, [])
+  useEffect(() => {
+    latestPreviewArgs.current = previewArgs
+    if (!address || previewBusy.current) return
+    previewBusy.current = true
+    void (async () => {
+      let sent: typeof previewArgs | undefined
+      while (mounted.current && sent !== latestPreviewArgs.current) {
+        sent = latestPreviewArgs.current
+        try {
+          const rows = await readHeavy([
+            {
+              address,
+              abi: R3TARDS_BLOCK_CAMERA_ABI,
+              functionName: 'previewPortrait',
+              args: sent,
+            },
+          ])
+          if (mounted.current && rows[0]?.status === 'success') setPreview(hexToString(rows[0].result as Hex))
+        } catch {
+          break
+        }
+      }
+      previewBusy.current = false
+    })()
   }, [address, previewArgs])
 
   useEffect(() => {
@@ -294,7 +314,17 @@ export function BlockCameraProgram() {
   if (missing)
     return (
       <div className="monadhw-program">
-        <p>Block Camera is not deployed on this network.</p>
+        <p>{missing.offline ? missing.text : 'Block Camera is not installed on this network.'}</p>
+        {missing.offline && (
+          <Button
+            onClick={() => {
+              setMissing(undefined)
+              setLoadAttempt((value) => value + 1)
+            }}
+          >
+            Try again
+          </Button>
+        )}
       </div>
     )
 
@@ -365,6 +395,13 @@ export function BlockCameraProgram() {
               primary
               disabled={
                 !wallet.account || pending || (useCard ? !(withCanvas ? cardCanvasQuote : cardQuote) : !quote)
+              }
+              title={
+                !wallet.account
+                  ? 'connect a wallet first'
+                  : pending
+                    ? 'capturing…'
+                    : 'mint a portrait of the block your capture lands in'
               }
               onClick={() => void capture()}
             >

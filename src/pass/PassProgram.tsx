@@ -1,3 +1,4 @@
+import { helpHash } from '../os/helpTopics'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { parseAbi, type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
@@ -366,14 +367,31 @@ export function PassProgram() {
               <div>
                 <h3>Painter Pass</h3>
                 <p>
-                  {eligible
-                    ? 'eligible: you painted the canvas.'
-                    : stats.paintCount === 0n
-                      ? 'paint at least one pixel first.'
-                      : 'this address already claimed once.'}
+                  {!wallet.account
+                    ? 'connect a wallet to claim your Pass.'
+                    : eligible
+                      ? 'eligible: you painted the canvas.'
+                      : stats.paintCount === 0n
+                        ? 'paint at least one pixel first, then come back to claim.'
+                        : 'this address already claimed once.'}
                 </p>
                 <p>max cost: {claimQuote?.maxCost ?? (eligible ? 'quoting…' : '—')}</p>
-                <Button primary disabled={!eligible || !claimQuote} onClick={() => void claim()}>
+                <Button
+                  primary
+                  disabled={!eligible || !claimQuote}
+                  title={
+                    !wallet.account
+                      ? 'connect a wallet first'
+                      : !eligible
+                        ? stats.paintCount === 0n
+                          ? 'paint at least one pixel first'
+                          : 'this address already claimed'
+                        : !claimQuote
+                          ? 'checking the cost…'
+                          : 'claim your Painter Pass'
+                  }
+                  onClick={() => void claim()}
+                >
                   Claim Painter Pass
                 </Button>
               </div>
@@ -553,7 +571,7 @@ export function PassProgram() {
                 Holder quota…
               </Button>
               <Button onClick={() => openProgram('sounds')}>Sounds…</Button>
-              <Button onClick={() => openProgram('help')}>Help…</Button>
+              <Button onClick={() => openProgram('help', true, helpHash('pass'))}>Help…</Button>
             </div>
           </>
         )}

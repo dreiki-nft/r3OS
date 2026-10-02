@@ -138,7 +138,14 @@ export function NetworkProgram() {
           { label: 'File', items: [{ label: 'Close', action: () => closeWindow('validators') }] },
           {
             label: 'Edit',
-            items: [{ label: 'Properties', disabled: !active, action: () => setProperties(true) }],
+            items: [
+              {
+                label: 'Properties',
+                disabled: !active,
+                disabledReason: 'select a validator first',
+                action: () => setProperties(true),
+              },
+            ],
           },
           {
             label: 'View',
@@ -165,7 +172,11 @@ export function NetworkProgram() {
           <Icon name="computer" size={24} />
           <small>Explorer</small>
         </button>
-        <button disabled={!active} onClick={() => setProperties(true)}>
+        <button
+          disabled={!active}
+          title={!active ? 'select a validator first' : 'validator properties'}
+          onClick={() => setProperties(true)}
+        >
           <Icon name="info" size={24} />
           <small>Properties</small>
         </button>

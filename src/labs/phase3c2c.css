@@ -592,3 +592,37 @@
   transform: rotate(7deg);
   pointer-events: none;
 }
+
+.cd-empty {
+  grid-column: 1 / -1;
+  grid-row: span 2;
+  padding: 10px;
+  color: var(--text-muted);
+}
+
+.cd-empty p {
+  margin: 0 0 8px;
+}
+
+/* Phones: stack the Bin's summary above its list instead of splitting a 390 px screen in half. */
+@media (max-width: 640px) {
+  .bin-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .bin-sidebar {
+    max-height: 34vh;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: 1px solid #000;
+  }
+
+  .cd-wizard {
+    grid-template-columns: 1fr;
+  }
+
+  .cd-banner {
+    display: none;
+  }
+}

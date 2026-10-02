@@ -32,7 +32,7 @@ export function SoundsProgram() {
     closeWindow('sounds')
   }
   return (
-    <div className="properties">
+    <div className="properties sounds-props">
       <Tabs tabs={['Sounds']} active="Sounds" onChange={() => {}} />
       <ListBox label="Sound events">
         <div role="treeitem" className="list-root">

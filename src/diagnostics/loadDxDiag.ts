@@ -45,10 +45,15 @@ const settle = <T>(promise: Promise<T>, ms = READ_TIMEOUT_MS) =>
  * One read pass for DXDIAG. Called on open and on REFRESH only: no polling, no log scans, no wallet.
  * Session caches are reused (static hardware probe); `force` re-reads the registry.
  */
-export async function loadDxDiag(force = false): Promise<DxDiagInput> {
+export async function loadDxDiag(
+  force = false,
+  onStep: (step: string) => void = () => {},
+): Promise<DxDiagInput> {
   const block = getBlockSnapshot()
+  onStep('reading the r3tardOS contract list…')
   const contracts = await settle(discoverContracts(force))
   const paint = contracts?.paint
+  onStep('probing Monad devices and drivers…')
 
   const [coreRows, multicallPresent, driverCodes, hardware, event] = await Promise.all([
     paint && publicClient

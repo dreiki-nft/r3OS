@@ -1,3 +1,4 @@
+import { helpHash } from '../os/helpTopics'
 import {
   useCallback,
   useEffect,
@@ -930,7 +931,7 @@ export function PaintProgram() {
     {
       label: 'Help',
       items: [
-        { label: 'Help Topics', action: () => openProgram('help') },
+        { label: 'Help Topics', action: () => openProgram('help', true, helpHash('paint')) },
         { label: 'Hide assistant', action: () => window.dispatchEvent(new Event('r3os-hide-assistant')) },
         {
           label: 'About Paint',
@@ -971,16 +972,26 @@ export function PaintProgram() {
         <aside className="paint-info">
           <b>256 × 256</b>
           <span>16 colours</span>
-          <span>
+          <span title="seasons last 30 days; when one ends its final canvas becomes the finale">
             season {Number(canvas.season) + 1} · day {day}
           </span>
           <br />
-          <b>wet paint</b>
+          <b
+            className="paint-term"
+            title="what painting the pixel under your cursor costs from your budget: blank or still-wet pixels are cheap, painting over dry art costs more"
+          >
+            wet paint
+          </b>
           <span>
             under cursor: {hoverLabel} · {hoverCost} unit{hoverCost === 1 ? '' : 's'}
           </span>
           <br />
-          <b>tile heat</b>
+          <b
+            className="paint-term"
+            title="how hard this 16 × 16 area is being painted right now. if it gets too hot, paints there fail until it cools down; it cools a little every block"
+          >
+            tile heat
+          </b>
           <span>
             {'▮'.repeat(heatBars)}
             {'▯'.repeat(5 - heatBars)} {heatLabel}
@@ -1000,6 +1011,13 @@ export function PaintProgram() {
           cost={cost.units}
           reason={reason}
           connected={Boolean(wallet.account)}
+          noGas={
+            wallet.account && wallet.balance === 0n
+              ? config.chainId === 10143
+                ? 'testnet'
+                : 'mainnet'
+              : undefined
+          }
           onHolderQuota={() => setHolderDialog(true)}
         />
         <div className="paint-action">
@@ -1042,7 +1060,15 @@ export function PaintProgram() {
         <span>
           {hover.x}, {hover.y}
         </span>
-        <span>{block.storm ? 'STORM 200%' : 'calm / pressure'}</span>
+        <span
+          title={
+            block.storm
+              ? 'storm: fresh pixels glitch at 200% for 600 blocks'
+              : 'no storm: fresh pixels only glitch where many painters crowd the same area'
+          }
+        >
+          {block.storm ? 'STORM 200%' : 'calm / pressure'}
+        </span>
         <span>block #{block.block}</span>
       </footer>
       {progress && (

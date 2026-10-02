@@ -11,10 +11,33 @@ export interface ContractAddresses {
 }
 
 let cached: ContractAddresses | undefined
+let inflight: Promise<ContractAddresses> | undefined
 let constantsPromise: Promise<typeof demoConstants> | undefined
 
-export async function discoverContracts(force = false): Promise<ContractAddresses> {
-  if (cached && !force) return cached
+/**
+ * The registry is read once and shared: concurrent callers (every window that needs an address) join the
+ * same in-flight read instead of each re-reading every experiment. A failed read is not cached.
+ */
+export function discoverContracts(force = false): Promise<ContractAddresses> {
+  if (cached && !force) return Promise.resolve(cached)
+  if (inflight && !force) return inflight
+  const read = readRegistry().then((value) => {
+    cached = value
+    return value
+  })
+  inflight = read
+  void read.then(
+    () => {
+      if (inflight === read) inflight = undefined
+    },
+    () => {
+      if (inflight === read) inflight = undefined
+    },
+  )
+  return read
+}
+
+async function readRegistry(): Promise<ContractAddresses> {
   if (!publicClient || !config.paintAddress) {
     return { paint: config.paintAddress, labs: { ...config.labs } }
   }
@@ -57,8 +80,7 @@ export async function discoverContracts(force = false): Promise<ContractAddresse
     if (!info.retired && info.experiment !== zeroAddress && !envOverride) labs[info.name] = info.experiment
   }
 
-  cached = { paint, pass, r3tards, labs }
-  return cached
+  return { paint, pass, r3tards, labs }
 }
 
 export const demoConstants = {

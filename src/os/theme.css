@@ -855,6 +855,25 @@ button:disabled {
   margin: 10px 0;
 }
 
+/* Sounds: the event list scrolls, so the preview / volume controls and OK are always visible. */
+.sounds-props {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.sounds-props > .listbox {
+  flex: 1 1 auto;
+  min-height: 96px;
+}
+
+.sounds-props > .group-box,
+.sounds-props > fieldset,
+.sounds-props > .dialog-actions {
+  flex: 0 0 auto;
+}
+
 .properties input:not([type='checkbox']):not([type='range']) {
   width: 100%;
   background: var(--field);
@@ -875,6 +894,33 @@ button:disabled {
   color: #111;
   padding: 12px;
   overflow: auto;
+}
+
+.help-group {
+  display: block;
+  margin: 8px 2px 2px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.help-topic-entry:first-child .help-group {
+  margin-top: 0;
+}
+
+.help-body p,
+.help-body ol {
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.help-body ol {
+  padding-left: 18px;
+}
+
+.help-body li {
+  margin-bottom: 6px;
 }
 
 /* the help page is light paper; its buttons keep the normal dark-face text colour */
@@ -1015,6 +1061,21 @@ button:disabled {
 .palette-grid button.selected {
   outline: 2px solid #f2efe9;
   outline-offset: 1px;
+}
+
+.paint-term {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.budget-gas-hint {
+  color: #ffcf6e;
+}
+
+.budget-gas-hint a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .budget-meter {
@@ -2784,5 +2845,100 @@ button:disabled {
   .shell-context-menu > button,
   .submenu button {
     min-height: 42px;
+  }
+}
+
+/* First-visit checklist: top-right of the desktop, under every window so it never blocks work. */
+.welcome {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 280px;
+  z-index: 0;
+  background: var(--face);
+  padding: 8px 10px 10px;
+  box-sizing: border-box;
+}
+
+.welcome header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.welcome header span {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+.welcome-close {
+  width: 22px;
+  height: 22px;
+  background: transparent;
+}
+
+.welcome ol {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.welcome li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 6px;
+  padding: 3px 0;
+  color: var(--text-muted);
+}
+
+.welcome li.current {
+  color: var(--text);
+}
+
+.welcome li.done {
+  text-decoration: line-through;
+}
+
+.welcome li small {
+  display: block;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.welcome-check {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--text-muted);
+  text-align: center;
+  line-height: 14px;
+  font-size: 11px;
+  color: var(--accent, #5feddf);
+}
+
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.welcome-actions p {
+  margin: 0 0 4px;
+}
+
+@media (max-width: 640px) {
+  .welcome {
+    top: auto;
+    bottom: 56px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    padding: 6px 8px 8px;
+  }
+
+  /* Phones: only the current step, so the card doesn't cover the desktop icons. */
+  .welcome li:not(.current) {
+    display: none;
   }
 }

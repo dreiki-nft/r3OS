@@ -1,4 +1,6 @@
+import { helpHash } from '../os/helpTopics'
 import './phase3c2a.css'
+import { openProgram } from '../os/programs'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { formatEther, parseEther, type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
@@ -17,8 +19,10 @@ import { MenuBar } from '../os/ui/MenuBar'
 import { PixelPreview } from '../frames/PixelPreview'
 import { getFrameImage } from '../frames/frameImage'
 import type { PixelImage } from '../frames/frameImage'
-import { errorText, labAddress, sameAddress, shortAddress } from './labCommon'
+import { errorText, labAddress, labLoadError, sameAddress, shortAddress } from './labCommon'
 import { useRefreshTick } from '../chain/refreshTick'
+import { readCoreConstants } from '../chain/contracts'
+import { seasonClock } from '../lib/seasonClock'
 
 const RULES = [
   'bid by depositing MON. your bid is your total deposit, and a new high has to beat the last one by 5%.',
@@ -123,6 +127,12 @@ export function AuctionProgram() {
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
   const [historyAvailable, setHistoryAvailable] = useState(false)
+  const [seasonTiming, setSeasonTiming] = useState<{ SEASON_START: bigint; SEASON_LENGTH: bigint }>()
+  useEffect(() => {
+    void readCoreConstants()
+      .then(setSeasonTiming)
+      .catch(() => undefined)
+  }, [])
   const [autoSettle, setAutoSettle] = useState(false)
   const bidCountRef = useRef(0)
   const autoSettledRef = useRef(new Set<string>())
@@ -130,7 +140,7 @@ export function AuctionProgram() {
   useEffect(() => {
     void labAddress('finale auction')
       .then(setAddress)
-      .catch(() => setMessage("this Lab isn't deployed on this network"))
+      .catch((error) => setMessage(labLoadError(error)))
   }, [])
 
   useEffect(() => {
@@ -382,10 +392,18 @@ export function AuctionProgram() {
           {
             label: 'Auction',
             items: [
-              { label: 'Settle', disabled: !actions.settle, action: () => void send('settle', [auctionId]) },
+              {
+                label: 'Settle',
+                disabled: !actions.settle,
+                disabledReason: !info ? 'no auction open' : 'bidding is still running',
+                action: () => void send('settle', [auctionId]),
+              },
             ],
           },
-          { label: 'Help', items: [{ label: 'How it works', disabled: true }] },
+          {
+            label: 'Help',
+            items: [{ label: 'How it works', action: () => openProgram('help', true, helpHash('auction')) }],
+          },
         ]}
       />
       <IntroBar
@@ -396,9 +414,11 @@ export function AuctionProgram() {
       />
       <div className="auction-main">
         <aside className="auction-finale">
-          <div className="sunken auction-preview">
-            <PixelPreview image={image} size={320} />
-          </div>
+          {info && (
+            <div className="sunken auction-preview">
+              <PixelPreview image={image} size={320} />
+            </div>
+          )}
           <h3>{info ? `season finale · token #${info.tokenId}` : 'season finale'}</h3>
           {info && (
             <dl className="lab-dl">
@@ -591,7 +611,24 @@ export function AuctionProgram() {
               </small>
             </>
           ) : (
-            <div className="lab-empty">no auction found yet.</div>
+            <div className="lab-empty auction-empty">
+              <p>
+                <b>no finale is up for auction right now.</b>
+              </p>
+              <p>
+                when a season ends, its final canvas is minted as a finale NFT, and its owner can list it
+                here. bidding then runs for about a day.
+              </p>
+              {seasonTiming && (
+                <p>{seasonClock(Math.floor(Date.now() / 1000), seasonTiming)?.label ?? ''}.</p>
+              )}
+              <div className="lab-action-row">
+                <Button onClick={() => openProgram('frames', true, '#/frames?filter=Finales')}>
+                  See finales
+                </Button>
+                <Button onClick={() => openProgram('help', true, helpHash('auction'))}>How it works</Button>
+              </div>
+            </div>
           )}
         </section>
       </div>

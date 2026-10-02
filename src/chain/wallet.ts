@@ -122,6 +122,67 @@ function attach(provider: EIP1193Provider) {
   for (const [event, handler] of Object.entries(registered)) p.on?.(event, handler)
 }
 
+// The last wallet the user connected, by a stable id (EIP-6963 rdns, else its name). Only the id is stored,
+// never an address or key: on reload we ask that wallet for already-authorized accounts with eth_accounts,
+// which never opens a prompt, and silently restore the session if it still has one.
+const REMEMBER_KEY = 'r3os.wallet'
+
+export const walletChoiceId = (choice: WalletChoice) => choice.info.rdns || choice.info.name
+
+function rememberWallet(choice?: WalletChoice) {
+  try {
+    if (choice) localStorage.setItem(REMEMBER_KEY, walletChoiceId(choice))
+    else localStorage.removeItem(REMEMBER_KEY)
+  } catch {
+    // Storage can be blocked; the user just reconnects by hand.
+  }
+}
+
+function rememberedWalletId() {
+  try {
+    return localStorage.getItem(REMEMBER_KEY) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function adoptAccounts(selected: WalletChoice, accounts: Address[]) {
+  const chainHex = (await selected.provider.request({ method: 'eth_chainId' })) as string
+  const client = createWalletClient({ chain: walletChain, transport: custom(selected.provider) })
+  state = {
+    account: accounts[0],
+    chainId: Number(chainHex),
+    provider: selected.provider,
+    client,
+  }
+  attach(selected.provider)
+  await refreshWalletBalance()
+  emit()
+  return state
+}
+
+/** Silent reconnect: no prompt. Gives up quietly if the wallet is gone or no longer authorizes this site. */
+export async function restoreWallet(waitMs = 400) {
+  const id = rememberedWalletId()
+  if (!id || state.account) return false
+  // EIP-6963 wallets announce asynchronously; give them a moment.
+  const deadline = Date.now() + waitMs
+  let selected = walletChoices().find((choice) => walletChoiceId(choice) === id)
+  while (!selected && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    selected = walletChoices().find((choice) => walletChoiceId(choice) === id)
+  }
+  if (!selected) return false
+  try {
+    const accounts = (await selected.provider.request({ method: 'eth_accounts' })) as Address[]
+    if (!accounts?.length || state.account) return false
+    await adoptAccounts(selected, accounts)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function initWalletDiscovery() {
   if (typeof window === 'undefined') return
   window.addEventListener('eip6963:announceProvider', ((event: CustomEvent<WalletChoice>) => {
@@ -136,24 +197,15 @@ export function initWalletDiscovery() {
       provider: injected,
     })
   }
+  void restoreWallet()
 }
 
 export async function connectWallet(choice?: WalletChoice) {
   const selected = choice ?? walletChoices()[0]
   if (!selected) throw new Error('NO_WALLET')
   const accounts = (await selected.provider.request({ method: 'eth_requestAccounts' })) as Address[]
-  const chainHex = (await selected.provider.request({ method: 'eth_chainId' })) as string
-  const client = createWalletClient({ chain: walletChain, transport: custom(selected.provider) })
-  state = {
-    account: accounts[0],
-    chainId: Number(chainHex),
-    provider: selected.provider,
-    client,
-  }
-  attach(selected.provider)
-  await refreshWalletBalance()
-  emit()
-  return state
+  rememberWallet(selected)
+  return adoptAccounts(selected, accounts)
 }
 
 export async function switchToMonad() {
@@ -173,6 +225,7 @@ export async function switchToMonad() {
 }
 
 export function disconnectWallet() {
+  rememberWallet(undefined)
   detach(state.provider)
   state = {}
   emit()

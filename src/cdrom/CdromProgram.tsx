@@ -1,3 +1,4 @@
+import { helpHash } from '../os/helpTopics'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { Address } from 'viem'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
@@ -97,8 +98,6 @@ export function CdromProgram() {
   const [statuses, setStatuses] = useState<Map<number, TrackStatus>>(new Map())
   const [reading, setReading] = useState(false)
   const [error, setError] = useState('')
-  // Opening an empty drive shows the classic "device is not ready" box once; ejecting later doesn't.
-  const [notReady, setNotReady] = useState(() => !currentDisc(getWalletSnapshot().account))
   const [picker, setPicker] = useState(false)
   const [available, setAvailable] = useState<CdSummary[]>()
   const [pickerChoice, setPickerChoice] = useState<string>()
@@ -113,7 +112,6 @@ export function CdromProgram() {
     setSelected(undefined)
     setError('')
     if (!wallet.account || !disc) return
-    setNotReady(false)
     let cancelled = false
     const account = wallet.account
     const tokenId = BigInt(disc.tokenId)
@@ -151,7 +149,6 @@ export function CdromProgram() {
   }, [wallet.account, disc?.tokenId])
 
   const openPicker = useCallback(async () => {
-    setNotReady(false)
     setPicker(true)
     setAvailable(undefined)
     setPickerChoice(undefined)
@@ -216,10 +213,16 @@ export function CdromProgram() {
               {
                 label: 'Open',
                 disabled: !selectedFile,
+                disabledReason: disc ? 'select a file first' : 'insert a disc first',
                 action: () => selectedFile && openFile(selectedFile),
               },
-              { label: 'Insert disc…', disabled: !wallet.account, action: () => void openPicker() },
-              { label: 'Eject', disabled: !disc, action: eject },
+              {
+                label: 'Insert disc…',
+                disabled: !wallet.account,
+                disabledReason: 'connect a wallet first',
+                action: () => void openPicker(),
+              },
+              { label: 'Eject', disabled: !disc, disabledReason: 'no disc in the drive', action: eject },
               { label: 'Close', action: () => closeWindow('cdrom') },
             ],
           },
@@ -230,21 +233,36 @@ export function CdromProgram() {
               { label: `Details${view === 'details' ? ' ✓' : ''}`, action: () => setView('details') },
             ],
           },
-          { label: 'Help', items: [{ label: 'Help Topics', action: () => openProgram('help') }] },
+          {
+            label: 'Help',
+            items: [{ label: 'Help Topics', action: () => openProgram('help', true, helpHash('cdrom')) }],
+          },
         ]}
       />
       <div className="cdrom-toolbar raised">
-        <Button onClick={() => void openPicker()} disabled={!wallet.account}>
+        <Button
+          onClick={() => void openPicker()}
+          disabled={!wallet.account}
+          title={!wallet.account ? 'connect a wallet first' : 'choose one of your CDs'}
+        >
           Insert disc…
         </Button>
-        <Button onClick={eject} disabled={!disc}>
+        <Button onClick={eject} disabled={!disc} title={!disc ? 'no disc in the drive' : 'eject the disc'}>
           Eject
         </Button>
         <span className="cdrom-toolbar-sep" />
-        <Button onClick={() => setView('icons')} disabled={view === 'icons'}>
+        <Button
+          onClick={() => setView('icons')}
+          disabled={view === 'icons'}
+          title={view === 'icons' ? 'already showing large icons' : 'show large icons'}
+        >
           Large Icons
         </Button>
-        <Button onClick={() => setView('details')} disabled={view === 'details'}>
+        <Button
+          onClick={() => setView('details')}
+          disabled={view === 'details'}
+          title={view === 'details' ? 'already showing details' : 'show details'}
+        >
           Details
         </Button>
       </div>
@@ -342,7 +360,23 @@ export function CdromProgram() {
               )}
             </button>
           ))}
-          {!disc && <p className="cdrom-empty">Please insert a disk into drive D:.</p>}
+          {!disc && (
+            <div className="cdrom-empty cdrom-empty-state">
+              {!wallet.account ? (
+                <p>connect a wallet to play the CDs you own.</p>
+              ) : (
+                <>
+                  <p>drive D: is empty. insert one of your CDs to play it.</p>
+                  <div className="cdrom-empty-actions">
+                    <Button primary onClick={() => void openPicker()}>
+                      Insert disc…
+                    </Button>
+                    <Button onClick={() => openProgram('cd')}>Burn a CD</Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           {disc && reading && <p className="cdrom-empty">Reading D:\…</p>}
           {disc && error && <p className="cdrom-empty">D:\ could not be read. {error}</p>}
         </main>
@@ -355,19 +389,6 @@ export function CdromProgram() {
           <Icon name="computer" size={16} colour="#FFFFFF" /> My Computer
         </span>
       </footer>
-
-      {notReady && !picker && (
-        <MessageBox
-          kind="error"
-          title="D:\"
-          message={'D:\\ is not accessible. The device is not ready.'}
-          defaultLabel="Insert disc…"
-          cancelLabel="Cancel"
-          onDefault={() => void openPicker()}
-          onCancel={() => closeWindow('cdrom')}
-          onClose={() => setNotReady(false)}
-        />
-      )}
 
       {picker && (
         <MessageBox
@@ -382,9 +403,19 @@ export function CdromProgram() {
           ) : available == null ? (
             <p>looking for discs in this wallet…</p>
           ) : !available.length ? (
-            <p>
-              no discs in this wallet. burn one with <b>Burn a CD</b>.
-            </p>
+            <div>
+              <p>
+                no discs in this wallet yet. burn one from your saved frames with <b>Burn a CD</b>.
+              </p>
+              <Button
+                onClick={() => {
+                  setPicker(false)
+                  openProgram('cd')
+                }}
+              >
+                Open Burn a CD
+              </Button>
+            </div>
           ) : (
             <div className="cdrom-picker" role="listbox" aria-label="discs">
               {available.map((item) => (

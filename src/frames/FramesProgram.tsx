@@ -1,3 +1,4 @@
+import { helpHash } from '../os/helpTopics'
 import './frames.css'
 import { confirmHigherCost } from '../os/confirm'
 import {
@@ -205,7 +206,12 @@ export function FramesProgram() {
   }, [routeVersion])
   const routeFrame = Number(params.get('frame') ?? 0)
   const routeSeason = params.get('season')
-  const [filter, setFilter] = useState<Filter>('Mine')
+  const [filter, setFilter] = useState<Filter>(() => {
+    const requested = params.get('filter')
+    return requested === 'Finales' || requested === 'All frames' || requested === 'Hidden'
+      ? requested
+      : 'Mine'
+  })
   const [labsView, setLabsView] = useState(params.get('labs') === '1')
   const [season, setSeason] = useState<number | undefined>(
     routeSeason == null ? undefined : Number(routeSeason),
@@ -213,6 +219,7 @@ export function FramesProgram() {
   const [history, setHistory] = useState<(number | undefined)[]>([])
   const [ids, setIds] = useState<number[]>([])
   const [mineIds, setMineIds] = useState<number[]>([])
+  const [mineFor, setMineFor] = useState<string>()
   const [infos, setInfos] = useState(new Map<number, FrameInfo>())
   const [selected, setSelected] = useState<number | undefined>(routeFrame || undefined)
   const [selectedInfo, setSelectedInfo] = useState<FrameInfo>()
@@ -335,6 +342,7 @@ export function FramesProgram() {
     }
     await refreshFrameIndex()
     setMineIds(await mineTokenIds(wallet.account))
+    setMineFor(wallet.account)
   }, [wallet.account, frames.total])
 
   useEffect(() => {
@@ -754,8 +762,14 @@ export function FramesProgram() {
         },
       ],
     },
-    { label: 'Favorites', items: [{ label: 'Add to Favorites', disabled: true }] },
-    { label: 'Help', items: [{ label: 'Help Topics', action: () => openProgram('help') }] },
+    {
+      label: 'Favorites',
+      items: [{ label: 'Add to Favorites', disabled: true, disabledReason: 'favorites are coming later' }],
+    },
+    {
+      label: 'Help',
+      items: [{ label: 'Help Topics', action: () => openProgram('help', true, helpHash('frames')) }],
+    },
   ]
 
   return (
@@ -953,6 +967,23 @@ export function FramesProgram() {
                     onContextMenu={(x, y) => openContextMenu(0, x, y)}
                   />
                 )}
+                {filter === 'Mine' &&
+                  (!wallet.account || mineFor === wallet.account) &&
+                  !mineIds.some((id) => id > 0) && (
+                    <div className="frames-empty">
+                      {!wallet.account ? (
+                        <p>connect a wallet to see the frames you saved.</p>
+                      ) : (
+                        <>
+                          <p>
+                            <b>no saved frames yet.</b>
+                          </p>
+                          <p>paint something, then in Paint choose File › Save frame…. it shows up here.</p>
+                          <Button onClick={() => openProgram('paint')}>Open Paint</Button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 {frames.seasons
                   .filter((item) => item.count > 0)
                   .filter((item) => filter !== 'Mine' || (mineSeasonCounts.get(item.season) ?? 0) > 0)

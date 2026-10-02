@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { disconnectWallet } from '../chain/wallet'
+import { Welcome } from './Welcome'
 import { getBlockSnapshot, startBlockClock, subscribeBlocks } from '../chain/blocks'
 import { startCanvasStore } from '../paint/canvasStore'
 import { Assistant } from './Assistant'
@@ -130,6 +131,7 @@ export function R3tardOS() {
       <span className="tag t2">DF1 200%</span>
       <span className="heart">♡</span>
       <Desktop />
+      <Welcome />
       {windows.windows.some((win) => programById(win.id)?.modal && !win.minimized) && (
         <div className="modal-program-shade" />
       )}

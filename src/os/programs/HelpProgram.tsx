@@ -1,135 +1,304 @@
-import { useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '../ui/Button'
-import { ListBox } from '../ui/ListBox'
 import { openProgram } from '../programs'
+import { SHOW_WELCOME_EVENT } from '../welcomeChecklist'
 import { SYSTEM_LOG_LINES } from '../../operator/copy'
+import { HELP_GROUPS, HELP_TOPICS, helpHash, helpSlugFromHash, type HelpSlug } from '../helpTopics'
 
-const topics = {
-  'what this is': (
+/** Plain-language help, one page per program. Keep sentences short; no contract or protocol jargon. */
+const pages: Record<HelpSlug, ReactNode> = {
+  welcome: (
     <>
-      a canvas that runs at the speed of Monad. one shared 256×256 surface, 16 colours, gas only. it is
-      designed around page storage and region-local writes, not advertised as magic.
+      <p>
+        r3tardOS is a Windows 98 style desktop that lives on Monad. every program is a contract on the chain:
+        nothing you do here is stored on a server.
+      </p>
+      <p>
+        the heart of it is <b>Paint</b>: one shared 256 × 256 canvas with 16 colours that everyone paints
+        together. you save moments of it as frames, collect them, burn them onto CDs, and when a season ends
+        its final canvas goes to auction.
+      </p>
+      <p>double-click an icon to open a program. new here? read “getting started”.</p>
     </>
   ),
-  'how painting works': (
+  'getting-started': (
+    <ol>
+      <li>
+        <b>connect a wallet</b> (Start menu or the button in Paint). you need a little MON for gas.
+      </li>
+      <li>
+        <b>paint</b>: pick a colour, draw on the canvas, press <b>Paint</b>. your pixels land in about a
+        second.
+      </li>
+      <li>
+        <b>save a frame</b>: in Paint, File › Save frame…. it becomes an NFT in <b>My Frames</b>.
+      </li>
+      <li>
+        <b>claim your Pass</b> in <b>My Pass</b>. it collects stamps for what you do.
+      </li>
+      <li>
+        then try <b>Quests</b>, <b>Burn a CD</b> and <b>Block Camera</b>.
+      </li>
+      <li style={{ listStyle: 'none', marginLeft: -18 }}>
+        <Button onClick={() => window.dispatchEvent(new Event(SHOW_WELCOME_EVENT))}>
+          Show the getting started checklist
+        </Button>
+      </li>
+    </ol>
+  ),
+  paint: (
     <>
-      your hourly budget grows with active days. r3tard holders add daily token quota. blank and wet pixels
-      are cheaper than dry overwrites. tiles accumulate heat, regions have per-block caps, outline pixels are
-      protected, and DF1 pressure can corrupt fresh writes. storms force DF1 to 200% for 600 blocks.
+      <p>everyone paints the same canvas. you only pay gas: there is no mint price.</p>
+      <p>
+        each hour you get a pixel budget. it grows with every day you paint, and holding r3tards adds a daily
+        bonus. painting a blank or still-wet pixel costs less of your budget than painting over dry art.
+      </p>
+      <p>
+        a busy area can make fresh pixels glitch (that's DF1, see “storms & glitches”). the outline of the
+        season's character is protected and can't be painted over.
+      </p>
+      <p>File › Save frame… saves what the canvas looks like right now as your own frame.</p>
     </>
   ),
   frames: (
     <>
-      save immutable snapshots after you paint. frames remember their season, face/background, block and{' '}
-      <code>block.coinbase</code> seal. the project calls that “Sealed by” without claiming validator identity
-      yet.
+      <p>
+        a frame is a snapshot of the canvas that you save as an NFT after you paint. it remembers the season,
+        the block it was saved in and which validator made that block (“sealed by”). frames never change.
+      </p>
+      <p>
+        My Frames shows yours (Mine), everyone's (All frames), season finales and anything you hid. the Labs
+        folder holds your CDs and block portraits.
+      </p>
     </>
   ),
-  'Painter Pass': (
+  pass: (
     <>
-      a soulbound, burnable credential with live stamps. it grants absolutely nothing. claim once per address
-      after painting.
+      <p>
+        your Painter Pass is a free, soulbound badge: one per wallet, and it can't be sold or transferred.
+        claim it after your first paint.
+      </p>
+      <p>
+        its picture fills with stamps as you go: first paint, first frame, painting during a storm, 7 active
+        days, holding an r3tard, quests, recycling, holding a Monad Card. it grants nothing; it just shows
+        what you did.
+      </p>
     </>
   ),
-  'owner powers': (
+  cd: (
     <>
-      the owner may set future-season outlines, append/freeze the renderer registry, manage the display-only
-      Lab registry, bind the Painter Pass once, and add Pass stamp sources. the owner cannot paint for free,
-      edit a running/past season, rewrite frames, force your renderer choice, or mutate Lab state.
+      <p>
+        pick 1 to 12 of your saved frames, write a label, and burn them onto one mix CD. the CD is its own NFT
+        with a silver disc picture and a track list.
+      </p>
+      <p>
+        your frames stay yours: burning a CD doesn't use them up. finales can go on a CD; the live canvas
+        (token #0) can't.
+      </p>
     </>
   ),
-  'system.log': (
+  cdrom: (
     <>
+      <p>
+        plays the CDs you own. press Insert disc…, pick a CD, and its tracks show up as picture files you can
+        open.
+      </p>
+      <p>
+        a CD keeps every track forever, even if a frame on it is later sold or recycled. if the CD leaves your
+        wallet, the drive ejects it.
+      </p>
+    </>
+  ),
+  auction: (
+    <>
+      <p>
+        when a season ends, its final canvas becomes a finale NFT. its owner can list it here in a candle
+        auction.
+      </p>
+      <p>
+        bidding runs for about a day (288,000 blocks). the real end is picked at random from the last hour,
+        using a block hash after bidding closes, so sniping at the last second doesn't work: bids after the
+        hidden end don't count and are refunded.
+      </p>
+      <p>
+        each bid must beat the top bid by at least 5%. bids are held until the auction is settled; anyone can
+        press Settle, and everyone who didn't win withdraws their deposit.
+      </p>
+    </>
+  ),
+  quests: (
+    <>
+      <p>
+        goals across r3tardOS: paint a lot, paint in a storm, save frames, bid, recycle, hold a Monad Card…
+        each goal is checked against the chain, so it can't be faked.
+      </p>
+      <p>when a goal is reached, press Claim. your Pass shows how many quests you've completed.</p>
+    </>
+  ),
+  bin: (
+    <>
+      <p>
+        recycle saved frames you don't want: 1 to 50 at a time, gone for good. the live canvas and finales
+        can't be recycled.
+      </p>
+      <p>
+        the Bin keeps a small record of every recycled frame and a top 10 of recyclers. recycle 100 frames to
+        earn the RECYCLER stamp and quest.
+      </p>
+    </>
+  ),
+  validators: (
+    <>
+      <p>
+        the validators that produce Monad blocks, as this app sees them. a new block arrives about every 0.3
+        seconds, and the heartbeat beats once per block.
+      </p>
+      <p>every frame you save records which validator made its block.</p>
+    </>
+  ),
+  'block-camera': (
+    <>
+      <p>
+        takes a picture of a block instead of a place. press Capture and you mint a small portrait built from
+        the block your transaction lands in: its validator, epoch, parent hash and number.
+      </p>
+      <p>one capture per wallet per block. if you hold a Monad Card it can be part of the shot.</p>
+    </>
+  ),
+  'monad-hw': (
+    <>
+      <p>
+        Device Manager for the chain underneath r3tardOS: block clock, storage, staking, history, crypto and
+        your Monad Card.
+      </p>
+      <p>
+        every value says where it came from: <code>ONCHAIN</code> was read from the chain just now,{' '}
+        <code>MEASURED</code> was timed by this app, <code>SPEC</code> comes from Monad's docs.{' '}
+        <code>UNKNOWN</code> means it couldn't be confirmed (yet).
+      </p>
+    </>
+  ),
+  xray: (
+    <p>
+      follows your last transaction from the click to final: which block it landed in, the gas limit you paid
+      for versus the gas it used, and which parts of the canvas it touched.
+    </p>
+  ),
+  dxdiag: (
+    <>
+      <p>
+        shows what this browser is connected to: the chain, the latest block, which r3tardOS parts it can see
+        and which Monad devices answer.
+      </p>
+      <p>
+        if something looks wrong, press Copy Report and send it to us. the report never contains your wallet
+        or any private connection details.
+      </p>
+    </>
+  ),
+  seasons: (
+    <p>
+      a season lasts 30 days. each season can have its own character outlined on the canvas. when it ends, the
+      final canvas is minted as that season's finale and can go to the Auction.
+    </p>
+  ),
+  storms: (
+    <>
+      <p>
+        when many people paint the same area, fresh pixels can glitch: that's DF1. it's part of the art, and
+        frames remember how strong it was.
+      </p>
+      <p>
+        every 200,000 blocks a storm hits for 600 blocks and everything glitches at 200%. painting in a storm
+        earns the STORM CHASER stamp.
+      </p>
+    </>
+  ),
+  'live-mode': (
+    <>
+      <p>
+        sign once and paint without a wallet popup for every stroke. you approve a temporary burner key that
+        can only paint, for a limited time and a limited number of pixels.
+      </p>
+      <p>
+        the burner needs a little MON for gas. end the session, and sweep leftover MON back, from My Pass ›
+        Hardware Profiles.
+      </p>
+    </>
+  ),
+  gas: (
+    <p>
+      on Monad you pay for the gas limit you set, not only the gas you use, so r3tardOS sets tight limits for
+      each action. every button that sends a transaction shows its maximum cost before you sign.
+    </p>
+  ),
+  sounds: <p>preview, change the volume of, or mute every r3tardOS sound.</p>,
+  run: (
+    <p>
+      Start › Run… opens a program by name: <code>paint</code>, <code>frames</code>, <code>camera</code>,{' '}
+      <code>hardware</code>, <code>dxdiag</code> and the rest of the desktop. a few shortcuts work too:{' '}
+      <code>frame 12</code> opens a frame's properties and <code>auction 3</code> opens an auction.
+    </p>
+  ),
+  'owner-powers': (
+    <p>
+      the project owner can prepare future seasons' outlines, add optional ways to render frames, and add
+      programs and Pass stamps. the owner can't paint for free, change a running or past season, edit frames,
+      or touch anyone's tokens.
+    </p>
+  ),
+  'system-log': (
+    <p>
       {SYSTEM_LOG_LINES.map((line, index) => (
         <span key={line}>
           <code>{line}</code>
           {index < SYSTEM_LOG_LINES.length - 1 && <br />}
         </span>
       ))}
-    </>
-  ),
-  'Monad Hardware': (
-    <>
-      Device Manager for the chain underneath r3tardOS. every row says where its value comes from:{' '}
-      <code>ONCHAIN</code> is read from the chain now, <code>MEASURED</code> was timed or gas-measured by this
-      app, <code>SPEC</code> comes from protocol docs, <code>CONFIG</code> is pinned in the app, and{' '}
-      <code>ABSENT</code> / <code>UNKNOWN</code> mean it could not be confirmed. a light on the hardware bus
-      only turns on when that device was actually probed. click a bus device to jump to its row.
-    </>
-  ),
-  'Block Camera': (
-    <>
-      photographs a block instead of a place. a capture mints a Labs token whose 32×32 portrait is built from
-      the consensus context read inside your mint transaction: proposer validator, epoch, epoch-delay flag,
-      parent hash, block number and season. the viewfinder only previews the current head; the token is drawn
-      from the block it actually landed in. proposer identity is art and provenance, not randomness. one
-      capture per wallet per block.
-    </>
-  ),
-  'CD-ROM (D:)': (
-    <>
-      plays the CDs you made in Burn a CD. Insert disc… lists the CDs your wallet holds; the drive shows{' '}
-      <code>CDINFO.TXT</code> and one <code>TRACKnn.BMP</code> per burned frame, and Imaging opens them. a CD
-      stores frame ids, and Paint keeps every frame's pixels forever, so a CD traded to another wallet still
-      plays every track, even ones whose frame was later recycled. a CD that leaves your wallet is ejected.
-    </>
-  ),
-  'DXDIAG.EXE': (
-    <>
-      shows what this browser is connected to and which r3tardOS components it can see: chain, block, block
-      clock mode, how many RPC endpoints are configured, the core contracts, installed drivers, Monad devices
-      and the System Event state. it reads once when opened; Refresh reads again. Copy Report puts a
-      plain-text support report on the clipboard with no RPC URL and no wallet in it. it never signs or sends
-      anything.
-    </>
-  ),
-  'Run…': (
-    <>
-      Start → Run… opens a program by name: <code>paint</code>, <code>frames</code>, <code>camera</code>,{' '}
-      <code>hardware</code>, <code>dxdiag</code> and the rest of the desktop. a few typed routes work too:{' '}
-      <code>operator</code>, <code>frame 12</code>, <code>auction 3</code>. it is not a shell: it won't open
-      web addresses, run scripts or skip a program's release date.
-    </>
+    </p>
   ),
   credits: (
-    <>
-      Paint · r3tardOS 98. manufactured and supported by r3tards. built to expose Monad mechanics instead of
-      hiding them.
-    </>
+    <p>Paint · r3tardOS 98. made by r3tards, on Monad. built to show how the chain works, not hide it.</p>
   ),
-}
-
-/** Topics that describe one program get an Open button. */
-const programFor: Partial<Record<keyof typeof topics, { id: string; label: string }>> = {
-  'Monad Hardware': { id: 'monad-hw', label: 'Open Monad Hardware' },
-  'Block Camera': { id: 'block-camera', label: 'Open Block Camera' },
-  'CD-ROM (D:)': { id: 'cdrom', label: 'Open CD-ROM (D:)' },
-  'DXDIAG.EXE': { id: 'dxdiag', label: 'Open DXDIAG.EXE' },
-  'Run…': { id: 'run', label: 'Open Run…' },
 }
 
 export function HelpProgram() {
-  const [k, setK] = useState<keyof typeof topics>('what this is')
+  const [slug, setSlug] = useState<HelpSlug>(() => helpSlugFromHash(location.hash))
+  useEffect(() => {
+    // Other programs link straight to a page with `#/help?topic=…`, also while Help is already open.
+    const onHash = () => {
+      if (location.hash.startsWith('#/help')) setSlug(helpSlugFromHash(location.hash))
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+  const topic = HELP_TOPICS.find((item) => item.slug === slug)!
+  const program = 'program' in topic ? topic.program : undefined
   return (
     <div className="help-view">
-      <ListBox label="Help topics">
-        {Object.keys(topics).map((x) => (
-          <button
-            role="option"
-            key={x}
-            aria-selected={k === x}
-            onClick={() => setK(x as keyof typeof topics)}
-          >
-            {x}
-          </button>
+      <div role="listbox" aria-label="Help topics" className="listbox sunken">
+        {HELP_TOPICS.map((item, index) => (
+          <div key={item.slug} className="help-topic-entry">
+            {item.group !== HELP_TOPICS[index - 1]?.group && (
+              <span className="help-group">{HELP_GROUPS[item.group]}</span>
+            )}
+            <button
+              role="option"
+              aria-selected={slug === item.slug}
+              onClick={() => {
+                setSlug(item.slug)
+                if (location.hash.startsWith('#/help')) history.replaceState(null, '', helpHash(item.slug))
+              }}
+            >
+              {item.title}
+            </button>
+          </div>
         ))}
-      </ListBox>
+      </div>
       <article className="sunken">
-        <h2>{k}</h2>
-        <p>{topics[k]}</p>
-        {programFor[k] && (
-          <Button onClick={() => openProgram(programFor[k]!.id)}>{programFor[k]!.label}</Button>
-        )}
+        <h2>{topic.title}</h2>
+        <div className="help-body">{pages[slug]}</div>
+        {program && <Button onClick={() => openProgram(program)}>Open {topic.title}</Button>}
       </article>
     </div>
   )

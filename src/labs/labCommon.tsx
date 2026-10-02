@@ -3,9 +3,22 @@ import { discoverContracts } from '../chain/contracts'
 import { PALETTE } from '../lib/palette'
 import { playSound } from '../os/sound'
 
+/** The registry answered and this program is not in it. Anything else (RPC down, timeout) is "offline". */
+export class LabNotDeployedError extends Error {
+  constructor() {
+    super("this program isn't installed on this network")
+  }
+}
+
+export const LAB_OFFLINE_TEXT = "can't reach Monad right now. check your connection and try again."
+
+/** User-facing text for a failed `labAddress`: never claims "not deployed" when the network is just down. */
+export const labLoadError = (error: unknown) =>
+  error instanceof LabNotDeployedError ? error.message : LAB_OFFLINE_TEXT
+
 export async function labAddress(name: string) {
   const address = (await discoverContracts()).labs[name]
-  if (!address) throw new Error("this Lab isn't deployed on this network")
+  if (!address) throw new LabNotDeployedError()
   return address
 }
 

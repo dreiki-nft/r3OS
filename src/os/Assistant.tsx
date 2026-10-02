@@ -14,9 +14,28 @@ import { SafeImage } from './ui/SafeImage'
 const tips = [
   'click an icon twice. yes, twice. computers used to make you earn it.',
   'paint blank pixels if you want cheap gas. overwriting dry art costs more.',
-  'frames are snapshots. save one after you actually paint something.',
+  'frames are snapshots. save one after you actually paint something: Paint › File › Save frame….',
   'the pass grants absolutely nothing. naturally, everyone will want one.',
+  'lost? Start › Help explains every program in plain words.',
+  'Quests checks the chain for you. reach a goal, press Claim, brag.',
+  'Block Camera photographs a block. one shot per wallet per block, so be quick.',
+  'storms hit every 200,000 blocks. paint during one and your Pass remembers.',
+  'got frames you hate? the Recycle Bin takes them. forever.',
 ]
+
+// Each visit starts on the next tip, so returning users don't get "click an icon twice" every time.
+const TIP_KEY = 'r3os.assistantTip'
+
+function nextVisitTip() {
+  try {
+    const stored = Number(localStorage.getItem(TIP_KEY) ?? '0')
+    const index = Number.isInteger(stored) && stored >= 0 ? stored % tips.length : 0
+    localStorage.setItem(TIP_KEY, String((index + 1) % tips.length))
+    return index
+  } catch {
+    return 0
+  }
+}
 
 export function Assistant() {
   const eventTip = useSyncExternalStore(subscribeAssistant, getAssistantTip)
@@ -30,7 +49,7 @@ export function Assistant() {
     }
   })
   const [autoHidden, setAutoHidden] = useState(false)
-  const [tipIndex, setTipIndex] = useState(0)
+  const [tipIndex, setTipIndex] = useState(nextVisitTip)
   const [viewport, setViewport] = useState(() => ({
     width: typeof innerWidth === 'number' ? innerWidth : 1_280,
     height: typeof innerHeight === 'number' ? innerHeight : 800,

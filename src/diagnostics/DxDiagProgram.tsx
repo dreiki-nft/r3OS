@@ -55,12 +55,13 @@ export function DxDiagProgram() {
   const [data, setData] = useState<DxDiagInput>()
   const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
+  const [step, setStep] = useState('')
 
   const load = useCallback(async (force: boolean) => {
     setLoading(true)
     setNote('')
     try {
-      setData(await loadDxDiag(force))
+      setData(await loadDxDiag(force, setStep))
     } catch (error) {
       setNote(`could not read: ${error instanceof Error ? error.message.slice(0, 120) : 'unknown error'}`)
     } finally {
@@ -106,7 +107,12 @@ export function DxDiagProgram() {
       </p>
       <div className="dxdiag-body">
         {!d ? (
-          <p className="dxdiag-loading">{loading ? 'collecting information…' : note || 'no data'}</p>
+          <div className="dxdiag-loading">
+            <p>{loading ? step || 'collecting information…' : note || 'no data'}</p>
+            {loading && (
+              <div className="dxdiag-progress" role="progressbar" aria-label="collecting information" />
+            )}
+          </div>
         ) : tab === 'System' ? (
           <>
             <GroupBox title="System Information">
@@ -253,10 +259,18 @@ export function DxDiagProgram() {
       </div>
       <footer className="dxdiag-footer">
         <span className="dxdiag-status">{loading ? 'reading…' : note}</span>
-        <Button onClick={() => void load(true)} disabled={loading}>
+        <Button
+          onClick={() => void load(true)}
+          disabled={loading}
+          title={loading ? 'still reading…' : 'read everything again'}
+        >
           Refresh
         </Button>
-        <Button onClick={() => void copy()} disabled={!d || loading}>
+        <Button
+          onClick={() => void copy()}
+          disabled={!d || loading}
+          title={!d || loading ? 'wait until the report is ready' : 'copy a plain-text report'}
+        >
           Copy Report
         </Button>
         <Button primary onClick={() => closeWindow('dxdiag')}>

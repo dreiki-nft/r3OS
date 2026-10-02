@@ -1,3 +1,4 @@
+import { helpHash } from '../helpTopics'
 import '../../labs/phase3c2c.css'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import {
@@ -164,7 +165,8 @@ export function RecycleBin() {
   const [leaders, setLeaders] = useState<{ address: Address; count: bigint }[]>([])
   const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: 'deleted', asc: false })
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [eligible, setEligible] = useState<{ id: number; info: FrameInfo }[]>([])
+  // undefined while the picker is still looking up the wallet's frames
+  const [eligible, setEligible] = useState<{ id: number; info: FrameInfo }[]>()
   const [picked, setPicked] = useState<number[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [quote, setQuote] = useState<ActionQuote>()
@@ -366,17 +368,24 @@ export function RecycleBin() {
 
   const openPicker = async () => {
     if (!wallet.account) return setMessage('connect your wallet first')
-    const ids = await mineTokenIds(wallet.account)
-    const infos = await getFrameInfoBatch(ids.filter((id) => id > 0))
-    const choices = binEligibleFrames(
-      ids
-        .filter((id) => id > 0)
-        .map((id) => ({ id, finale: Boolean(infos.get(id)?.finale), info: infos.get(id)! }))
-        .filter((row) => row.info),
-    )
-    setEligible(choices)
+    // Open right away with a loading line; the frame lookup can take a moment.
+    setEligible(undefined)
     setPicked([])
     setPickerOpen(true)
+    try {
+      const ids = await mineTokenIds(wallet.account)
+      const infos = await getFrameInfoBatch(ids.filter((id) => id > 0))
+      const choices = binEligibleFrames(
+        ids
+          .filter((id) => id > 0)
+          .map((id) => ({ id, finale: Boolean(infos.get(id)?.finale), info: infos.get(id)! }))
+          .filter((row) => row.info),
+      )
+      setEligible(choices)
+    } catch (error) {
+      setEligible([])
+      setMessage(error instanceof Error ? error.message : String(error))
+    }
   }
 
   useEffect(() => {
@@ -575,12 +584,22 @@ export function RecycleBin() {
               { label: 'Restore', disabled: true, disabledReason: "burned frames can't come back" },
             ],
           },
-          { label: 'View', items: [{ label: 'Details ✓', disabled: true }] },
-          { label: 'Help', items: [{ label: 'Help Topics', action: () => openProgram('help') }] },
+          {
+            label: 'View',
+            items: [{ label: 'Details ✓', disabled: true, disabledReason: 'the Bin always shows details' }],
+          },
+          {
+            label: 'Help',
+            items: [{ label: 'Help Topics', action: () => openProgram('help', true, helpHash('bin')) }],
+          },
         ]}
       />
       <div className="bin-toolbar raised">
-        <Button onClick={() => void openPicker()} disabled={!wallet.account}>
+        <Button
+          onClick={() => void openPicker()}
+          disabled={!wallet.account}
+          title={!wallet.account ? 'connect a wallet first' : 'choose saved frames to recycle'}
+        >
           Recycle frames…
         </Button>
         <Button disabled title="burned frames can't come back">
@@ -627,12 +646,54 @@ export function RecycleBin() {
         </aside>
         <main className="bin-list sunken">
           <div className="bin-list-head">
-            <button onClick={() => chooseSort('name')}>Name</button>
-            <button onClick={() => chooseSort('season')}>Original location</button>
-            <button onClick={() => chooseSort('deleted')}>Date deleted</button>
-            <button onClick={() => chooseSort('saved')}>Saved at</button>
-            <button onClick={() => chooseSort('storm')}>Storm</button>
-            <button onClick={() => chooseSort('owner')}>Recycled by</button>
+            <button
+              onClick={() => chooseSort('name')}
+              aria-sort={sort.key === 'name' ? (sort.asc ? 'ascending' : 'descending') : 'none'}
+              title={`sort by name`}
+            >
+              Name
+              {sort.key === 'name' && <span className="bin-sort">{sort.asc ? ' ▲' : ' ▼'}</span>}
+            </button>
+            <button
+              onClick={() => chooseSort('season')}
+              aria-sort={sort.key === 'season' ? (sort.asc ? 'ascending' : 'descending') : 'none'}
+              title={`sort by original location`}
+            >
+              Original location
+              {sort.key === 'season' && <span className="bin-sort">{sort.asc ? ' ▲' : ' ▼'}</span>}
+            </button>
+            <button
+              onClick={() => chooseSort('deleted')}
+              aria-sort={sort.key === 'deleted' ? (sort.asc ? 'ascending' : 'descending') : 'none'}
+              title={`sort by date deleted`}
+            >
+              Date deleted
+              {sort.key === 'deleted' && <span className="bin-sort">{sort.asc ? ' ▲' : ' ▼'}</span>}
+            </button>
+            <button
+              onClick={() => chooseSort('saved')}
+              aria-sort={sort.key === 'saved' ? (sort.asc ? 'ascending' : 'descending') : 'none'}
+              title={`sort by saved at`}
+            >
+              Saved at
+              {sort.key === 'saved' && <span className="bin-sort">{sort.asc ? ' ▲' : ' ▼'}</span>}
+            </button>
+            <button
+              onClick={() => chooseSort('storm')}
+              aria-sort={sort.key === 'storm' ? (sort.asc ? 'ascending' : 'descending') : 'none'}
+              title={`sort by storm`}
+            >
+              Storm
+              {sort.key === 'storm' && <span className="bin-sort">{sort.asc ? ' ▲' : ' ▼'}</span>}
+            </button>
+            <button
+              onClick={() => chooseSort('owner')}
+              aria-sort={sort.key === 'owner' ? (sort.asc ? 'ascending' : 'descending') : 'none'}
+              title={`sort by recycled by`}
+            >
+              Recycled by
+              {sort.key === 'owner' && <span className="bin-sort">{sort.asc ? ' ▲' : ' ▼'}</span>}
+            </button>
           </div>
           {sorted.map((row) => (
             <div className="bin-list-row" key={`${row.id}:${row.deletedAt}`}>
@@ -666,7 +727,13 @@ export function RecycleBin() {
           defaultLabel="Recycle…"
         >
           <div className="bin-picker">
-            {eligible.map(({ id, info }) => (
+            {eligible == null && <p>looking for your saved frames…</p>}
+            {eligible?.length === 0 && (
+              <p>
+                no frames to recycle. only saved frames can go in the Bin; the live canvas and finales can't.
+              </p>
+            )}
+            {eligible?.map(({ id, info }) => (
               <label key={id} className={picked.includes(id) ? 'selected' : ''}>
                 <input
                   type="checkbox"

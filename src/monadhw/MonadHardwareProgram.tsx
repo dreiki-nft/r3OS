@@ -88,6 +88,9 @@ function feedAge(updatedAt: bigint, now: bigint) {
   return `${minutes / 60n} ${DEVICE07_COPY.updatedHours}`
 }
 
+/** Rows whose value comes from the live hardware probe (not from specs or other stores). */
+const PROBED_ROWS = new Set(['computer', 'clock', 'rom', 'storage', 'staking', 'reserve', 'history', 'p256'])
+
 function cardStatusText(card: ReturnType<typeof useMonadCard>) {
   if (card.status === 'present' && card.cardInfo?.exists) return 'This device is working properly.'
   if (card.status === 'no-driver') return 'The driver for this device is not installed.'
@@ -314,7 +317,13 @@ export function MonadHardwareProgram() {
       <div className="monadhw-scroll">
         <GroupBox title="System Information">
           <div className="hardware-device-list sunken">
-            {rows.map((row) => (
+            {(hw.loading
+              ? rows.map((row) =>
+                  // While the first probe is running, chain-read rows say so instead of a wall of UNKNOWN.
+                  PROBED_ROWS.has(row.key) ? { ...row, value: 'probing…', source: '' as const } : row,
+                )
+              : rows
+            ).map((row) => (
               <div
                 key={row.key}
                 id={`hw-row-${row.device}`}

@@ -224,6 +224,16 @@
   color: var(--text-muted);
 }
 
+.cdrom-empty-state p {
+  margin: 0 0 12px;
+}
+
+.cdrom-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .cdrom-status {
   min-height: 24px;
   box-sizing: border-box;

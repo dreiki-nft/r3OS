@@ -1,4 +1,6 @@
+import { helpHash } from '../os/helpTopics'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { openProgram } from '../os/programs'
 import { confirmHigherCost, osConfirm } from '../os/confirm'
 import { type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
@@ -15,7 +17,7 @@ import { GroupBox } from '../os/ui/GroupBox'
 import { IntroBar } from '../os/ui/IntroBar'
 import { MenuBar } from '../os/ui/MenuBar'
 import { SafeImage } from '../os/ui/SafeImage'
-import { errorText, labAddress, shortAddress } from './labCommon'
+import { errorText, labAddress, labLoadError, LabNotDeployedError, shortAddress } from './labCommon'
 import { mapQuestProgress, questLockedByHiddenLab, type QuestProgressState } from './quests'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { useRefreshTick } from '../chain/refreshTick'
@@ -122,7 +124,9 @@ export function QuestsProgram() {
   // Quests that read a retired Lab are not shown, counted or claimable here (their contracts are untouched).
   const [retiredTargets, setRetiredTargets] = useState<ReadonlySet<string>>(new Set())
   const [address, setAddress] = useState<Address>()
-  const [missing, setMissing] = useState(false)
+  const [missing, setMissing] = useState<{ text: string; offline: boolean }>()
+  const [loadAttempt, setLoadAttempt] = useState(0)
+  const [defsLoaded, setDefsLoaded] = useState(false)
   const [defs, setDefs] = useState<QuestDef[]>([])
   const [progress, setProgress] = useState<QuestProgressState[]>([])
   const [claimableMask, setClaimableMask] = useState(0n)
@@ -135,8 +139,10 @@ export function QuestsProgram() {
   useEffect(() => {
     void labAddress('quests')
       .then(setAddress)
-      .catch(() => setMissing(true))
-  }, [])
+      .catch((error) =>
+        setMissing({ text: labLoadError(error), offline: !(error instanceof LabNotDeployedError) }),
+      )
+  }, [loadAttempt])
 
   useEffect(() => {
     void discoverContracts()
@@ -165,6 +171,7 @@ export function QuestsProgram() {
       )
       if (!count) {
         setDefs([])
+        setDefsLoaded(true)
         return
       }
       const values = await readMany(
@@ -185,6 +192,7 @@ export function QuestsProgram() {
           conditions: (value[3] as any[]).map(normalizeCondition),
         })),
       )
+      setDefsLoaded(true)
     } catch (error) {
       setMessage(errorText(error))
     }
@@ -331,10 +339,28 @@ export function QuestsProgram() {
   const menus = [
     { label: 'File', items: [{ label: 'Close', action: () => closeWindow('quests') }] },
     { label: 'View', items: [{ label: 'Refresh', action: refresh }] },
-    { label: 'Help', items: [{ label: 'How it works', disabled: true }] },
+    {
+      label: 'Help',
+      items: [{ label: 'How it works', action: () => openProgram('help', true, helpHash('quests')) }],
+    },
   ]
 
-  if (missing) return <div className="lab-missing">this Lab isn't deployed on this network</div>
+  if (missing)
+    return (
+      <div className="lab-missing">
+        <p>{missing.text}</p>
+        {missing.offline && (
+          <Button
+            onClick={() => {
+              setMissing(undefined)
+              setLoadAttempt((value) => value + 1)
+            }}
+          >
+            Try again
+          </Button>
+        )}
+      </div>
+    )
 
   return (
     <div className="lab-program quests-program">
@@ -348,16 +374,25 @@ export function QuestsProgram() {
         <div>
           <span className="badge-placeholder" />
           <div>
-            <b>
-              {completedCount.toString()} of {visibleCount} badges
-            </b>
+            <b>{defsLoaded ? `${completedCount} of ${visibleCount} badges` : 'loading quests…'}</b>
             <small>
               your Pass shows QUESTS {completedCount.toString()} · badges are bragging rights, they grant
               nothing
             </small>
           </div>
         </div>
-        <Button primary disabled={pending || !claimableIds.length} onClick={() => claimIds(claimableIds)}>
+        <Button
+          primary
+          disabled={pending || !claimableIds.length}
+          title={
+            !wallet.account
+              ? 'connect a wallet first'
+              : !claimableIds.length
+                ? 'nothing to claim yet: reach a goal first'
+                : 'claim every finished quest'
+          }
+          onClick={() => claimIds(claimableIds)}
+        >
           Claim all ({claimableIds.length})
         </Button>
       </header>
@@ -541,7 +576,9 @@ export function QuestsProgram() {
       <footer className="lab-status">
         <span>
           {message ||
-            `${visibleCount} quests · conditions and progress read directly from their onchain targets`}
+            (defsLoaded
+              ? `${visibleCount} quests · conditions and progress read directly from their onchain targets`
+              : 'reading quests from the chain…')}
         </span>
         <span>{wallet.account ? shortAddress(wallet.account) : 'wallet disconnected'}</span>
         <span>#{block.block.toString()}</span>

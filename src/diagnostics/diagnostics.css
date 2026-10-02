@@ -85,3 +85,24 @@
     grid-template-columns: 110px minmax(0, 1fr) auto;
   }
 }
+
+.dxdiag-progress {
+  height: 14px;
+  width: min(280px, 100%);
+  border: 1px solid #111;
+  background: repeating-linear-gradient(90deg, var(--accent, #5feddf) 0 10px, transparent 10px 13px) 0 0 /
+    26px 100%;
+  animation: dxdiag-progress 0.8s linear infinite;
+}
+
+@keyframes dxdiag-progress {
+  to {
+    background-position: 26px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dxdiag-progress {
+    animation: none;
+  }
+}

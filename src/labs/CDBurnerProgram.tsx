@@ -1,3 +1,4 @@
+import { helpHash } from '../os/helpTopics'
 import './phase3c2c.css'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { hexToBytes, parseEventLogs, type Address, type Hex, type Log } from 'viem'
@@ -18,6 +19,7 @@ import {
 } from '../lib/cdArt'
 import { loadBurner } from '../live/burner'
 import { openProgram } from '../os/programs'
+import { LabNotDeployedError } from './labCommon'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
 import { Icon } from '../os/ui/Icon'
@@ -111,6 +113,7 @@ export function CDBurnerProgram() {
   const [step, setStep] = useState(0)
   const [burner, setBurner] = useState<Address>()
   const [frames, setFrames] = useState<Track[]>([])
+  const [framesFor, setFramesFor] = useState<string>()
   const [selected, setSelected] = useState<number>()
   const [tracks, setTracks] = useState<Track[]>([])
   const [label, setLabel] = useState('')
@@ -132,7 +135,7 @@ export function CDBurnerProgram() {
     try {
       const contracts = await discoverContracts()
       const address = contracts.labs['cd-burner']
-      if (!address) throw new Error("this Lab isn't deployed on this network")
+      if (!address) throw new LabNotDeployedError()
       setBurner(address)
       const ids = await mineTokenIds(wallet.account)
       const infos = await getFrameInfoBatch(ids.filter((id) => id > 0))
@@ -144,6 +147,7 @@ export function CDBurnerProgram() {
             .filter((item) => item.info),
         ),
       )
+      setFramesFor(wallet.account)
       const labs = await labsAddress()
       const total = BigInt(
         await publicClient.readContract({
@@ -324,7 +328,10 @@ export function CDBurnerProgram() {
               },
             ],
           },
-          { label: 'Help', items: [{ label: 'Help Topics', action: () => openProgram('help') }] },
+          {
+            label: 'Help',
+            items: [{ label: 'Help Topics', action: () => openProgram('help', true, helpHash('cd')) }],
+          },
         ]}
       />
       <div className="cd-wizard">
@@ -346,6 +353,15 @@ export function CDBurnerProgram() {
               <p>finales are allowed. token #0 isn't.</p>
               <div className="cd-select-layout">
                 <section className="cd-source sunken">
+                  {!wallet.account ? (
+                    <p className="cd-empty">connect a wallet to see your saved frames.</p>
+                  ) : framesFor === wallet.account && !frames.length ? (
+                    <div className="cd-empty">
+                      <p>you have no saved frames to burn yet.</p>
+                      <p>paint something, then in Paint choose File › Save frame….</p>
+                      <Button onClick={() => openProgram('paint')}>Open Paint</Button>
+                    </div>
+                  ) : null}
                   {frames.map((track) => (
                     <FrameChoice
                       key={track.id}
@@ -357,7 +373,17 @@ export function CDBurnerProgram() {
                   ))}
                 </section>
                 <div className="cd-add">
-                  <Button onClick={() => add(selected)} disabled={selected == null || tracks.length >= 12}>
+                  <Button
+                    onClick={() => add(selected)}
+                    disabled={selected == null || tracks.length >= 12}
+                    title={
+                      tracks.length >= 12
+                        ? 'a CD holds 12 tracks at most'
+                        : selected == null
+                          ? 'pick a frame on the left first'
+                          : 'add this frame to the CD'
+                    }
+                  >
                     Add ›
                   </Button>
                 </div>
@@ -490,13 +516,26 @@ export function CDBurnerProgram() {
         </main>
       </div>
       <footer className="cd-wizard-actions">
-        <Button onClick={() => setStep((value) => Math.max(0, value - 1))} disabled={step === 0}>
+        <Button
+          onClick={() => setStep((value) => Math.max(0, value - 1))}
+          disabled={step === 0}
+          title={step === 0 ? 'this is the first step' : 'go back a step'}
+        >
           ‹ Back
         </Button>
         <Button
           primary
           onClick={() => setStep((value) => Math.min(2, value + 1))}
           disabled={(step === 0 && tracks.length === 0) || (step === 1 && !normalized.valid) || step === 2}
+          title={
+            step === 0 && tracks.length === 0
+              ? 'add at least one track first'
+              : step === 1 && !normalized.valid
+                ? 'write a label first (1–24 characters)'
+                : step === 2
+                  ? 'last step: press Burn'
+                  : 'next step'
+          }
         >
           Next ›
         </Button>
