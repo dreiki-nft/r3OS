@@ -1,5 +1,24 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+
+/**
+ * Link previews (X, Telegram, Discord) need an absolute og:image URL. Set VITE_SITE_URL (e.g.
+ * https://r3tardos.xyz); on Vercel the production domain is used automatically. Otherwise the path stays
+ * relative, which still works for most previewers. Public URL only: never a secret.
+ */
+const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {}
+
+function siteUrl() {
+  const explicit = env.VITE_SITE_URL?.trim()
+  if (explicit) return explicit.replace(/\/+$/, '')
+  const vercel = env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
+  return vercel ? `https://${vercel}` : ''
+}
+
+const socialMeta = (): Plugin => ({
+  name: 'r3os-social-meta',
+  transformIndexHtml: (html) => html.split('__SITE_URL__').join(siteUrl()),
+})
 
 /** Long-lived vendor chunks: stable across app deploys, so returning visitors only re-download app code. */
 const VENDOR_CHUNKS: Array<[string, RegExp]> = [
@@ -8,7 +27,7 @@ const VENDOR_CHUNKS: Array<[string, RegExp]> = [
 ]
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), socialMeta()],
   build: {
     rollupOptions: {
       output: {

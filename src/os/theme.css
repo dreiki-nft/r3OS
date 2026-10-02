@@ -3122,3 +3122,34 @@ button:disabled {
   margin-top: 14px;
   color: var(--text-muted);
 }
+
+/* Quests on narrow screens: name and state on the first line, progress and value underneath. */
+@media (max-width: 640px) {
+  .quest-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'badge name state'
+      'badge progress value';
+    row-gap: 4px;
+  }
+  .quest-row > .quest-mini-badge {
+    grid-area: badge;
+  }
+  .quest-row > .quest-name {
+    grid-area: name;
+    min-width: 0;
+  }
+  .quest-row > .quest-progress {
+    grid-area: progress;
+  }
+  .quest-row > .quest-value {
+    grid-area: value;
+    font-size: 11px;
+  }
+  .quest-row > .quest-state {
+    grid-area: state;
+  }
+  .quests-head {
+    flex-wrap: wrap;
+  }
+}
