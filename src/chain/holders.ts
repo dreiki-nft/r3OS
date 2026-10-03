@@ -15,6 +15,8 @@ const storageKey = (chainId: number, collection: Address, owner: Address) =>
   `r3os.holders.${chainId}.${collection.toLowerCase()}.${owner.toLowerCase()}`
 
 const inFlight = new Map<string, Promise<bigint[]>>()
+const resolved = new Map<string, { ids: bigint[]; at: number }>()
+const FRESH_MS = 8_000
 
 function sameAddress(a: Address, b: Address) {
   return a.toLowerCase() === b.toLowerCase()
@@ -131,17 +133,25 @@ export async function resolveHolderIds(
 ) {
   const manualKey = uniqueSorted(manual).map(String).join(',')
   const key = `${config.chainId}:${collection.toLowerCase()}:${owner.toLowerCase()}:${manualKey}`
+  const cached = resolved.get(key)
+  if (cached && Date.now() - cached.at < FRESH_MS) return cached.ids
   const active = inFlight.get(key)
   if (active) return active
-  const pending = resolveHolderIdsNow(client, collection, owner, manual, fetcher).finally(() => {
-    if (inFlight.get(key) === pending) inFlight.delete(key)
-  })
+  const pending = resolveHolderIdsNow(client, collection, owner, manual, fetcher)
+    .then((ids) => {
+      resolved.set(key, { ids, at: Date.now() })
+      return ids
+    })
+    .finally(() => {
+      if (inFlight.get(key) === pending) inFlight.delete(key)
+    })
   inFlight.set(key, pending)
   return pending
 }
 
 export function __resetHolderResolutionForTests() {
   inFlight.clear()
+  resolved.clear()
 }
 
 export function parseManualIds(value: string) {

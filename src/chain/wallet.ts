@@ -32,6 +32,8 @@ let state: WalletState = {}
 const listeners = new Set<Listener>()
 const choices = new Map<string, WalletChoice>()
 const handlers = new WeakMap<object, Record<string, (...args: unknown[]) => void>>()
+let restorePromise: Promise<boolean> | undefined
+let discoveryStarted = false
 
 function emit() {
   for (const listener of listeners) listener()
@@ -162,29 +164,39 @@ async function adoptAccounts(selected: WalletChoice, accounts: Address[]) {
 }
 
 /** Silent reconnect: no prompt. Gives up quietly if the wallet is gone or no longer authorizes this site. */
-export async function restoreWallet(waitMs = 400) {
+export function restoreWallet(waitMs = 400) {
+  if (state.account) return Promise.resolve(false)
+  if (restorePromise) return restorePromise
   const id = rememberedWalletId()
-  if (!id || state.account) return false
-  // EIP-6963 wallets announce asynchronously; give them a moment.
-  const deadline = Date.now() + waitMs
-  let selected = walletChoices().find((choice) => walletChoiceId(choice) === id)
-  while (!selected && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    selected = walletChoices().find((choice) => walletChoiceId(choice) === id)
-  }
-  if (!selected) return false
-  try {
-    const accounts = (await selected.provider.request({ method: 'eth_accounts' })) as Address[]
-    if (!accounts?.length || state.account) return false
-    await adoptAccounts(selected, accounts)
-    return true
-  } catch {
-    return false
-  }
+  if (!id) return Promise.resolve(false)
+
+  const pending = (async () => {
+    // EIP-6963 wallets announce asynchronously; give them a moment.
+    const deadline = Date.now() + waitMs
+    let selected = walletChoices().find((choice) => walletChoiceId(choice) === id)
+    while (!selected && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      selected = walletChoices().find((choice) => walletChoiceId(choice) === id)
+    }
+    if (!selected) return false
+    try {
+      const accounts = (await selected.provider.request({ method: 'eth_accounts' })) as Address[]
+      if (!accounts?.length || state.account) return false
+      await adoptAccounts(selected, accounts)
+      return true
+    } catch {
+      return false
+    }
+  })().finally(() => {
+    if (restorePromise === pending) restorePromise = undefined
+  })
+  restorePromise = pending
+  return pending
 }
 
 export function initWalletDiscovery() {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined' || discoveryStarted) return
+  discoveryStarted = true
   window.addEventListener('eip6963:announceProvider', ((event: CustomEvent<WalletChoice>) => {
     choices.set(event.detail.info.uuid, event.detail)
     emit()
@@ -197,7 +209,7 @@ export function initWalletDiscovery() {
       provider: injected,
     })
   }
-  void restoreWallet()
+  void restoreWallet(800)
 }
 
 export async function connectWallet(choice?: WalletChoice) {

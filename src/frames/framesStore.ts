@@ -69,6 +69,8 @@ let snapshot: FramesSnapshot = {
 let started = false
 let flaggedPromise: Promise<void> | undefined
 let indexPromise: Promise<void> | undefined
+let lastIndexRefreshAt = 0
+const INDEX_FRESH_MS = 8_000
 let indexReconcileTimer: ReturnType<typeof setTimeout> | undefined
 
 function emit(patch: Partial<FramesSnapshot>) {
@@ -347,8 +349,9 @@ export function seasonIndexChanged(
   })
 }
 
-export async function refreshFrameIndex(_force = false) {
+export async function refreshFrameIndex(force = false) {
   ensureStarted()
+  if (!force && snapshot.seasons.length && Date.now() - lastIndexRefreshAt < INDEX_FRESH_MS) return
   // Never run overlapping index refreshes. Receipt-driven frame hints update the local index immediately,
   // and a delayed reconcile catches the authoritative chain view once every RPC has caught up.
   if (indexPromise) return indexPromise
@@ -389,6 +392,7 @@ export async function refreshFrameIndex(_force = false) {
     const hintedMaxToken = Math.max(0, ...frameSeasonHints.keys())
     const total = Math.max(seasonTotal(mergedSeasons), hintedMaxToken)
     const mergedCurrentSeason = Math.max(currentSeason, mergedSeasons.length - 1)
+    lastIndexRefreshAt = Date.now()
     if (!snapshot.loading && !seasonIndexChanged(snapshot, mergedCurrentSeason, mergedSeasons, total)) return
     emit({ loading: false, currentSeason: mergedCurrentSeason, seasons: mergedSeasons, total })
   })().finally(() => {

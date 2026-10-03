@@ -7,7 +7,7 @@ export const BOOT_SESSION_KEY = 'r3os.booted'
 export const BOOT_LAST_FULL_KEY = 'r3os.boot.lastFull'
 export type BootMode = 'none' | 'full' | 'splash'
 
-/** BIOS lines appear one by one, then the splash. Useful startup work may hold the splash briefly, but total boot is hard-capped below ten seconds; any key or click skips. */
+/** BIOS lines appear one by one, then the splash. Useful startup work may hold the splash briefly, but total boot is hard-capped below ten seconds; input may skip cosmetic POST work, never unfinished critical prefetch. */
 export const BOOT_TIMING = {
   postLineMs: 120,
   postHoldMs: 350,
@@ -39,30 +39,29 @@ export function calendarDay(date = new Date()) {
   return `${year}-${month}-${day}`
 }
 
-/** Full boot for a first visit / first tab of a new day; a later new tab gets only the splash. */
+/** Full POST once per day; every other page load still gets the short splash so prefetch can gate the desktop. */
 export function bootMode(
   session: SessionLike | undefined,
   local: SessionLike | undefined,
-  firstRunDone: boolean,
+  _firstRunDone: boolean,
   today = calendarDay(),
 ): BootMode {
   try {
-    if (session?.getItem(BOOT_SESSION_KEY) === '1') return 'none'
+    // A reload in the same tab skips the cosmetic POST, not the useful warm-up. Phase 5B's invariant is
+    // "desktop appears = hot", so every fresh page load keeps at least the short splash in front of prefetch.
+    if (session?.getItem(BOOT_SESSION_KEY) === '1') return 'splash'
   } catch {
     // With blocked session storage we conservatively show a boot.
   }
   try {
-    // A full POST is a once-per-calendar-day event for this browser profile. While the first-run
-    // welcome is still pending, do not put another startup animation in front of it in a second tab.
-    // Once onboarding has been dismissed, later tabs get only the short splash.
-    if (local?.getItem(BOOT_LAST_FULL_KEY) === today) return firstRunDone ? 'splash' : 'none'
+    if (local?.getItem(BOOT_LAST_FULL_KEY) === today) return 'splash'
   } catch {
     return 'full'
   }
   return 'full'
 }
 
-/** Compatibility helper: whether this tab needs any boot at all. */
+/** Legacy helper for the tab's full-POST marker. bootMode may still choose the short prefetch splash. */
 export function shouldBoot(session: SessionLike | undefined) {
   try {
     return session?.getItem(BOOT_SESSION_KEY) !== '1'
@@ -133,7 +132,7 @@ export function postLines(facts: PostFacts): string[] {
     `${dots('Block clock')} ${clock}`,
     `${dots('Canvas')} 256 x 256 · 16 colours`,
     '',
-    'Press DEL to enter SETUP · any key to skip',
+    'Press DEL to enter SETUP · any key to skip POST',
   ]
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { chainName, config } from '../chain/config'
+import { recordPerf } from '../chain/perf'
 import { observedBlockMs, pushBlockSample, type BlockSample } from '../monadhw/explore'
 import { BOOT_TIMING, POST_WAITS, bootMode, postLines, rememberBoot, setBooting, type BootMode } from './bootState'
 import { openProgram } from './programs'
@@ -51,7 +52,8 @@ const reducedMotion = () =>
 
 /**
  * Power-on: BIOS lines (real chain facts), the r3tardOS 98 splash, then the desktop. Once per tab session,
- * any key or click skips it, DEL opens "SETUP" (DXDIAG). It only reads the app's shared block stream.
+ * input can skip the cosmetic POST, but the splash still honors critical readiness / the hard cap.
+ * DEL opens "SETUP" (DXDIAG) after startup. It only reads the app's shared block stream.
  */
 export function BootScreen() {
   const [mode] = useState<BootMode>(() => bootAtLoad)
@@ -68,6 +70,7 @@ export function BootScreen() {
   const prefetch = useSyncExternalStore(subscribeBootPrefetch, getBootPrefetchSnapshot)
   const bootStartedAt = useRef(typeof performance === 'undefined' ? Date.now() : performance.now())
   const splashStartedAt = useRef<number | undefined>(undefined)
+  const bootTotalRecorded = useRef(false)
 
   live.current = { block: block.block, samples }
   const lines = postLines({
@@ -146,6 +149,11 @@ export function BootScreen() {
     splashStartedAt.current = undefined
     if (phase === 'fade') {
       const timer = window.setTimeout(() => {
+        if (!bootTotalRecorded.current && mode !== 'none') {
+          bootTotalRecorded.current = true
+          const current = typeof performance === 'undefined' ? Date.now() : performance.now()
+          recordPerf('boot-prefetch', 'boot-total', current - bootStartedAt.current)
+        }
         setPhase('done')
         // Audible only after a click or key (browser autoplay rules), like the Windows startup chime.
         if (skipped.current) playSound('system-initiate')
@@ -158,7 +166,11 @@ export function BootScreen() {
     if (phase === 'done') return
     const skip = () => {
       skipped.current = true
-      setPhase((current) => (current === 'done' ? current : 'fade'))
+      setPhase((current) => {
+        if (current === 'post') return 'splash'
+        if (current === 'splash' && bootPrefetchReady(getBootPrefetchSnapshot())) return 'fade'
+        return current
+      })
     }
     const onKey = (event: KeyboardEvent) => {
       // Keep the key from also pressing whatever sits under the boot screen (e.g. the welcome buttons).
@@ -183,7 +195,11 @@ export function BootScreen() {
       aria-label="r3tardOS is starting"
       onPointerDown={() => {
         skipped.current = true
-        setPhase('fade')
+        setPhase((current) => {
+          if (current === 'post') return 'splash'
+          if (current === 'splash' && bootPrefetchReady(getBootPrefetchSnapshot())) return 'fade'
+          return current
+        })
       }}
     >
       {phase === 'post' ? (

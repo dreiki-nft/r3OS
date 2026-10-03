@@ -6,10 +6,11 @@ import { useMonadCard } from '../chain/monadCard'
 import { useMonadHardware } from '../chain/monadHardware'
 import { readHeavy, readMany } from '../chain/readMany'
 import { useRefreshTick } from '../chain/refreshTick'
+import { markProgramDataReady } from '../chain/perf'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { scanOwnedLabs } from '../frames/LabsFolder'
-import { R3TARDS_BLOCK_CAMERA_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { loadOwnedLabsSources, scanOwnedLabs } from '../frames/labsStore'
+import { R3TARDS_BLOCK_CAMERA_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
 import { errorText, labAddress, labLoadError, LabNotDeployedError, shortAddress } from '../labs/labCommon'
 import { WalletChooser } from '../os/WalletChooser'
@@ -64,6 +65,8 @@ export function BlockCameraProgram() {
   const [message, setMessage] = useState('')
   const [captured, setCaptured] = useState<RollItem>()
   const [roll, setRoll] = useState<RollItem[]>([])
+  const [basicsLoaded, setBasicsLoaded] = useState(false)
+  const [rollLoaded, setRollLoaded] = useState(false)
 
   useEffect(() => {
     void labAddress('block-camera')
@@ -85,8 +88,10 @@ export function BlockCameraProgram() {
       const rows = await readMany(calls, { allowFailure: false })
       setLabs(rows[0] as Address)
       if (rows[1] != null) setSeason(BigInt(rows[1] as bigint))
+      setBasicsLoaded(true)
     } catch (error) {
       setMessage(errorText(error))
+      setBasicsLoaded(true)
     }
   }, [address])
 
@@ -235,26 +240,25 @@ export function BlockCameraProgram() {
   }, [address, wallet.account, card.status, card.cardId, useCard, slowTick])
 
   const loadRoll = useCallback(async () => {
-    if (!wallet.account || !labs || !address) return
+    if (!wallet.account) {
+      setRoll([])
+      setRollLoaded(true)
+      return
+    }
+    if (!labs || !address) return
+    setRollLoaded(false)
     try {
-      const ids = await scanOwnedLabs(labs, wallet.account)
+      const [ids, sources] = await Promise.all([
+        scanOwnedLabs(labs, wallet.account),
+        loadOwnedLabsSources(labs, wallet.account),
+      ])
       if (!ids.length) {
         setRoll([])
         return
       }
-      const sources = await readMany(
-        ids.map((id) => ({
-          address: labs,
-          abi: R3TARDS_LABS_ABI,
-          functionName: 'sourceOf',
-          args: [id],
-        })),
-        { allowFailure: true },
+      const owned = ids.filter(
+        (id) => sources.get(id.toString())?.toLowerCase() === address.toLowerCase(),
       )
-      const owned = ids.filter((_, index) => {
-        const row = sources[index] as any
-        return row?.status === 'success' && String(row.result).toLowerCase() === address.toLowerCase()
-      })
       const shown = owned.slice(-6).reverse()
       const next = await Promise.all(
         shown.map(async (id): Promise<RollItem> => ({
@@ -265,12 +269,18 @@ export function BlockCameraProgram() {
       setRoll(next)
     } catch {
       // The roll is secondary; capture stays usable if archival reads fail.
+    } finally {
+      setRollLoaded(true)
     }
   }, [wallet.account, labs, address])
 
   useEffect(() => {
     void loadRoll()
   }, [loadRoll, slowTick])
+
+  useEffect(() => {
+    if (basicsLoaded && (!wallet.account || !labs || rollLoaded)) markProgramDataReady('block-camera')
+  }, [basicsLoaded, wallet.account, labs, rollLoaded])
 
   async function capture() {
     if (!address || !wallet.account) return

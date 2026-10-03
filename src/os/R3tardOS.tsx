@@ -18,7 +18,7 @@ import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet } from '../chain/wallet'
 import { Welcome } from './Welcome'
-import { getBlockSnapshot, startBlockClock, subscribeBlocks } from '../chain/blocks'
+import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { startPresence } from '../paint/presence'
 import { initActivity } from './activity'
 import { Assistant } from './Assistant'
@@ -36,9 +36,7 @@ import { MessageBox } from './ui/MessageBox'
 import { Window } from './Window'
 import { clampAllWindows, getWindows, resetWindows, sortWindowsForDisplay, subscribeWindows } from './windows'
 import { initSound } from './sound'
-import { initWalletDiscovery } from '../chain/wallet'
 import { markProgramMounted } from '../chain/perf'
-import { startBootPrefetch } from './bootPrefetch'
 import {
   availableScheduledPrograms,
   consumeInstallAnnouncement,
@@ -83,13 +81,8 @@ export function R3tardOS() {
 
   useEffect(() => {
     initSound()
-    initWalletDiscovery()
     initLiveNudge()
     void initReleases()
-    void startBlockClock()
-    // Spend the boot screen on real work: canvas state, RPC ranking, contracts, frame/account caches,
-    // fee data and the launch-critical code chunks all warm in parallel before the desktop is released.
-    void startBootPrefetch()
     startPresence()
     initActivity()
     window.addEventListener('resize', clampAllWindows)

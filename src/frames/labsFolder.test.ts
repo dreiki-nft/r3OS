@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Address } from 'viem'
-import { applyLabsTransfer, ownedFromOwnerScan } from './LabsFolder'
+import { applyLabsTransfer, ownedFromOwnerScan } from './labsStore'
 
 const me = '0x00000000000000000000000000000000000000aa' as Address
 const other = '0x00000000000000000000000000000000000000bb' as Address

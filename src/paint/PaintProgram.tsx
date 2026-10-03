@@ -18,7 +18,7 @@ import { config } from '../chain/config'
 import { demoConstants, discoverContracts, readCoreConstants } from '../chain/contracts'
 import { friendlyError } from '../chain/errors'
 import { parseManualIds, resolveHolderIds } from '../chain/holders'
-import { recordPerf, startPerf } from '../chain/perf'
+import { markProgramDataReady, recordPerf, startPerf } from '../chain/perf'
 import { quoteAction, sendAction, type ActionOptions, type ActionQuote } from '../chain/tx'
 import {
   connectWallet,
@@ -125,6 +125,9 @@ export function PaintProgram() {
   const me = wallet.account?.toLowerCase()
   const togetherText = together.painters ? ` · ${together.painters} active recently` : ''
   useEffect(() => setPresenceAccount(wallet.account), [wallet.account])
+  useEffect(() => {
+    if (canvas.status !== 'offline') markProgramDataReady('paint')
+  }, [canvas.status])
 
   const [tool, setTool] = useState<Tool>('pencil')
   const [colour, setColour] = useState(1)

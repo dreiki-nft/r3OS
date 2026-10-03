@@ -32,8 +32,8 @@ export interface DxDiagInput {
     multicallConfigured: boolean
     multicallPresent?: boolean
   }
-  /** Only present in development builds, where src/chain/rpcStats.ts actually counts calls. */
-  rpcStats?: { windowSeconds: number; counts: Record<string, number> }
+  /** Local method counts only; no endpoint URLs, request bodies, accounts or keys are recorded. */
+  rpcStats?: { windowSeconds: number; counts: Record<string, number>; totals: Record<string, number> }
   contracts: {
     paint?: string
     r3tards?: string
@@ -128,12 +128,14 @@ export function formatReport(input: DxDiagInput, secrets: readonly string[] = []
           : 'configured · no code',
   )
   if (input.rpcStats) {
-    const total = Object.values(input.rpcStats.counts).reduce((sum, value) => sum + value, 0)
-    row('rpc calls (dev)', `${total} in the current ${input.rpcStats.windowSeconds} s window`)
-    for (const [method, count] of Object.entries(input.rpcStats.counts).sort((a, b) => b[1] - a[1])) {
-      row(`rpc ${method}`, String(count))
+    const windowTotal = Object.values(input.rpcStats.counts).reduce((sum, value) => sum + value, 0)
+    const bootTotal = Object.values(input.rpcStats.totals).reduce((sum, value) => sum + value, 0)
+    row('rpc calls', `${windowTotal} current ${input.rpcStats.windowSeconds} s · ${bootTotal} since boot`)
+    for (const [method, count] of Object.entries(input.rpcStats.totals).sort((a, b) => b[1] - a[1])) {
+      const current = input.rpcStats.counts[method] ?? 0
+      row(`rpc ${method}`, `${count} total · ${current} current`)
     }
-  } else row('rpc stats', 'development instrumentation disabled')
+  } else row('rpc stats', 'instrumentation unavailable')
   lines.push('')
   lines.push('CONTRACTS')
   row('paint', input.contracts.paint ?? 'not configured')

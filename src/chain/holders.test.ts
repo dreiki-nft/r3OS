@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
-import { describe, expect, it, vi } from 'vitest'
-import { choosePassDisplay, resolveHolderIds } from './holders'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { __resetHolderResolutionForTests, choosePassDisplay, resolveHolderIds } from './holders'
 
 const owner = '0x00000000000000000000000000000000000000a1' as Address
 const collection = '0x00000000000000000000000000000000000000b1' as Address
@@ -25,6 +25,8 @@ function client(enumerable = true) {
 }
 
 describe('holders', () => {
+  beforeEach(() => __resetHolderResolutionForTests())
+
   it('tries enumerable first and verifies ownerOf', async () => {
     const instance = client(true) as unknown as { calls: string[] }
     expect(await resolveHolderIds(instance as never, collection, owner)).toEqual([1n])
@@ -35,6 +37,14 @@ describe('holders', () => {
 
   it('falls back to tokensOfOwner', async () => {
     expect(await resolveHolderIds(client(false), collection, owner)).toEqual([7n, 8n])
+  })
+
+  it('reuses a freshly resolved owner list instead of repeating boot/open reads', async () => {
+    const instance = client(true) as unknown as { calls: string[] }
+    expect(await resolveHolderIds(instance as never, collection, owner)).toEqual([1n])
+    const calls = instance.calls.length
+    expect(await resolveHolderIds(instance as never, collection, owner)).toEqual([1n])
+    expect(instance.calls).toHaveLength(calls)
   })
 
   it('unions manual ids with automatic ids, de-duplicates, then verifies', async () => {

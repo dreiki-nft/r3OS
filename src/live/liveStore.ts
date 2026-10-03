@@ -2,7 +2,7 @@ import { formatEther, type Address, type Hex } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { readPainterProfile } from '../chain/painterProfile'
 import { subscribeCanvasActivity } from '../paint/canvasStore'
 import {
   burnerStatus,
@@ -91,7 +91,7 @@ function ensureStarted() {
       activity.eventName === 'Painted' &&
       sameOwner(activity.owner as Address | undefined, snapshot.owner)
     ) {
-      void refreshLiveStatus()
+      void refreshLiveStatus(snapshot.owner, true)
     }
   })
   subscribeBlocks(() => {
@@ -120,7 +120,7 @@ export function setLiveOwner(owner?: Address) {
   if (owner) void refreshLiveStatus(owner)
 }
 
-export function refreshLiveStatus(owner = snapshot.owner) {
+export function refreshLiveStatus(owner = snapshot.owner, forceProfile = false) {
   if (!owner) return Promise.resolve()
   const run = refreshSerial.then(async () => {
     const burner = loadBurner(owner)
@@ -130,22 +130,16 @@ export function refreshLiveStatus(owner = snapshot.owner) {
       }
       return
     }
-    const client = publicClient
-    const [status, stats] = await Promise.all([
+    const [status, profile] = await Promise.all([
       burner ? burnerStatus(owner) : Promise.resolve(undefined),
-      client.readContract({
-        address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'painterStats',
-        args: [owner],
-      }) as Promise<readonly bigint[]>,
+      readPainterProfile(owner, forceProfile),
     ])
     if (!sameOwner(owner, snapshot.owner)) return
     emit({
       burner,
       session: status?.session,
       balance: status?.balance ?? 0n,
-      sessionPaints: stats[8] ?? 0n,
+      sessionPaints: profile.stats[8] ?? 0n,
       loading: false,
     })
   })

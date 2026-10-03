@@ -17,6 +17,7 @@ import { publicClient, wsClient } from '../../chain/clients'
 import { config } from '../../chain/config'
 import { getLogsWindow, scanBackward } from '../../chain/logs'
 import { discoverContracts } from '../../chain/contracts'
+import { markProgramDataReady } from '../../chain/perf'
 import { readMany } from '../../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../../chain/tx'
 import { describeFrames, subscribeRecycleRequests, takeRecycleRequest } from './recycleIntent'
@@ -311,6 +312,7 @@ export function RecycleBin() {
       if (!address) throw new Error("this Lab isn't deployed on this network")
       setBin(address)
       await Promise.all([loadSidebar(address, wallet.account), loadRows(address)])
+      markProgramDataReady('bin')
     } catch (error) {
       setMessage(screenSafeMessage(error))
     }

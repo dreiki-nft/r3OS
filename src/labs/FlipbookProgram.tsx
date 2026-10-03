@@ -19,7 +19,7 @@ import { Icon } from '../os/ui/Icon'
 import { LabCanvas } from './LabCanvas'
 import { asHex, errorText, labAddress, shortAddress } from './labCommon'
 import { readLabsToken, type LabsTokenData } from './labsToken'
-import { scanOwnedLabs } from '../frames/LabsFolder'
+import { scanOwnedLabs } from '../frames/labsStore'
 import { useRefreshTick } from '../chain/refreshTick'
 
 const UINT64_MAX = (1n << 64n) - 1n

@@ -86,6 +86,10 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
   }))
   let snapshot: ActionRpcSnapshot = { version, endpoints: states.map(publicState) }
   const listeners = new Set<Listener>()
+  // A low-latency endpoint can still be a few blocks behind immediately after funding.
+  // Keep that freshness signal separate from infrastructure health so the settlement barrier can
+  // temporarily steer the next dependent action toward an RPC that has actually observed the funded state.
+  const readinessPenaltyUntil = clients.map(() => 0)
 
   const emit = () => {
     snapshot = { version: ++version, endpoints: states.map(publicState) }
@@ -117,8 +121,9 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
 
   const score = (state: ActionRpcEndpointState) => {
     const cooldown = state.cooldownUntil && state.cooldownUntil > Date.now() ? 100_000 : 0
+    const readinessPenalty = readinessPenaltyUntil[state.index] > Date.now() ? 50_000 : 0
     const latency = state.ewmaMs ?? 450 + state.index * 10
-    return cooldown + latency + state.consecutiveFailures * 2_000
+    return cooldown + readinessPenalty + latency + state.consecutiveFailures * 2_000
   }
 
   const ranked = () => states.map((state) => state.index).sort((a, b) => score(states[a]) - score(states[b]))
@@ -216,10 +221,17 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
       )
       const ready = checks.filter(Boolean).length
       bestReady = Math.max(bestReady, ready)
+
+      // Latency ranking alone is not enough immediately after funding: the fastest endpoint can still be
+      // several blocks behind. Temporarily demote endpoints that have not observed both the target block
+      // and funded balance. This makes the next quote/request start from an RPC that just proved it sees
+      // the required state, without misclassifying a merely stale provider as an infrastructure failure.
+      const penaltyUntil = Date.now() + Math.max(2_000, pollMs * 4)
+      checks.forEach((isReady, index) => {
+        readinessPenaltyUntil[index] = isReady ? 0 : penaltyUntil
+      })
+
       const preferred = ranked()[0]
-      // The next quote uses request(), which starts with the currently top-ranked endpoint. Do not release
-      // the barrier just because two slower peers are caught up while the endpoint quoteAction will actually
-      // choose is still stale. Require the preferred endpoint plus the quorum to be ready.
       if (ready >= quorum && checks[preferred]) {
         return { targetBlock, quorum, ready, preferred }
       }
@@ -321,6 +333,7 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
         state.lastSuccessAt = undefined
         state.lastFailureAt = undefined
         state.cooldownUntil = undefined
+        readinessPenaltyUntil[state.index] = 0
       }
       emit()
     },

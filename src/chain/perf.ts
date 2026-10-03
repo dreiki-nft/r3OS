@@ -10,6 +10,7 @@ export type PerfKind =
   | 'tx-receipt'
   | 'tx-total'
   | 'program-open'
+  | 'program-ready'
   | 'ui-settle'
 
 export interface PerfSample {
@@ -43,6 +44,7 @@ let nextId = 1
 let snapshot: PerfSnapshot = { version: 0, samples: [] }
 const listeners = new Set<Listener>()
 const pendingProgramOpen = new Map<string, number>()
+const pendingProgramReady = new Map<string, number>()
 
 function now() {
   return typeof performance === 'undefined' ? Date.now() : performance.now()
@@ -75,7 +77,9 @@ export function startPerf(kind: PerfKind, label: string) {
 }
 
 export function markProgramOpen(id: string) {
-  pendingProgramOpen.set(id, now())
+  const started = now()
+  pendingProgramOpen.set(id, started)
+  pendingProgramReady.set(id, started)
 }
 
 export function markProgramMounted(id: string) {
@@ -83,6 +87,14 @@ export function markProgramMounted(id: string) {
   if (started == null) return
   pendingProgramOpen.delete(id)
   recordPerf('program-open', id, now() - started)
+}
+
+/** Mark when a program's primary data is usable, not merely when React mounted its component. */
+export function markProgramDataReady(id: string) {
+  const started = pendingProgramReady.get(id)
+  if (started == null) return
+  pendingProgramReady.delete(id)
+  recordPerf('program-ready', id, now() - started)
 }
 
 export function getPerfSnapshot() {
@@ -96,6 +108,7 @@ export function subscribePerf(listener: Listener) {
 
 export function clearPerf() {
   pendingProgramOpen.clear()
+  pendingProgramReady.clear()
   emit([])
 }
 
@@ -147,6 +160,7 @@ export function formatPerfReport(input: PerfSnapshot = snapshot) {
 export function __resetPerfForTests() {
   nextId = 1
   pendingProgramOpen.clear()
+  pendingProgramReady.clear()
   snapshot = { version: 0, samples: [] }
   listeners.clear()
 }

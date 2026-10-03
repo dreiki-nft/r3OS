@@ -88,6 +88,7 @@ let pollTimer: number | undefined
 let reconcileTimer: number | undefined
 let serial = Promise.resolve()
 let started = false
+let startPromise: Promise<void> | undefined
 let constants = demoConstants
 let activityFeed: ActivityFeedSnapshot = { version: 0, items: [] }
 const appliedLogKeys = new Map<string, bigint>()
@@ -529,24 +530,32 @@ export async function reconcileSpeculativeNow() {
   return false
 }
 
-export async function startCanvasStore() {
-  if (started) return
-  started = true
-  constants = await readCoreConstants().catch(() => demoConstants)
-  await loadCanvas()
-  if (wsClient && config.paintAddress) {
-    unwatch = wsClient.watchContractEvent({
-      address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
-      onLogs: (logs) => void onSubscriptionLogs(logs),
-      onError: () => {
-        void catchUp().finally(startPolling)
-      },
-    })
-  } else {
-    startPolling()
-  }
-  reconcileTimer = window.setInterval(() => void reconcileSpeculativeNow(), 30_000)
+export function startCanvasStore() {
+  if (started) return Promise.resolve()
+  if (startPromise) return startPromise
+
+  const pending = (async () => {
+    constants = await readCoreConstants().catch(() => demoConstants)
+    await loadCanvas()
+    if (wsClient && config.paintAddress) {
+      unwatch = wsClient.watchContractEvent({
+        address: config.paintAddress,
+        abi: R3TARDS_PAINT_ABI,
+        onLogs: (logs) => void onSubscriptionLogs(logs),
+        onError: () => {
+          void catchUp().finally(startPolling)
+        },
+      })
+    } else {
+      startPolling()
+    }
+    reconcileTimer = window.setInterval(() => void reconcileSpeculativeNow(), 30_000)
+    started = true
+  })().finally(() => {
+    if (startPromise === pending) startPromise = undefined
+  })
+  startPromise = pending
+  return pending
 }
 
 function startPolling() {

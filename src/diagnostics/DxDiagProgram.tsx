@@ -7,6 +7,7 @@ import {
   getPerfSnapshot,
   subscribePerf,
   summarizePerf,
+  markProgramDataReady,
 } from '../chain/perf'
 import {
   actionRpcEndpointLabel,
@@ -80,6 +81,7 @@ export function DxDiagProgram() {
     setNote('')
     try {
       setData(await loadDxDiag(force, setStep))
+      if (!force) markProgramDataReady('dxdiag')
     } catch (error) {
       setNote(`could not read: ${screenSafeMessage(error).slice(0, 120)}`)
     } finally {
@@ -177,17 +179,17 @@ export function DxDiagProgram() {
                 label="RPC stats"
                 value={
                   d.rpcStats
-                    ? `${Object.values(d.rpcStats.counts).reduce((a, b) => a + b, 0)} calls in the current ${d.rpcStats.windowSeconds} s window (DEV)`
-                    : 'development instrumentation disabled'
+                    ? `${Object.values(d.rpcStats.totals).reduce((a, b) => a + b, 0)} calls since boot · ${Object.values(d.rpcStats.counts).reduce((a, b) => a + b, 0)} current ${d.rpcStats.windowSeconds} s`
+                    : 'instrumentation unavailable'
                 }
                 source={d.rpcStats ? 'measured' : undefined}
               />
-              {d.rpcStats && Object.keys(d.rpcStats.counts).length > 0 && (
+              {d.rpcStats && Object.keys(d.rpcStats.totals).length > 0 && (
                 <Row
                   label="RPC methods"
-                  value={Object.entries(d.rpcStats.counts)
+                  value={Object.entries(d.rpcStats.totals)
                     .sort((a, b) => b[1] - a[1])
-                    .map(([method, count]) => `${method} ${count}`)
+                    .map(([method, count]) => `${method} ${count} (${d.rpcStats!.counts[method] ?? 0} current)`)
                     .join(' · ')}
                   source="measured"
                 />

@@ -42,16 +42,16 @@ describe('boot screen', () => {
     expect(() => rememberBoot(blocked)).not.toThrow()
   })
 
-  it('uses one full boot per day and a short splash for later new tabs', () => {
+  it('uses one full POST per day and a short prefetch splash on later page loads', () => {
     const local = memory()
     const firstTab = memory()
     expect(bootMode(firstTab, local, false, '2026-10-02')).toBe('full')
     rememberBoot(firstTab, local, 'full', '2026-10-02')
     expect(local.map.get(BOOT_LAST_FULL_KEY)).toBe('2026-10-02')
-    expect(bootMode(firstTab, local, true, '2026-10-02')).toBe('none')
+    expect(bootMode(firstTab, local, true, '2026-10-02')).toBe('splash')
 
     const stillWelcoming = memory()
-    expect(bootMode(stillWelcoming, local, false, '2026-10-02')).toBe('none')
+    expect(bootMode(stillWelcoming, local, false, '2026-10-02')).toBe('splash')
 
     const secondTab = memory()
     expect(bootMode(secondTab, local, true, '2026-10-02')).toBe('splash')

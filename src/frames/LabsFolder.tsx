@@ -2,131 +2,25 @@ import '../labs/phase3c2a.css'
 import { screenSafeMessage } from '../chain/errors'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { zeroAddress, type Address } from 'viem'
-import { publicClient, wsClient } from '../chain/clients'
-import { discoverContracts } from '../chain/contracts'
-import { readHeavy, readMany } from '../chain/readMany'
+import { wsClient } from '../chain/clients'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
+import { R3TARDS_LABS_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
 import { isRetiredProgram } from '../os/retired'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { SafeImage } from '../os/ui/SafeImage'
-import { decodeLabsTokenUri, readLabsToken, type LabsTokenData } from '../labs/labsToken'
+import type { LabsTokenData } from '../labs/labsToken'
+import {
+  applyLabsTransfer,
+  labsAddress,
+  labsBucket,
+  loadOwnedLabsTokens,
+  type LabsOwnedToken,
+} from './labsStore'
 
-export type LabsOwnedToken = { id: bigint; data?: LabsTokenData }
 export type LabsFilter = 'All' | 'Reels' | 'Forks' | 'Dreams' | 'CDs' | 'Portraits'
-
-function same(a?: string, b?: string) {
-  return Boolean(a && b && a.toLowerCase() === b.toLowerCase())
-}
-
-export function applyLabsTransfer(
-  ids: readonly bigint[],
-  owner: Address,
-  from: Address,
-  to: Address,
-  id: bigint,
-) {
-  const next = new Set(ids.map(String))
-  if (same(from, owner)) next.delete(String(id))
-  if (same(to, owner)) next.add(String(id))
-  return [...next].map(BigInt).sort((a, b) => (a < b ? -1 : 1))
-}
-
-export function ownedFromOwnerScan(results: readonly any[], owner: Address, startId = 1n) {
-  return results.flatMap((row, index) =>
-    row?.status === 'success' && same(String(row.result), owner) ? [startId + BigInt(index)] : [],
-  )
-}
-
-let labsAddressPromise: Promise<Address> | undefined
-const ownedLabsInflight = new Map<string, Promise<bigint[]>>()
-
-export async function labsAddress() {
-  if (labsAddressPromise) return labsAddressPromise
-  if (!publicClient) throw new Error('DEMO_MODE')
-  labsAddressPromise = (async () => {
-    const flipbook = (await discoverContracts()).labs.flipbook
-    if (!flipbook) throw new Error("this Lab isn't deployed on this network")
-    return (await publicClient.readContract({
-      address: flipbook,
-      abi: R3TARDS_FLIPBOOK_ABI,
-      functionName: 'LABS',
-    })) as Address
-  })().catch((error) => {
-    labsAddressPromise = undefined
-    throw error
-  })
-  return labsAddressPromise
-}
-
-export async function scanOwnedLabs(labs: Address, owner: Address) {
-  if (!publicClient) return []
-  const key = `${labs.toLowerCase()}:${owner.toLowerCase()}`
-  const active = ownedLabsInflight.get(key)
-  if (active) return active
-
-  const pending = (async () => {
-    const total = BigInt(
-      await publicClient.readContract({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'totalMinted' }),
-    )
-    if (total === 0n) return []
-    // readMany already slices Multicall3 into 100-call chunks and runs four chunks at a time.
-    // Feeding it the whole owner scan avoids a serial 100-token waterfall as Labs grows.
-    const rows = await readMany(
-      Array.from({ length: Number(total) }, (_, i) => ({
-        address: labs,
-        abi: R3TARDS_LABS_ABI,
-        functionName: 'ownerOf',
-        args: [1n + BigInt(i)],
-      })),
-      { allowFailure: true },
-    )
-    return ownedFromOwnerScan(rows, owner, 1n)
-  })().finally(() => {
-    if (ownedLabsInflight.get(key) === pending) ownedLabsInflight.delete(key)
-  })
-
-  ownedLabsInflight.set(key, pending)
-  return pending
-}
-
-export async function loadOwnedLabsTokens(owner: Address) {
-  const address = await labsAddress()
-  const ids = await scanOwnedLabs(address, owner)
-  if (!ids.length) return []
-  const rows = await readHeavy(
-    ids.map((id) => ({ address, abi: R3TARDS_LABS_ABI, functionName: 'tokenURI', args: [id] })),
-    { concurrency: 4 },
-  )
-  return ids.map((id, index) => ({
-    id,
-    data:
-      rows[index]?.status === 'success'
-        ? decodeLabsTokenUriSafe(String((rows[index] as { status: 'success'; result: unknown }).result))
-        : undefined,
-  }))
-}
-
-function decodeLabsTokenUriSafe(uri: string) {
-  try {
-    return decodeLabsTokenUri(uri)
-  } catch {
-    return undefined
-  }
-}
-
-export function labsBucket(data?: LabsTokenData) {
-  const type = String(data?.attributes.Type ?? '').toLowerCase()
-  if (type.includes('reel')) return 'Reels'
-  if (type.includes('fork')) return 'Forks'
-  if (type.includes('dream')) return 'Dreams'
-  if (type === 'cd' || type.includes('cd')) return 'CDs'
-  if (type.includes('portrait')) return 'Portraits'
-  return 'All'
-}
 
 function labFor(data?: LabsTokenData) {
   const type = labsBucket(data)

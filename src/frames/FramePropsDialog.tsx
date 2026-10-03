@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import type { Address } from 'viem'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
+import { markProgramDataReady } from '../chain/perf'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
@@ -147,6 +148,7 @@ export function FramePropsDialog() {
       ? list.find((item) => item.name.toLowerCase().includes(requested.toLowerCase()))
       : undefined
     setChoice(requestedRenderer?.id ?? current)
+    markProgramDataReady('frame-props')
     if (publicClient && config.paintAddress) {
       const value = (await publicClient.readContract({
         address: config.paintAddress,

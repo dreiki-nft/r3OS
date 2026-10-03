@@ -92,15 +92,20 @@ describe('action RPC pool', () => {
       client({ getBlockNumber: staleBlock, getBalance: vi.fn().mockResolvedValue(0n) }),
     ])
 
-    await expect(
-      pool.waitForFundingSettlement(address, 1_000n, 100n, {
-        settleBlocks: 3n,
-        pollMs: 1,
-        timeoutMs: 100,
-      }),
-    ).resolves.toEqual({ targetBlock: 103n, quorum: 2, ready: 2, preferred: 0 })
-    expect(firstBlock).toHaveBeenCalledTimes(2)
-    expect(secondBlock).toHaveBeenCalledTimes(2)
+    const result = await pool.waitForFundingSettlement(address, 1_000n, 100n, {
+      settleBlocks: 3n,
+      pollMs: 1,
+      timeoutMs: 100,
+    })
+
+    expect(result).toMatchObject({ targetBlock: 103n, quorum: 2, ready: 2 })
+    expect([0, 1]).toContain(result.preferred)
+    expect(pool.ranked()[0]).toBe(result.preferred)
+    await expect(pool.request((rpc) => rpc.getBlockNumber({ cacheTime: 0 }))).resolves.toBe(104n)
+    const readyBlocks = [firstBlock, secondBlock]
+    expect(readyBlocks[result.preferred]).toHaveBeenCalledTimes(3)
+    expect(readyBlocks[result.preferred === 0 ? 1 : 0]).toHaveBeenCalledTimes(2)
+    expect(staleBlock).toHaveBeenCalledTimes(2)
   })
 })
 

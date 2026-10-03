@@ -6,12 +6,15 @@ import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { discoverContracts } from '../chain/contracts'
-import { choosePassDisplay, resolveHolderIds } from '../chain/holders'
-import { readHeavy, readMany } from '../chain/readMany'
+import { choosePassDisplay } from '../chain/holders'
+import { readHeavy } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { formattedBalance, getWalletSnapshot, subscribeWallet, walletOnCorrectChain } from '../chain/wallet'
 import { decodeJsonDataUri } from '../lib/dataUri'
 import { R3TARDS_PAINTER_PASS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { readPainterProfile } from '../chain/painterProfile'
+import { markProgramDataReady } from '../chain/perf'
+import { readPassIdentity } from './passData'
 import { clearAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
 import { openProgram } from '../os/programs'
@@ -115,76 +118,45 @@ export function PassProgram() {
   const [selectedStamp, setSelectedStamp] = useState<StampRow>()
   const [budget, setBudget] = useState<readonly bigint[]>([0n, 0n, 0n, 0n, 0n])
   const [box, setBox] = useState<{ title: string; message: string; kind?: 'info' | 'warning' | 'error' }>()
+  const [identityLoaded, setIdentityLoaded] = useState(false)
+  const [statsLoaded, setStatsLoaded] = useState(false)
 
-  const loadIdentity = useCallback(async () => {
-    if (!wallet.account || !publicClient) return
-    const contracts = await discoverContracts()
-    setPassAddress(contracts.pass)
-    setCollection(contracts.r3tards)
-    if (!contracts.pass || !contracts.r3tards) return
-    const [identity, ownedIds] = await Promise.all([
-      readMany(
-        [
-          {
-            address: contracts.pass,
-            abi: R3TARDS_PAINTER_PASS_ABI,
-            functionName: 'passOf',
-            args: [wallet.account],
-          },
-          {
-            address: contracts.pass,
-            abi: R3TARDS_PAINTER_PASS_ABI,
-            functionName: 'hasClaimed',
-            args: [wallet.account],
-          },
-        ],
-        { allowFailure: false },
-      ),
-      resolveHolderIds(publicClient, contracts.r3tards, wallet.account),
-    ])
-    const [pass, claimed] = identity as [bigint, boolean]
-    setPassId(pass)
-    setHasClaimed(claimed)
-    setIds(ownedIds)
-    const selected = choosePassDisplay(ownedIds, readStoredDisplay(wallet.account))
-    setDisplayId(selected)
+  const loadIdentity = useCallback(async (force = false) => {
+    if (!wallet.account) return
+    const identity = await readPassIdentity(wallet.account, force)
+    setPassAddress(identity.passAddress)
+    setCollection(identity.collection)
+    setPassId(identity.passId)
+    setHasClaimed(identity.hasClaimed)
+    setIds(identity.holderIds)
+    setDisplayId(choosePassDisplay(identity.holderIds, readStoredDisplay(wallet.account)))
+    setIdentityLoaded(true)
   }, [wallet.account])
 
-  const loadStats = useCallback(async () => {
-    if (!wallet.account || !publicClient || !config.paintAddress) return
-    const [values, holder] = (await readMany(
-      [
-        {
-          address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
-          functionName: 'painterStats',
-          args: [wallet.account],
-        },
-        {
-          address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
-          functionName: 'isR3tardHolder',
-          args: [wallet.account],
-        },
-      ],
-      { allowFailure: false },
-    )) as [readonly bigint[], boolean]
+  const loadStats = useCallback(async (force = false) => {
+    if (!wallet.account || !config.paintAddress) return
+    const { stats: values, holder } = await readPainterProfile(wallet.account, force)
     setStats({
-      activeDays: values[0],
-      pixels: values[2],
-      frames: values[3],
-      firstPaintBlock: values[4],
-      paintCount: values[6],
-      sessionPaints: values[8],
-      stormPaints: values[9],
+      activeDays: values[0] ?? 0n,
+      pixels: values[2] ?? 0n,
+      frames: values[3] ?? 0n,
+      firstPaintBlock: values[4] ?? 0n,
+      paintCount: values[6] ?? 0n,
+      sessionPaints: values[8] ?? 0n,
+      stormPaints: values[9] ?? 0n,
       holder,
     })
+    setStatsLoaded(true)
   }, [wallet.account])
 
   useEffect(() => {
     void loadIdentity()
     void loadStats()
   }, [loadIdentity, loadStats])
+
+  useEffect(() => {
+    if (!wallet.account || (identityLoaded && statsLoaded)) markProgramDataReady('pass')
+  }, [wallet.account, identityLoaded, statsLoaded])
 
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
 
@@ -204,7 +176,7 @@ export function PassProgram() {
         if (!wallet.account) return
         const account = wallet.account.toLowerCase()
         if (activity.owner?.toLowerCase() === account || activity.minter?.toLowerCase() === account) {
-          void loadStats()
+          void loadStats(true)
         }
       }),
     [wallet.account, loadStats],
@@ -345,8 +317,8 @@ export function PassProgram() {
         successSound: 'success-heavy',
       })
       clearAssistantTip('nice. you can claim a painter pass now')
-      await loadIdentity()
-      await loadStats()
+      await loadIdentity(true)
+      await loadStats(true)
       pushBalloon({ title: 'Painter Pass', body: 'pass claimed. soulbound, grants absolutely nothing.' })
     } catch (error) {
       setBox({

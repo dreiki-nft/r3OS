@@ -4,6 +4,7 @@ import {
   clearPerf,
   formatPerfReport,
   getPerfSnapshot,
+  markProgramDataReady,
   markProgramMounted,
   markProgramOpen,
   recordPerf,
@@ -38,7 +39,10 @@ describe('performance measurements', () => {
     markProgramOpen('paint')
     t = 137
     markProgramMounted('paint')
+    t = 149
+    markProgramDataReady('paint')
     expect(getPerfSnapshot().samples[0]).toMatchObject({ kind: 'program-open', label: 'paint', ms: 37 })
+    expect(getPerfSnapshot().samples[1]).toMatchObject({ kind: 'program-ready', label: 'paint', ms: 49 })
   })
 
   it('clears samples and produces a copyable local-only report', () => {

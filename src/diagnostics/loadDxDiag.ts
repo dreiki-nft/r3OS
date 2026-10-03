@@ -7,7 +7,7 @@ import { discoverContracts } from '../chain/contracts'
 import { isOfficialCard } from '../chain/monadCard'
 import { readMonadHardware } from '../chain/monadHardware'
 import { readMany } from '../chain/readMany'
-import { rpcStatsSnapshot } from '../chain/rpcStats'
+import { rpcStatsSnapshot, rpcStatsTotalSnapshot } from '../chain/rpcStats'
 import { eventState, readSystemEventNow } from '../chain/systemEvent'
 import { R3TARDS_CARD_MEMORY_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import {
@@ -122,7 +122,7 @@ export async function loadDxDiag(
       multicallConfigured: Boolean(config.multicall3Address),
       multicallPresent,
     },
-    rpcStats: import.meta.env.DEV ? { windowSeconds: 10, counts: rpcStatsSnapshot() } : undefined,
+    rpcStats: { windowSeconds: 10, counts: rpcStatsSnapshot(), totals: rpcStatsTotalSnapshot() },
     contracts: {
       paint: paint ?? config.paintAddress,
       r3tards: contracts?.r3tards,

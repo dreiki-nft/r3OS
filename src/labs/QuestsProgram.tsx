@@ -4,12 +4,12 @@ import { openProgram } from '../os/programs'
 import { confirmHigherCost, osConfirm } from '../os/confirm'
 import { type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
-import { publicClient, wsClient } from '../chain/clients'
+import { markProgramDataReady } from '../chain/perf'
+import { wsClient } from '../chain/clients'
 import { sendActions, walletCanBatch } from '../chain/batch'
 import { quoteAction } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { discoverContracts } from '../chain/contracts'
-import { readMany } from '../chain/readMany'
 import { R3TARDS_QUESTS_ABI } from '../lib/generated/abi'
 import { getLiveSnapshot, liveActive, subscribeLive } from '../live/liveStore'
 import { closeWindow } from '../os/windows'
@@ -18,11 +18,10 @@ import { GroupBox } from '../os/ui/GroupBox'
 import { IntroBar } from '../os/ui/IntroBar'
 import { MenuBar } from '../os/ui/MenuBar'
 import { SafeImage } from '../os/ui/SafeImage'
-import { errorText, labAddress, labLoadError, LabNotDeployedError, shortAddress } from './labCommon'
+import { errorText, labLoadError, LabNotDeployedError, shortAddress } from './labCommon'
 import {
   QUEST_GROUP_TITLES,
   QUEST_HOW,
-  mapQuestProgress,
   questGroup,
   questLockedByHiddenLab,
   type QuestGroup,
@@ -32,6 +31,7 @@ import { config } from '../chain/config'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { useRefreshTick } from '../chain/refreshTick'
 import { questIsRetired, retiredAddresses } from '../os/retired'
+import { questAddress, readQuestAccountData, readQuestDefinitions, type QuestDefinition } from './questsData'
 
 const RULES = [
   'each quest reads a number straight from a contract: pixels painted, frames saved, storm paints, and so on.',
@@ -88,19 +88,6 @@ function questSubtitle(name: string, goal: bigint) {
   return `${n} onchain value`
 }
 
-type Condition = { target: Address; selector: `0x${string}`; word: number; op: number; threshold: bigint }
-type QuestDef = { id: number; name: string; startBlock: bigint; endBlock: bigint; conditions: Condition[] }
-
-function normalizeCondition(value: any): Condition {
-  return {
-    target: (value.target ?? value[0]) as Address,
-    selector: (value.selector ?? value[1]) as `0x${string}`,
-    word: Number(value.word ?? value[2]),
-    op: Number(value.op ?? value[3]),
-    threshold: BigInt(value.threshold ?? value[4]),
-  }
-}
-
 export function badgeSrc(id: number) {
   return id < 13
     ? `/os/badges/q${String(id).padStart(2, '0')}_${
@@ -137,7 +124,7 @@ export function QuestsProgram() {
   const [missing, setMissing] = useState<{ text: string; offline: boolean }>()
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [defsLoaded, setDefsLoaded] = useState(false)
-  const [defs, setDefs] = useState<QuestDef[]>([])
+  const [defs, setDefs] = useState<QuestDefinition[]>([])
   const [progress, setProgress] = useState<QuestProgressState[]>([])
   const [claimableMask, setClaimableMask] = useState(0n)
   const [completedMask, setCompletedMask] = useState(0n)
@@ -145,9 +132,10 @@ export function QuestsProgram() {
   const [selected, setSelected] = useState(0)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
+  const [progressLoaded, setProgressLoaded] = useState(false)
 
   useEffect(() => {
-    void labAddress('quests')
+    void questAddress()
       .then(setAddress)
       .catch((error) =>
         setMissing({ text: labLoadError(error), offline: !(error instanceof LabNotDeployedError) }),
@@ -169,39 +157,11 @@ export function QuestsProgram() {
       .catch(() => undefined)
   }, [])
 
-  const loadDefs = useCallback(async () => {
-    if (!publicClient || !address) return
+  const loadDefs = useCallback(async (force = false) => {
+    if (!address) return
     try {
-      const count = Number(
-        (await publicClient.readContract({
-          address,
-          abi: R3TARDS_QUESTS_ABI,
-          functionName: 'questCount',
-        })) as bigint,
-      )
-      if (!count) {
-        setDefs([])
-        setDefsLoaded(true)
-        return
-      }
-      const values = await readMany(
-        Array.from({ length: count }, (_, id) => ({
-          address,
-          abi: R3TARDS_QUESTS_ABI,
-          functionName: 'questInfo',
-          args: [BigInt(id)],
-        })) as any,
-        { allowFailure: false },
-      )
-      setDefs(
-        values.map((value: any, id: number) => ({
-          id,
-          name: String(value[0]),
-          startBlock: BigInt(value[1]),
-          endBlock: BigInt(value[2]),
-          conditions: (value[3] as any[]).map(normalizeCondition),
-        })),
-      )
+      const next = await readQuestDefinitions(address, force)
+      setDefs(next)
       setDefsLoaded(true)
     } catch (error) {
       setMessage(errorText(error))
@@ -212,47 +172,22 @@ export function QuestsProgram() {
     void loadDefs()
   }, [loadDefs])
 
-  const refresh = useCallback(async () => {
-    if (!publicClient || !address || !wallet.account || !defs.length) {
+  const refresh = useCallback(async (force = false) => {
+    if (!address || !wallet.account || !defs.length) {
       setProgress([])
       setClaimableMask(0n)
       setCompletedMask(0n)
       setCompletedCount(0n)
+      setProgressLoaded(true)
       return
     }
     try {
-      const contracts: any[] = [
-        { address, abi: R3TARDS_QUESTS_ABI, functionName: 'claimable', args: [wallet.account] },
-        { address, abi: R3TARDS_QUESTS_ABI, functionName: 'completedMask', args: [wallet.account] },
-        { address, abi: R3TARDS_QUESTS_ABI, functionName: 'completedCount', args: [wallet.account] },
-        ...defs.map((quest) => ({
-          address,
-          abi: R3TARDS_QUESTS_ABI,
-          functionName: 'progress',
-          args: [wallet.account, BigInt(quest.id)],
-        })),
-      ]
-      const result = await readMany(contracts as any, { allowFailure: false })
-      const claimable = BigInt(result[0] as bigint)
-      const completed = BigInt(result[1] as bigint)
-      setClaimableMask(claimable)
-      setCompletedMask(completed)
-      setCompletedCount(BigInt(result[2] as bigint))
-      setProgress(
-        defs.map((quest, index) => {
-          const row = result[index + 3] as any
-          const values = (row[0] as readonly bigint[]).map(BigInt)
-          const passing = (row[1] as readonly boolean[]).map(Boolean)
-          const bit = 1n << BigInt(quest.id)
-          return mapQuestProgress(
-            quest.conditions,
-            values,
-            passing,
-            Boolean(completed & bit),
-            Boolean(claimable & bit),
-          )
-        }),
-      )
+      const next = await readQuestAccountData(address, wallet.account, defs, force)
+      setClaimableMask(next.claimableMask)
+      setCompletedMask(next.completedMask)
+      setCompletedCount(next.completedCount)
+      setProgress(next.progress)
+      setProgressLoaded(true)
     } catch (error) {
       setMessage(errorText(error))
     }
@@ -263,13 +198,17 @@ export function QuestsProgram() {
   }, [refresh, refreshTick])
 
   useEffect(() => {
+    if (defsLoaded && (!wallet.account || progressLoaded)) markProgramDataReady('quests')
+  }, [defsLoaded, wallet.account, progressLoaded])
+
+  useEffect(() => {
     if (!wsClient || !address) return
     return wsClient.watchContractEvent({
       address,
       abi: R3TARDS_QUESTS_ABI,
       onLogs: (eventLogs) => {
-        if (eventLogs.some((log) => log.eventName === 'QuestAdded')) void loadDefs()
-        void refresh()
+        if (eventLogs.some((log) => log.eventName === 'QuestAdded')) void loadDefs(true)
+        void refresh(true)
       },
     })
   }, [address, loadDefs, refresh])
@@ -342,19 +281,19 @@ export function QuestsProgram() {
             ids.length === 1 ? `claim quest ${defs[ids[0]]?.name ?? ids[0]}` : `claim ${ids.length} quests`,
         },
       )
-      await refresh()
+      await refresh(true)
     } catch (error) {
       setMessage(errorText(error))
-      await refresh()
+      await refresh(true)
     } finally {
       setPending(false)
     }
   }
 
-  const locked = (quest: QuestDef) =>
+  const locked = (quest: QuestDefinition) =>
     !labTargetsReady ||
     questLockedByHiddenLab(quest.conditions, labTargets, (id) => !isProgramAvailable(id, releases))
-  const retired = (quest: QuestDef) => questIsRetired(quest.conditions, retiredTargets)
+  const retired = (quest: QuestDefinition) => questIsRetired(quest.conditions, retiredTargets)
   const visibleCount = labTargetsReady ? defs.filter((quest) => !retired(quest)).length : defs.length
   const claimableIds = defs
     .filter((quest) => !retired(quest) && !locked(quest) && Boolean(claimableMask & (1n << BigInt(quest.id))))

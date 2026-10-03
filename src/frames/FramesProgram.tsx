@@ -15,6 +15,7 @@ import {
 } from 'react'
 import { type Address } from 'viem'
 import { publicClient } from '../chain/clients'
+import { markProgramDataReady } from '../chain/perf'
 import { readMany } from '../chain/readMany'
 import { useRefreshTick } from '../chain/refreshTick'
 import { config } from '../chain/config'
@@ -387,6 +388,11 @@ export function FramesProgram() {
   useEffect(() => {
     if (filter === 'Mine') void loadMine()
   }, [filter, loadMine, frames.version])
+
+  useEffect(() => {
+    const mineReady = filter !== 'Mine' || !wallet.account || (mineFor === wallet.account && !mineLoading)
+    if (!frames.loading && mineReady) markProgramDataReady('frames')
+  }, [filter, wallet.account, mineFor, mineLoading, frames.loading])
 
   useEffect(() => {
     if (!routeFrame || season != null) return

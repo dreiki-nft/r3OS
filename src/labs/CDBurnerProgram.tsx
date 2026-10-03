@@ -5,11 +5,17 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { hexToBytes, parseAbi, parseEventLogs, type Address, type Hex, type Log } from 'viem'
 import { publicClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
+import { markProgramDataReady } from '../chain/perf'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { getFrameImage } from '../frames/frameImage'
 import { getFrameInfoBatch, mineTokenIds, type FrameInfo } from '../frames/framesStore'
-import { labsAddress, labsBucket, loadOwnedLabsTokens, type LabsOwnedToken } from '../frames/LabsFolder'
+import {
+  labsAddress,
+  labsBucket,
+  loadOwnedLabsTokensBySources,
+  type LabsOwnedToken,
+} from '../frames/labsStore'
 import { R3TARDS_CD_BURNER_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import {
   discMaskFromCounts,
@@ -181,6 +187,7 @@ export function CDBurnerProgram() {
     if (!wallet.account || !publicClient) {
       setSources([])
       setCds([])
+      markProgramDataReady('cd')
       return
     }
     try {
@@ -197,7 +204,10 @@ export function CDBurnerProgram() {
           .filter((item) => item.info),
       )
       // Labs tokens are already owned by this wallet; only Block Camera portraits are valid photo tracks.
-      const owned = await loadOwnedLabsTokens(wallet.account)
+      const relevantSources = [address, contracts.labs['block-camera']].filter(
+        (value): value is Address => Boolean(value),
+      )
+      const owned = await loadOwnedLabsTokensBySources(wallet.account, relevantSources)
       const photos: PhotoTrack[] = owned
         .filter(
           (token) =>
@@ -240,6 +250,8 @@ export function CDBurnerProgram() {
       }
     } catch (error) {
       setMessage(screenSafeMessage(error))
+    } finally {
+      markProgramDataReady('cd')
     }
   }, [wallet.account])
 

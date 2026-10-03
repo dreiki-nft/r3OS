@@ -2,6 +2,7 @@ import { helpHash } from '../os/helpTopics'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { Address } from 'viem'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { markProgramDataReady } from '../chain/perf'
 import { getFrameImage, type PixelImage } from '../frames/frameImage'
 import { PixelPreview } from '../frames/PixelPreview'
 import { openProgram } from '../os/programs'
@@ -135,6 +136,10 @@ export function CdromProgram() {
   const [view, setView] = useState<View>('details')
   const [notepad, setNotepad] = useState(false)
   const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    if (!disc || (!reading && Boolean(cd || error))) markProgramDataReady('cdrom')
+  }, [disc, reading, cd, error])
 
   // Read the inserted disc. Wallet discs are ownership-checked; public deep links are read-only.
   useEffect(() => {

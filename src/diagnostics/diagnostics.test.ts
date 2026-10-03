@@ -62,19 +62,26 @@ describe('DXDIAG report model', () => {
     expect(a).not.toContain('ROUTER')
   })
 
-  it('reports offline / polling honestly and omits production rpc stats', () => {
+  it('reports offline / polling honestly and formats local rpc method stats', () => {
     const offline = formatReport(input({ block: { mode: 'offline' } }))
     expect(offline).toContain('block: unknown')
     expect(offline).toContain('block mode: offline')
     expect(offline).toContain('block time: unknown')
     expect(blockModeLabel('polling')).toBe('polling (http)')
-    expect(offline).toContain('rpc stats: development instrumentation disabled')
+    expect(offline).toContain('rpc stats: instrumentation unavailable')
     const dev = formatReport(
-      input({ rpcStats: { windowSeconds: 10, counts: { eth_call: 3, eth_blockNumber: 2 } } }),
+      input({
+        rpcStats: {
+          windowSeconds: 10,
+          counts: { eth_call: 3, eth_blockNumber: 2 },
+          totals: { eth_call: 8, eth_blockNumber: 4, eth_getLogs: 1 },
+        },
+      }),
     )
-    expect(dev).toContain('rpc calls (dev): 5 in the current 10 s window')
-    expect(dev).toContain('rpc eth_call: 3')
-    expect(dev).toContain('rpc eth_blockNumber: 2')
+    expect(dev).toContain('rpc calls: 5 current 10 s · 13 since boot')
+    expect(dev).toContain('rpc eth_call: 8 total · 3 current')
+    expect(dev).toContain('rpc eth_blockNumber: 4 total · 2 current')
+    expect(dev).toContain('rpc eth_getLogs: 1 total · 0 current')
   })
 
   it('handles missing contracts', () => {

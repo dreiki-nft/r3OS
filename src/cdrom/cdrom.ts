@@ -4,7 +4,7 @@ import { discoverContracts } from '../chain/contracts'
 import { getLogsWindow } from '../chain/logs'
 import { readHeavy, readMany } from '../chain/readMany'
 import { getFrameInfoBatch, type FrameInfo } from '../frames/framesStore'
-import { labsAddress, scanOwnedLabs } from '../frames/LabsFolder'
+import { labsAddress, loadOwnedLabsSources, scanOwnedLabs } from '../frames/labsStore'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
 import { R3TARDS_CD_BURNER_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { safeRouteInt } from '../lib/route'
@@ -265,20 +265,15 @@ export async function cdBurnerAddress() {
 }
 
 /** The CDs (Labs tokens minted by the CD Burner) that `owner` holds right now. */
-export async function loadOwnedCds(owner: Address) {
+export async function loadOwnedCds(owner: Address, force = false) {
   const burner = await cdBurnerAddress()
   if (!burner) return []
   const labs = await labsAddress()
-  const owned = await scanOwnedLabs(labs, owner)
-  if (!owned.length) return []
-  const sources = await readMany(
-    owned.map((id) => ({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'sourceOf', args: [id] })),
-    { allowFailure: true },
-  )
-  return owned.filter((_, index) => {
-    const row = sources[index] as any
-    return row?.status === 'success' && String(row.result).toLowerCase() === burner.toLowerCase()
-  })
+  const [owned, sources] = await Promise.all([
+    scanOwnedLabs(labs, owner, force),
+    loadOwnedLabsSources(labs, owner, force),
+  ])
+  return owned.filter((id) => sources.get(id.toString())?.toLowerCase() === burner.toLowerCase())
 }
 
 async function loadCdUncached(tokenId: bigint): Promise<LoadedCd> {
