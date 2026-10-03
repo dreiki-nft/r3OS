@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   estimateFeesPerGas: vi.fn(),
   getBlockNumber: vi.fn(),
   waitForTransactionReceipt: vi.fn(),
-  writeContract: vi.fn(),
+  sendTransaction: vi.fn(),
   refreshWalletBalance: vi.fn(),
   playSound: vi.fn(),
 }))
@@ -25,7 +25,7 @@ vi.mock('./clients', () => ({
 }))
 vi.mock('./blocks', () => ({ getBlockSnapshot: () => ({ block: mocks.block }) }))
 vi.mock('./wallet', () => ({
-  getWalletSnapshot: () => ({ client: { writeContract: mocks.writeContract } }),
+  getWalletSnapshot: () => ({ client: { sendTransaction: mocks.sendTransaction } }),
   refreshWalletBalance: mocks.refreshWalletBalance,
 }))
 vi.mock('../os/sound', () => ({ playSound: mocks.playSound }))
@@ -58,7 +58,7 @@ describe('transaction pipeline', () => {
     mocks.estimateContractGas.mockResolvedValue(100_000n)
     mocks.estimateFeesPerGas.mockResolvedValue({ maxFeePerGas: 20n, maxPriorityFeePerGas: 3n })
     mocks.getBlockNumber.mockResolvedValue(10n)
-    mocks.writeContract.mockResolvedValue(`0x${'11'.repeat(32)}`)
+    mocks.sendTransaction.mockResolvedValue(`0x${'11'.repeat(32)}`)
     mocks.waitForTransactionReceipt.mockResolvedValue({
       status: 'success',
       blockNumber: 11n,
@@ -103,12 +103,14 @@ describe('transaction pipeline', () => {
     expect(mocks.estimateContractGas).toHaveBeenCalledTimes(2)
   })
 
-  it('sends the exact shown gas and fee caps and simulates once per send', async () => {
+  it('opens the wallet from the fresh quote without a redundant pre-send simulation', async () => {
     const shown = quote()
     await sendAction({ kind: 'estimate', address, abi, functionName: 'ping', account, quote: shown })
-    expect(mocks.simulateContract).toHaveBeenCalledTimes(1)
-    expect(mocks.writeContract).toHaveBeenCalledWith(
+    expect(mocks.simulateContract).not.toHaveBeenCalled()
+    expect(mocks.sendTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
+        to: address,
+        data: expect.stringMatching(/^0x/),
         gas: shown.gasLimit,
         maxFeePerGas: shown.maxFeePerGas,
         maxPriorityFeePerGas: shown.maxPriorityFeePerGas,
@@ -131,7 +133,7 @@ describe('transaction pipeline', () => {
       }),
     ).rejects.toThrow('you closed the wallet')
     expect(confirm).toHaveBeenCalledTimes(1)
-    expect(mocks.writeContract).not.toHaveBeenCalled()
+    expect(mocks.sendTransaction).not.toHaveBeenCalled()
   })
 
   it('keeps a burner send pending when its balance cannot cover the gas cap', () => {

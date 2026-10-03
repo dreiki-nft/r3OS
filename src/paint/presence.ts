@@ -52,8 +52,8 @@ export interface PresenceSnapshot {
   season?: SeasonStats
 }
 
-/** "Painting now" means painted within this many blocks (~5–7 min at Monad block times). */
-export const PRESENCE_WINDOW_BLOCKS = 1_000n
+/** "Active recently" means painted within about the last minute at Monad block times. */
+export const PRESENCE_WINDOW_BLOCKS = 200n
 /** One look-back at start; capped by the RPC's log range so a public RPC sees at most ~10 small requests. */
 export const BACKFILL_CHUNKS = 10
 export const PING_MS = 3_000
@@ -116,7 +116,7 @@ export function summarize(strokes: readonly Stroke[], head: bigint, windowBlocks
   return { painters: painters.size, pixels, strokes: count }
 }
 
-/** "~6 min" for the window, from the block time this browser measured. */
+/** Human label for the recent-activity window, from the block time this browser measured. */
 export function windowLabel(windowBlocks: bigint, blockMs: number) {
   const ms = Number(windowBlocks) * (Number.isFinite(blockMs) && blockMs > 0 ? blockMs : 400)
   const minutes = Math.max(1, Math.round(ms / 60_000))

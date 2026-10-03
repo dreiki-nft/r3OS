@@ -150,8 +150,8 @@ export function Tray() {
       {painting.painters > 0 && (
         <button
           className="tray-painters"
-          aria-label={`${painting.painters} painting now`}
-          title={`${painting.painters} wallet${painting.painters === 1 ? '' : 's'} painted in the last ${windowLabel(PRESENCE_WINDOW_BLOCKS, block.blockTimeMs)} · open Paint`}
+          aria-label={`${painting.painters} active recently`}
+          title={`${painting.painters} wallet${painting.painters === 1 ? '' : 's'} painted recently (${windowLabel(PRESENCE_WINDOW_BLOCKS, block.blockTimeMs)}) · open Paint`}
           onClick={() => void openProgram('paint')}
         >
           <Icon name="paint" size={20} />

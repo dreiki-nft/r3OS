@@ -9,6 +9,7 @@ import { encodeChangedRuns } from '../lib/patch'
 import { getCanvasSnapshot } from '../paint/canvasStore'
 import { confirmHigherCost } from '../os/confirm'
 import { burnerStatus, createBurner, loadBurner } from './burner'
+import { resetBurnerNonce } from './nonce'
 import {
   burnerFundTooLarge,
   buildStartSessionTypedData,
@@ -112,6 +113,9 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   if (!walletOnCorrectChain()) await switchToMonad()
 
   const burner = createBurner(owner)
+  // Hide the burner's first pending-nonce RPC behind the wallet-sign/funding steps.
+  // That keeps the first no-popup stroke from paying a cold nonce round trip.
+  const nonceWarm = resetBurnerNonce(burner.address).catch(() => undefined)
   if (loadBurner(owner)?.address.toLowerCase() !== burner.address.toLowerCase()) {
     throw new Error('this browser blocked burner storage. allow site data for r3tardOS and try again.')
   }
@@ -204,7 +208,8 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
     report({ prompts: 1 })
   }
 
-  // No prompt: the burner sends startSession itself.
+  // No prompt: the burner sends startSession itself. The pending nonce should already be warm.
+  await nonceWarm
   report({ phase: 'start' })
   await sendAction({ ...startBase, quote: startQuote, confirmHigherCost })
   await refreshLiveStatus(owner)

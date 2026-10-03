@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { emaBlockTime, isStormAt, normalizeHeader, readLatestHeader, stormCountdown } from './blocks'
+import { blockEta, emaBlockTime, isStormAt, normalizeHeader, readLatestHeader, stormCountdown, __setBlockSnapshotForTests } from './blocks'
 
 describe('storms', () => {
   it('detects boundaries', () => {
@@ -16,6 +16,12 @@ describe('storms', () => {
 
   it('smooths block time with an EMA', () => {
     expect(emaBlockTime(300, 800, 2)).toBe(320)
+  })
+
+  it('keeps long storm ETAs stable even when WebSocket delivery timing jitters', () => {
+    __setBlockSnapshotForTests({ blockTimeMs: 450 })
+    expect(blockEta(100_001n)).toBe(30_000_300)
+    expect(blockEta(600n)).toBe(270_000)
   })
 })
 

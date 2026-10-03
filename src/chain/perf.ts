@@ -1,4 +1,11 @@
-export type PerfKind = 'quote' | 'tx-submit' | 'tx-receipt' | 'tx-total' | 'program-open'
+export type PerfKind =
+  | 'quote'
+  | 'tx-prewallet'
+  | 'tx-wallet'
+  | 'tx-submit'
+  | 'tx-receipt'
+  | 'tx-total'
+  | 'program-open'
 
 export interface PerfSample {
   id: number

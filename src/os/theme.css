@@ -401,7 +401,7 @@ button:disabled {
   position: relative;
 }
 
-.tray button {
+.tray > button {
   height: 26px;
   display: flex;
   align-items: center;
@@ -1166,6 +1166,21 @@ button:disabled {
   gap: 4px;
 }
 
+.paint-action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.paint-action-buttons .r3-button {
+  flex: 1 1 0;
+}
+
+.paint-live-button.active {
+  font-weight: 700;
+  outline: 1px solid var(--accent);
+  outline-offset: -3px;
+}
+
 .paint-status {
   display: grid;
   grid-template-columns: 1fr 90px 150px 120px;
@@ -1437,12 +1452,15 @@ button:disabled {
   }
 
   .paint-action {
+    display: flex;
+  }
+
+  .paint-action-buttons {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 1.15fr);
   }
 
   .paint-action .primary {
-    min-width: 88px;
     min-height: 48px;
   }
 

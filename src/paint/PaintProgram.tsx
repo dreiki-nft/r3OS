@@ -119,7 +119,7 @@ export function PaintProgram() {
   const together = summarize(presence.strokes, block.block)
   const togetherWindow = windowLabel(PRESENCE_WINDOW_BLOCKS, block.blockTimeMs)
   const me = wallet.account?.toLowerCase()
-  const togetherText = together.painters ? ` · ${together.painters} painting now` : ''
+  const togetherText = together.painters ? ` · ${together.painters} active recently` : ''
   useEffect(() => setPresenceAccount(wallet.account), [wallet.account])
 
   const [tool, setTool] = useState<Tool>('pencil')
@@ -666,7 +666,14 @@ export function PaintProgram() {
           : Promise.resolve(paintQuote)
       // Quote and region-cap reads are independent. Start them together so clicking Paint
       // pays one wall-clock RPC round trip instead of a serial quote -> region waterfall.
-      const [initialPaintQuote, usage] = await Promise.all([initialQuotePromise, regionUsage()])
+      // A human wallet confirmation usually spans several Monad blocks, so a current-block region
+      // usage read is stale before the transaction can land. Skip that RTT for wallet-signed paints;
+      // split against the patch's own region usage and let the fresh quote protect execution. Live
+      // Mode can land inside the same block, so it keeps the exact region-state preflight.
+      const usagePromise = isLive
+        ? regionUsage()
+        : Promise.resolve(new Map<number, { block: bigint; pixels: number }>())
+      const [initialPaintQuote, usage] = await Promise.all([initialQuotePromise, usagePromise])
       const chunks = splitPaintRuns(bytesToRuns(patch.bytes), {
         maxRawPixels: Number(constants.MAX_RAW_PIXELS_PER_PAINT),
         regionCap: Number(constants.MAX_PIXELS_PER_REGION_PER_BLOCK),
@@ -1078,7 +1085,7 @@ export function PaintProgram() {
                 className="paint-term"
                 title={`different wallets that painted this canvas in the last ${togetherWindow}, read from the contract's Painted events. new strokes by others flash on the canvas.`}
               >
-                painting now
+                active recently
               </b>
               <span className="paint-together">
                 <b>
@@ -1151,22 +1158,39 @@ export function PaintProgram() {
               ? (paintQuote?.maxCost ?? (patch.pixelWrites ? 'quoting…' : '—'))
               : 'connect to quote'}
           </small>
-          <Button
-            primary
-            title={wallet.account && reason ? reason : undefined}
-            disabled={wallet.account ? busy || (!!reason && (isLive || walletOnCorrectChain())) : false}
-            onClick={() => {
-              if (!wallet.account) setWalletDialog(true)
-              else if (!isLive && !walletOnCorrectChain()) void switchToMonad()
-              else void paintChunks(false)
-            }}
-          >
-            {!wallet.account
-              ? 'Connect wallet'
-              : !isLive && !walletOnCorrectChain()
-                ? 'Switch to Monad'
-                : `Paint ${cost.pixels} px`}
-          </Button>
+          <div className="paint-action-buttons">
+            <Button
+              className={isLive ? 'paint-live-button active' : 'paint-live-button'}
+              title={
+                isLive
+                  ? 'Live Mode is active: strokes write onchain without wallet popups and cannot be undone'
+                  : 'Live Mode: paint onchain without a wallet popup for every stroke'
+              }
+              onClick={() =>
+                void (isLive
+                  ? openProgram('pass', true, '#/pass?tab=Hardware%20Profiles')
+                  : openProgram('live-wizard'))
+              }
+            >
+              {isLive ? 'LIVE · Manage…' : 'Live Mode…'}
+            </Button>
+            <Button
+              primary
+              title={wallet.account && reason ? reason : undefined}
+              disabled={wallet.account ? busy || (!!reason && (isLive || walletOnCorrectChain())) : false}
+              onClick={() => {
+                if (!wallet.account) setWalletDialog(true)
+                else if (!isLive && !walletOnCorrectChain()) void switchToMonad()
+                else void paintChunks(false)
+              }}
+            >
+              {!wallet.account
+                ? 'Connect wallet'
+                : !isLive && !walletOnCorrectChain()
+                  ? 'Switch to Monad'
+                  : `Paint ${cost.pixels} px`}
+            </Button>
+          </div>
         </div>
       </div>
       <footer className="paint-status">

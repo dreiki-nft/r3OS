@@ -9,6 +9,7 @@ import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { closeWindow } from '../os/windows'
+import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { SafeImage } from '../os/ui/SafeImage'
 import { createBurner, loadBurner } from './burner'
@@ -504,8 +505,18 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                   ) : (
                     <>
                       <p>
-                        Live mode is on. Paint away. The tray key icon shows the session; End session lives in
-                        System Properties › Hardware Profiles.
+                        Live mode is on. Paint away. Confirmed strokes are onchain immediately and cannot be
+                        undone.
+                      </p>
+                      <p>
+                        <Button
+                          onClick={() => {
+                            closeWindow('live-wizard')
+                            void openProgram('pass', true, '#/pass?tab=Hardware%20Profiles')
+                          }}
+                        >
+                          Manage / End session…
+                        </Button>
                       </p>
                       <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
                         formatEther(balance),

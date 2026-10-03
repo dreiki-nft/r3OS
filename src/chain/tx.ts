@@ -213,28 +213,32 @@ function actionName(opts: ActionOptions) {
 }
 
 async function sendWithWallet(opts: ActionOptions, quote: ActionQuote, sender: Address) {
-  if (!actionClient) throw new Error('DEMO_MODE')
-  const client = actionClient
   const wallet = getWalletSnapshot().client
   if (!wallet) throw new Error('DEMO_MODE')
-  if (isTransfer(opts)) {
-    return wallet.sendTransaction({
-      account: sender,
-      chain: appChain,
-      to: opts.to,
-      value: opts.value ?? 0n,
-      gas: quote.gasLimit,
-      maxFeePerGas: quote.maxFeePerGas,
-      maxPriorityFeePerGas: quote.maxPriorityFeePerGas,
-    })
-  }
-  const { request } = await client.simulateContract(contractBase(opts, sender))
-  return wallet.writeContract({
-    ...request,
+
+  // quoteAction already executed this call with eth_estimateGas (or a fixed-gas dry-run), and
+  // usableQuote refreshes quotes older than 20 blocks. Do not execute the contract a second time
+  // between the user's click and eth_sendTransaction: that extra RPC was directly delaying the
+  // wallet popup. The wallet still gets the exact calldata and the exact gas/fee caps we showed.
+  const data = isTransfer(opts)
+    ? undefined
+    : encodeFunctionData({
+        abi: opts.abi,
+        functionName: opts.functionName as ContractFunctionName<Abi>,
+        args: (opts.args ?? []) as ContractFunctionArgs<Abi>,
+      })
+  const requestedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+  const hash = await wallet.sendTransaction({
+    account: sender,
+    chain: appChain,
+    to: isTransfer(opts) ? opts.to : opts.address,
+    data,
+    value: opts.value ?? 0n,
     gas: quote.gasLimit,
     maxFeePerGas: quote.maxFeePerGas,
     maxPriorityFeePerGas: quote.maxPriorityFeePerGas,
-  } as Parameters<typeof wallet.writeContract>[0])
+  })
+  return { hash, requestedAt }
 }
 
 async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: Address) {
@@ -299,7 +303,11 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
       hash = sent.hash
       signedAt = sent.signedAt
     } else {
-      hash = await sendWithWallet(opts, quote, sender)
+      const sent = await sendWithWallet(opts, quote, sender)
+      hash = sent.hash
+      recordPerf('tx-prewallet', actionName(opts), sent.requestedAt - submitStarted)
+      const walletReturnedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+      recordPerf('tx-wallet', actionName(opts), walletReturnedAt - sent.requestedAt)
     }
     opts.onState?.('sent')
     const sentAt = typeof performance === 'undefined' ? Date.now() : performance.now()

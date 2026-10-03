@@ -4,6 +4,9 @@ import { demoConstants, readCoreConstants } from './contracts'
 
 type Listener = () => void
 
+const TARGET_BLOCK_TIME_MS = 300
+const LONG_ETA_BLOCKS = 10_000n
+
 export interface BlockHeaderSnapshot {
   number: bigint
   timestamp: bigint
@@ -201,7 +204,10 @@ export function stopBlockClock() {
 }
 
 export function blockEta(blocks: bigint) {
-  return Number(blocks) * snapshot.blockTimeMs
+  // WebSocket delivery jitter is magnified absurdly across a 100k+ block countdown. For long
+  // horizons use Monad's protocol target; keep the measured browser interval for short timers.
+  const msPerBlock = blocks > LONG_ETA_BLOCKS ? TARGET_BLOCK_TIME_MS : snapshot.blockTimeMs
+  return Number(blocks) * msPerBlock
 }
 
 export function __setBlockSnapshotForTests(next: Partial<BlockSnapshot>) {

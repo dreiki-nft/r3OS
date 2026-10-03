@@ -59,10 +59,10 @@ const pages: Record<HelpSlug, ReactNode> = {
         season's character is protected and can't be painted over.
       </p>
       <p>
-        you're never painting alone: “painting now” shows how many wallets painted in the last few minutes,
+        you're never painting alone: “active recently” shows how many wallets painted in roughly the last minute,
         and a stroke by someone else flashes on the canvas as it lands. click a recent stroke to jump to it.
         when you're in another program and people paint, a “You've got paint” note appears; the paint icon in
-        the corner shows how many are painting.
+        the corner shows recent painters.
       </p>
       <p>File › Save frame… saves what the canvas looks like right now as your own frame.</p>
     </>

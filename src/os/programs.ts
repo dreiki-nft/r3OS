@@ -493,6 +493,7 @@ export function preloadLaunchPrograms() {
     import('../labs/CDBurnerProgram'),
     import('../monadhw/MonadHardwareProgram'),
     import('../labs/QuestsProgram'),
+    import('../live/LiveWizard'),
     import('./programs/RecycleBin'),
     import('../chain/tx').then((module) => module.prewarmActionFees()),
   ])
