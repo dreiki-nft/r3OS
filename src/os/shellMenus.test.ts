@@ -82,6 +82,12 @@ describe('desktop / icon menu models', () => {
       if (item.kind === 'item' && item.action.type === 'open')
         expect(programById(item.action.program), item.label).toBeTruthy()
     }
+    expect(items.find((item) => item.kind === 'item' && item.id === 'properties')).toEqual({
+      kind: 'item',
+      id: 'properties',
+      label: 'Properties',
+      action: { type: 'open', program: 'display-props' },
+    })
   })
 
   it('icon menu is Open only, routed to that program', () => {

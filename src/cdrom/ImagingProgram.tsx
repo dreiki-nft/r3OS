@@ -2,6 +2,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getFrameImage, type PixelImage } from '../frames/frameImage'
 import { PixelPreview } from '../frames/PixelPreview'
 import { playSound } from '../os/sound'
+import { requestFloppy } from '../os/floppy'
+import { applyWallpaperResource } from '../os/wallpaper'
 import { Button } from '../os/ui/Button'
 import { Icon } from '../os/ui/Icon'
 import { closeWindow } from '../os/windows'
@@ -116,6 +118,12 @@ export function ImagingProgram() {
           200%
         </Button>
         <span className="cdrom-toolbar-sep" />
+        <Button disabled={!track} onClick={() => track && applyWallpaperResource({ kind: 'frame', tokenId: track.frameId })}>
+          Set as Wallpaper
+        </Button>
+        <Button disabled={!track} onClick={() => track && requestFloppy({ kind: 'frame', tokenId: track.frameId })}>
+          Save to Floppy…
+        </Button>
         <Button onClick={() => setProperties((open) => !open)}>Properties</Button>
         <span className="imaging-title">
           {name} - {cd ? `${volumeLabel(cd.snapshot.label)} (D:)` : 'D:'}

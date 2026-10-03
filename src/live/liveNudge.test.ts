@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TxTrace } from '../chain/txTrace'
-import { shouldNudge, walletPaintsConfirmed } from './liveNudge'
+import { liveNudgeSuppressed, shouldNudge, walletPaintsConfirmed } from './liveNudge'
 
 const trace = (action: string, signer: TxTrace['signer'] = 'wallet', landed = true): TxTrace => ({
   hash: `0x${Math.random().toString(16).slice(2).padEnd(64, '0')}`,
@@ -25,6 +25,13 @@ describe('live nudge', () => {
         trace('paint 1 px'),
       ]),
     ).toBe(2)
+  })
+
+  it('stays quiet during boot, first run, and the 30 second post-boot grace period', () => {
+    expect(liveNudgeSuppressed(1_000, 30_000, false, false)).toBe(true)
+    expect(liveNudgeSuppressed(31_000, 30_000, true, false)).toBe(true)
+    expect(liveNudgeSuppressed(31_000, 30_000, false, true)).toBe(true)
+    expect(liveNudgeSuppressed(31_000, 30_000, false, false)).toBe(false)
   })
 
   it('asks after the 2nd paint, once, and never in live mode or after "don\'t ask again"', () => {

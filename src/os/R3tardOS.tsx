@@ -1,6 +1,12 @@
 import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BootScreen } from './BootScreen'
+import { isBooting, subscribeBooting } from './bootState'
+import { WallpaperLayer } from './WallpaperLayer'
+import { FloppyDialog } from './FloppyDialog'
+import { ActivityHost } from './ActivityHost'
+import { ScreensaverOverlay } from './ScreensaverOverlay'
 import { FirstRun } from './FirstRun'
+import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet } from '../chain/wallet'
 import { Welcome } from './Welcome'
@@ -40,6 +46,9 @@ export function R3tardOS() {
   const windows = useSyncExternalStore(subscribeWindows, getWindows)
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
+  const booting = useSyncExternalStore(subscribeBooting, isBooting)
+  const firstRunOpen = useSyncExternalStore(subscribeFirstRun, isFirstRunOpen)
+  const [startupQuiet, setStartupQuiet] = useState(true)
   const [stormId, setStormId] = useState<bigint>()
   const [notInstalled, setNotInstalled] = useState<string>()
   const [shutdown, setShutdown] = useState(false)
@@ -86,7 +95,16 @@ export function R3tardOS() {
   }, [releases.version])
 
   useEffect(() => {
-    if (releases.revealAll) return
+    if (booting || firstRunOpen) {
+      setStartupQuiet(true)
+      return
+    }
+    const timer = window.setTimeout(() => setStartupQuiet(false), 30_000)
+    return () => window.clearTimeout(timer)
+  }, [booting, firstRunOpen])
+
+  useEffect(() => {
+    if (startupQuiet || releases.revealAll) return
     for (const id of availableScheduledPrograms(releases)) {
       const program = programById(id)
       if (!program || !consumeInstallAnnouncement(id)) continue
@@ -100,10 +118,10 @@ export function R3tardOS() {
         sound: 'success-heavy',
       })
     }
-  }, [releases])
+  }, [releases, startupQuiet])
 
   useEffect(() => {
-    if (currentStorm == null) return
+    if (startupQuiet || currentStorm == null) return
     let seen = false
     try {
       seen = sessionStorage.getItem(`r3os.storm.${currentStorm}`) === '1'
@@ -114,7 +132,7 @@ export function R3tardOS() {
       setStormId(currentStorm)
       setAssistantTip("storm's here. fresh pixels glitch at 200% for 600 blocks")
     }
-  }, [currentStorm])
+  }, [currentStorm, startupQuiet])
 
   const dismissStorm = () => {
     if (stormId != null) {
@@ -129,7 +147,7 @@ export function R3tardOS() {
 
   return (
     <main className={`r3os ${block.storm ? 'storm-active' : ''}`}>
-      <div className="wallpaper" />
+      <WallpaperLayer />
       <div className="vignette" />
       <div className="noise" />
       <div className="grain" />
@@ -141,6 +159,7 @@ export function R3tardOS() {
       <Desktop />
       <Welcome />
       <FirstRun />
+      <ActivityHost />
       {windows.windows.some((win) => programById(win.id)?.modal && !win.minimized) && (
         <div className="modal-program-shade" />
       )}
@@ -176,6 +195,7 @@ export function R3tardOS() {
           </Window>
         )
       })}
+      <FloppyDialog />
       <Assistant />
       <BalloonStack />
       <ConfirmHost />
@@ -198,6 +218,7 @@ export function R3tardOS() {
           onClose={() => setNotInstalled(undefined)}
         />
       )}
+      <ScreensaverOverlay />
       <BootScreen />
       {shutdown && (
         <MessageBox

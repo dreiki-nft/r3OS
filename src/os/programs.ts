@@ -30,6 +30,9 @@ const DxDiagProgram = lazy(() =>
   import('../diagnostics/DxDiagProgram').then((module) => ({ default: module.DxDiagProgram })),
 )
 const RunDialog = lazy(() => import('./RunDialog').then((module) => ({ default: module.RunDialog })))
+const DisplayProperties = lazy(() =>
+  import('./DisplayProperties').then((module) => ({ default: module.DisplayProperties })),
+)
 const SoundsProgram = lazy(() =>
   import('./programs/SoundsProgram').then((module) => ({ default: module.SoundsProgram })),
 )
@@ -422,6 +425,21 @@ export const programs: ProgramDef[] = [
     hash: '#/frame-props',
     hidden: true,
     controls: 'help-close',
+  },
+  {
+    id: 'display-props',
+    title: 'Display Properties',
+    icon: 'computer',
+    colour: '#5FEDDF',
+    component: DisplayProperties,
+    defaultSize: { width: 610, height: 520 },
+    minSize: { width: 320, height: 360 },
+    singleInstance: true,
+    hash: '#/display-props',
+    hidden: true,
+    alwaysOnTop: true,
+    modal: true,
+    controls: 'close',
   },
   {
     id: 'run',

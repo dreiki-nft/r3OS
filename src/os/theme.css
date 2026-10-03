@@ -3339,3 +3339,355 @@ button:disabled {
     animation: none;
   }
 }
+
+.os-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Nostalgic layer: wallpaper, Display Properties, floppy, assistant activity,
+   and the one r3tardOS screensaver. These remain shell behaviours, not programs.
+   --------------------------------------------------------------------------- */
+
+.wallpaper.custom-wallpaper {
+  filter: none;
+  image-rendering: pixelated;
+  background-color: #0b0b0c;
+}
+
+.frames-resource-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 0 9px;
+}
+
+.floppy-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 1250000000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.floppy-dialog {
+  position: relative;
+  width: min(470px, calc(100vw - 24px));
+  min-height: 0;
+  background: var(--face);
+  padding: 3px;
+}
+
+.floppy-body {
+  padding: 16px 14px 12px;
+}
+
+.floppy-copy-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.floppy-copy-row b {
+  display: block;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.floppy-copy-row .progress-segments {
+  width: min(100%, 300px);
+}
+
+.floppy-copy-row .progress-segments i {
+  flex: 1 1 auto;
+  min-width: 5px;
+}
+
+.floppy-description,
+.floppy-error {
+  margin: 14px 0 6px;
+  padding: 8px;
+  background: var(--field);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.floppy-error {
+  color: #fec343;
+}
+
+.floppy-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.display-properties {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--face);
+}
+
+.display-properties > .tabs {
+  flex: 0 0 auto;
+  padding: 8px 8px 0;
+}
+
+.display-properties-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(210px, 270px) minmax(230px, 1fr);
+  gap: 18px;
+  align-items: start;
+  border-top: 1px solid var(--bevel-light);
+}
+
+.display-monitor {
+  width: min(250px, 100%);
+  margin: 4px auto 18px;
+  display: grid;
+  justify-items: center;
+}
+
+.display-monitor-screen {
+  position: relative;
+  width: 220px;
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 12px solid var(--face-2);
+  box-shadow:
+    inset 2px 2px #000,
+    inset -2px -2px var(--bevel-light),
+    2px 2px #000;
+  background: #0b0b0c;
+}
+
+.display-monitor-screen > div {
+  position: absolute;
+  inset: 0;
+  image-rendering: pixelated;
+  background-color: #0b0b0c;
+}
+
+.display-monitor-screen.mode-tile > div {
+  background-repeat: repeat;
+  background-size: 64px 64px;
+}
+
+.display-monitor-screen.mode-center > div {
+  background-repeat: no-repeat;
+  background-size: auto 82%;
+  background-position: center;
+}
+
+.display-monitor-screen.mode-stretch > div {
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+}
+
+.display-monitor > i {
+  width: 58px;
+  height: 18px;
+  background: var(--face-2);
+  border-left: 2px solid var(--bevel-light);
+  border-right: 2px solid #000;
+}
+
+.display-monitor > b {
+  width: 112px;
+  height: 12px;
+  background: var(--face-2);
+  box-shadow:
+    inset 1px 1px var(--bevel-light),
+    inset -1px -1px #000;
+}
+
+.display-background-controls {
+  display: grid;
+  gap: 7px;
+}
+
+.display-wallpaper-list {
+  height: 180px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 2px;
+}
+
+.display-wallpaper-list button {
+  flex: 0 0 auto;
+  min-height: 25px;
+  padding: 3px 6px;
+  border: 0;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.display-wallpaper-list button.selected,
+.display-wallpaper-list button:focus-visible {
+  background: var(--accent-soft);
+  outline: 1px dotted var(--text);
+}
+
+.display-mode {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 8px 10px 9px;
+  border: 1px solid var(--bevel-dark);
+}
+
+.display-mode label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.display-screensaver-page {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(210px, 270px) minmax(220px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.display-screensaver-page select {
+  width: min(300px, 100%);
+  min-height: 26px;
+  margin: 6px 0 8px;
+  background: var(--field);
+  color: var(--text);
+}
+
+.screensaver-mini {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  font-weight: 700;
+  text-align: center;
+}
+
+.display-properties-buttons {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--bevel-light);
+}
+
+.assistant.dozing .assistant-pic {
+  animation: assistant-doze 1.8s steps(2, end) infinite;
+}
+
+.assistant.hopping .assistant-pic {
+  animation: assistant-hop 650ms steps(3, end) 1;
+}
+
+@keyframes assistant-doze {
+  50% { transform: translateY(3px); }
+}
+
+@keyframes assistant-hop {
+  35% { transform: translateY(-12px); }
+  70% { transform: translateY(0); }
+}
+
+.screensaver-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  overflow: hidden;
+  background: #000;
+  cursor: none;
+  touch-action: none;
+}
+
+.screensaver-picture {
+  position: absolute;
+  width: 70vmin;
+  height: 70vmin;
+}
+
+.screensaver-picture.static {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.screensaver-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  border: 1px solid #26262b;
+}
+
+.screensaver-block {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  color: #77777e;
+  font: 11px var(--font);
+}
+
+@media (max-width: 640px) {
+  .floppy-shade {
+    align-items: center;
+  }
+
+  .floppy-dialog {
+    width: calc(100vw - 16px);
+  }
+
+  .display-properties-page,
+  .display-screensaver-page {
+    grid-template-columns: 1fr;
+  }
+
+  .display-properties-page {
+    padding: 12px;
+  }
+
+  .display-monitor {
+    margin-bottom: 4px;
+  }
+
+  .display-wallpaper-list {
+    height: min(30vh, 190px);
+  }
+
+  .display-properties-buttons .r3-button {
+    min-height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant.dozing .assistant-pic,
+  .assistant.hopping .assistant-pic {
+    animation: none !important;
+    transform: none !important;
+  }
+}

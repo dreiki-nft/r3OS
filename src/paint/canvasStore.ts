@@ -312,9 +312,12 @@ async function applyDeliveredLogs(logs: readonly CoreLog[]) {
         snapshot = { ...snapshot, background, working: preservePending(background) }
         markTilesStale(tilesTouchedByPainted(runsBytes, corruptions))
       }
+      const owner = String(args.owner ?? '')
+      const sender = String(args.sender ?? '')
       emitActivity({
         ...common,
-        owner: String(args.owner ?? ''),
+        owner,
+        ...(sender && sender.toLowerCase() !== owner.toLowerCase() ? { sessionKey: sender } : {}),
         runs: args.runs as Hex,
         regionsMask: Number(args.regionsMask ?? 0),
       })

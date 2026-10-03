@@ -81,7 +81,7 @@ export type ShellAction = { type: 'refresh' } | { type: 'open'; program: string;
 
 /**
  * Empty-desktop menu. Every target is a real program id; opening goes through openProgram, so release
- * gating applies. "Properties" opens My Pass, which is r3tardOS's System Properties.
+ * gating applies. "Properties" opens the hidden Display Properties dialog, like Windows 98.
  */
 export function desktopMenuItems(): ShellMenuItem[] {
   return [
@@ -91,7 +91,7 @@ export function desktopMenuItems(): ShellMenuItem[] {
     { kind: 'item', id: 'monad-hw', label: 'Explore Monad', action: { type: 'open', program: 'monad-hw' } },
     { kind: 'item', id: 'dxdiag', label: 'DXDIAG.EXE', action: { type: 'open', program: 'dxdiag' } },
     { kind: 'separator', id: 'sep-2' },
-    { kind: 'item', id: 'properties', label: 'Properties', action: { type: 'open', program: 'pass' } },
+    { kind: 'item', id: 'properties', label: 'Properties', action: { type: 'open', program: 'display-props' } },
   ]
 }
 

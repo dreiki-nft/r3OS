@@ -53,6 +53,8 @@ export function Assistant() {
     }
   })
   const [autoHidden, setAutoHidden] = useState(false)
+  const [dozing, setDozing] = useState(false)
+  const [hopping, setHopping] = useState(false)
   const [tipIndex, setTipIndex] = useState(nextVisitTip)
   const [viewport, setViewport] = useState(() => ({
     width: typeof innerWidth === 'number' ? innerWidth : 1_280,
@@ -98,11 +100,45 @@ export function Assistant() {
     return () => window.clearTimeout(timer)
   }, [eventTip, tipIndex, manualHidden])
 
+  useEffect(() => {
+    let timer: number | undefined
+    const arm = () => {
+      setDozing(false)
+      if (timer) window.clearTimeout(timer)
+      timer = window.setTimeout(() => setDozing(true), 120_000)
+    }
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'pointermove', 'keydown', 'touchstart']
+    for (const event of events) window.addEventListener(event, arm, { passive: true })
+    arm()
+    return () => {
+      if (timer) window.clearTimeout(timer)
+      for (const event of events) window.removeEventListener(event, arm)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (eventTip) setDozing(false)
+  }, [eventTip])
+
+  useEffect(() => {
+    let timer: number | undefined
+    const hop = () => {
+      setHopping(true)
+      if (timer) window.clearTimeout(timer)
+      timer = window.setTimeout(() => setHopping(false), 650)
+    }
+    window.addEventListener('r3os:assistant-hop', hop)
+    return () => {
+      window.removeEventListener('r3os:assistant-hop', hop)
+      if (timer) window.clearTimeout(timer)
+    }
+  }, [])
+
   const overlapped = assistantOverlapsWindows(windows.windows, viewport.width, viewport.height)
-  if (manualHidden || autoHidden || overlapped || firstRunOpen || booting) return null
-  const text = eventTip ?? tips[tipIndex]
+  if (manualHidden || (autoHidden && !dozing) || overlapped || firstRunOpen || booting) return null
+  const text = dozing ? 'zzz' : (eventTip ?? tips[tipIndex])
   return (
-    <aside className="assistant">
+    <aside className={`assistant ${dozing ? 'dozing' : ''} ${hopping ? 'hopping' : ''}`}>
       <button
         className="assistant-hide"
         aria-label="Hide assistant"

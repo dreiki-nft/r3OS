@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { chainName, config } from '../chain/config'
 import { observedBlockMs, pushBlockSample, type BlockSample } from '../monadhw/explore'
-import { BOOT_TIMING, POST_WAITS, postLines, rememberBoot, setBooting, shouldBoot } from './bootState'
+import { BOOT_TIMING, POST_WAITS, bootMode, postLines, rememberBoot, setBooting, type BootMode } from './bootState'
 import { openProgram } from './programs'
 import { playSound } from './sound'
+import { FIRST_RUN_KEY } from './firstRunState'
 
 type Phase = 'post' | 'splash' | 'fade' | 'done'
 
@@ -16,8 +17,27 @@ function session() {
   }
 }
 
+function local() {
+  try {
+    return typeof localStorage === 'undefined' ? undefined : localStorage
+  } catch {
+    return undefined
+  }
+}
+
+function resolvedBootMode(): BootMode {
+  let firstRunDone = false
+  try {
+    firstRunDone = local()?.getItem(FIRST_RUN_KEY) === '1'
+  } catch {
+    firstRunDone = false
+  }
+  return bootMode(session(), local(), firstRunDone)
+}
+
 // Decided at load so the welcome dialog and assistant wait from the very first render.
-if (shouldBoot(session())) setBooting(true)
+const bootAtLoad = resolvedBootMode()
+if (bootAtLoad !== 'none') setBooting(true)
 
 const reducedMotion = () =>
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -27,8 +47,9 @@ const reducedMotion = () =>
  * any key or click skips it, DEL opens "SETUP" (DXDIAG). It only reads the app's shared block stream.
  */
 export function BootScreen() {
+  const [mode] = useState<BootMode>(() => bootAtLoad)
   const [phase, setPhase] = useState<Phase>(() =>
-    shouldBoot(session()) ? (reducedMotion() ? 'splash' : 'post') : 'done',
+    mode === 'none' ? 'done' : mode === 'splash' || reducedMotion() ? 'splash' : 'post',
   )
   const [shown, setShown] = useState(0)
   const [samples, setSamples] = useState<BlockSample[]>([])
@@ -53,8 +74,8 @@ export function BootScreen() {
 
   useEffect(() => {
     setBooting(phase !== 'done')
-    if (phase === 'done') rememberBoot(session())
-  }, [phase])
+    if (phase === 'done') rememberBoot(session(), local(), mode)
+  }, [phase, mode])
   useEffect(() => () => setBooting(false), [])
 
   // Measure the block clock from the blocks this browser actually sees during the BIOS screen.
@@ -92,7 +113,8 @@ export function BootScreen() {
   // Splash and fade run on their own clock: new blocks must not restart them.
   useEffect(() => {
     if (phase === 'splash') {
-      const timer = window.setTimeout(() => setPhase('fade'), reducedMotion() ? 900 : BOOT_TIMING.splashMs)
+      const duration = mode === 'splash' ? BOOT_TIMING.returningSplashMs : reducedMotion() ? 900 : BOOT_TIMING.splashMs
+      const timer = window.setTimeout(() => setPhase('fade'), duration)
       return () => window.clearTimeout(timer)
     }
     if (phase === 'fade') {
@@ -103,7 +125,7 @@ export function BootScreen() {
       }, BOOT_TIMING.fadeMs)
       return () => window.clearTimeout(timer)
     }
-  }, [phase])
+  }, [phase, mode])
 
   useEffect(() => {
     if (phase === 'done') return

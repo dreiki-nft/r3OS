@@ -22,7 +22,8 @@ import {
 import { getUnreadPaint, showUnreadPaint, subscribeUnreadPaint } from './activity'
 import { dismissBalloon, getBalloons, pushBalloon, subscribeBalloons } from './balloons'
 import { openProgram } from './programs'
-import { isMuted, setMuted } from './sound'
+import { getBlockPlayerPlaying, stopBlockPlayer, subscribeBlockPlayer } from '../monadhw/blockPlayer'
+import { isMuted, setMuted, subscribeSoundSettings } from './sound'
 import { Icon } from './ui/Icon'
 import { MessageBox } from './ui/MessageBox'
 
@@ -45,7 +46,8 @@ export function Tray() {
   const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
   const unreadPaint = useSyncExternalStore(subscribeUnreadPaint, getUnreadPaint)
   const painting = summarize(presence.strokes, block.block)
-  const [muted, setM] = useState(isMuted())
+  const blockPlayer = useSyncExternalStore(subscribeBlockPlayer, getBlockPlayerPlaying)
+  const muted = useSyncExternalStore(subscribeSoundSettings, isMuted)
   const [storm, setStorm] = useState(false)
   const connectionOpen = balloons.some((notice) => notice.id === 'connection')
   const liveOpen = balloons.some((notice) => notice.id === 'live-session')
@@ -58,7 +60,6 @@ export function Tray() {
       <button
         aria-label="Mute sounds"
         onClick={() => {
-          setM(!muted)
           setMuted(!muted)
         }}
       >
@@ -73,6 +74,11 @@ export function Tray() {
             : duration(blockEta(block.nextStormIn))}
         </span>
       </button>
+      {blockPlayer && (
+        <button aria-label="Stop Block Player" title="Block Player is listening" onClick={stopBlockPlayer}>
+          <Icon name="music" size={20} colour="#5FEDDF" />
+        </button>
+      )}
       <button
         aria-label="Show assistant"
         title="Show assistant"

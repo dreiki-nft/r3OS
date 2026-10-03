@@ -87,8 +87,35 @@ let lastEmitAt: number | undefined
 let bootEndedAt: number | undefined
 let started = false
 
+/** One-off OS moments the assistant reacts to (ActivityHost): your paint landed, or others painted. */
+export type ActivityMoment =
+  | { id: number; kind: 'myPaintConfirmed'; blockNumber: bigint }
+  | { id: number; kind: 'othersPainted'; painters: number }
+let moment: ActivityMoment | undefined
+let nextMomentId = 1
+const momentListeners = new Set<Listener>()
+
 function emit() {
   for (const listener of listeners) listener()
+}
+
+type MomentInput =
+  { kind: 'myPaintConfirmed'; blockNumber: bigint } | { kind: 'othersPainted'; painters: number }
+
+function emitMoment(next: MomentInput) {
+  moment = { ...next, id: nextMomentId++ }
+  for (const listener of momentListeners) listener()
+}
+
+export function getActivityMoment() {
+  return moment
+}
+
+export function subscribeActivityMoment(listener: Listener) {
+  momentListeners.add(listener)
+  return () => {
+    momentListeners.delete(listener)
+  }
 }
 
 export function getUnreadPaint() {
@@ -143,8 +170,10 @@ function flush() {
     icon: 'mail',
     title: "YOU'VE GOT PAINT",
     body: youveGotPaintBody(batch, mine),
+    sound: false,
     actions: [{ label: 'Open Paint', run: showUnreadPaint }],
   })
+  emitMoment({ kind: 'othersPainted', painters: new Set(batch.map((stroke) => stroke.owner)).size })
 }
 
 export function initActivity() {
@@ -176,6 +205,8 @@ export function initActivity() {
     const account = getWalletSnapshot().account?.toLowerCase()
     if (account && stroke.owner === account) {
       mine = [stroke.box, ...mine].slice(0, 64)
+      if (!isSuppressed({ booting: isBooting(), firstRun: isFirstRunOpen(), bootEndedAt, now: Date.now() }))
+        emitMoment({ kind: 'myPaintConfirmed', blockNumber: stroke.block })
       return
     }
     // Paint already outlines strokes live while it's in front.
@@ -186,6 +217,7 @@ export function initActivity() {
 }
 
 export function __resetActivityForTests() {
+  moment = undefined
   unread = []
   pending = []
   mine = []

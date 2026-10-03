@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BOOT_LAST_FULL_KEY,
   BOOT_SESSION_KEY,
   BOOT_TIMING,
+  bootMode,
   isBooting,
   postLines,
   rememberBoot,
@@ -38,6 +40,26 @@ describe('boot screen', () => {
     }
     expect(shouldBoot(blocked)).toBe(true)
     expect(() => rememberBoot(blocked)).not.toThrow()
+  })
+
+  it('uses one full boot per day and a short splash for later new tabs', () => {
+    const local = memory()
+    const firstTab = memory()
+    expect(bootMode(firstTab, local, false, '2026-10-02')).toBe('full')
+    rememberBoot(firstTab, local, 'full', '2026-10-02')
+    expect(local.map.get(BOOT_LAST_FULL_KEY)).toBe('2026-10-02')
+    expect(bootMode(firstTab, local, true, '2026-10-02')).toBe('none')
+
+    const stillWelcoming = memory()
+    expect(bootMode(stillWelcoming, local, false, '2026-10-02')).toBe('none')
+
+    const secondTab = memory()
+    expect(bootMode(secondTab, local, true, '2026-10-02')).toBe('splash')
+    rememberBoot(secondTab, local, 'splash', '2026-10-02')
+    expect(local.map.get(BOOT_LAST_FULL_KEY)).toBe('2026-10-02')
+
+    const tomorrow = memory()
+    expect(bootMode(tomorrow, local, true, '2026-10-03')).toBe('full')
   })
 
   it('prints only real chain facts, and says so while still connecting', () => {

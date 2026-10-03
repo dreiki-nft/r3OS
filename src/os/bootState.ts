@@ -4,9 +4,11 @@
  */
 
 export const BOOT_SESSION_KEY = 'r3os.booted'
+export const BOOT_LAST_FULL_KEY = 'r3os.boot.lastFull'
+export type BootMode = 'none' | 'full' | 'splash'
 
 /** BIOS lines appear one by one, then the splash, then the desktop fades in. About 3 s plus any wait for the chain (capped at 2.7 s); any key or click skips. */
-export const BOOT_TIMING = { postLineMs: 120, postHoldMs: 350, splashMs: 1_300, fadeMs: 300 } as const
+export const BOOT_TIMING = { postLineMs: 120, postHoldMs: 350, splashMs: 1_300, returningSplashMs: 1_000, fadeMs: 300 } as const
 
 /**
  * Like a real BIOS detecting drives, the screen pauses on a line until its value is real: after "Latest block"
@@ -23,7 +25,37 @@ export interface SessionLike {
   setItem(key: string, value: string): void
 }
 
-/** Boot once per browser tab session: a reload in the same tab goes straight to the desktop. */
+export function calendarDay(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** Full boot for a first visit / first tab of a new day; a later new tab gets only the splash. */
+export function bootMode(
+  session: SessionLike | undefined,
+  local: SessionLike | undefined,
+  firstRunDone: boolean,
+  today = calendarDay(),
+): BootMode {
+  try {
+    if (session?.getItem(BOOT_SESSION_KEY) === '1') return 'none'
+  } catch {
+    // With blocked session storage we conservatively show a boot.
+  }
+  try {
+    // A full POST is a once-per-calendar-day event for this browser profile. While the first-run
+    // welcome is still pending, do not put another startup animation in front of it in a second tab.
+    // Once onboarding has been dismissed, later tabs get only the short splash.
+    if (local?.getItem(BOOT_LAST_FULL_KEY) === today) return firstRunDone ? 'splash' : 'none'
+  } catch {
+    return 'full'
+  }
+  return 'full'
+}
+
+/** Compatibility helper: whether this tab needs any boot at all. */
 export function shouldBoot(session: SessionLike | undefined) {
   try {
     return session?.getItem(BOOT_SESSION_KEY) !== '1'
@@ -32,11 +64,22 @@ export function shouldBoot(session: SessionLike | undefined) {
   }
 }
 
-export function rememberBoot(session: SessionLike | undefined) {
+export function rememberBoot(
+  session: SessionLike | undefined,
+  local?: SessionLike,
+  mode: BootMode = 'full',
+  today = calendarDay(),
+) {
   try {
     session?.setItem(BOOT_SESSION_KEY, '1')
   } catch {
     // Storage blocked: it just boots again on reload.
+  }
+  if (mode !== 'full') return
+  try {
+    local?.setItem(BOOT_LAST_FULL_KEY, today)
+  } catch {
+    // The next new tab may show the full boot again.
   }
 }
 

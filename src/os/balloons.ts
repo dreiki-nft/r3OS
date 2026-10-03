@@ -10,7 +10,8 @@ export interface BalloonNotice {
   icon?: IconName
   href?: string
   hrefLabel?: string
-  sound?: SoundName
+  /** false keeps the notice intentionally silent. */
+  sound?: SoundName | false
   /** Buttons under the text. Each one runs, then closes the balloon. */
   actions?: { label: string; run: () => void }[]
   /** Stay until closed instead of fading after 8 s (for a question). */

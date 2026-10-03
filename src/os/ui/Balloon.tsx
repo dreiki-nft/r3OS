@@ -14,8 +14,8 @@ export function Balloon({ notice }: { notice: BalloonNotice }) {
   }, [notice.id])
 
   useEffect(() => {
-    playSound(notice.sound ?? 'cute-bubble')
-  }, [notice.id])
+    if (notice.sound !== false) playSound(notice.sound ?? 'cute-bubble')
+  }, [notice.id, notice.sound])
 
   useEffect(() => {
     if (hovered || notice.sticky) return

@@ -7,6 +7,13 @@ import { readHeavy } from '../chain/readMany'
 import { R3TARDS_PAGE_EXE_ABI } from '../lib/generated/abi'
 import { labAddress, labLoadError, LabNotDeployedError, shortAddress } from '../labs/labCommon'
 import { openProgram } from '../os/programs'
+import { isMuted, subscribeSoundSettings } from '../os/sound'
+import {
+  getBlockPlayerPlaying,
+  stopBlockPlayer,
+  subscribeBlockPlayer,
+  toggleBlockPlayer,
+} from './blockPlayer'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import {
@@ -51,6 +58,10 @@ function BlockSpeed() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const [watching, setWatching] = useState(true)
   const [samples, setSamples] = useState<BlockSample[]>([])
+  const listening = useSyncExternalStore(subscribeBlockPlayer, getBlockPlayerPlaying)
+  const muted = useSyncExternalStore(subscribeSoundSettings, isMuted)
+
+  useEffect(() => () => stopBlockPlayer(), [])
 
   // Reads the app's one shared block stream: no extra RPC. Pausing just stops recording.
   useEffect(() => {
@@ -94,8 +105,12 @@ function BlockSpeed() {
         >
           {watching ? 'Pause' : 'Watch'}
         </Button>
+        <Button disabled={offline || muted} title={muted ? 'unmute sounds in the tray first' : 'play one deterministic note for each new block'} onClick={toggleBlockPlayer}>
+          {listening ? '■ Stop listening' : '♪ Listen'}
+        </Button>
         <Button onClick={() => openProgram('validators')}>Who makes them?</Button>
       </div>
+      <p className="explore-why">each new block plays one note: its hash picks the note, its producer picks the instrument, and how full it is sets the volume.</p>
       <Details>
         <dl className="explore-dl">
           <dt>network</dt>
@@ -483,6 +498,7 @@ function LiquidityRace() {
 // ---------------------------------------------------------------------------
 
 export function ExploreMonad({ onSystemInfo }: { onSystemInfo: () => void }) {
+  const [more, setMore] = useState(false)
   return (
     <div className="explore-monad">
       <p className="explore-intro">
@@ -492,9 +508,16 @@ export function ExploreMonad({ onSystemInfo }: { onSystemInfo: () => void }) {
         <BlockSpeed />
         <StorageRace />
         <BlockCameraCard />
-        <LiquidityRace />
       </div>
+      {more && (
+        <div className="explore-more">
+          <LiquidityRace />
+        </div>
+      )}
       <div className="explore-footer">
+        <button className="explore-text-link" type="button" onClick={() => setMore((value) => !value)}>
+          {more ? 'Less experiments ▾' : 'More experiments ▸'}
+        </button>
         <Button onClick={onSystemInfo}>System Information…</Button>
       </div>
     </div>

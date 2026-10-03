@@ -42,6 +42,8 @@ import { clearAssistantTip, setAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
 import { openProgram } from '../os/programs'
 import { playSound } from '../os/sound'
+import { requestFloppy } from '../os/floppy'
+import { applyWallpaperResource } from '../os/wallpaper'
 import { Button } from '../os/ui/Button'
 import { MenuBar } from '../os/ui/MenuBar'
 import { MessageBox } from '../os/ui/MessageBox'
@@ -873,6 +875,14 @@ export function PaintProgram() {
                 ? (quotes[paintFrameKey] as string)
                 : 'quoting…',
           action: () => void paintChunks(true),
+        },
+        {
+          label: 'Save canvas to floppy…',
+          action: () => requestFloppy({ kind: 'canvas' }),
+        },
+        {
+          label: 'Set canvas as wallpaper',
+          action: () => applyWallpaperResource({ kind: 'canvas' }),
         },
         {
           label: isLive ? 'Live mode is on ✓' : 'Live mode (no wallet popups)…',

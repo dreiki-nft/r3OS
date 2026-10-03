@@ -23,6 +23,9 @@ import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
 import { playSound } from '../os/sound'
+import { imageActions, type ImageResource } from '../os/imageResources'
+import { requestFloppy } from '../os/floppy'
+import { applyWallpaperResource } from '../os/wallpaper'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
 import type { IconName } from '../os/icons'
@@ -79,6 +82,10 @@ type FinaleReadyRow = {
 
 function short(address?: string | null) {
   return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '—'
+}
+
+function frameResource(tokenId: number): ImageResource {
+  return tokenId === 0 ? { kind: 'canvas' } : { kind: 'frame', tokenId }
 }
 
 function routeParams() {
@@ -891,6 +898,12 @@ export function FramesProgram() {
                     </button>
                   ))}
                 </div>
+                <div className="frames-resource-actions">
+                  <Button onClick={() => applyWallpaperResource(frameResource(selected))}>
+                    Set as Wallpaper
+                  </Button>
+                  <Button onClick={() => requestFloppy(frameResource(selected))}>Save to Floppy…</Button>
+                </div>
                 <small className="preview-caption">
                   {previewMode === 'frame'
                     ? 'built-in renderer · 256 × 256 · onchain BMP'
@@ -1074,6 +1087,21 @@ export function FramesProgram() {
                 <span>Properties</span>
                 <small>Alt+Enter</small>
               </button>
+              <hr />
+              {imageActions(frameResource(tokenId), { connected: Boolean(wallet.account) }).map((action) => (
+                <button
+                  key={action.id}
+                  role="menuitem"
+                  onClick={() => {
+                    if (action.id === 'wallpaper') applyWallpaperResource(frameResource(tokenId))
+                    else requestFloppy(frameResource(tokenId))
+                    setContextMenu(undefined)
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+              <hr />
               <div className={`frames-context-renderer ${rendererAllowed ? '' : 'disabled'}`}>
                 <button role="menuitem" disabled={!rendererAllowed} aria-haspopup="menu">
                   <span>Renderer</span>

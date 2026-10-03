@@ -26,11 +26,15 @@ describe('header block clock', () => {
         number: 123n,
         timestamp: 456n,
         miner: '0x1234567890123456789012345678901234567890',
+        gasUsed: 12n,
+        gasLimit: 34n,
       }),
     ).toEqual({
       number: 123n,
       timestamp: 456n,
       miner: '0x1234567890123456789012345678901234567890',
+      gasUsed: 12n,
+      gasLimit: 34n,
     })
   })
 

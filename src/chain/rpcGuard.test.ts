@@ -43,4 +43,35 @@ describe('RPC source guard', () => {
       .map(([path]) => path)
     expect(offenders).toEqual([])
   })
+
+  it('keeps the nostalgic shell layer on existing stores instead of adding RPC loops', () => {
+    const nostalgicFiles = [
+      '/src/os/ActivityHost.tsx',
+      '/src/os/DisplayProperties.tsx',
+      '/src/os/FloppyDialog.tsx',
+      '/src/os/ScreensaverOverlay.tsx',
+      '/src/os/WallpaperLayer.tsx',
+      '/src/os/activity.ts',
+      '/src/os/imageResources.ts',
+      '/src/os/wallpaper.ts',
+      '/src/monadhw/blockPlayer.ts',
+    ]
+    const forbidden = [
+      "../chain/clients",
+      "../chain/logs",
+      "../chain/readMany",
+      "../chain/refreshTick",
+      '.getLogs(',
+      '.readContract(',
+      '.multicall(',
+    ]
+    const offenders: string[] = []
+    for (const path of nostalgicFiles) {
+      const source = sources[path]
+      expect(source, path).toBeTypeOf('string')
+      if (forbidden.some((needle) => source.includes(needle))) offenders.push(path)
+    }
+    expect(offenders).toEqual([])
+  })
+
 })

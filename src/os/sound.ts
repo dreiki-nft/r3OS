@@ -30,6 +30,7 @@ let muted = false
 let volume = 0.6
 const base = new Map<SoundName, HTMLAudioElement>()
 const last = new Map<SoundName, number>()
+const settingListeners = new Set<() => void>()
 function loadPrefs() {
   try {
     muted = localStorage.getItem('r3os.muted') === '1'
@@ -70,15 +71,26 @@ export function isMuted() {
 export function getVolume() {
   return volume
 }
+export function subscribeSoundSettings(listener: () => void) {
+  settingListeners.add(listener)
+  return () => settingListeners.delete(listener)
+}
+
+function emitSoundSettings() {
+  for (const listener of settingListeners) listener()
+}
+
 export function setMuted(v: boolean) {
   muted = v
   try {
     localStorage.setItem('r3os.muted', v ? '1' : '0')
   } catch {}
+  emitSoundSettings()
 }
 export function setVolume(v: number) {
   volume = Math.max(0, Math.min(1, v))
   try {
     localStorage.setItem('r3os.volume', String(volume))
   } catch {}
+  emitSoundSettings()
 }

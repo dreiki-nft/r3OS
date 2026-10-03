@@ -11,8 +11,10 @@ import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { scanOwnedLabs } from '../frames/LabsFolder'
 import { R3TARDS_BLOCK_CAMERA_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
-import { errorText, labAddress, labLoadError, LabNotDeployedError } from '../labs/labCommon'
-import { playSound } from '../os/sound'
+import { errorText, labAddress, labLoadError, LabNotDeployedError, shortAddress } from '../labs/labCommon'
+import { WalletChooser } from '../os/WalletChooser'
+import { requestFloppy } from '../os/floppy'
+import { applyWallpaperResource, rememberSessionPhoto } from '../os/wallpaper'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { HardwareBus } from '../os/ui/HardwareBus'
@@ -26,7 +28,7 @@ const RULES = [
   'proposer identity is provenance and art only. validators influence inclusion, so it is never treated as randomness.',
 ] as const
 
-type RollItem = { id: bigint; data?: LabsTokenData }
+type RollItem = { id: bigint; data?: LabsTokenData; blockNumber?: bigint }
 
 function svgDataUri(svg: string) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
@@ -53,6 +55,11 @@ export function BlockCameraProgram() {
   const [useCard, setUseCard] = useState(false)
   const [withCanvas, setWithCanvas] = useState(false)
   const [pending, setPending] = useState(false)
+  const [shutter, setShutter] = useState(false)
+  const [developing, setDeveloping] = useState(false)
+  const [imageUnavailable, setImageUnavailable] = useState(false)
+  const [flash, setFlash] = useState(false)
+  const [choosingWallet, setChoosingWallet] = useState(false)
   const [message, setMessage] = useState('')
   const [captured, setCaptured] = useState<RollItem>()
   const [roll, setRoll] = useState<RollItem[]>([])
@@ -266,9 +273,11 @@ export function BlockCameraProgram() {
     const selectedQuote = cardMode ? (withCanvas ? cardCanvasQuote : cardQuote) : quote
     if (!selectedQuote) return
     setPending(true)
+    setShutter(false)
+    setDeveloping(false)
+    setImageUnavailable(false)
     setMessage('')
     try {
-      playSound('confirm')
       const result = await sendAction({
         kind: 'estimate',
         address,
@@ -279,6 +288,11 @@ export function BlockCameraProgram() {
         quote: selectedQuote,
         action: cardMode ? `capture block portrait + Card #${card.cardId}` : 'capture block portrait',
         successSound: 'success-heavy',
+        onState(state) {
+          // Keep the Photo Booth honest: the shutter only opens after the wallet has signed
+          // and the transaction has actually been submitted.
+          if (state === 'sent') setShutter(true)
+        },
       })
       let tokenId: bigint | undefined
       for (const log of result.receipt.logs) {
@@ -297,17 +311,36 @@ export function BlockCameraProgram() {
         }
       }
       if (tokenId != null) {
+        // The receipt is the photographic moment. Close the shutter immediately and let the image
+        // develop separately; metadata reads can lag without pretending the transaction is still waiting.
+        setShutter(false)
+        setDeveloping(true)
+        setCaptured({ id: tokenId, blockNumber: result.blockNumber })
+        rememberSessionPhoto(tokenId)
+        setMessage(`caught block #${result.blockNumber}`)
+        const reduce =
+          typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (!reduce) {
+          setFlash(true)
+          window.setTimeout(() => setFlash(false), 150)
+        }
         const data = await readLabsToken(tokenId, result.blockNumber).catch(() => undefined)
-        setCaptured({ id: tokenId, data })
-        setMessage(`captured labs #${tokenId}`)
+        setImageUnavailable(!data)
+        setCaptured({ id: tokenId, data, blockNumber: result.blockNumber })
+        setDeveloping(false)
       } else {
+        setShutter(false)
         setMessage('capture confirmed')
       }
       await loadRoll()
     } catch (error) {
+      // Drop the previous photo card so the error is visible instead of the old "caught block" line.
+      setCaptured(undefined)
       setMessage(errorText(error))
     } finally {
       setPending(false)
+      setShutter(false)
+      setDeveloping(false)
     }
   }
 
@@ -331,38 +364,38 @@ export function BlockCameraProgram() {
   return (
     <div className="monadhw-program block-camera-program">
       <IntroBar
-        lead="photograph a block instead of a place."
-        monad="the image is made from live consensus context captured inside the mint transaction."
+        lead="turn the block you're standing on into a picture."
+        monad="the photo is made onchain from the block that includes your capture."
         rules={RULES}
       />
-      <HardwareBus highlight={['consensus', 'clock', 'card']} />
       {hw.staking.status === 'absent' && (
         <div className="hw-banner warning">
           this chain has no staking device: proposer and epoch record as unknown.
         </div>
       )}
 
-      <div className="monadhw-scroll camera-layout">
-        <GroupBox title="Live viewfinder">
-          <div className="camera-viewfinder sunken">
+      <div className="monadhw-scroll camera-layout photo-booth">
+        <GroupBox title="Block Camera">
+          <div className={`camera-viewfinder sunken ${shutter ? 'shutter-open' : ''}`}>
             {preview ? (
               <img src={svgDataUri(preview)} alt="live block portrait preview" />
             ) : (
               <span>acquiring block…</span>
             )}
+            {shutter && <div className="camera-shutter">shutter open · waiting for the next block…</div>}
+            {flash && <div className="camera-flash" aria-hidden="true" />}
           </div>
-          <div className="hw-stat-grid">
-            <span>head</span>
-            <b>{block.block.toString()}</b>
-            <span>parent hash candidate</span>
-            <code>{block.hash ? `${block.hash.slice(0, 12)}…${block.hash.slice(-6)}` : '—'}</code>
-            <span>epoch</span>
-            <b>{epochKnown ? hw.staking.epoch.value?.toString() : 'unknown'}</b>
-            <span>proposer</span>
-            <b>{proposerKnown ? `validator ${hw.staking.proposerValId.value}` : 'unknown'}</b>
-            <span>season</span>
-            <b>{(season + 1n).toString()}</b>
+          <div className="camera-live-caption">
+            <b>{block.block ? `BLOCK #${block.block}` : 'WAITING FOR A BLOCK'}</b>
+            <span>
+              {block.block
+                ? block.miner !== zeroAddress
+                  ? `made by ${shortAddress(block.miner)}`
+                  : 'producer unknown'
+                : 'connect to Monad to see the live block'}
+            </span>
           </div>
+
           {card.status === 'present' && card.cardId != null && (
             <div className="camera-card-options">
               <label>
@@ -371,90 +404,165 @@ export function BlockCameraProgram() {
                   checked={useCard}
                   onChange={(event) => setUseCard(event.target.checked)}
                 />
-                card slot: Card #{card.cardId.toString()}
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={withCanvas}
-                  disabled={!useCard}
-                  onChange={(event) => setWithCanvas(event.target.checked)}
-                />
-                + canvas hash
+                include my Monad Card #{card.cardId.toString()}
               </label>
               {useCard && (
-                <small>
-                  card page {cardQuote?.maxCost ?? 'quoting…'} · + canvas{' '}
-                  {cardCanvasQuote?.maxCost ?? 'quoting…'}
-                </small>
+                <label className="camera-card-nested">
+                  <input
+                    type="checkbox"
+                    checked={withCanvas}
+                    onChange={(event) => setWithCanvas(event.target.checked)}
+                  />
+                  include the current canvas hash too
+                </label>
               )}
             </div>
           )}
-          <div className="hw-toolbar">
+
+          <div className="camera-photo-action">
             <Button
               primary
               disabled={
-                !wallet.account || pending || (useCard ? !(withCanvas ? cardCanvasQuote : cardQuote) : !quote)
+                pending ||
+                Boolean(wallet.account && (useCard ? !(withCanvas ? cardCanvasQuote : cardQuote) : !quote))
               }
               title={
                 !wallet.account
-                  ? 'connect a wallet first'
+                  ? 'choose a wallet to take the photo'
                   : pending
-                    ? 'capturing…'
-                    : 'mint a portrait of the block your capture lands in'
+                    ? shutter
+                      ? 'the shutter is open · waiting for inclusion'
+                      : developing
+                        ? 'the photo is developing'
+                        : 'approve the photo in your wallet'
+                    : `mint a photo of the inclusion block · ${
+                        useCard
+                          ? ((withCanvas ? cardCanvasQuote?.maxCost : cardQuote?.maxCost) ?? 'quoting…')
+                          : (quote?.maxCost ?? 'quoting…')
+                      } max cost`
               }
-              onClick={() => void capture()}
+              onClick={() => {
+                if (!wallet.account) setChoosingWallet(true)
+                else void capture()
+              }}
             >
-              {pending ? 'Capturing…' : 'Capture'}
+              {pending
+                ? shutter
+                  ? 'SHUTTER OPEN…'
+                  : developing
+                    ? 'DEVELOPING…'
+                    : 'SIGN PHOTO…'
+                : wallet.account
+                  ? 'TAKE PHOTO'
+                  : 'Connect wallet to take a photo'}
             </Button>
-            <span>
+            <small>
               {!wallet.account
-                ? 'connect wallet'
+                ? 'a wallet is only needed when you decide to mint the photo'
                 : useCard
                   ? ((withCanvas ? cardCanvasQuote?.maxCost : cardQuote?.maxCost) ?? 'quoting…')
                   : (quote?.maxCost ?? 'quoting…')}
-            </span>
+            </small>
           </div>
+          {choosingWallet && !wallet.account && <WalletChooser onClose={() => setChoosingWallet(false)} />}
           <small>
-            the viewfinder uses the current head. the minted portrait is sealed from the block that actually
-            includes your capture.
+            the viewfinder shows the current head. your photo is sealed from the block that actually includes
+            the capture.
           </small>
         </GroupBox>
 
         {captured && (
-          <GroupBox title={`Latest capture · Labs #${captured.id}`}>
-            <div className="camera-latest">
-              {captured.data?.image && (
-                <SafeImage src={captured.data.image} alt={captured.data.name} width={128} height={128} />
+          <GroupBox
+            title={developing ? 'Developing photo' : imageUnavailable ? 'Photo captured' : 'Photo developed'}
+          >
+            <div className="camera-polaroid">
+              <div className="camera-polaroid-image">
+                {captured.data?.image ? (
+                  <SafeImage src={captured.data.image} alt={captured.data.name} width={256} height={256} />
+                ) : (
+                  <span>{imageUnavailable ? 'image unavailable right now' : 'developing image…'}</span>
+                )}
+              </div>
+              <b>photo #{captured.id.toString()}</b>
+              <span>{captured.blockNumber ? `caught block #${captured.blockNumber}` : message}</span>
+            </div>
+            <div className="camera-result-actions">
+              <Button onClick={() => applyWallpaperResource({ kind: 'photo', labsId: captured.id })}>
+                Set as Wallpaper
+              </Button>
+              <Button onClick={() => requestFloppy({ kind: 'photo', labsId: captured.id })}>
+                Save to Floppy…
+              </Button>
+              <Button
+                onClick={() => {
+                  setCaptured(undefined)
+                  setImageUnavailable(false)
+                  setMessage('')
+                }}
+              >
+                Take another
+              </Button>
+            </div>
+          </GroupBox>
+        )}
+
+        <details className="camera-technical raised">
+          <summary>Technical details</summary>
+          <div className="camera-technical-body">
+            <HardwareBus highlight={['consensus', 'clock', 'card']} />
+            <div className="hw-stat-grid">
+              <span>head</span>
+              <b>{block.block.toString()}</b>
+              <span>parent hash candidate</span>
+              <code>{block.hash ? `${block.hash.slice(0, 12)}…${block.hash.slice(-6)}` : '—'}</code>
+              <span>epoch</span>
+              <b>{epochKnown ? hw.staking.epoch.value?.toString() : 'unknown'}</b>
+              <span>proposer</span>
+              <b>{proposerKnown ? `validator ${hw.staking.proposerValId.value}` : 'unknown'}</b>
+              <span>season</span>
+              <b>{(season + 1n).toString()}</b>
+              <span>normal capture</span>
+              <b>{quote?.maxCost ?? (wallet.account ? 'quoting…' : 'connect wallet')}</b>
+              {card.status === 'present' && card.cardId != null && (
+                <>
+                  <span>Monad Card</span>
+                  <b>#{card.cardId.toString()}</b>
+                  <span>card page quote</span>
+                  <b>{cardQuote?.maxCost ?? (useCard ? 'quoting…' : 'not selected')}</b>
+                  <span>card + canvas quote</span>
+                  <b>{cardCanvasQuote?.maxCost ?? (useCard ? 'quoting…' : 'not selected')}</b>
+                </>
               )}
-              <div>
-                <b>{captured.data?.name ?? `Labs #${captured.id}`}</b>
-                <p>block {String(captured.data?.attributes.Block ?? '—')}</p>
-                <p>{String(captured.data?.attributes.Proposer ?? '—')}</p>
-                {captured.data?.attributes['Card slot'] != null && (
+            </div>
+            {captured?.data && (
+              <div className="camera-captured-details">
+                <b>{captured.data.name ?? `photo #${captured.id}`}</b>
+                <p>block {String(captured.data.attributes.Block ?? captured.blockNumber ?? '—')}</p>
+                <p>proposer {String(captured.data.attributes.Proposer ?? '—')}</p>
+                {captured.data.attributes['Card slot'] != null && (
                   <>
                     <p>
                       card {String(captured.data.attributes['Card slot'])} · writes{' '}
                       {String(captured.data.attributes['Card writes'] ?? '—')}
                     </p>
                     <p>
-                      page hash{' '}
-                      <code>{String(captured.data.attributes['Card page hash']).slice(0, 18)}…</code>
+                      page hash <code>{String(captured.data.attributes['Card page hash'] ?? '—')}</code>
                     </p>
                     <p>
                       canvas hash{' '}
-                      <code>
-                        {String(captured.data.attributes['Canvas hash']) === 'not captured'
-                          ? 'not captured'
-                          : `${String(captured.data.attributes['Canvas hash']).slice(0, 18)}…`}
-                      </code>
+                      <code>{String(captured.data.attributes['Canvas hash'] ?? 'not captured')}</code>
                     </p>
                   </>
                 )}
               </div>
-            </div>
-          </GroupBox>
-        )}
+            )}
+            <ul className="camera-rules">
+              {RULES.map((rule) => (
+                <li key={rule}>{rule}</li>
+              ))}
+            </ul>
+          </div>
+        </details>
 
         <GroupBox title="Your roll">
           {!wallet.account ? (
@@ -481,7 +589,7 @@ export function BlockCameraProgram() {
             </div>
           )}
         </GroupBox>
-        {message && <p className="hw-message">{message}</p>}
+        {message && !captured && <p className="hw-message">{message}</p>}
       </div>
     </div>
   )

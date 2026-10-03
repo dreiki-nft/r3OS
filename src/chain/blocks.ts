@@ -9,6 +9,8 @@ export interface BlockHeaderSnapshot {
   timestamp: bigint
   miner: Address
   hash?: Hex
+  gasUsed?: bigint
+  gasLimit?: bigint
 }
 
 export interface BlockSnapshot {
@@ -16,6 +18,8 @@ export interface BlockSnapshot {
   timestamp: bigint
   miner: Address
   hash?: Hex
+  gasUsed?: bigint
+  gasLimit?: bigint
   blockTimeMs: number
   storm: boolean
   stormId?: bigint
@@ -71,12 +75,16 @@ export function normalizeHeader(value: unknown): BlockHeaderSnapshot {
     timestamp?: bigint
     miner?: Address | null
     hash?: Hex | null
+    gasUsed?: bigint | null
+    gasLimit?: bigint | null
   }
   return {
     number: header.number ?? 0n,
     timestamp: header.timestamp ?? 0n,
     miner: header.miner ?? zeroAddress,
     ...(header.hash ? { hash: header.hash } : {}),
+    ...(header.gasUsed != null ? { gasUsed: header.gasUsed } : {}),
+    ...(header.gasLimit != null ? { gasLimit: header.gasLimit } : {}),
   }
 }
 
@@ -104,12 +112,17 @@ function accept(header: BlockHeaderSnapshot, mode: BlockSnapshot['mode']) {
   const storm = isStormAt(header.number)
   const stormId = storm ? header.number / constants.STORM_PERIOD_BLOCKS : undefined
   const stormStart = stormId == null ? undefined : stormId * constants.STORM_PERIOD_BLOCKS
+  const sameBlock = header.number === snapshot.block
   snapshot = {
     ...snapshot,
     block: header.number,
     timestamp: header.timestamp,
     miner: header.miner,
-    hash: header.hash ?? snapshot.hash,
+    // Never carry one block's note inputs into the next. A transient refresh of the same block may reuse the
+    // last complete header, but a genuinely new header missing a field stays unknown.
+    hash: header.hash ?? (sameBlock ? snapshot.hash : undefined),
+    gasUsed: header.gasUsed ?? (sameBlock ? snapshot.gasUsed : undefined),
+    gasLimit: header.gasLimit ?? (sameBlock ? snapshot.gasLimit : undefined),
     storm,
     stormId,
     stormStart,
@@ -189,5 +202,7 @@ export function __setBlockSnapshotForTests(next: Partial<BlockSnapshot>) {
     number: snapshot.block,
     timestamp: snapshot.timestamp,
     miner: snapshot.miner,
+    gasUsed: snapshot.gasUsed,
+    gasLimit: snapshot.gasLimit,
   }
 }
