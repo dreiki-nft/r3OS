@@ -149,12 +149,12 @@ docs              technical reference, security review, deploy guides
 ## Status
 
 - **Live on Monad testnet** since October 1, 2026.
-- **Mainnet:** MAINNET_STATUS.
-- **Community so far:** COMMUNITY_NUMBERS (painters, paints, frames, CDs; not counting the builder's wallets).
+- **Mainnet:** not deployed yet.
+- **Community: r3tards, skrumpeys and monad cards holders
 - **Known limits:** painting needs a wallet and a little MON (no email login or sponsored gas yet). The desktop is best on a computer; phones work with full-screen windows.
 
 ## Credits
 
-Built solo by **dreiki** for and with the **r3tards** community, using Claude and ChatGPT as coding assistants. Art, palette and the r3tards characters by dreiki.
+Built solo by **dreiki**, using Claude and ChatGPT as coding assistants. Art, palette and the r3tards characters by dreiki.
 
-*r3tards is not a r3al proj3ct.*
+*just a bunch of r3tards on the monad blockchain.*
