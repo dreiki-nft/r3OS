@@ -1,4 +1,5 @@
 import { formatEther, type Address, type Hex } from 'viem'
+import { getBlockSnapshot } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { friendlyError } from '../chain/errors'
@@ -112,7 +113,8 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
 
   if (!walletOnCorrectChain()) await switchToMonad()
 
-  const burner = createBurner(owner)
+  const existingBurner = loadBurner(owner)
+  const burner = existingBurner ?? createBurner(owner)
   // Hide the burner's first pending-nonce RPC behind the wallet-sign/funding steps.
   // That keeps the first no-popup stroke from paying a cold nonce round trip.
   const nonceWarm = resetBurnerNonce(burner.address).catch(() => undefined)
@@ -120,26 +122,31 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
     throw new Error('this browser blocked burner storage. allow site data for r3tardOS and try again.')
   }
 
-  const status = await burnerStatus(owner)
+  // Start every independent preflight immediately. A brand-new burner cannot already have a
+  // session or balance, so skip two unnecessary RPCs on the common first-use path.
+  const statusPromise = existingBurner ? burnerStatus(owner) : Promise.resolve(undefined)
+  const paintGasPromise = samplePaintGas(owner)
+  const noncePromise = client.readContract({
+    address: paint,
+    abi: R3TARDS_PAINT_ABI,
+    functionName: 'sessionNonces',
+    args: [owner],
+  }) as Promise<bigint>
+
+  const status = await statusPromise
   if (status?.session.active && status.session.owner.toLowerCase() === owner.toLowerCase()) {
     await refreshLiveStatus(owner)
     report({ phase: 'done', prompts: 0 })
     return
   }
-  const balanceBefore = status?.balance ?? (await client.getBalance({ address: burner.address }))
-  const paintGas = await samplePaintGas(owner)
+  const balanceBefore = status?.balance ?? 0n
 
-  // Prompt 1: the session signature.
+  // Prompt 1: the session signature. Use the websocket-backed block clock when available instead
+  // of spending another HTTP round trip just to choose an expiry 24,000 blocks in the future.
   report({ phase: 'sign' })
-  const [nonce, head] = await Promise.all([
-    client.readContract({
-      address: paint,
-      abi: R3TARDS_PAINT_ABI,
-      functionName: 'sessionNonces',
-      args: [owner],
-    }),
-    client.getBlockNumber({ cacheTime: 0 }),
-  ])
+  const nonce = await noncePromise
+  const observedHead = getBlockSnapshot().block
+  const head = observedHead > 0n ? observedHead : await client.getBlockNumber({ cacheTime: 0 })
   const message: StartSessionMessage = {
     owner,
     sessionKey: burner.address,
@@ -178,8 +185,9 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
     action: 'start live session',
   }
   let startQuote: ActionQuote
+  let paintGas: bigint
   try {
-    startQuote = await quoteAction(startBase)
+    ;[startQuote, paintGas] = await Promise.all([quoteAction(startBase), paintGasPromise])
   } catch (error) {
     fail(error)
   }

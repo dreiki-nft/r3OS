@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import type { Address, Log } from 'viem'
 import {
   chunkBlockRanges,
   clearMatchingInFlight,
   createSerialQueue,
   logSetsDiffer,
   reloadOnSpeculativeMismatch,
+  receiptCoreLogs,
   tileNeedsFetch,
   tilesTouchedByPainted,
   type TileCacheEntry,
@@ -70,6 +72,26 @@ describe('canvas store helpers', () => {
       }),
     ).resolves.toBe(true)
     expect(reloads).toBe(1)
+  })
+
+
+  it('uses only Paint receipt logs and fills a missing receipt block', () => {
+    const paint = '0x0000000000000000000000000000000000000001' as Address
+    const other = '0x0000000000000000000000000000000000000002' as Address
+    const makeLog = (address: Address) =>
+      ({
+        address,
+        blockNumber: null,
+        logIndex: 3,
+        transactionHash: '0x' + '11'.repeat(32),
+        data: '0x',
+        topics: ['0x' + '22'.repeat(32)],
+      }) as unknown as Log
+
+    const rows = receiptCoreLogs([makeLog(paint), makeLog(other)], 777n, paint)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].blockNumber).toBe(777n)
+    expect(rows[0].logIndex).toBe(3)
   })
 
   it('marks exactly the tiles touched by runs and corruptions', () => {

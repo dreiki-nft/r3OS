@@ -1,4 +1,4 @@
-import { hexToBytes, type Hex } from 'viem'
+import { hexToBytes, type Hex, type Log } from 'viem'
 import { markTraceProposedFromPlainLog } from '../chain/txTrace'
 import { publicClient, wsClient } from '../chain/clients'
 import { readMany } from '../chain/readMany'
@@ -286,10 +286,16 @@ async function seedCanonicalOverlap(latest: bigint) {
   }
 }
 
-async function applyDeliveredLogs(logs: readonly CoreLog[]) {
+async function applyDeliveredLogs(
+  logs: readonly CoreLog[],
+  options: { advanceSnapshot?: boolean } = {},
+) {
   if (!logs.length) return false
+  const advanceSnapshot = options.advanceSnapshot ?? true
   let needsReload = false
   for (const log of sortLogs(logs)) {
+    const key = coreLogKey(log)
+    if (key && appliedLogKeys.has(key)) continue
     rememberLog(log)
     const decoded = decodeCoreLog(log)
     if (!decoded) continue
@@ -362,7 +368,9 @@ async function applyDeliveredLogs(logs: readonly CoreLog[]) {
     } else if (!outlineChange(eventName)) {
       emitActivity(common)
     }
-    if (log.blockNumber > snapshot.snapshotBlock) snapshot = { ...snapshot, snapshotBlock: log.blockNumber }
+    if (advanceSnapshot && log.blockNumber > snapshot.snapshotBlock) {
+      snapshot = { ...snapshot, snapshotBlock: log.blockNumber }
+    }
   }
   emitCanvas()
   return needsReload
@@ -584,6 +592,59 @@ export async function settleInFlight(sent: ReadonlyMap<number, number>, receiptB
     working: clearMatchingInFlight(snapshot.working, snapshot.background, sent),
   }
   emitCanvas()
+}
+
+/**
+ * Fast path for our own confirmed transaction. The receipt already contains the exact Painted log,
+ * including DF1 corruptions, so apply it immediately instead of waiting for another getLogs round trip.
+ * We deliberately do not advance snapshotBlock here: another painter can share the same block, and the
+ * normal websocket/catch-up path still needs to see those sibling logs. Duplicate receipt/subscription
+ * logs are de-duplicated by txHash:logIndex.
+ */
+export function receiptCoreLogs(
+  receiptLogs: readonly Log[],
+  receiptBlock: bigint,
+  paintAddress = config.paintAddress,
+): CoreLog[] {
+  const expected = paintAddress?.toLowerCase()
+  return receiptLogs.flatMap((log) => {
+    if (!log.data || !log.topics || (expected && log.address.toLowerCase() !== expected)) return []
+    return [
+      {
+        blockNumber: log.blockNumber ?? receiptBlock,
+        logIndex: log.logIndex == null ? null : Number(log.logIndex),
+        transactionHash: log.transactionHash ?? undefined,
+        data: log.data,
+        topics: log.topics as readonly Hex[],
+      },
+    ]
+  })
+}
+
+export function settleInFlightFromReceipt(
+  sent: ReadonlyMap<number, number>,
+  receiptLogs: readonly Log[],
+  receiptBlock: bigint,
+) {
+  return enqueue(async () => {
+    const coreLogs = receiptCoreLogs(receiptLogs, receiptBlock)
+    const hasPainted = coreLogs.some((log) => decodeCoreLog(log)?.eventName === 'Painted')
+    if (!hasPainted) {
+      // Unexpected receipt shape. Keep the old canonical path rather than making the stroke disappear.
+      await catchUpNow(receiptBlock)
+    } else {
+      const needsReload = await applyDeliveredLogs(coreLogs, { advanceSnapshot: false })
+      if (needsReload) await loadCanvasNow()
+    }
+    snapshot = {
+      ...snapshot,
+      working: clearMatchingInFlight(snapshot.working, snapshot.background, sent),
+    }
+    emitCanvas()
+    // Reconcile in the background. The UI is already exact for this transaction, while this catches
+    // sibling transactions from the same block and preserves the store's canonical overlap checks.
+    void catchUp(receiptBlock).catch(() => undefined)
+  })
 }
 
 export function tileNeedsFetch(cached: TileCacheEntry | undefined, headBlock: bigint, force = false) {

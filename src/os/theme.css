@@ -3716,3 +3716,13 @@ button:disabled {
     transform: none !important;
   }
 }
+
+.paint-live-hint {
+  min-height: 14px;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.paint-live-hint.active {
+  color: var(--accent);
+}

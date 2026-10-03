@@ -6,6 +6,7 @@ export type PerfKind =
   | 'tx-receipt'
   | 'tx-total'
   | 'program-open'
+  | 'ui-settle'
 
 export interface PerfSample {
   id: number

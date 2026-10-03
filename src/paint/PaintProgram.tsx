@@ -19,6 +19,7 @@ import { demoConstants, discoverContracts, readCoreConstants } from '../chain/co
 import { friendlyError } from '../chain/errors'
 import { parseManualIds, resolveHolderIds } from '../chain/holders'
 import { readMany } from '../chain/readMany'
+import { startPerf } from '../chain/perf'
 import { quoteAction, sendAction, type ActionOptions, type ActionQuote } from '../chain/tx'
 import {
   connectWallet,
@@ -36,6 +37,7 @@ import {
   subscribeLive,
 } from '../live/liveStore'
 import { createStrokeQueue } from '../live/paintQueue'
+import { startLiveQuick, type QuickProgress } from '../live/quickStart'
 import { drawEllipse, drawLine, drawRect, floodFill, type Point } from '../lib/paintEngine'
 import { PALETTE } from '../lib/palette'
 import { encodeChangedRuns } from '../lib/patch'
@@ -73,7 +75,7 @@ import {
   readTileState,
   readTileStates,
   setWorking,
-  settleInFlight,
+  settleInFlightFromReceipt,
   subscribeCanvas,
   subscribeCanvasActivity,
   subscribeTileCache,
@@ -145,6 +147,9 @@ export function PaintProgram() {
   const [paintQuote, setPaintQuote] = useState<ActionQuote>()
   const [quotes, setQuotes] = useState<Record<string, ActionQuote | string>>({})
   const [busy, setBusy] = useState(false)
+  const [txState, setTxState] = useState<'signing' | 'sent' | 'confirmed'>()
+  const [liveStarting, setLiveStarting] = useState(false)
+  const [liveQuick, setLiveQuick] = useState<QuickProgress>()
   const [lastPaint, setLastPaint] = useState<LastPaint>()
   // The "painted in block" line stays for a few seconds, then the status bar goes back to normal.
   useEffect(() => {
@@ -271,8 +276,48 @@ export function PaintProgram() {
   const isLive = liveActive(live)
 
   useEffect(() => {
-    if (isLive) setAutoPaint(true)
+    if (isLive) {
+      setAutoPaint(true)
+      setLiveStarting(false)
+    }
   }, [isLive])
+
+  const startLiveFromPaint = useCallback(async () => {
+    if (!wallet.account) {
+      setWalletDialog(true)
+      return
+    }
+    if (isLive || liveStarting) return
+    setLiveStarting(true)
+    setLiveQuick({ phase: 'prepare', prompts: 2 })
+    try {
+      await startLiveQuick(wallet.account, setLiveQuick)
+      setAssistantTip('Live Mode is on. Strokes now land onchain without wallet popups. No Undo.')
+    } catch (caught) {
+      const friendly =
+        (caught as { friendly?: ReturnType<typeof friendlyError> }).friendly ?? friendlyError(caught, 'startSession')
+      setBox({
+        title: 'Live Mode',
+        message: friendly.message,
+        kind: friendly.rejected ? 'info' : 'error',
+      })
+      setLiveQuick(undefined)
+    } finally {
+      setLiveStarting(false)
+    }
+  }, [wallet.account, isLive, liveStarting])
+
+  const liveButtonLabel = isLive
+    ? 'LIVE · Manage…'
+    : liveStarting
+      ? liveQuick?.phase === 'sign'
+        ? 'LIVE · Sign…'
+        : liveQuick?.phase === 'fund'
+          ? 'LIVE · Fund…'
+          : liveQuick?.phase === 'start'
+            ? 'LIVE · Starting…'
+            : 'LIVE · Preparing…'
+      : 'Start Live Mode'
 
   const refreshHolderIds = useCallback(async () => {
     if (!wallet.account || !publicClient) return
@@ -733,6 +778,7 @@ export function PaintProgram() {
                   signer: isLive ? 'burner' : 'wallet',
                 }),
           confirmHigherCost,
+          onState: setTxState,
         }
         if (!options.quote) throw new Error('quote unavailable')
         const inFlight = beginInFlight(bytes)
@@ -740,7 +786,13 @@ export function PaintProgram() {
           const result = await sendAction(options)
           // Measured by the tx pipeline: from the RPC accepting the transaction to this app holding its receipt.
           setLastPaint({ block: result.blockNumber, receiptMs: result.receiptMs })
-          await Promise.all([settleInFlight(inFlight, result.blockNumber), refreshBudget()])
+          // The receipt already contains the exact Painted log. Apply it immediately so the local canvas
+          // becomes canonical without waiting for another getLogs/catch-up round trip. Budget refresh is
+          // informative, not part of visual confirmation, so let it happen in the background.
+          const stopSettle = startPerf('ui-settle', andFrame ? 'paint + frame' : 'paint')
+          await settleInFlightFromReceipt(inFlight, result.receipt.logs, result.blockNumber)
+          stopSettle()
+          void refreshBudget()
           let corruptions = new Uint8Array()
           let frameId: bigint | undefined
           for (const log of result.receipt.logs) {
@@ -802,6 +854,7 @@ export function PaintProgram() {
       }
     } finally {
       setBusy(false)
+      setTxState(undefined)
       setProgress(null)
     }
   }
@@ -913,7 +966,7 @@ export function PaintProgram() {
           action: () => applyWallpaperResource({ kind: 'canvas' }),
         },
         {
-          label: isLive ? 'Live mode is on ✓' : 'Live mode (no wallet popups)…',
+          label: isLive ? 'Live mode is on ✓' : 'Live mode setup / limits…',
           disabled: isLive,
           disabledReason: 'end the session in My Pass › Hardware Profiles',
           action: () => openProgram('live-wizard'),
@@ -1164,15 +1217,16 @@ export function PaintProgram() {
               title={
                 isLive
                   ? 'Live Mode is active: strokes write onchain without wallet popups and cannot be undone'
-                  : 'Live Mode: paint onchain without a wallet popup for every stroke'
+                  : 'Quick-start Live Mode with the default 2-hour / 5,000-unit session. Usually two wallet prompts once, then none per stroke. No Undo.'
               }
+              disabled={liveStarting}
               onClick={() =>
                 void (isLive
                   ? openProgram('pass', true, '#/pass?tab=Hardware%20Profiles')
-                  : openProgram('live-wizard'))
+                  : startLiveFromPaint())
               }
             >
-              {isLive ? 'LIVE · Manage…' : 'Live Mode…'}
+              {liveButtonLabel}
             </Button>
             <Button
               primary
@@ -1191,12 +1245,29 @@ export function PaintProgram() {
                   : `Paint ${cost.pixels} px`}
             </Button>
           </div>
+          <small className={isLive ? 'paint-live-hint active' : 'paint-live-hint'}>
+            {isLive
+              ? 'onchain immediately · no wallet popup per stroke · no undo'
+              : liveStarting
+                ? liveQuick?.phase === 'sign'
+                  ? 'confirm the session signature in your wallet'
+                  : liveQuick?.phase === 'fund'
+                    ? 'confirm burner gas funding once'
+                    : 'finishing setup…'
+                : 'quick start: usually 2 wallet prompts once · then none per stroke · no undo'}
+          </small>
         </div>
       </div>
       <footer className="paint-status">
         <span>
           {busy ? (
-            'painting…'
+            txState === 'signing'
+              ? isLive
+                ? 'signing live paint…'
+                : 'confirm in wallet…'
+              : txState === 'sent'
+                ? 'sent · waiting for block…'
+                : 'painting…'
           ) : lastPaint ? (
             <>
               {paintedText(lastPaint)} ·{' '}
