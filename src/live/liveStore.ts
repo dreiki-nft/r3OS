@@ -212,10 +212,16 @@ export function burnerFundTooLarge(value: bigint, currentBalance = 0n) {
 
 export const FUNDING_TARGET_PAINTS = 20n
 
+/**
+ * Desired burner balance for a fresh session. We still aim for roughly twenty typical paints, but the
+ * browser-held key is never auto-funded above MAX_BURNER_FUND. The cap is the security invariant; the
+ * paint count is only a convenience target.
+ */
 export function fundingSuggestion(corePaintGas: bigint, startSessionGas: bigint, maxFeePerGas: bigint) {
   const wei = (FUNDING_TARGET_PAINTS * corePaintGas + startSessionGas) * maxFeePerGas
   const tenth = 100_000_000_000_000_000n
-  return ((wei + tenth - 1n) / tenth) * tenth
+  const rounded = ((wei + tenth - 1n) / tenth) * tenth
+  return rounded > MAX_BURNER_FUND ? MAX_BURNER_FUND : rounded
 }
 
 export function isSessionSignatureExpired(

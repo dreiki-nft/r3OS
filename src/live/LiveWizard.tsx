@@ -353,7 +353,7 @@ export function LiveWizard() {
                       wallet prompt 2 ·{' '}
                       {quick.funding
                         ? `${quick.funding} MON`
-                        : `enough for about ${FUNDING_TARGET_PAINTS.toString()} paints`}
+                        : `target: up to ${FUNDING_TARGET_PAINTS.toString()} paints · ${formatEther(MAX_BURNER_FUND)} MON cap`}
                     </small>
                   </li>
                 )}
@@ -467,7 +467,7 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                     />{' '}
                     MON
                   </label>
-                  <small>≈ {FUNDING_TARGET_PAINTS.toString()} paints</small>
+                  <small>target ≈ {FUNDING_TARGET_PAINTS.toString()} paints · capped at {formatEther(MAX_BURNER_FUND)} MON</small>
                   <p>max cost: {fundQuote ? `${amount} MON + ${fundQuote.maxCost}` : 'quoting…'}</p>
                   <Button disabled={busy || !fundQuote} onClick={() => void fund()}>
                     Send

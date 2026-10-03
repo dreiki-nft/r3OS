@@ -15,7 +15,7 @@ import {
   burnerFundTooLarge,
   buildStartSessionTypedData,
   fundingSuggestion,
-  FUNDING_TARGET_PAINTS,
+  MAX_BURNER_FUND,
   refreshLiveStatus,
   type StartSessionMessage,
 } from './liveStore'
@@ -25,8 +25,8 @@ export const QUICK_SESSION_BLOCKS = 24_000n
 export const QUICK_ALLOWANCE = 5_000n
 /** Used only if a sample paint can't be simulated (e.g. the wallet's hourly budget is spent right now). */
 export const FALLBACK_PAINT_GAS = 400_000n
-/** Skip the funding prompt when the burner already holds gas for this many paints plus startSession. */
-export const REUSE_MIN_PAINTS = FUNDING_TARGET_PAINTS
+/** Reused burners skip a top-up once they can safely start a session and cover a couple of typical paints. */
+export const REUSE_MIN_PAINTS = 2n
 const SIGNATURE_TTL_SECONDS = 15 * 60
 
 export type QuickPhase = 'prepare' | 'sign' | 'fund' | 'start' | 'done'
@@ -57,14 +57,20 @@ export function samplePaint64() {
   return encodeChangedRuns(canvas.background, working)
 }
 
-/** What to send the burner: about 20 paints of gas, or nothing when it already has enough. */
+/**
+ * What to send the burner. A fresh key is funded toward the normal 20-paint target, but that target is
+ * capped by MAX_BURNER_FUND. Reused burners avoid another wallet prompt once they already have enough
+ * max-fee headroom for startSession plus a couple of typical paints.
+ */
 export function quickFunding(balance: bigint, paintGas: bigint, startGas: bigint, maxFeePerGas: bigint) {
-  const floor = (REUSE_MIN_PAINTS * paintGas + startGas) * maxFeePerGas
-  if (balance >= floor) return 0n
+  const reuseFloorRaw = (REUSE_MIN_PAINTS * paintGas + startGas) * maxFeePerGas
+  const reuseFloor = reuseFloorRaw > MAX_BURNER_FUND ? MAX_BURNER_FUND : reuseFloorRaw
+  if (balance >= reuseFloor) return 0n
+
   const target = fundingSuggestion(paintGas, startGas, maxFeePerGas)
-  const missing = target > balance ? target - balance : 0n
-  const tenth = 100_000_000_000_000_000n
-  return ((missing + tenth - 1n) / tenth) * tenth
+  // fundingSuggestion already rounds the desired total and enforces the browser-key cap. Top up to that
+  // total exactly; rounding the delta again could accidentally push currentBalance + value over the cap.
+  return target > balance ? target - balance : 0n
 }
 
 async function samplePaintGas(owner: Address) {
@@ -192,11 +198,21 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
     fail(error)
   }
 
+  // The browser key must be able to register the session and still afford at least one representative
+  // paint at the quoted max fee without breaking the 1 MON safety ceiling. A 20-paint convenience target
+  // may be much larger than that during fee spikes, so it is capped rather than treated as an error.
+  const minimumUsableBalance = (paintGas + startQuote.gasLimit) * startQuote.maxFeePerGas
+  if (minimumUsableBalance > MAX_BURNER_FUND) {
+    throw new Error(
+      `current gas is too expensive to start Live Mode safely within the ${formatEther(MAX_BURNER_FUND)} MON burner cap. nothing was sent; try again when gas settles.`,
+    )
+  }
+
   // Prompt 2: gas money for the burner, unless it already has enough left from an earlier session.
   const value = quickFunding(balanceBefore, paintGas, startQuote.gasLimit, startQuote.maxFeePerGas)
-  if (burnerFundTooLarge(value, balanceBefore)) {
+  if (value > 0n && burnerFundTooLarge(value, balanceBefore)) {
     throw new Error(
-      `the gas quote asks for ${formatEther(value)} MON for the burner, which looks wrong. nothing was sent; try again later.`,
+      `the burner top-up would exceed the ${formatEther(MAX_BURNER_FUND)} MON browser-key cap. nothing was sent.`,
     )
   }
   if (value > 0n) {
