@@ -168,6 +168,13 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
       message: 'the action RPCs did not confirm acceptance. wait a moment or check the explorer before retrying.',
     }
   }
+  if (message === 'ACTION_BALANCE_SYNC_TIMEOUT') {
+    return {
+      name: 'ActionBalanceSyncTimeout',
+      message:
+        'the funding transaction confirmed, but the action RPCs have not caught up to the burner balance yet. wait a moment before retrying Live Mode.',
+    }
+  }
   if (message === 'ACTION_RECEIPT_TIMEOUT') {
     return {
       name: 'ActionReceiptTimeout',

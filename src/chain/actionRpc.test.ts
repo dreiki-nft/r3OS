@@ -67,6 +67,19 @@ describe('action RPC pool', () => {
     expect(snapshot.endpoints.every((endpoint) => endpoint.successes === 1)).toBe(true)
     expect(JSON.stringify(snapshot)).not.toMatch(/https?:\/\//)
   })
+
+  it('waits until the preferred action RPC can see freshly funded burner balance', async () => {
+    const getBalance = vi
+      .fn()
+      .mockResolvedValueOnce(0n)
+      .mockResolvedValueOnce(0n)
+      .mockResolvedValue(1_000n)
+    const pool = createActionRpcPool([client({ getBalance })])
+    await expect(pool.waitForBalance(`0x${'33'.repeat(20)}` as Hex, 1_000n, 1_000)).resolves.toBe(
+      1_000n,
+    )
+    expect(getBalance).toHaveBeenCalledTimes(3)
+  })
 })
 
 describe('action RPC error classification', () => {

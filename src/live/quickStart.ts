@@ -2,8 +2,9 @@ import { formatEther, type Address, type Hex } from 'viem'
 import { getBlockSnapshot } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
+import { waitForActionBalance } from '../chain/actionRpc'
 import { friendlyError } from '../chain/errors'
-import { quoteAction, refreshActionQuoteFees, sendAction, type ActionQuote } from '../chain/tx'
+import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, switchToMonad, walletOnCorrectChain } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { encodeChangedRuns } from '../lib/patch'
@@ -237,26 +238,30 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
       action: 'fund burner',
     }
     const fundQuote = await quoteAction(transfer).catch((error: unknown) => fail(error, 'transfer'))
-    // A wallet confirmation can take several seconds on a chain producing blocks every few hundred ms.
-    // Refresh only the fee caps as soon as the wallet has broadcast the funding tx, while we wait for its
-    // receipt. Re-estimating startSession here would depend on RPCs already seeing the fresh burner balance.
-    let refreshedStartQuote: Promise<ActionQuote> | undefined
-    const fundingResult = await sendAction({
+    const fundedBalance = balanceBefore + value
+    // A funding receipt proves the transfer, but a different action RPC can still be one or more blocks
+    // behind. Start a visibility barrier as soon as MetaMask broadcasts the funding transaction. Once the
+    // preferred action RPC sees the funded balance, run a FULL startSession estimate there. That validates
+    // sender balance, contract state, gas limit and fee caps together instead of carrying a pre-funding quote
+    // across several fast Monad blocks. In the normal case all of this is hidden behind the funding receipt.
+    let fundedStartQuote: Promise<ActionQuote> | undefined
+    const primeFundedStartQuote = () => {
+      if (fundedStartQuote) return
+      fundedStartQuote = waitForActionBalance(burner.address, fundedBalance).then(() => quoteAction(startBase))
+    }
+    await sendAction({
       ...transfer,
       quote: fundQuote,
       confirmHigherCost,
       onState: (state) => {
-        if (state === 'sent' && !refreshedStartQuote) {
-          refreshedStartQuote = refreshActionQuoteFees(startQuote)
-        }
+        if (state === 'sent') primeFundedStartQuote()
       },
     })
-    // The transfer receipt proves the burner received this exact value. Seed the cache immediately instead
-    // of reading through another RPC endpoint, which can briefly lag the receipt and report the old balance.
-    setCachedBurnerBalance(owner, balanceBefore + value)
-    // Keep the validated gas limit, but never pretend an old pre-wallet fee quote became fresh merely because
-    // funding confirmed. The fee refresh was hidden behind the funding receipt wait above.
-    sendStartQuote = await (refreshedStartQuote ?? refreshActionQuoteFees(startQuote))
+    // The transfer receipt is canonical proof of the known balance transition. Keep the local hot-path
+    // balance exact while the action RPC visibility barrier above finishes.
+    setCachedBurnerBalance(owner, fundedBalance)
+    primeFundedStartQuote()
+    sendStartQuote = await fundedStartQuote!
   } else {
     report({ prompts: 1 })
   }
@@ -271,8 +276,11 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
     // while its state/fee view catches up. This only retries the just-funded startSession path, once, with
     // fresh fee caps and the same signed authorization. It never retries arbitrary user actions.
     if (!retryFreshFundingStart(error, value > 0n)) throw error
-    await new Promise<void>((resolve) => setTimeout(resolve, 180))
-    sendStartQuote = await refreshActionQuoteFees(sendStartQuote)
+    // The funded-balance barrier should make this path rare, but keep one bounded recovery for providers
+    // that accepted the estimate and then briefly regressed. Re-prove balance visibility and re-estimate the
+    // whole startSession call before signing another raw transaction.
+    await waitForActionBalance(burner.address, balanceBefore + value)
+    sendStartQuote = await quoteAction(startBase)
     await sendAction({ ...startBase, quote: sendStartQuote, confirmHigherCost })
   }
   // The successful receipt is canonical proof. Flip the UI to LIVE immediately; the websocket/event path

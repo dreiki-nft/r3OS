@@ -159,6 +159,31 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
     return snapshot
   }
 
+  const waitForBalance = async (address: Hex, minimum: bigint, timeoutMs = 5_000) => {
+    if (!clients.length) throw new Error('DEMO_MODE')
+    const started = now()
+    let lastBalance = 0n
+    while (now() - started < timeoutMs) {
+      try {
+        lastBalance = await request((client) => client.getBalance({ address }))
+        if (lastBalance >= minimum) return lastBalance
+      } catch (error) {
+        // request() already fails over infrastructure errors. A balance readiness barrier should not
+        // turn one malformed/stale provider response into a false Live-start failure; keep polling until
+        // timeout so a healthy endpoint can become authoritative.
+        if (!isRpcInfrastructureError(error)) {
+          await sleep(120)
+          continue
+        }
+      }
+      await sleep(120)
+    }
+    throw Object.assign(new Error('ACTION_BALANCE_SYNC_TIMEOUT'), {
+      balance: lastBalance,
+      minimum,
+    })
+  }
+
   const broadcast = async (serializedTransaction: Hex, expectedHash: Hex) => {
     if (!clients.length) throw new Error('DEMO_MODE')
     const attempts = clients.map((_, index) =>
@@ -223,6 +248,7 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
   return {
     request,
     probe,
+    waitForBalance,
     broadcast,
     waitForReceipt,
     ranked,
@@ -252,6 +278,7 @@ const pool = createActionRpcPool(actionEndpointClients as unknown as ActionRpcCl
 
 export const actionRpcRequest = pool.request
 export const probeActionRpcs = pool.probe
+export const waitForActionBalance = pool.waitForBalance
 export const broadcastActionRawTransaction = pool.broadcast
 export const waitForActionReceipt = pool.waitForReceipt
 export const getActionRpcSnapshot = pool.getSnapshot
