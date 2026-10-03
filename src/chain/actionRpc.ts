@@ -184,6 +184,58 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
     })
   }
 
+  const waitForFundingSettlement = async (
+    address: Hex,
+    minimum: bigint,
+    fundingBlock: bigint,
+    options: { timeoutMs?: number; settleBlocks?: bigint; pollMs?: number; quorum?: number } = {},
+  ) => {
+    if (!clients.length) throw new Error('DEMO_MODE')
+    const timeoutMs = options.timeoutMs ?? 8_000
+    const settleBlocks = options.settleBlocks ?? 3n
+    const pollMs = options.pollMs ?? 150
+    const quorum = Math.max(1, Math.min(options.quorum ?? Math.min(2, clients.length), clients.length))
+    const targetBlock = fundingBlock + settleBlocks
+    const started = now()
+    let bestReady = 0
+    let highestBlock = 0n
+
+    while (now() - started < timeoutMs) {
+      const checks = await Promise.all(
+        clients.map(async (_, index) => {
+          try {
+            const [block, balance] = await measured(index, async (client) =>
+              Promise.all([client.getBlockNumber({ cacheTime: 0 }), client.getBalance({ address })]),
+            )
+            if (block > highestBlock) highestBlock = block
+            return block >= targetBlock && balance >= minimum
+          } catch {
+            return false
+          }
+        }),
+      )
+      const ready = checks.filter(Boolean).length
+      bestReady = Math.max(bestReady, ready)
+      const preferred = ranked()[0]
+      // The next quote uses request(), which starts with the currently top-ranked endpoint. Do not release
+      // the barrier just because two slower peers are caught up while the endpoint quoteAction will actually
+      // choose is still stale. Require the preferred endpoint plus the quorum to be ready.
+      if (ready >= quorum && checks[preferred]) {
+        return { targetBlock, quorum, ready, preferred }
+      }
+      await sleep(pollMs)
+    }
+
+    throw Object.assign(new Error('ACTION_FUNDING_SETTLEMENT_TIMEOUT'), {
+      minimum,
+      fundingBlock,
+      targetBlock,
+      highestBlock,
+      ready: bestReady,
+      quorum,
+    })
+  }
+
   const broadcast = async (serializedTransaction: Hex, expectedHash: Hex) => {
     if (!clients.length) throw new Error('DEMO_MODE')
     const attempts = clients.map((_, index) =>
@@ -249,6 +301,7 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
     request,
     probe,
     waitForBalance,
+    waitForFundingSettlement,
     broadcast,
     waitForReceipt,
     ranked,
@@ -279,6 +332,7 @@ const pool = createActionRpcPool(actionEndpointClients as unknown as ActionRpcCl
 export const actionRpcRequest = pool.request
 export const probeActionRpcs = pool.probe
 export const waitForActionBalance = pool.waitForBalance
+export const waitForActionFundingSettlement = pool.waitForFundingSettlement
 export const broadcastActionRawTransaction = pool.broadcast
 export const waitForActionReceipt = pool.waitForReceipt
 export const getActionRpcSnapshot = pool.getSnapshot

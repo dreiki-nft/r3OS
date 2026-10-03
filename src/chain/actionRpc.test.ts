@@ -80,6 +80,28 @@ describe('action RPC pool', () => {
     )
     expect(getBalance).toHaveBeenCalledTimes(3)
   })
+
+  it('waits for multiple action RPCs to move several blocks past the funding receipt', async () => {
+    const address = `0x${'44'.repeat(20)}` as Hex
+    const firstBlock = vi.fn().mockResolvedValueOnce(100n).mockResolvedValue(104n)
+    const secondBlock = vi.fn().mockResolvedValueOnce(101n).mockResolvedValue(104n)
+    const staleBlock = vi.fn().mockResolvedValue(100n)
+    const pool = createActionRpcPool([
+      client({ getBlockNumber: firstBlock, getBalance: vi.fn().mockResolvedValue(1_000n) }),
+      client({ getBlockNumber: secondBlock, getBalance: vi.fn().mockResolvedValue(1_000n) }),
+      client({ getBlockNumber: staleBlock, getBalance: vi.fn().mockResolvedValue(0n) }),
+    ])
+
+    await expect(
+      pool.waitForFundingSettlement(address, 1_000n, 100n, {
+        settleBlocks: 3n,
+        pollMs: 1,
+        timeoutMs: 100,
+      }),
+    ).resolves.toEqual({ targetBlock: 103n, quorum: 2, ready: 2, preferred: 0 })
+    expect(firstBlock).toHaveBeenCalledTimes(2)
+    expect(secondBlock).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('action RPC error classification', () => {

@@ -67,6 +67,8 @@ interface ActionBase {
   action?: string
   regions?: readonly number[]
   onState?: (state: 'signing' | 'sent' | 'confirmed') => void
+  /** Internal recovery attempts can suppress their own failure sound so one transient retry is not audible twice. */
+  suppressFailureSound?: boolean
 }
 
 export interface ContractActionOptions extends ActionBase {
@@ -398,7 +400,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     }
   } catch (error) {
     const friendly = friendlyError(error, isTransfer(opts) ? 'transfer' : opts.functionName)
-    playSound(friendly.rejected ? 'cancel' : 'error')
+    if (!opts.suppressFailureSound) playSound(friendly.rejected ? 'cancel' : 'error')
     throw Object.assign(new Error(friendly.message), { friendly })
   }
 }

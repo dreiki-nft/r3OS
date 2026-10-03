@@ -206,6 +206,23 @@ describe('transaction pipeline', () => {
     expect(mocks.broadcastRawTransaction).toHaveBeenCalledWith('0x1234', expect.stringMatching(/^0x/))
   })
 
+  it('can suppress the failure sound for an internal retry attempt', async () => {
+    mocks.broadcastRawTransaction.mockRejectedValueOnce(new Error('Missing or invalid parameters'))
+    await expect(
+      sendAction({
+        kind: 'estimate',
+        address,
+        abi,
+        functionName: 'ping',
+        account,
+        signer: 'burner',
+        quote: quote(),
+        suppressFailureSound: true,
+      }),
+    ).rejects.toThrow()
+    expect(mocks.playSound).not.toHaveBeenCalled()
+  })
+
   it('keeps a burner send pending when its balance cannot cover the gas cap', () => {
     const shown = quote({ gasLimit: 21_000n, maxFeePerGas: 10n })
     expect(burnerCanAfford(209_999n, shown)).toBe(false)

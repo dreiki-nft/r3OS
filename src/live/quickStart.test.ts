@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseEther } from 'viem'
-import { quickFunding, retryFreshFundingStart } from './quickStart'
+import { FUNDING_SETTLE_BLOCKS, quickFunding, retryFreshFundingStart } from './quickStart'
 import { burnerFundTooLarge, fundingSuggestion, MAX_BURNER_FUND } from './liveStore'
 
 const GWEI = 1_000_000_000n
@@ -40,6 +40,12 @@ describe('burner funding cap', () => {
   })
 })
 
+
+describe('funded burner settlement', () => {
+  it('deliberately waits several Monad blocks before the first funded startSession', () => {
+    expect(FUNDING_SETTLE_BLOCKS).toBe(3n)
+  })
+})
 
 describe('fresh funding start retry', () => {
   it('retries one transient invalid-params style rejection only after this flow funded the burner', () => {
