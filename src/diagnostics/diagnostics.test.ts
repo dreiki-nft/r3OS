@@ -73,6 +73,8 @@ describe('DXDIAG report model', () => {
       input({ rpcStats: { windowSeconds: 10, counts: { eth_call: 3, eth_blockNumber: 2 } } }),
     )
     expect(dev).toContain('rpc calls (dev): 5 in the current 10 s window')
+    expect(dev).toContain('rpc eth_call: 3')
+    expect(dev).toContain('rpc eth_blockNumber: 2')
   })
 
   it('handles missing contracts', () => {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { requestRecycle } from './programs/recycleIntent'
-import { openProgram, programById, programIsVisible, type ProgramDef } from './programs'
+import { openProgram, preloadProgram, programById, programIsVisible, type ProgramDef } from './programs'
 import { desktopProgramIds } from './layout'
 import { useAuctionLive } from '../labs/auctionLive'
 import { playSound } from './sound'
@@ -215,6 +215,7 @@ export function Desktop() {
   }
   const choose = (index: number) => {
     setSelected(index)
+    if (programs[index]) void preloadProgram(programs[index].id)
     playSound('select')
   }
 
@@ -254,6 +255,8 @@ export function Desktop() {
             key={program.id}
             data-index={index}
             className={`desktop-icon ${selected === index ? 'selected' : ''} ${program.id === 'bin' && binFull ? 'desktop-bin-full' : ''} ${programNeedsSparkle(program.id, releases) ? 'desktop-icon-new' : ''}`}
+            onMouseEnter={() => void preloadProgram(program.id)}
+            onFocus={() => void preloadProgram(program.id)}
             onDragOver={(event) => {
               if (program.id === 'bin' && event.dataTransfer.types.includes('application/x-r3-frame'))
                 event.preventDefault()

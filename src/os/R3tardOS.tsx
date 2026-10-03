@@ -19,14 +19,13 @@ import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet } from '../chain/wallet'
 import { Welcome } from './Welcome'
 import { getBlockSnapshot, startBlockClock, subscribeBlocks } from '../chain/blocks'
-import { startCanvasStore } from '../paint/canvasStore'
 import { startPresence } from '../paint/presence'
 import { initActivity } from './activity'
 import { Assistant } from './Assistant'
 import { setAssistantTip } from './assistantStore'
 import { clearBalloons, pushBalloon } from './balloons'
 import { Desktop } from './Desktop'
-import { openProgram, preloadLaunchPrograms, programById, programIsVisible } from './programs'
+import { openProgram, programById, programIsVisible } from './programs'
 import { playSound } from './sound'
 import { StormScreen } from './StormScreen'
 import { Taskbar } from './Taskbar'
@@ -39,6 +38,7 @@ import { clampAllWindows, getWindows, resetWindows, sortWindowsForDisplay, subsc
 import { initSound } from './sound'
 import { initWalletDiscovery } from '../chain/wallet'
 import { markProgramMounted } from '../chain/perf'
+import { startBootPrefetch } from './bootPrefetch'
 import {
   availableScheduledPrograms,
   consumeInstallAnnouncement,
@@ -87,17 +87,13 @@ export function R3tardOS() {
     initLiveNudge()
     void initReleases()
     void startBlockClock()
-    void startCanvasStore()
+    // Spend the boot screen on real work: canvas state, RPC ranking, contracts, frame/account caches,
+    // fee data and the launch-critical code chunks all warm in parallel before the desktop is released.
+    void startBootPrefetch()
     startPresence()
     initActivity()
-    // The boot screen gives us a free preload window. Warm the programs people are most likely
-    // to open first without putting their code back into the initial bundle.
-    const preloadTimer = window.setTimeout(preloadLaunchPrograms, 250)
     window.addEventListener('resize', clampAllWindows)
-    return () => {
-      window.clearTimeout(preloadTimer)
-      window.removeEventListener('resize', clampAllWindows)
-    }
+    return () => window.removeEventListener('resize', clampAllWindows)
   }, [])
 
   useEffect(() => {

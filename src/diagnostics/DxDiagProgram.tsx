@@ -182,6 +182,16 @@ export function DxDiagProgram() {
                 }
                 source={d.rpcStats ? 'measured' : undefined}
               />
+              {d.rpcStats && Object.keys(d.rpcStats.counts).length > 0 && (
+                <Row
+                  label="RPC methods"
+                  value={Object.entries(d.rpcStats.counts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([method, count]) => `${method} ${count}`)
+                    .join(' · ')}
+                  source="measured"
+                />
+              )}
             </GroupBox>
             <GroupBox title="Contracts">
               <Row label="Paint" value={d.contracts.paint ?? 'not configured'} source="config" />

@@ -129,8 +129,8 @@ async function feeQuote(block: bigint) {
 }
 
 /** Warm the shared fee cap during the boot/splash window so the first visible quote only waits on gas. */
-export async function prewarmActionFees() {
-  await probeActionRpcs().catch(() => undefined)
+export async function prewarmActionFees(probe = true) {
+  if (probe) await probeActionRpcs().catch(() => undefined)
   const block = await currentBlock()
   await feeQuote(block)
 }

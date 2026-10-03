@@ -478,25 +478,70 @@ export const programs: ProgramDef[] = [
   },
 ]
 
+type ProgramPreload = {
+  id: string
+  label: string
+  load: () => Promise<unknown>
+}
+
+const launchPreloads: readonly ProgramPreload[] = [
+  { id: 'paint', label: 'Paint', load: () => import('../paint/PaintProgram') },
+  { id: 'pass', label: 'My Pass', load: () => import('../pass/PassProgram') },
+  { id: 'frames', label: 'My Frames', load: () => import('../frames/FramesProgram') },
+  { id: 'frame-props', label: 'Frame Properties', load: () => import('../frames/FramePropsDialog') },
+  { id: 'block-camera', label: 'Block Camera', load: () => import('../monadhw/BlockCameraProgram') },
+  { id: 'cdrom', label: 'CD-ROM', load: () => import('../cdrom/CdromProgram') },
+  { id: 'cd', label: 'Burn a CD', load: () => import('../labs/CDBurnerProgram') },
+  { id: 'monad-hw', label: 'Explore Monad', load: () => import('../monadhw/MonadHardwareProgram') },
+  { id: 'validators', label: 'Network Neighborhood', load: () => import('../network/NetworkProgram') },
+  { id: 'quests', label: 'Quests', load: () => import('../labs/QuestsProgram') },
+  { id: 'auction', label: 'Auction', load: () => import('../labs/AuctionProgram') },
+  { id: 'bin', label: 'Recycle Bin', load: () => import('./programs/RecycleBin') },
+  { id: 'dxdiag', label: 'DXDIAG', load: () => import('../diagnostics/DxDiagProgram') },
+  { id: 'xray', label: 'Monad X-ray', load: () => import('../xray/XRayProgram') },
+  { id: 'live-wizard', label: 'Live Mode', load: () => import('../live/LiveWizard') },
+  { id: 'help', label: 'Help', load: () => import('./programs/HelpProgram') },
+]
+
+const preloadPromises = new Map<string, Promise<unknown>>()
+
+function preloadEntry(entry: ProgramPreload) {
+  const existing = preloadPromises.get(entry.id)
+  if (existing) return existing
+  const pending = entry.load()
+  preloadPromises.set(entry.id, pending)
+  return pending
+}
+
+/** Warm one program on hover/focus as a fallback for anything the boot pass did not finish. */
+export function preloadProgram(id: string) {
+  const entry = launchPreloads.find((item) => item.id === id)
+  return entry ? preloadEntry(entry).then(() => undefined) : Promise.resolve()
+}
+
 /**
- * Warm the launch-critical program chunks while the boot screen is already occupying the user.
- * Dynamic import is deduplicated by the module loader, so opening one of these later is effectively instant.
+ * Download the launch-critical program chunks while the boot screen is already occupying the user.
+ * Dynamic imports are module-loader deduplicated, so the React.lazy mount later reuses these exact chunks.
  */
-export function preloadLaunchPrograms() {
+export async function preloadLaunchPrograms(
+  onProgress?: (done: number, total: number, label: string) => void,
+) {
   if (typeof window === 'undefined') return
-  void Promise.allSettled([
-    import('../paint/PaintProgram'),
-    import('../pass/PassProgram'),
-    import('../frames/FramesProgram'),
-    import('../monadhw/BlockCameraProgram'),
-    import('../cdrom/CdromProgram'),
-    import('../labs/CDBurnerProgram'),
-    import('../monadhw/MonadHardwareProgram'),
-    import('../labs/QuestsProgram'),
-    import('../live/LiveWizard'),
-    import('./programs/RecycleBin'),
-    import('../chain/tx').then((module) => module.prewarmActionFees()),
-  ])
+  let done = 0
+  const total = launchPreloads.length
+  onProgress?.(done, total, 'starting')
+  const results = await Promise.allSettled(
+    launchPreloads.map(async (entry) => {
+      try {
+        await preloadEntry(entry)
+      } finally {
+        done += 1
+        onProgress?.(done, total, entry.label)
+      }
+    }),
+  )
+  const failed = results.filter((result) => result.status === 'rejected').length
+  if (failed) throw new Error(`${failed} program chunk${failed === 1 ? '' : 's'} failed to preload`)
 }
 
 export const programById = (id: string) => programs.find((program) => program.id === id)

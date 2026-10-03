@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { disconnectWallet, getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { startMenuGroups } from './layout'
-import { openProgram, programById, programIsVisible, type ProgramDef } from './programs'
+import { openProgram, preloadProgram, programById, programIsVisible, type ProgramDef } from './programs'
 import { placeSubmenu, startMenuKeyAction, toggleSubmenu, type StartSubmenu } from './shellMenus'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
@@ -172,7 +172,14 @@ export function StartMenu({
           }
         >
           {items.map((program) => (
-            <button role="menuitem" data-sub-item key={program.id} onClick={() => open(program.id)}>
+            <button
+              role="menuitem"
+              data-sub-item
+              key={program.id}
+              onMouseEnter={() => void preloadProgram(program.id)}
+              onFocus={() => void preloadProgram(program.id)}
+              onClick={() => open(program.id)}
+            >
               <Icon name={program.icon} size={24} colour={program.colour} />
               <span className="start-item-label">{program.title}</span>
             </button>
@@ -191,7 +198,13 @@ export function StartMenu({
       <div className="start-items" role="menu" aria-label="Start">
         {cascade('programs', 'Programs', <Icon name="briefcase" size={24} />, regularPrograms)}
         {explore && (
-          <button role="menuitem" data-start-item onClick={() => open(explore.id)}>
+          <button
+            role="menuitem"
+            data-start-item
+            onMouseEnter={() => void preloadProgram(explore.id)}
+            onFocus={() => void preloadProgram(explore.id)}
+            onClick={() => open(explore.id)}
+          >
             <Icon name={explore.icon} size={24} colour={explore.colour} />
             {explore.title}
           </button>
@@ -199,7 +212,13 @@ export function StartMenu({
         {toolPrograms.length > 0 &&
           cascade('tools', 'System Tools', <Icon name="chip" size={24} />, toolPrograms)}
         {groups.help && (
-          <button role="menuitem" data-start-item onClick={() => open('help')}>
+          <button
+            role="menuitem"
+            data-start-item
+            onMouseEnter={() => void preloadProgram('help')}
+            onFocus={() => void preloadProgram('help')}
+            onClick={() => open('help')}
+          >
             <Icon name="help" size={24} />
             Help
           </button>

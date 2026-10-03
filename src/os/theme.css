@@ -3726,3 +3726,79 @@ button:disabled {
 .paint-live-hint.active {
   color: var(--accent);
 }
+
+/* Boot prefetch: use the startup screen to make the desktop hot before the user reaches it. */
+.boot-splash-inner {
+  display: grid;
+  width: min(620px, calc(100vw - 32px));
+  gap: 14px;
+}
+
+.boot-prefetch {
+  padding: 10px 12px;
+  border: 1px solid #4b4b50;
+  background: rgba(0, 0, 0, 0.48);
+  font: 12px/1.35 var(--font);
+  box-shadow: inset 1px 1px #111, inset -1px -1px #2d2d31;
+}
+
+.boot-prefetch-head,
+.boot-prefetch-row {
+  display: grid;
+  align-items: baseline;
+}
+
+.boot-prefetch-head {
+  grid-template-columns: 1fr auto;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.boot-prefetch-head span {
+  color: var(--text-muted);
+}
+
+.boot-prefetch-row {
+  grid-template-columns: 28px minmax(150px, 1fr) minmax(0, 1.15fr);
+  gap: 7px;
+  min-height: 17px;
+  color: var(--text-muted);
+}
+
+.boot-prefetch-row small {
+  overflow: hidden;
+  color: #77777d;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boot-prefetch-state {
+  color: #77777d;
+}
+
+.boot-prefetch-row.state-done .boot-prefetch-state {
+  color: #5feddf;
+}
+
+.boot-prefetch-row.state-error .boot-prefetch-state {
+  color: #c52020;
+}
+
+.boot-prefetch-row.state-running {
+  color: var(--text);
+}
+
+@media (max-width: 520px) {
+  .boot-splash-inner {
+    width: calc(100vw - 20px);
+  }
+
+  .boot-prefetch-row {
+    grid-template-columns: 24px 1fr;
+  }
+
+  .boot-prefetch-row small {
+    display: none;
+  }
+}

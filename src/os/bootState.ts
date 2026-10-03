@@ -7,8 +7,15 @@ export const BOOT_SESSION_KEY = 'r3os.booted'
 export const BOOT_LAST_FULL_KEY = 'r3os.boot.lastFull'
 export type BootMode = 'none' | 'full' | 'splash'
 
-/** BIOS lines appear one by one, then the splash, then the desktop fades in. About 3 s plus any wait for the chain (capped at 2.7 s); any key or click skips. */
-export const BOOT_TIMING = { postLineMs: 120, postHoldMs: 350, splashMs: 1_300, returningSplashMs: 1_000, fadeMs: 300 } as const
+/** BIOS lines appear one by one, then the splash. Useful startup work may hold the splash briefly, but total boot is hard-capped below ten seconds; any key or click skips. */
+export const BOOT_TIMING = {
+  postLineMs: 120,
+  postHoldMs: 350,
+  splashMs: 1_300,
+  returningSplashMs: 1_000,
+  fadeMs: 300,
+  maxTotalMs: 9_500,
+} as const
 
 /**
  * Like a real BIOS detecting drives, the screen pauses on a line until its value is real: after "Latest block"

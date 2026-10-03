@@ -6,6 +6,7 @@ export type PerfKind =
   | 'burner-sign'
   | 'burner-broadcast'
   | 'paint-preflight'
+  | 'boot-prefetch'
   | 'tx-receipt'
   | 'tx-total'
   | 'program-open'

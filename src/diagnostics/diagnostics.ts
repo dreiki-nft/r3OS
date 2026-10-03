@@ -130,6 +130,9 @@ export function formatReport(input: DxDiagInput, secrets: readonly string[] = []
   if (input.rpcStats) {
     const total = Object.values(input.rpcStats.counts).reduce((sum, value) => sum + value, 0)
     row('rpc calls (dev)', `${total} in the current ${input.rpcStats.windowSeconds} s window`)
+    for (const [method, count] of Object.entries(input.rpcStats.counts).sort((a, b) => b[1] - a[1])) {
+      row(`rpc ${method}`, String(count))
+    }
   } else row('rpc stats', 'development instrumentation disabled')
   lines.push('')
   lines.push('CONTRACTS')

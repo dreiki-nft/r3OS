@@ -74,11 +74,12 @@ describe('boot screen', () => {
     expect(postLines({ ...base, offline: true }).join('\n')).toContain('no signal')
   })
 
-  it('stays short', () => {
+  it('keeps the cosmetic boot short and hard-caps prefetch below ten seconds', () => {
     const lines = postLines(base).length
-    const total =
+    const cosmetic =
       lines * BOOT_TIMING.postLineMs + BOOT_TIMING.postHoldMs + BOOT_TIMING.splashMs + BOOT_TIMING.fadeMs
-    expect(total).toBeLessThan(4_000)
+    expect(cosmetic).toBeLessThan(4_000)
+    expect(BOOT_TIMING.maxTotalMs).toBeLessThan(10_000)
   })
 
   it('tells the welcome dialog and assistant to wait', () => {
