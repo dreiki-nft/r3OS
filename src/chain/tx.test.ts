@@ -80,6 +80,29 @@ describe('transaction pipeline', () => {
     expect(mocks.estimateContractGas).not.toHaveBeenCalled()
   })
 
+  it('does not duplicate execution work for estimated quotes', async () => {
+    const result = await quoteAction({ kind: 'estimate', address, abi, functionName: 'ping', account })
+    expect(result.gasLimit).toBe(110_000n)
+    expect(mocks.estimateContractGas).toHaveBeenCalledTimes(1)
+    expect(mocks.simulateContract).not.toHaveBeenCalled()
+  })
+
+  it('shares an in-flight fee quote across concurrent actions', async () => {
+    let resolveFees!: (value: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }) => void
+    mocks.estimateFeesPerGas.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveFees = resolve }),
+    )
+
+    const first = quoteAction({ kind: 'estimate', address, abi, functionName: 'ping', account })
+    const second = quoteAction({ kind: 'estimate', address, abi, functionName: 'ping', account })
+    await Promise.resolve()
+    resolveFees({ maxFeePerGas: 20n, maxPriorityFeePerGas: 3n })
+    await Promise.all([first, second])
+
+    expect(mocks.estimateFeesPerGas).toHaveBeenCalledTimes(1)
+    expect(mocks.estimateContractGas).toHaveBeenCalledTimes(2)
+  })
+
   it('sends the exact shown gas and fee caps and simulates once per send', async () => {
     const shown = quote()
     await sendAction({ kind: 'estimate', address, abi, functionName: 'ping', account, quote: shown })

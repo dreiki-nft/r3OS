@@ -79,5 +79,20 @@ export const config: Readonly<AppConfig> = Object.freeze({
   demo: !rpcUrls.length || !paint,
 })
 
+/**
+ * Stable namespace for browser-persisted data that belongs to one Paint deployment.
+ *
+ * Chain id alone is not enough on testnet: redeploying Paint reuses frame/token ids,
+ * so an old `10143:7` cache entry can otherwise be mistaken for frame #7 on the new
+ * contract. Including the Paint address makes every deployment its own cache universe.
+ */
+export function deploymentScope(): string
+export function deploymentScope(chainId: number, paintAddress?: Address): string
+export function deploymentScope(chainId?: number, paintAddress?: Address) {
+  const resolvedChainId = chainId ?? config.chainId
+  const resolvedPaintAddress = chainId === undefined ? config.paintAddress : paintAddress
+  return `${resolvedChainId}:${resolvedPaintAddress?.toLowerCase() ?? 'no-paint'}`
+}
+
 export const MONAD_NAMES: Record<number, string> = { 143: 'Monad', 10143: 'Monad Testnet' }
 export const chainName = MONAD_NAMES[config.chainId] ?? `Monad ${config.chainId}`

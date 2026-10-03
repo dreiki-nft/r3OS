@@ -234,6 +234,11 @@
   gap: 8px;
 }
 
+.cdrom-empty-actions .r3-button:not(:disabled) {
+  color: var(--text);
+  text-shadow: none;
+}
+
 .cdrom-status {
   min-height: 24px;
   box-sizing: border-box;

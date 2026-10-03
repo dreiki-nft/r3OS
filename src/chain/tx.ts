@@ -79,6 +79,7 @@ type FeeCache = {
   maxPriorityFeePerGas: bigint
 }
 let feeCache: FeeCache | undefined
+let feePromise: Promise<FeeCache> | undefined
 
 function isTransfer(opts: ActionOptions): opts is TransferActionOptions {
   return opts.type === 'transfer'
@@ -91,16 +92,27 @@ async function currentBlock() {
 }
 
 async function feeQuote(block: bigint) {
-  if (feeCache && block >= feeCache.block && block - feeCache.block <= 10n) return feeCache
+  if (feeCache && block >= feeCache.block && block - feeCache.block <= 20n) return feeCache
   if (!publicClient) throw new Error('DEMO_MODE')
-  const rawFees = await publicClient.estimateFeesPerGas()
-  const fees = rawFees as { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint; gasPrice?: bigint }
-  feeCache = {
-    block,
-    maxFeePerGas: fees.maxFeePerGas ?? fees.gasPrice ?? 0n,
-    maxPriorityFeePerGas: fees.maxPriorityFeePerGas ?? 0n,
-  }
-  return feeCache
+
+  // Several programs can ask for a quote at the same time. Share one fee RPC instead of
+  // stampeding the public endpoint with identical estimateFeesPerGas calls.
+  if (feePromise) return feePromise
+
+  feePromise = (async () => {
+    const rawFees = await publicClient.estimateFeesPerGas()
+    const fees = rawFees as { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint; gasPrice?: bigint }
+    feeCache = {
+      block,
+      maxFeePerGas: fees.maxFeePerGas ?? fees.gasPrice ?? 0n,
+      maxPriorityFeePerGas: fees.maxPriorityFeePerGas ?? 0n,
+    }
+    return feeCache
+  })().finally(() => {
+    feePromise = undefined
+  })
+
+  return feePromise
 }
 
 function senderFor(opts: ActionOptions) {
@@ -124,21 +136,37 @@ function contractBase(opts: ContractActionOptions, sender: Address) {
 export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
   if (!publicClient) throw new Error('DEMO_MODE')
   const sender = senderFor(opts)
-  let gasLimit: bigint
+
+  // Start every independent quote read immediately. viem's HTTP batch transport can then
+  // combine them, and even without batching the wall time becomes roughly one RPC round-trip.
+  const blockPromise = currentBlock()
+  let gasLimitPromise: Promise<bigint>
+
   if (isTransfer(opts)) {
-    gasLimit = 21_000n
+    gasLimitPromise = Promise.resolve(21_000n)
   } else {
     const base = contractBase(opts, sender)
-    await publicClient.simulateContract(base)
-    if (opts.kind === 'flipbookPaint' || opts.kind === 'forkPaint' || opts.kind === 'sleepwalkerStep') {
-      gasLimit = gasLimitFor(opts.kind, 0n, opts.pixels)
+    const fixedGas =
+      opts.kind === 'flipbookPaint' || opts.kind === 'forkPaint' || opts.kind === 'sleepwalkerStep'
+
+    if (fixedGas) {
+      // Fixed-gas actions still need one dry-run so an invalid action is rejected before a
+      // burner signs it. The dry-run now overlaps the fee lookup instead of blocking it.
+      gasLimitPromise = publicClient
+        .simulateContract(base)
+        .then(() => gasLimitFor(opts.kind, 0n, opts.pixels))
     } else {
-      const estimate = await publicClient.estimateContractGas(base)
-      gasLimit = gasLimitFor(opts.kind, estimate, opts.pixels)
+      // estimateContractGas already executes the transaction and surfaces reverts. Running a
+      // simulateContract first performed the same expensive work twice on every quote.
+      gasLimitPromise = publicClient
+        .estimateContractGas(base)
+        .then((estimate) => gasLimitFor(opts.kind, estimate, opts.pixels))
     }
   }
-  const block = await currentBlock()
-  const fees = await feeQuote(block)
+
+  const feePromiseForQuote = blockPromise.then((block) => feeQuote(block))
+  const [gasLimit, block, fees] = await Promise.all([gasLimitPromise, blockPromise, feePromiseForQuote])
+
   return {
     gasLimit,
     maxFeePerGas: fees.maxFeePerGas,
@@ -299,4 +327,5 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
 
 export function __resetFeeCacheForTests() {
   feeCache = undefined
+  feePromise = undefined
 }

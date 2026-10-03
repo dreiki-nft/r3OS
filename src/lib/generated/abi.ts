@@ -11704,6 +11704,35 @@ export const R3TARDS_CD_BURNER_ABI = [
   },
   {
     "type": "function",
+    "name": "burnMixedCD",
+    "inputs": [
+      {
+        "name": "trackIds",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      },
+      {
+        "name": "trackKinds",
+        "type": "uint8[]",
+        "internalType": "uint8[]"
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "canBurn",
     "inputs": [
       {
@@ -11849,6 +11878,17 @@ export const R3TARDS_CD_BURNER_ABI = [
   },
   {
     "type": "error",
+    "name": "BlockCameraTrackReadFailed",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "CDDoesNotExist",
     "inputs": [
       {
@@ -11868,7 +11908,7 @@ export const R3TARDS_CD_BURNER_ABI = [
     "name": "DuplicateTrack",
     "inputs": [
       {
-        "name": "frameId",
+        "name": "tokenId",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -11950,10 +11990,64 @@ export const R3TARDS_CD_BURNER_ABI = [
   },
   {
     "type": "error",
+    "name": "InvalidTrackKind",
+    "inputs": [
+      {
+        "name": "kind",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidTrackKindsLength",
+    "inputs": [
+      {
+        "name": "tracks",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "kinds",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotBlockCameraToken",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "NotFrameOwner",
     "inputs": [
       {
         "name": "frameId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotLabsOwner",
+    "inputs": [
+      {
+        "name": "tokenId",
         "type": "uint256",
         "internalType": "uint256"
       },
@@ -12475,6 +12569,35 @@ export const R3TARDS_BLOCK_CAMERA_ABI = [
             "internalType": "bool"
           }
         ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "cdTrackData",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "season",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "blockNumber",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "colourCounts",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"

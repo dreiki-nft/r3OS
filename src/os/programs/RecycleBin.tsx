@@ -23,7 +23,7 @@ import { describeFrames, subscribeRecycleRequests, takeRecycleRequest } from './
 import { formatMaxCost, withTenPercent } from '../../chain/gas'
 import { getWalletSnapshot, subscribeWallet } from '../../chain/wallet'
 import { getFrameInfoBatch, mineTokenIds, refreshFrameIndex, type FrameInfo } from '../../frames/framesStore'
-import { decodePacked4Bpp, type PixelImage } from '../../frames/frameImage'
+import { decodePacked4Bpp, getFrameImage, type PixelImage } from '../../frames/frameImage'
 import { PixelPreview } from '../../frames/PixelPreview'
 import { loadBurner } from '../../live/burner'
 import { R3TARDS_PAINT_ABI, R3TARDS_RECYCLE_BIN_ABI } from '../../lib/generated/abi'
@@ -156,6 +156,26 @@ function GrayscaleFrame({ id, tombstone }: { id: number; tombstone: Tombstone })
   }, [id, tombstone.blockNumber])
 
   return <PixelPreview image={image} size={34} />
+}
+
+function PickerFramePreview({ id }: { id: number }) {
+  const [image, setImage] = useState<PixelImage>()
+
+  useEffect(() => {
+    let cancelled = false
+    void getFrameImage(id)
+      .then((next) => {
+        if (!cancelled) setImage(next)
+      })
+      .catch(() => {
+        if (!cancelled) setImage(undefined)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  return <PixelPreview image={image} size={46} />
 }
 
 export function RecycleBin() {
@@ -723,6 +743,7 @@ export function RecycleBin() {
       {pickerOpen && (
         <MessageBox
           title="Recycle frames"
+          className="bin-picker-dialog"
           onClose={() => setPickerOpen(false)}
           onDefault={() => {
             if (picked.length) {
@@ -754,8 +775,13 @@ export function RecycleBin() {
                     )
                   }
                 />
-                <span>frame #{id}</span>
-                <small>season {info.season + 1}</small>
+                <span className="bin-picker-preview" aria-hidden="true">
+                  <PickerFramePreview id={id} />
+                </span>
+                <span className="bin-picker-copy">
+                  <b>frame #{id}</b>
+                  <small>season {info.season + 1}</small>
+                </span>
               </label>
             ))}
           </div>

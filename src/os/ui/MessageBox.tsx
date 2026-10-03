@@ -15,6 +15,7 @@ export function MessageBox({
   onCancel,
   defaultLabel = 'OK',
   cancelLabel = 'Cancel',
+  className,
 }: {
   kind?: 'info' | 'warning' | 'error'
   title: string
@@ -26,6 +27,7 @@ export function MessageBox({
   onCancel?: () => void
   defaultLabel?: string
   cancelLabel?: string
+  className?: string
 }) {
   const root = useRef<HTMLDivElement>(null)
 
@@ -77,7 +79,7 @@ export function MessageBox({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="message-box window"
+        className={`message-box window${className ? ` ${className}` : ''}`}
         onKeyDown={keyboard}
       >
         <header className="titlebar">

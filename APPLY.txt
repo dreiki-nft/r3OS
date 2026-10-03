@@ -1,0 +1,8 @@
+Snapshot-28 CD-ROM button visual fix
+
+Replace:
+  src/cdrom/cdrom.css
+with the file included in this archive.
+
+Change:
+Enabled buttons in the empty CD-ROM state now use normal button text color instead of inheriting muted empty-state text. Disabled buttons remain gray through the existing global :disabled rule.

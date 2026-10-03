@@ -1,0 +1,352 @@
+diff --git a/src/cdrom/cdromStore.ts b/src/cdrom/cdromStore.ts
+index 8c50b7d..5934fd9 100644
+--- a/src/cdrom/cdromStore.ts
++++ b/src/cdrom/cdromStore.ts
+@@ -1,5 +1,5 @@
+ import type { Address } from 'viem'
+-import { config } from '../chain/config'
++import { deploymentScope } from '../chain/config'
+ 
+ /**
+  * Which disc sits in drive D:. It is a per-browser convenience (like a remembered card number):
+@@ -27,7 +27,7 @@ let version = 0
+ const memory = new Map<string, InsertedDisc>()
+ 
+ function key(account: Address) {
+-  return `r3os:cdrom:${config.chainId}:${account.toLowerCase()}`
++  return `r3os:cdrom:${deploymentScope()}:${account.toLowerCase()}`
+ }
+ 
+ function emit() {
+diff --git a/src/chain/config.ts b/src/chain/config.ts
+index 8590ea3..3a3d0d6 100644
+--- a/src/chain/config.ts
++++ b/src/chain/config.ts
+@@ -79,5 +79,16 @@ export const config: Readonly<AppConfig> = Object.freeze({
+   demo: !rpcUrls.length || !paint,
+ })
+ 
++/**
++ * Stable namespace for browser-persisted data that belongs to one Paint deployment.
++ *
++ * Chain id alone is not enough on testnet: redeploying Paint reuses frame/token ids,
++ * so an old `10143:7` cache entry can otherwise be mistaken for frame #7 on the new
++ * contract. Including the Paint address makes every deployment its own cache universe.
++ */
++export function deploymentScope(chainId = config.chainId, paintAddress = config.paintAddress) {
++  return `${chainId}:${paintAddress?.toLowerCase() ?? 'no-paint'}`
++}
++
+ export const MONAD_NAMES: Record<number, string> = { 143: 'Monad', 10143: 'Monad Testnet' }
+ export const chainName = MONAD_NAMES[config.chainId] ?? `Monad ${config.chainId}`
+diff --git a/src/frames/frameImage.ts b/src/frames/frameImage.ts
+index 8754c01..c6a1032 100644
+--- a/src/frames/frameImage.ts
++++ b/src/frames/frameImage.ts
+@@ -1,6 +1,6 @@
+ import { hexToBytes, type Address, type Hex } from 'viem'
+ import { publicClient } from '../chain/clients'
+-import { config } from '../chain/config'
++import { config, deploymentScope } from '../chain/config'
+ import { decodeJsonDataUri } from '../lib/dataUri'
+ import { applyDf1 } from '../lib/df1'
+ import { DF1_RENDERER_ABI, R3TARDS_PAINT_ABI, SEASON_TIMELAPSE_RENDERER_ABI } from '../lib/generated/abi'
+@@ -33,7 +33,7 @@ const rendererMemory = new Map<string, RendererInfo[]>()
+ const timelapseMemory = new Map<number, string>()
+ 
+ function imageKey(tokenId: number) {
+-  return `${config.chainId}:${tokenId}`
++  return `${deploymentScope()}:${tokenId}`
+ }
+ 
+ function colour(index: number) {
+diff --git a/src/frames/framesStore.ts b/src/frames/framesStore.ts
+index d0a1d85..18041a9 100644
+--- a/src/frames/framesStore.ts
++++ b/src/frames/framesStore.ts
+@@ -1,6 +1,6 @@
+ import { zeroAddress, type Address } from 'viem'
+ import { publicClient } from '../chain/clients'
+-import { config } from '../chain/config'
++import { config, deploymentScope } from '../chain/config'
+ import { idbGet, idbSet } from '../lib/idb'
+ import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+ import { subscribeCanvasActivity, type CanvasActivity } from '../paint/canvasStore'
+@@ -81,11 +81,15 @@ export function getFramesSnapshot() {
+ }
+ 
+ function cacheKey(tokenId: number) {
+-  return `${config.chainId}:${tokenId}`
++  return `${deploymentScope()}:${tokenId}`
+ }
+ 
+ function ownerKey(account: Address) {
+-  return `${config.chainId}:${account.toLowerCase()}`
++  return `${deploymentScope()}:${account.toLowerCase()}`
++}
++
++function viewerPreferenceKey(name: 'hidden' | 'unhidden') {
++  return `r3os.${name}:${deploymentScope()}`
+ }
+ 
+ function toFrameInfo(value: unknown): FrameInfo {
+@@ -123,7 +127,7 @@ function toFrameInfo(value: unknown): FrameInfo {
+ 
+ function readUnhidden() {
+   try {
+-    const value: unknown = JSON.parse(localStorage.getItem('r3os.unhidden') ?? '[]')
++    const value: unknown = JSON.parse(localStorage.getItem(viewerPreferenceKey('unhidden')) ?? '[]')
+     if (!Array.isArray(value)) return new Set<number>()
+     return new Set(value.filter((item): item is number => Number.isInteger(item) && item >= 0))
+   } catch {
+@@ -133,7 +137,7 @@ function readUnhidden() {
+ 
+ function readHidden() {
+   try {
+-    const value: unknown = JSON.parse(localStorage.getItem('r3os.hidden') ?? '[]')
++    const value: unknown = JSON.parse(localStorage.getItem(viewerPreferenceKey('hidden')) ?? '[]')
+     if (!Array.isArray(value)) return new Set<number>()
+     return new Set(value.filter((item): item is number => Number.isInteger(item) && item > 0))
+   } catch {
+@@ -446,8 +450,14 @@ export function restoreFrame(tokenId: number) {
+   unhidden.add(tokenId)
+   hidden.delete(tokenId)
+   try {
+-    localStorage.setItem('r3os.unhidden', JSON.stringify([...unhidden].sort((a, b) => a - b)))
+-    localStorage.setItem('r3os.hidden', JSON.stringify([...hidden].sort((a, b) => a - b)))
++    localStorage.setItem(
++      viewerPreferenceKey('unhidden'),
++      JSON.stringify([...unhidden].sort((a, b) => a - b)),
++    )
++    localStorage.setItem(
++      viewerPreferenceKey('hidden'),
++      JSON.stringify([...hidden].sort((a, b) => a - b)),
++    )
+   } catch {
+     // Viewer preference is optional.
+   }
+@@ -461,8 +471,14 @@ export function hideFrame(tokenId: number) {
+   unhidden.delete(tokenId)
+   hidden.add(tokenId)
+   try {
+-    localStorage.setItem('r3os.unhidden', JSON.stringify([...unhidden].sort((a, b) => a - b)))
+-    localStorage.setItem('r3os.hidden', JSON.stringify([...hidden].sort((a, b) => a - b)))
++    localStorage.setItem(
++      viewerPreferenceKey('unhidden'),
++      JSON.stringify([...unhidden].sort((a, b) => a - b)),
++    )
++    localStorage.setItem(
++      viewerPreferenceKey('hidden'),
++      JSON.stringify([...hidden].sort((a, b) => a - b)),
++    )
+   } catch {
+     // Viewer preference is optional.
+   }
+diff --git a/src/labs/phase3c2c.css b/src/labs/phase3c2c.css
+index 2074733..87cb64a 100644
+--- a/src/labs/phase3c2c.css
++++ b/src/labs/phase3c2c.css
+@@ -179,13 +179,24 @@
+   color: var(--muted);
+ }
+ 
++.message-box.bin-picker-dialog {
++  width: min(760px, calc(100vw - 30px));
++  max-height: min(620px, calc(100vh - 30px));
++}
++
++.bin-picker-dialog .message-box-content {
++  min-width: 0;
++  min-height: 0;
++}
++
+ .bin-picker {
+-  width: min(680px, 72vw);
+-  max-height: 360px;
++  width: 100%;
++  box-sizing: border-box;
++  max-height: min(430px, calc(100vh - 190px));
+   overflow: auto;
+   display: grid;
+-  grid-template-columns: repeat(3, 1fr);
+-  gap: 4px;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 6px;
+   margin-bottom: 8px;
+   padding: 6px;
+   background: var(--field);
+@@ -196,17 +207,62 @@
+ 
+ .bin-picker label {
+   display: grid;
+-  grid-template-columns: 20px 1fr;
+-  padding: 6px;
++  grid-template-columns: 20px 52px minmax(0, 1fr);
++  align-items: center;
++  gap: 7px;
++  min-width: 0;
++  min-height: 64px;
++  padding: 6px 8px;
++  border: 1px solid transparent;
++  cursor: pointer;
++}
++
++.bin-picker input[type='checkbox'] {
++  width: 16px;
++  height: 16px;
++  min-height: 16px;
++  margin: 0;
++  padding: 0;
++  justify-self: center;
++}
++
++.bin-picker-preview {
++  width: 46px;
++  height: 46px;
++  display: grid;
++  place-items: center;
++  background: #0b0b0c;
++  box-shadow:
++    inset 1px 1px #000,
++    inset -1px -1px var(--bevel-light);
++  overflow: hidden;
++}
++
++.bin-picker-preview canvas {
++  image-rendering: pixelated;
++}
++
++.bin-picker-copy {
++  min-width: 0;
++  display: grid;
++  gap: 4px;
++}
++
++.bin-picker-copy b,
++.bin-picker-copy small {
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
+ }
+ 
+ .bin-picker label.selected {
+   background: var(--accent-soft);
++  border-color: var(--accent);
+   outline: 1px dotted var(--text);
++  outline-offset: -3px;
+ }
+ 
+ .bin-picker small {
+-  grid-column: 2;
+   color: var(--muted);
+ }
+ 
+@@ -606,6 +662,15 @@
+ 
+ /* Phones: stack the Bin's summary above its list instead of splitting a 390 px screen in half. */
+ @media (max-width: 640px) {
++  .message-box.bin-picker-dialog {
++    width: calc(100vw - 18px);
++  }
++
++  .bin-picker {
++    grid-template-columns: 1fr;
++    max-height: min(390px, calc(100vh - 190px));
++  }
++
+   .bin-body {
+     grid-template-columns: 1fr;
+     grid-template-rows: auto minmax(0, 1fr);
+diff --git a/src/os/programs/RecycleBin.tsx b/src/os/programs/RecycleBin.tsx
+index adbccd5..759ea73 100644
+--- a/src/os/programs/RecycleBin.tsx
++++ b/src/os/programs/RecycleBin.tsx
+@@ -23,7 +23,7 @@ import { describeFrames, subscribeRecycleRequests, takeRecycleRequest } from './
+ import { formatMaxCost, withTenPercent } from '../../chain/gas'
+ import { getWalletSnapshot, subscribeWallet } from '../../chain/wallet'
+ import { getFrameInfoBatch, mineTokenIds, refreshFrameIndex, type FrameInfo } from '../../frames/framesStore'
+-import { decodePacked4Bpp, type PixelImage } from '../../frames/frameImage'
++import { decodePacked4Bpp, getFrameImage, type PixelImage } from '../../frames/frameImage'
+ import { PixelPreview } from '../../frames/PixelPreview'
+ import { loadBurner } from '../../live/burner'
+ import { R3TARDS_PAINT_ABI, R3TARDS_RECYCLE_BIN_ABI } from '../../lib/generated/abi'
+@@ -158,6 +158,26 @@ function GrayscaleFrame({ id, tombstone }: { id: number; tombstone: Tombstone })
+   return <PixelPreview image={image} size={34} />
+ }
+ 
++function PickerFramePreview({ id }: { id: number }) {
++  const [image, setImage] = useState<PixelImage>()
++
++  useEffect(() => {
++    let cancelled = false
++    void getFrameImage(id)
++      .then((next) => {
++        if (!cancelled) setImage(next)
++      })
++      .catch(() => {
++        if (!cancelled) setImage(undefined)
++      })
++    return () => {
++      cancelled = true
++    }
++  }, [id])
++
++  return <PixelPreview image={image} size={46} />
++}
++
+ export function RecycleBin() {
+   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
+   const [bin, setBin] = useState<Address>()
+@@ -723,6 +743,7 @@ export function RecycleBin() {
+       {pickerOpen && (
+         <MessageBox
+           title="Recycle frames"
++          className="bin-picker-dialog"
+           onClose={() => setPickerOpen(false)}
+           onDefault={() => {
+             if (picked.length) {
+@@ -754,8 +775,13 @@ export function RecycleBin() {
+                     )
+                   }
+                 />
+-                <span>frame #{id}</span>
+-                <small>season {info.season + 1}</small>
++                <span className="bin-picker-preview" aria-hidden="true">
++                  <PickerFramePreview id={id} />
++                </span>
++                <span className="bin-picker-copy">
++                  <b>frame #{id}</b>
++                  <small>season {info.season + 1}</small>
++                </span>
+               </label>
+             ))}
+           </div>
+diff --git a/src/os/ui/MessageBox.tsx b/src/os/ui/MessageBox.tsx
+index 17a8c41..158d586 100644
+--- a/src/os/ui/MessageBox.tsx
++++ b/src/os/ui/MessageBox.tsx
+@@ -15,6 +15,7 @@ export function MessageBox({
+   onCancel,
+   defaultLabel = 'OK',
+   cancelLabel = 'Cancel',
++  className,
+ }: {
+   kind?: 'info' | 'warning' | 'error'
+   title: string
+@@ -26,6 +27,7 @@ export function MessageBox({
+   onCancel?: () => void
+   defaultLabel?: string
+   cancelLabel?: string
++  className?: string
+ }) {
+   const root = useRef<HTMLDivElement>(null)
+ 
+@@ -77,7 +79,7 @@ export function MessageBox({
+         role="dialog"
+         aria-modal="true"
+         aria-label={title}
+-        className="message-box window"
++        className={`message-box window${className ? ` ${className}` : ''}`}
+         onKeyDown={keyboard}
+       >
+         <header className="titlebar">

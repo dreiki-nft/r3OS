@@ -1,6 +1,6 @@
 import { hexToBytes, type Address, type Hex } from 'viem'
 import { publicClient } from '../chain/clients'
-import { config } from '../chain/config'
+import { config, deploymentScope } from '../chain/config'
 import { decodeJsonDataUri } from '../lib/dataUri'
 import { applyDf1 } from '../lib/df1'
 import { DF1_RENDERER_ABI, R3TARDS_PAINT_ABI, SEASON_TIMELAPSE_RENDERER_ABI } from '../lib/generated/abi'
@@ -33,7 +33,7 @@ const rendererMemory = new Map<string, RendererInfo[]>()
 const timelapseMemory = new Map<number, string>()
 
 function imageKey(tokenId: number) {
-  return `${config.chainId}:${tokenId}`
+  return `${deploymentScope()}:${tokenId}`
 }
 
 function colour(index: number) {

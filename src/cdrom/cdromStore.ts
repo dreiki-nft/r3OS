@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { config } from '../chain/config'
+import { deploymentScope } from '../chain/config'
 
 /**
  * Which disc sits in drive D:. It is a per-browser convenience (like a remembered card number):
@@ -27,7 +27,7 @@ let version = 0
 const memory = new Map<string, InsertedDisc>()
 
 function key(account: Address) {
-  return `r3os:cdrom:${config.chainId}:${account.toLowerCase()}`
+  return `r3os:cdrom:${deploymentScope()}:${account.toLowerCase()}`
 }
 
 function emit() {

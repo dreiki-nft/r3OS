@@ -1,6 +1,6 @@
 import { zeroAddress, type Address } from 'viem'
 import { publicClient } from '../chain/clients'
-import { config } from '../chain/config'
+import { config, deploymentScope } from '../chain/config'
 import { idbGet, idbSet } from '../lib/idb'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { subscribeCanvasActivity, type CanvasActivity } from '../paint/canvasStore'
@@ -81,11 +81,15 @@ export function getFramesSnapshot() {
 }
 
 function cacheKey(tokenId: number) {
-  return `${config.chainId}:${tokenId}`
+  return `${deploymentScope()}:${tokenId}`
 }
 
 function ownerKey(account: Address) {
-  return `${config.chainId}:${account.toLowerCase()}`
+  return `${deploymentScope()}:${account.toLowerCase()}`
+}
+
+function viewerPreferenceKey(name: 'hidden' | 'unhidden') {
+  return `r3os.${name}:${deploymentScope()}`
 }
 
 function toFrameInfo(value: unknown): FrameInfo {
@@ -123,7 +127,7 @@ function toFrameInfo(value: unknown): FrameInfo {
 
 function readUnhidden() {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem('r3os.unhidden') ?? '[]')
+    const value: unknown = JSON.parse(localStorage.getItem(viewerPreferenceKey('unhidden')) ?? '[]')
     if (!Array.isArray(value)) return new Set<number>()
     return new Set(value.filter((item): item is number => Number.isInteger(item) && item >= 0))
   } catch {
@@ -133,7 +137,7 @@ function readUnhidden() {
 
 function readHidden() {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem('r3os.hidden') ?? '[]')
+    const value: unknown = JSON.parse(localStorage.getItem(viewerPreferenceKey('hidden')) ?? '[]')
     if (!Array.isArray(value)) return new Set<number>()
     return new Set(value.filter((item): item is number => Number.isInteger(item) && item > 0))
   } catch {
@@ -446,8 +450,14 @@ export function restoreFrame(tokenId: number) {
   unhidden.add(tokenId)
   hidden.delete(tokenId)
   try {
-    localStorage.setItem('r3os.unhidden', JSON.stringify([...unhidden].sort((a, b) => a - b)))
-    localStorage.setItem('r3os.hidden', JSON.stringify([...hidden].sort((a, b) => a - b)))
+    localStorage.setItem(
+      viewerPreferenceKey('unhidden'),
+      JSON.stringify([...unhidden].sort((a, b) => a - b)),
+    )
+    localStorage.setItem(
+      viewerPreferenceKey('hidden'),
+      JSON.stringify([...hidden].sort((a, b) => a - b)),
+    )
   } catch {
     // Viewer preference is optional.
   }
@@ -461,8 +471,14 @@ export function hideFrame(tokenId: number) {
   unhidden.delete(tokenId)
   hidden.add(tokenId)
   try {
-    localStorage.setItem('r3os.unhidden', JSON.stringify([...unhidden].sort((a, b) => a - b)))
-    localStorage.setItem('r3os.hidden', JSON.stringify([...hidden].sort((a, b) => a - b)))
+    localStorage.setItem(
+      viewerPreferenceKey('unhidden'),
+      JSON.stringify([...unhidden].sort((a, b) => a - b)),
+    )
+    localStorage.setItem(
+      viewerPreferenceKey('hidden'),
+      JSON.stringify([...hidden].sort((a, b) => a - b)),
+    )
   } catch {
     // Viewer preference is optional.
   }
