@@ -18,8 +18,7 @@ import { config } from '../chain/config'
 import { demoConstants, discoverContracts, readCoreConstants } from '../chain/contracts'
 import { friendlyError } from '../chain/errors'
 import { parseManualIds, resolveHolderIds } from '../chain/holders'
-import { readMany } from '../chain/readMany'
-import { startPerf } from '../chain/perf'
+import { recordPerf, startPerf } from '../chain/perf'
 import { quoteAction, sendAction, type ActionOptions, type ActionQuote } from '../chain/tx'
 import {
   connectWallet,
@@ -70,6 +69,7 @@ import {
 import {
   beginInFlight,
   clearPending,
+  getActivityFeedSnapshot,
   getCanvasSnapshot,
   getTileCacheSnapshot,
   readTileState,
@@ -82,6 +82,7 @@ import {
 } from './canvasStore'
 import { decayTileHeat, previewPaintCost, type TilePreviewState } from './cost'
 import { applyRedo, applyUndo } from './history'
+import { observedRegionUsage } from './livePreflight'
 import { PaletteBar } from './PaletteBar'
 import { SaveProgress } from './SaveProgress'
 import { bytesToRuns, runsToBytes, splitPaintRuns } from './split'
@@ -179,6 +180,8 @@ export function PaintProgram() {
   const pendingTimer = useRef<number | undefined>(undefined)
   const paintChunksRef = useRef<(andFrame?: boolean) => Promise<void>>(async () => undefined)
   const strokeQueueRef = useRef<ReturnType<typeof createStrokeQueue> | undefined>(undefined)
+  const liveQuoteRef = useRef<{ hex: string; quote: Promise<ActionQuote> } | undefined>(undefined)
+  const paintQuoteHexRef = useRef<string | undefined>(undefined)
   if (!strokeQueueRef.current) {
     strokeQueueRef.current = createStrokeQueue(() => paintChunksRef.current(false))
   }
@@ -402,29 +405,36 @@ export function PaintProgram() {
   }, [heatView, block.block])
 
   useEffect(() => {
-    if (!wallet.account || !config.paintAddress || patch.pixelWrites === 0 || config.demo) {
-      setPaintQuote(undefined)
-      return
-    }
+    setPaintQuote(undefined)
+    paintQuoteHexRef.current = undefined
+    if (!wallet.account || !config.paintAddress || patch.pixelWrites === 0 || config.demo) return
     let cancelled = false
     const timer = window.setTimeout(() => {
-      void quoteAction({
-        kind: 'corePaint',
-        address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'paint',
-        args: [patch.hex, stableHolderIds],
-        account: wallet.account!,
-        pixels: patch.pixelWrites,
-        signer: isLive ? 'burner' : 'wallet',
-      })
+      const quotePromise =
+        isLive && liveQuoteRef.current?.hex === patch.hex
+          ? liveQuoteRef.current.quote
+          : quoteAction({
+              kind: 'corePaint',
+              address: config.paintAddress!,
+              abi: R3TARDS_PAINT_ABI,
+              functionName: 'paint',
+              args: [patch.hex, stableHolderIds],
+              account: wallet.account!,
+              pixels: patch.pixelWrites,
+              signer: isLive ? 'burner' : 'wallet',
+            })
+      if (isLive) liveQuoteRef.current = { hex: patch.hex, quote: quotePromise }
+      void quotePromise
         .then((quote) => {
-          if (!cancelled) setPaintQuote(quote)
+          if (!cancelled) {
+            paintQuoteHexRef.current = patch.hex
+            setPaintQuote(quote)
+          }
         })
         .catch(() => {
           if (!cancelled) setPaintQuote(undefined)
         })
-    }, 100)
+    }, isLive ? 40 : 100)
     return () => {
       cancelled = true
       window.clearTimeout(timer)
@@ -590,6 +600,34 @@ export function PaintProgram() {
 
   const scheduleAutoPaint = () => {
     if (!isLive || !autoPaint) return
+    // Pointer-up is the earliest moment we know the final stroke bytes. Start eth_estimateGas immediately
+    // and hide most of that RTT behind the short coalescing window instead of waiting for React's quote effect.
+    if (wallet.account && config.paintAddress && !config.demo) {
+      const current = getCanvasSnapshot()
+      const nextPatch = encodeChangedRuns(current.background, current.working)
+      if (nextPatch.pixelWrites > 0) {
+        const quotePromise = quoteAction({
+          kind: 'corePaint',
+          address: config.paintAddress,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'paint',
+          args: [nextPatch.hex, stableHolderIds],
+          account: wallet.account,
+          pixels: nextPatch.pixelWrites,
+          signer: 'burner',
+        })
+        liveQuoteRef.current = { hex: nextPatch.hex, quote: quotePromise }
+        void quotePromise
+          .then((quote) => {
+            const latest = getCanvasSnapshot()
+            const latestPatch = encodeChangedRuns(latest.background, latest.working)
+            if (latestPatch.hex !== nextPatch.hex) return
+            paintQuoteHexRef.current = nextPatch.hex
+            setPaintQuote(quote)
+          })
+          .catch(() => undefined)
+      }
+    }
     strokeQueueRef.current?.schedule()
   }
 
@@ -656,21 +694,8 @@ export function PaintProgram() {
   const seasonSeconds = Number(constants.SEASON_START + canvas.season * constants.SEASON_LENGTH)
   const day = Math.max(1, Math.floor((Date.now() / 1_000 - seasonSeconds) / 86_400) + 1)
 
-  async function regionUsage() {
-    if (!publicClient || !config.paintAddress) return new Map<number, { block: bigint; pixels: number }>()
-    // One Multicall3 eth_call instead of sixteen independent reads on every paint.
-    const values = (await readMany(
-      Array.from({ length: 16 }, (_, region) => ({
-        address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'regionState',
-        args: [canvas.season, region],
-      })),
-      { allowFailure: false },
-    )) as readonly (readonly bigint[])[]
-    const map = new Map<number, { block: bigint; pixels: number }>()
-    values.forEach((value, region) => map.set(region, { block: value[0], pixels: Number(value[1]) }))
-    return map
+  function liveRegionUsage() {
+    return observedRegionUsage(getActivityFeedSnapshot().items, block.block)
   }
 
   async function paintChunks(andFrame = false) {
@@ -696,9 +721,14 @@ export function PaintProgram() {
     setBusy(true)
     cancelRef.current = false
     try {
+      const preflightStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
+      const primedLiveQuote =
+        isLive && liveQuoteRef.current?.hex === patch.hex ? liveQuoteRef.current.quote : undefined
+      const matchingPaintQuote = paintQuoteHexRef.current === patch.hex ? paintQuote : undefined
       const initialQuotePromise =
-        !andFrame && !paintQuote
-          ? quoteAction({
+        !andFrame && !matchingPaintQuote
+          ? (primedLiveQuote ??
+            quoteAction({
               kind: 'corePaint',
               address: config.paintAddress,
               abi: R3TARDS_PAINT_ABI,
@@ -707,18 +737,16 @@ export function PaintProgram() {
               account: wallet.account,
               pixels: patch.pixelWrites,
               signer: isLive ? 'burner' : 'wallet',
-            })
-          : Promise.resolve(paintQuote)
-      // Quote and region-cap reads are independent. Start them together so clicking Paint
-      // pays one wall-clock RPC round trip instead of a serial quote -> region waterfall.
-      // A human wallet confirmation usually spans several Monad blocks, so a current-block region
-      // usage read is stale before the transaction can land. Skip that RTT for wallet-signed paints;
-      // split against the patch's own region usage and let the fresh quote protect execution. Live
-      // Mode can land inside the same block, so it keeps the exact region-state preflight.
-      const usagePromise = isLive
-        ? regionUsage()
-        : Promise.resolve(new Map<number, { block: bigint; pixels: number }>())
-      const [initialPaintQuote, usage] = await Promise.all([initialQuotePromise, usagePromise])
+            }))
+          : Promise.resolve(matchingPaintQuote)
+      // A network read of all 16 region counters was adding hundreds of ms (and occasional seconds)
+      // before every Live send, while the 300ms block could change underneath it anyway. Use the
+      // current-block Painted events already delivered to this tab as a best-effort split hint; the
+      // contract remains authoritative and still enforces the region cap onchain.
+      const usage = isLive ? liveRegionUsage() : new Map<number, { block: bigint; pixels: number }>()
+      const initialPaintQuote = await initialQuotePromise
+      const preflightEnded = typeof performance === 'undefined' ? Date.now() : performance.now()
+      recordPerf('paint-preflight', isLive ? 'live' : 'wallet', preflightEnded - preflightStarted)
       const chunks = splitPaintRuns(bytesToRuns(patch.bytes), {
         maxRawPixels: Number(constants.MAX_RAW_PIXELS_PER_PAINT),
         regionCap: Number(constants.MAX_PIXELS_PER_REGION_PER_BLOCK),
@@ -792,6 +820,7 @@ export function PaintProgram() {
           const stopSettle = startPerf('ui-settle', andFrame ? 'paint + frame' : 'paint')
           await settleInFlightFromReceipt(inFlight, result.receipt.logs, result.blockNumber)
           stopSettle()
+          if (liveQuoteRef.current?.hex === patch.hex) liveQuoteRef.current = undefined
           void refreshBudget()
           let corruptions = new Uint8Array()
           let frameId: bigint | undefined

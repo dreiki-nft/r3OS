@@ -3,7 +3,7 @@ import { getBlockSnapshot } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { friendlyError } from '../chain/errors'
-import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
+import { quoteAction, refreshActionQuoteFees, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, switchToMonad, walletOnCorrectChain } from '../chain/wallet'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { encodeChangedRuns } from '../lib/patch'
@@ -99,6 +99,14 @@ async function samplePaintGas(owner: Address) {
 function fail(error: unknown, action = 'startSession'): never {
   const friendly = friendlyError(error, action)
   throw Object.assign(new Error(friendly.message), { friendly })
+}
+
+export function retryFreshFundingStart(error: unknown, justFunded: boolean) {
+  if (!justFunded) return false
+  const text = error instanceof Error ? error.message : String(error)
+  return /missing or invalid parameters|invalid params|insufficient funds|underpriced|max fee per gas|fee cap|did not confirm acceptance/i.test(
+    text,
+  )
 }
 
 /**
@@ -229,14 +237,26 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
       action: 'fund burner',
     }
     const fundQuote = await quoteAction(transfer).catch((error: unknown) => fail(error, 'transfer'))
-    const fundingResult = await sendAction({ ...transfer, quote: fundQuote, confirmHigherCost })
+    // A wallet confirmation can take several seconds on a chain producing blocks every few hundred ms.
+    // Refresh only the fee caps as soon as the wallet has broadcast the funding tx, while we wait for its
+    // receipt. Re-estimating startSession here would depend on RPCs already seeing the fresh burner balance.
+    let refreshedStartQuote: Promise<ActionQuote> | undefined
+    const fundingResult = await sendAction({
+      ...transfer,
+      quote: fundQuote,
+      confirmHigherCost,
+      onState: (state) => {
+        if (state === 'sent' && !refreshedStartQuote) {
+          refreshedStartQuote = refreshActionQuoteFees(startQuote)
+        }
+      },
+    })
     // The transfer receipt proves the burner received this exact value. Seed the cache immediately instead
     // of reading through another RPC endpoint, which can briefly lag the receipt and report the old balance.
     setCachedBurnerBalance(owner, balanceBefore + value)
-    // The startSession call was already simulated before the wallet funding prompt. Treat the just-confirmed
-    // funding block as its freshness point so usableQuote does not immediately re-estimate against an RPC that
-    // may still report the burner's pre-funding balance.
-    sendStartQuote = { ...startQuote, quotedAtBlock: fundingResult.blockNumber }
+    // Keep the validated gas limit, but never pretend an old pre-wallet fee quote became fresh merely because
+    // funding confirmed. The fee refresh was hidden behind the funding receipt wait above.
+    sendStartQuote = await (refreshedStartQuote ?? refreshActionQuoteFees(startQuote))
   } else {
     report({ prompts: 1 })
   }
@@ -244,11 +264,19 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   // No prompt: the burner sends startSession itself. The pending nonce should already be warm.
   await nonceWarm
   report({ phase: 'start' })
-  await sendAction({ ...startBase, quote: sendStartQuote, confirmHigherCost })
-  // The successful receipt is canonical proof that the session exists. Do not turn that success into an
-  // error just because a follow-up public RPC is a block behind. Drain any queued refreshes, then commit the
-  // known session locally; later events/reads will reconcile it normally.
-  await refreshLiveStatus(owner).catch(() => undefined)
+  try {
+    await sendAction({ ...startBase, quote: sendStartQuote, confirmHigherCost })
+  } catch (error) {
+    // Immediately after a wallet-funded burner appears, a public RPC can briefly reject the first raw tx
+    // while its state/fee view catches up. This only retries the just-funded startSession path, once, with
+    // fresh fee caps and the same signed authorization. It never retries arbitrary user actions.
+    if (!retryFreshFundingStart(error, value > 0n)) throw error
+    await new Promise<void>((resolve) => setTimeout(resolve, 180))
+    sendStartQuote = await refreshActionQuoteFees(sendStartQuote)
+    await sendAction({ ...startBase, quote: sendStartQuote, confirmHigherCost })
+  }
+  // The successful receipt is canonical proof. Flip the UI to LIVE immediately; the websocket/event path
+  // will reconcile the session later without putting a stale public-RPC read back on the critical path.
   confirmLiveSessionStarted(owner, message)
   report({ phase: 'done' })
 }

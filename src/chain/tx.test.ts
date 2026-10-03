@@ -52,7 +52,14 @@ vi.mock('../live/nonce', () => ({
   sendWithBurnerNonce: (_address: Address, sender: (nonce: number) => Promise<unknown>) => sender(7),
 }))
 
-import { __resetFeeCacheForTests, burnerCanAfford, quoteAction, sendAction, type ActionQuote } from './tx'
+import {
+  __resetFeeCacheForTests,
+  burnerCanAfford,
+  quoteAction,
+  refreshActionQuoteFees,
+  sendAction,
+  type ActionQuote,
+} from './tx'
 
 const account = '0x00000000000000000000000000000000000000a1' as Address
 const address = '0x00000000000000000000000000000000000000b1' as Address
@@ -111,6 +118,18 @@ describe('transaction pipeline', () => {
     expect(result.gasLimit).toBe(110_000n)
     expect(mocks.estimateContractGas).toHaveBeenCalledTimes(1)
     expect(mocks.simulateContract).not.toHaveBeenCalled()
+  })
+
+  it('refreshes fee caps without re-estimating a validated gas limit', async () => {
+    const shown = quote({ gasLimit: 222_000n, maxFeePerGas: 4n, maxPriorityFeePerGas: 1n })
+    mocks.block = 19n
+    mocks.estimateFeesPerGas.mockResolvedValueOnce({ maxFeePerGas: 33n, maxPriorityFeePerGas: 5n })
+    const next = await refreshActionQuoteFees(shown)
+    expect(next.gasLimit).toBe(222_000n)
+    expect(next.maxFeePerGas).toBe(33n)
+    expect(next.maxPriorityFeePerGas).toBe(5n)
+    expect(next.quotedAtBlock).toBe(19n)
+    expect(mocks.estimateContractGas).not.toHaveBeenCalled()
   })
 
   it('shares an in-flight fee quote across concurrent actions', async () => {

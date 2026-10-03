@@ -5,6 +5,7 @@ export type PerfKind =
   | 'tx-submit'
   | 'burner-sign'
   | 'burner-broadcast'
+  | 'paint-preflight'
   | 'tx-receipt'
   | 'tx-total'
   | 'program-open'

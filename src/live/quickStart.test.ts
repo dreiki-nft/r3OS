@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseEther } from 'viem'
-import { quickFunding } from './quickStart'
+import { quickFunding, retryFreshFundingStart } from './quickStart'
 import { burnerFundTooLarge, fundingSuggestion, MAX_BURNER_FUND } from './liveStore'
 
 const GWEI = 1_000_000_000n
@@ -37,5 +37,15 @@ describe('burner funding cap', () => {
     expect(burnerFundTooLarge(parseEther('1.1'))).toBe(true)
     expect(burnerFundTooLarge(parseEther('0.1'), parseEther('0.9'))).toBe(false)
     expect(burnerFundTooLarge(parseEther('0.2'), parseEther('0.9'))).toBe(true)
+  })
+})
+
+
+describe('fresh funding start retry', () => {
+  it('retries one transient invalid-params style rejection only after this flow funded the burner', () => {
+    const stale = new Error('Missing or invalid parameters. Double check you have provided the correct parameters.')
+    expect(retryFreshFundingStart(stale, true)).toBe(true)
+    expect(retryFreshFundingStart(stale, false)).toBe(false)
+    expect(retryFreshFundingStart(new Error('execution reverted: InvalidSessionSignature'), true)).toBe(false)
   })
 })

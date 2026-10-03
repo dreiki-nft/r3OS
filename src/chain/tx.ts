@@ -133,6 +133,32 @@ export async function prewarmActionFees() {
   await feeQuote(block)
 }
 
+/**
+ * Keep an already-validated gas limit, but refresh the fee caps and freshness block.
+ * Useful after a human wallet prompt: the calldata/gas estimate is still valid, while an
+ * EIP-1559 fee cap quoted several seconds earlier may no longer be accepted by a fast chain.
+ */
+export async function refreshActionQuoteFees(quote: ActionQuote): Promise<ActionQuote> {
+  const [block, rawFees] = await Promise.all([
+    currentBlock(),
+    actionRpcRequest((client) => client.estimateFeesPerGas()),
+  ])
+  const fees = rawFees as { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint; gasPrice?: bigint }
+  const next = {
+    ...quote,
+    maxFeePerGas: fees.maxFeePerGas ?? fees.gasPrice ?? quote.maxFeePerGas,
+    maxPriorityFeePerGas: fees.maxPriorityFeePerGas ?? quote.maxPriorityFeePerGas,
+    quotedAtBlock: block,
+  }
+  next.maxCost = formatMaxCost(next.gasLimit, next.maxFeePerGas)
+  feeCache = {
+    block,
+    maxFeePerGas: next.maxFeePerGas,
+    maxPriorityFeePerGas: next.maxPriorityFeePerGas,
+  }
+  return next
+}
+
 function senderFor(opts: ActionOptions) {
   if ((opts.signer ?? 'wallet') === 'wallet') return opts.account
   const burner = loadBurner(opts.account)
