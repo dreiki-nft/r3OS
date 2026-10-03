@@ -48,9 +48,9 @@ function copy(name: string, args: readonly unknown[] = [], action?: string): Fri
         message: `not enough pixels: this needs ${args[0]}, you have ${args[1]}. budget refills every hour.`,
       }
     case 'TileTooHot':
-      return { name, message: 'that tile is too hot. let it cool for a few blocks.' }
+      return { name, message: `tile ${args[0]} is too hot from recent paint. let it cool or paint elsewhere.` }
     case 'RegionBusy':
-      return { name, message: `region ${args[0]} is full for this block. try again next block.` }
+      return { name, message: `region ${args[0]} hit its per-block paint limit. try again next block.` }
     case 'NoChange':
       return {
         name,

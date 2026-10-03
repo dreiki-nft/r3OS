@@ -33,6 +33,20 @@ describe('friendly errors', () => {
     )
   })
 
+  it('keeps tile and region refusal copy factual', () => {
+    const abi = parseAbi([
+      'error TileTooHot(uint256 tile)',
+      'error RegionBusy(uint256 region)',
+      'function paint()',
+    ])
+    const hot = encodeErrorResult({ abi, errorName: 'TileTooHot', args: [37n] })
+    const busy = encodeErrorResult({ abi, errorName: 'RegionBusy', args: [3n] })
+    expect(friendlyError(executionError(abi, 'paint', hot), 'paint').message).toContain('tile 37')
+    expect(friendlyError(executionError(abi, 'paint', busy), 'paint').message).toBe(
+      'region 3 hit its per-block paint limit. try again next block.',
+    )
+  })
+
   it('gives setFace-specific NoChange copy', () => {
     const data = encodeErrorResult({ abi: faceAbi, errorName: 'NoChange' })
     const error = executionError(faceAbi, 'setFace', data, [1, []])

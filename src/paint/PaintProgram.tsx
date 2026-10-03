@@ -1,5 +1,6 @@
 import { helpHash } from '../os/helpTopics'
 import { paintedText, type LastPaint } from './paintedText'
+import { overheatReason } from './explain'
 import {
   useCallback,
   useEffect,
@@ -76,7 +77,7 @@ import {
   subscribeCanvasActivity,
   subscribeTileCache,
 } from './canvasStore'
-import { previewPaintCost, type TilePreviewState } from './cost'
+import { decayTileHeat, previewPaintCost, type TilePreviewState } from './cost'
 import { applyRedo, applyUndo } from './history'
 import { PaletteBar } from './PaletteBar'
 import { SaveProgress } from './SaveProgress'
@@ -186,9 +187,14 @@ export function PaintProgram() {
   )
   const tileStates = useMemo(() => {
     const result = new Map<number, TilePreviewState>()
-    for (const [tile, entry] of tileSnapshot.map) result.set(tile, entry.state)
+    for (const [tile, entry] of tileSnapshot.map) {
+      result.set(
+        tile,
+        decayTileHeat(entry.state, entry.block, block.block, constants.TILE_COOLDOWN_PER_BLOCK),
+      )
+    }
     return result
-  }, [tileSnapshot])
+  }, [tileSnapshot, block.block, constants.TILE_COOLDOWN_PER_BLOCK])
   const cost = useMemo(
     () =>
       previewPaintCost(
@@ -201,7 +207,7 @@ export function PaintProgram() {
     [canvas.background, canvas.working, canvas.outline, tileStates, constants.MAX_TILE_HEAT],
   )
   const reason = cost.overheatTiles.length
-    ? `tile ${cost.overheatTiles[0]} would overheat`
+    ? overheatReason(cost.overheat, constants, block.blockTimeMs)
     : cost.units > budget.total
       ? `needs ${cost.units} units; ${budget.total} available`
       : patch.pixelWrites === 0

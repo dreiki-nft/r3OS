@@ -2,6 +2,18 @@ export interface TilePreviewState {
   heat: number
   wetBitmap: bigint
 }
+export function decayTileHeat(
+  state: TilePreviewState,
+  cachedBlock: bigint,
+  headBlock: bigint,
+  cooldownPerBlock: bigint,
+): TilePreviewState {
+  if (headBlock <= cachedBlock || state.heat <= 0 || cooldownPerBlock <= 0n) return state
+  const decay = (headBlock - cachedBlock) * cooldownPerBlock
+  const heat = BigInt(state.heat)
+  return { ...state, heat: decay >= heat ? 0 : Number(heat - decay) }
+}
+
 export interface PaintCost {
   pixels: number
   units: number
@@ -9,6 +21,8 @@ export interface PaintCost {
   wet: number
   dry: number
   overheatTiles: number[]
+  /** Same tiles as overheatTiles, with current heat and the heat this stroke would add. */
+  overheat: { tile: number; heat: number; add: number }[]
 }
 export function previewPaintCost(
   baseline: Uint8Array,
@@ -46,8 +60,9 @@ export function previewPaintCost(
         }
       }
     }
-  const overheatTiles = [...heatAdd]
-    .filter(([tile, add]) => (tiles.get(tile)?.heat ?? 0) + add > maxHeat)
-    .map(([tile]) => tile)
-  return { pixels, units, blank, wet, dry, overheatTiles }
+  const overheat = [...heatAdd]
+    .map(([tile, add]) => ({ tile, heat: tiles.get(tile)?.heat ?? 0, add }))
+    .filter((entry) => entry.heat + entry.add > maxHeat)
+  const overheatTiles = overheat.map((entry) => entry.tile)
+  return { pixels, units, blank, wet, dry, overheatTiles, overheat }
 }
