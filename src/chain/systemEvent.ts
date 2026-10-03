@@ -121,7 +121,35 @@ async function readStaticEvent() {
   return staticEvent
 }
 
-export async function readSystemEventNow(): Promise<SystemEventSnapshot> {
+let directReadPromise: Promise<SystemEventSnapshot> | undefined
+let lastSnapshot: SystemEventSnapshot | undefined
+let lastSnapshotAt = 0
+const SYSTEM_EVENT_FRESH_MS = 5_000
+
+export function getCachedSystemEvent() {
+  return lastSnapshot
+}
+
+export function readSystemEventNow(force = false): Promise<SystemEventSnapshot> {
+  if (!force && lastSnapshot && Date.now() - lastSnapshotAt < SYSTEM_EVENT_FRESH_MS) {
+    return Promise.resolve(lastSnapshot)
+  }
+  if (directReadPromise) return directReadPromise
+
+  const pending = readSystemEventFresh()
+    .then((value) => {
+      lastSnapshot = value
+      lastSnapshotAt = Date.now()
+      return value
+    })
+    .finally(() => {
+      if (directReadPromise === pending) directReadPromise = undefined
+    })
+  directReadPromise = pending
+  return pending
+}
+
+async function readSystemEventFresh(): Promise<SystemEventSnapshot> {
   const staticValues = await readStaticEvent()
   if (!staticValues?.address) return { ...EMPTY, loading: false }
 
@@ -167,7 +195,6 @@ export async function readSystemEventNow(): Promise<SystemEventSnapshot> {
 }
 
 let sharedRead: { tick: number; promise: Promise<SystemEventSnapshot> } | undefined
-let lastSnapshot: SystemEventSnapshot | undefined
 
 function readShared(tick: number) {
   if (sharedRead?.tick === tick) return sharedRead.promise
@@ -203,6 +230,8 @@ export function useSystemEvent() {
 
 export function __resetSystemEventForTests() {
   staticEvent = undefined
+  directReadPromise = undefined
   sharedRead = undefined
   lastSnapshot = undefined
+  lastSnapshotAt = 0
 }

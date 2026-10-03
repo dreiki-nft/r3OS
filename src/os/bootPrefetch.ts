@@ -1,15 +1,15 @@
 import type { Address } from 'viem'
 import { getActionRpcSnapshot, probeActionRpcs } from '../chain/actionRpc'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
-import { discoverContracts, readCoreConstants } from '../chain/contracts'
+import { discoverContracts, readCoreConstants, readCoreStatus } from '../chain/contracts'
 import { readPainterProfile } from '../chain/painterProfile'
 import { recordPerf } from '../chain/perf'
 import { prewarmActionFees } from '../chain/tx'
-import { getWalletSnapshot, restoreWallet } from '../chain/wallet'
+import { getWalletSnapshot, restoreWallet, subscribeWallet } from '../chain/wallet'
 import { loadCdSummary, loadOwnedCds } from '../cdrom/cdrom'
 import { getFrameImage } from '../frames/frameImage'
 import { getFrameInfoBatch, mineTokenIds, refreshFrameIndex } from '../frames/framesStore'
-import { labsAddress, loadOwnedLabsSources } from '../frames/labsStore'
+import { labsAddress, loadOwnedLabsSources, scanOwnedLabs } from '../frames/labsStore'
 import { prefetchQuestData } from '../labs/questsData'
 import { readLabsToken } from '../labs/labsToken'
 import { getLiveSnapshot, setLiveOwner, subscribeLive } from '../live/liveStore'
@@ -50,6 +50,7 @@ const TASKS: readonly Omit<BootPrefetchTask, 'state'>[] = [
   { id: 'account', label: 'Account data', critical: true },
   { id: 'art', label: 'Recent frame art', critical: false },
   { id: 'media', label: 'Recent Labs media', critical: false },
+  { id: 'diagnostics', label: 'System diagnostics', critical: false },
 ]
 
 const listeners = new Set<Listener>()
@@ -58,6 +59,13 @@ let snapshot: BootPrefetchSnapshot = {
   tasks: TASKS.map((task) => ({ ...task, state: 'pending' })),
 }
 let started: Promise<void> | undefined
+let stopAccountWatch: (() => void) | undefined
+let observedAccount: Address | undefined
+let pendingAccount: Address | undefined
+let bootCriticalSettled = false
+const accountWarmInflight = new Map<string, Promise<number[]>>()
+const accountWarmCache = new Map<string, { frames: number[]; at: number }>()
+const ACCOUNT_WARM_FRESH_MS = 8_000
 
 const now = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
 
@@ -255,6 +263,67 @@ async function warmRecentMedia(owner: Address) {
   })
 }
 
+function sameAccount(a?: Address, b?: Address) {
+  return a?.toLowerCase() === b?.toLowerCase()
+}
+
+function warmAccountShared(owner: Address) {
+  const key = owner.toLowerCase()
+  const cached = accountWarmCache.get(key)
+  if (cached && Date.now() - cached.at < ACCOUNT_WARM_FRESH_MS) return Promise.resolve(cached.frames)
+  const active = accountWarmInflight.get(key)
+  if (active) return active
+  const pending = warmAccountData(owner)
+    .then((frames) => {
+      accountWarmCache.set(key, { frames, at: Date.now() })
+      return frames
+    })
+    .finally(() => {
+      if (accountWarmInflight.get(key) === pending) accountWarmInflight.delete(key)
+    })
+  accountWarmInflight.set(key, pending)
+  return pending
+}
+
+async function warmDiagnostics() {
+  await runTask('diagnostics', 'boot-diagnostics', async () => {
+    const { loadDxDiag } = await import('../diagnostics/loadDxDiag')
+    await loadDxDiag(false)
+  })
+}
+
+function schedulePostConnectWarm(owner: Address) {
+  const startedAt = now()
+  void warmAccountShared(owner)
+    .then((frames) => {
+      if (!sameAccount(getWalletSnapshot().account, owner)) return
+      recordPerf('boot-prefetch', 'account-post-connect', now() - startedAt)
+      return waitForIdle().then(() =>
+        Promise.allSettled([warmRecentFrameArt(frames), warmRecentMedia(owner)]),
+      )
+    })
+    .catch(() => undefined)
+}
+
+function ensureAccountPrefetchWatch() {
+  if (stopAccountWatch) return
+  observedAccount = getWalletSnapshot().account
+  stopAccountWatch = subscribeWallet(() => {
+    const owner = getWalletSnapshot().account
+    if (sameAccount(owner, observedAccount)) return
+    observedAccount = owner
+    if (!owner) {
+      pendingAccount = undefined
+      return
+    }
+    if (!bootCriticalSettled) {
+      pendingAccount = owner
+      return
+    }
+    schedulePostConnectWarm(owner)
+  })
+}
+
 async function warmAccountData(owner: Address) {
   const limit = createLimiter(2)
   setLiveOwner(owner)
@@ -264,6 +333,7 @@ async function warmAccountData(owner: Address) {
   const jobs = [
     limit(async () => {
       ownedFrames = await mineTokenIds(owner)
+      await getFrameInfoBatch(ownedFrames.filter((id) => id > 0).slice(0, 24))
     }),
     limit(async () => {
       const identity = await readPassIdentity(owner)
@@ -274,6 +344,10 @@ async function warmAccountData(owner: Address) {
     }),
     limit(async () => {
       await prefetchQuestData(owner)
+    }),
+    limit(async () => {
+      const labs = await labsAddress()
+      await Promise.all([scanOwnedLabs(labs, owner), loadOwnedLabsSources(labs, owner)])
     }),
     waitForLiveReady(owner),
   ]
@@ -291,6 +365,7 @@ async function warmAccountData(owner: Address) {
  * joins this one pass, and the stores/caches warmed here are the same ones programs consume after boot.
  */
 export function startBootPrefetch() {
+  ensureAccountPrefetchWatch()
   if (started) return started
   const bootStarted = now()
   emit(TASKS.map((task) => ({ ...task, state: 'pending' })), {
@@ -331,7 +406,7 @@ export function startBootPrefetch() {
     const contracts = runTask('contracts', 'boot-chain-contracts', () =>
       readLimit(async () => {
         const value = await discoverContracts()
-        await readCoreConstants()
+        await Promise.all([readCoreConstants(), readCoreStatus().catch(() => undefined)])
         patchTask('contracts', {
           detail: `${Object.values(value.labs).filter(Boolean).length} drivers`,
         })
@@ -367,13 +442,12 @@ export function startBootPrefetch() {
       const owner = await walletOwner
       if (!owner) {
         patchTask('account', { detail: 'guest session' })
-        skipTask('art', 'guest session')
-        skipTask('media', 'guest session')
         return
       }
       await Promise.allSettled([contracts, canvas, frames])
-      optionalFrames = await warmAccountData(owner)
+      optionalFrames = await warmAccountShared(owner)
       optionalOwner = owner
+      if (sameAccount(pendingAccount, owner)) pendingAccount = undefined
     })
 
     const critical = [programs, wallet, network, contracts, canvas, frames, chainReady, rpc, fees, account]
@@ -381,23 +455,27 @@ export function startBootPrefetch() {
     const criticalMs = now() - bootStarted
     recordPerf('boot-prefetch', 'boot-critical', criticalMs)
     emit(snapshot.tasks, { criticalReadyAt: Date.now() })
+    bootCriticalSettled = true
+    const queuedOwner = pendingAccount
+    pendingAccount = undefined
+    if (queuedOwner && sameAccount(getWalletSnapshot().account, queuedOwner)) schedulePostConnectWarm(queuedOwner)
 
-    // Optional art/media never compete with critical startup. Hand them to the browser's idle lane after
+    // Optional work never competes with critical startup. Hand it to the browser's idle lane after
     // readiness; if the desktop already appeared because of the cap, this remains bounded background work.
     if (!optionalOwner) {
-      const optional = snapshot.tasks.filter((task) => !task.critical)
-      if (optional.every((task) => task.state === 'pending')) {
-        skipTask('art', 'no account data')
-        skipTask('media', 'no account data')
-      }
-      emit(snapshot.tasks, { finishedAt: Date.now() })
-    } else {
-      const owner = optionalOwner
-      const framesToWarm = optionalFrames
-      void waitForIdle()
-        .then(() => Promise.allSettled([warmRecentFrameArt(framesToWarm), warmRecentMedia(owner)]))
-        .then(() => emit(snapshot.tasks, { finishedAt: Date.now() }))
+      skipTask('art', 'no account data')
+      skipTask('media', 'no account data')
     }
+    const owner = optionalOwner
+    const framesToWarm = optionalFrames
+    void waitForIdle()
+      .then(() =>
+        Promise.allSettled([
+          warmDiagnostics(),
+          ...(owner ? [warmRecentFrameArt(framesToWarm), warmRecentMedia(owner)] : []),
+        ]),
+      )
+      .then(() => emit(snapshot.tasks, { finishedAt: Date.now() }))
   })()
 
   return started
@@ -405,6 +483,13 @@ export function startBootPrefetch() {
 
 export function __resetBootPrefetchForTests() {
   started = undefined
+  stopAccountWatch?.()
+  stopAccountWatch = undefined
+  observedAccount = undefined
+  pendingAccount = undefined
+  bootCriticalSettled = false
+  accountWarmInflight.clear()
+  accountWarmCache.clear()
   snapshot = {
     version: 0,
     tasks: TASKS.map((task) => ({ ...task, state: 'pending' })),

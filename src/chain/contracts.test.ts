@@ -10,6 +10,8 @@ vi.mock('./clients', () => ({
       await new Promise((resolve) => setTimeout(resolve, 5))
       if (fail) throw new Error('offline')
       if (functionName === 'experimentCount') return 3n
+      if (functionName === 'renderersFrozen') return false
+      if (functionName === 'experimentsFrozen') return true
       if (functionName === 'experimentInfo')
         return {
           experiment: `0x000000000000000000000000000000000000000${Number(args![0]) + 1}`,
@@ -39,6 +41,21 @@ describe('discoverContracts', () => {
     await discoverContracts()
     expect(calls.filter((name) => name === 'experimentInfo')).toHaveLength(3)
     expect(results[0].labs.quests).toBe('0x0000000000000000000000000000000000000001')
+    expect(results[0].experimentCount).toBe(3)
+    expect((await import('./contracts')).getCachedContracts()).toBe(results[0])
+  })
+
+  it('shares the short-lived core status read', async () => {
+    const { readCoreStatus, getCachedCoreStatus } = await import('./contracts')
+    const values = await Promise.all([readCoreStatus(), readCoreStatus(), readCoreStatus()])
+    expect(values).toEqual([
+      { renderersFrozen: false, experimentsFrozen: true },
+      { renderersFrozen: false, experimentsFrozen: true },
+      { renderersFrozen: false, experimentsFrozen: true },
+    ])
+    expect(calls.filter((name) => name === 'renderersFrozen')).toHaveLength(1)
+    expect(calls.filter((name) => name === 'experimentsFrozen')).toHaveLength(1)
+    expect(getCachedCoreStatus()).toEqual({ renderersFrozen: false, experimentsFrozen: true })
   })
 
   it('does not cache a failed read, and force re-reads', async () => {

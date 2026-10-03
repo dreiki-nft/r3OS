@@ -353,14 +353,38 @@ const EMPTY: MonadHardwareSnapshot = {
   rom: unknown([]),
 }
 
-export async function readMonadHardware(): Promise<MonadHardwareSnapshot> {
+let hardwareReadPromise: Promise<MonadHardwareSnapshot> | undefined
+let lastHardware: MonadHardwareSnapshot | undefined
+let lastHardwareAt = 0
+const HARDWARE_FRESH_MS = 5_000
+
+/** Shared direct hardware read for boot, DXDIAG and the Hardware UI. */
+export function readMonadHardware(force = false): Promise<MonadHardwareSnapshot> {
+  if (!force && lastHardware && Date.now() - lastHardwareAt < HARDWARE_FRESH_MS) {
+    return Promise.resolve(lastHardware)
+  }
+  if (hardwareReadPromise) return hardwareReadPromise
+
   staticProbePromise ??= probeStatic()
-  const [staticProbe, staking] = await Promise.all([staticProbePromise, probeConsensus()])
-  return { loading: false, ...staticProbe, staking }
+  const pending = Promise.all([staticProbePromise, probeConsensus()])
+    .then(([staticProbe, staking]) => {
+      const value = { loading: false, ...staticProbe, staking } satisfies MonadHardwareSnapshot
+      lastHardware = value
+      lastHardwareAt = Date.now()
+      return value
+    })
+    .finally(() => {
+      if (hardwareReadPromise === pending) hardwareReadPromise = undefined
+    })
+  hardwareReadPromise = pending
+  return pending
+}
+
+export function getCachedMonadHardware() {
+  return lastHardware
 }
 
 let sharedHardwareRead: { tick: number; promise: Promise<MonadHardwareSnapshot> } | undefined
-let lastHardware: MonadHardwareSnapshot | undefined
 
 /** Every HardwareBus and hardware program shares one consensus probe per refresh tick. */
 function readMonadHardwareShared(tick: number) {
@@ -395,6 +419,8 @@ export function useMonadHardware() {
 
 export function __resetMonadHardwareForTests() {
   staticProbePromise = undefined
+  hardwareReadPromise = undefined
   sharedHardwareRead = undefined
   lastHardware = undefined
+  lastHardwareAt = 0
 }

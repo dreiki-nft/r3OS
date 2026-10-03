@@ -1,11 +1,12 @@
 import { helpHash } from '../os/helpTopics'
-import { screenSafeMessage } from '../chain/errors'
+import { friendlyError, screenSafeMessage } from '../chain/errors'
 import './phase3c2c.css'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { hexToBytes, parseAbi, parseEventLogs, type Address, type Hex, type Log } from 'viem'
 import { publicClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { markProgramDataReady } from '../chain/perf'
+import { readMany } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { getFrameImage } from '../frames/frameImage'
@@ -107,6 +108,30 @@ async function countsForPhoto(id: number) {
 
 async function countsForTrack(track: Track) {
   return track.kind === 'frame' ? countsForFrame(track.id, track.info) : countsForPhoto(track.id)
+}
+
+async function staleTrackKeys(owner: Address, tracks: readonly Track[]) {
+  if (!tracks.length) return []
+  const contracts = await discoverContracts()
+  const needsFrames = tracks.some((track) => track.kind === 'frame')
+  const needsLabs = tracks.some((track) => track.kind === 'block-photo')
+  if (needsFrames && !contracts.paint) throw new Error('paint is not deployed on this network')
+  const labs = needsLabs ? await labsAddress() : undefined
+  const rows = await readMany(
+    tracks.map((track) => ({
+      address: track.kind === 'frame' ? contracts.paint! : labs!,
+      abi: track.kind === 'frame' ? R3TARDS_PAINT_ABI : R3TARDS_LABS_ABI,
+      functionName: 'ownerOf',
+      args: [BigInt(track.id)],
+    })),
+    { allowFailure: true },
+  )
+  const failed = rows.find((row: any) => row?.status !== 'success') as any
+  if (failed) throw failed.error ?? new Error('CD_OWNERSHIP_UNAVAILABLE')
+  const account = owner.toLowerCase()
+  return tracks
+    .filter((_, index) => String((rows[index] as any).result).toLowerCase() !== account)
+    .map(trackKey)
 }
 
 function TrackChoice({
@@ -295,31 +320,48 @@ export function CDBurnerProgram() {
     }
     let cancelled = false
     const hasPhotos = tracks.some((track) => track.kind === 'block-photo')
-    void quoteAction({
-      kind: 'estimate',
-      address: burner,
-      abi: hasPhotos ? MIXED_CD_ABI : R3TARDS_CD_BURNER_ABI,
-      functionName: hasPhotos ? 'burnMixedCD' : 'burnCD',
-      args: hasPhotos
-        ? [
-            tracks.map((track) => BigInt(track.id)),
-            tracks.map((track) => (track.kind === 'block-photo' ? 1 : 0)),
-            normalized.value,
-          ]
-        : [tracks.map((track) => BigInt(track.id)), normalized.value],
-      account: wallet.account,
-      action: 'burn mix CD-R',
-    })
-      .then((next) => !cancelled && setQuote(next))
-      .catch((error) => {
-        if (cancelled) return
+    const functionName = hasPhotos ? 'burnMixedCD' : 'burnCD'
+    void (async () => {
+      const stale = await staleTrackKeys(wallet.account!, tracks)
+      if (cancelled) return
+      if (stale.length) {
+        const staleSet = new Set(stale)
+        const removed = tracks.filter((track) => staleSet.has(trackKey(track))).map(trackLabel)
+        setTracks((current) => current.filter((track) => !staleSet.has(trackKey(track))))
         setQuote(undefined)
-        setMessage(
-          hasPhotos
-            ? `mixed-photo CDs require the snapshot-28 CD Burner on this network · ${screenSafeMessage(error)}`
-            : screenSafeMessage(error),
-        )
+        setMessage(`${removed.join(', ')} ${removed.length === 1 ? 'is' : 'are'} no longer in this wallet and ${removed.length === 1 ? 'was' : 'were'} removed from the mix.`)
+        void load()
+        return
+      }
+      const next = await quoteAction({
+        kind: 'estimate',
+        address: burner,
+        abi: hasPhotos ? MIXED_CD_ABI : R3TARDS_CD_BURNER_ABI,
+        functionName,
+        args: hasPhotos
+          ? [
+              tracks.map((track) => BigInt(track.id)),
+              tracks.map((track) => (track.kind === 'block-photo' ? 1 : 0)),
+              normalized.value,
+            ]
+          : [tracks.map((track) => BigInt(track.id)), normalized.value],
+        account: wallet.account!,
+        action: 'burn mix CD-R',
       })
+      if (!cancelled) {
+        setMessage('')
+        setQuote(next)
+      }
+    })().catch((error) => {
+      if (cancelled) return
+      setQuote(undefined)
+      const friendly = friendlyError(error, functionName)
+      setMessage(
+        hasPhotos && (friendly.name === 'Unknown' || friendly.name === 'ContractRevert')
+          ? `mixed-photo CDs require the snapshot-28 CD Burner on this network · ${friendly.message}`
+          : friendly.message,
+      )
+    })
     return () => {
       cancelled = true
     }
@@ -330,6 +372,7 @@ export function CDBurnerProgram() {
     tracks.map(trackKey).join(','),
     normalized.value,
     normalized.valid,
+    load,
   ])
 
   const add = (key?: string) => {
@@ -353,6 +396,17 @@ export function CDBurnerProgram() {
     burningRef.current = true
     setMinted(undefined)
     try {
+      const stale = await staleTrackKeys(wallet.account, tracks)
+      if (stale.length) {
+        const staleSet = new Set(stale)
+        const removed = tracks.filter((track) => staleSet.has(trackKey(track))).map(trackLabel)
+        setTracks((current) => current.filter((track) => !staleSet.has(trackKey(track))))
+        setQuote(undefined)
+        setMessage(`${removed.join(', ')} ${removed.length === 1 ? 'is' : 'are'} no longer in this wallet and ${removed.length === 1 ? 'was' : 'were'} removed from the mix.`)
+        void load()
+        setTxState('idle')
+        return
+      }
       const hasPhotos = tracks.some((track) => track.kind === 'block-photo')
       const result = await sendAction({
         kind: 'estimate',

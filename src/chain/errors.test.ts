@@ -53,6 +53,19 @@ describe('friendly errors', () => {
     expect(friendlyError(error, 'setFace').message).toBe('the face is already that colour.')
   })
 
+  it('decodes CD Burner custom errors even when the call ABI only contains the function', () => {
+    const errors = parseAbi([
+      'error NotFrameOwner(uint256 frameId,address owner)',
+      'error NotLabsOwner(uint256 tokenId,address owner)',
+    ])
+    const callAbi = parseAbi(['function burnCD(uint256[] frameIds,string label)'])
+    const owner = '0x0000000000000000000000000000000000000001' as const
+    const frame = encodeErrorResult({ abi: errors, errorName: 'NotFrameOwner', args: [18n, owner] })
+    const photo = encodeErrorResult({ abi: errors, errorName: 'NotLabsOwner', args: [7n, owner] })
+    expect(friendlyError(executionError(callAbi, 'burnCD', frame), 'burnCD').message).toContain('frame #18')
+    expect(friendlyError(executionError(callAbi, 'burnCD', photo), 'burnCD').message).toContain('Labs token #7')
+  })
+
   it('keeps an unknown raw selector in details', () => {
     const raw = '0xdeadbeef' as const
     const error = executionError(frameAbi, 'mintFrame', raw)

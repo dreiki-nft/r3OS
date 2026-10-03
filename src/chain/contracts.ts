@@ -8,17 +8,29 @@ export interface ContractAddresses {
   paint?: Address
   pass?: Address
   r3tards?: Address
+  experimentCount?: number
   labs: Record<string, Address | undefined>
+}
+
+export interface CoreStatus {
+  renderersFrozen: boolean
+  experimentsFrozen: boolean
 }
 
 let cached: ContractAddresses | undefined
 let inflight: Promise<ContractAddresses> | undefined
 let constantsPromise: Promise<typeof demoConstants> | undefined
+let coreStatusCache: { value?: CoreStatus; fetchedAt: number; promise?: Promise<CoreStatus> } = { fetchedAt: 0 }
+const CORE_STATUS_FRESH_MS = 8_000
 
 /**
  * The registry is read once and shared: concurrent callers (every window that needs an address) join the
  * same in-flight read instead of each re-reading every experiment. A failed read is not cached.
  */
+export function getCachedContracts() {
+  return cached
+}
+
 export function discoverContracts(force = false): Promise<ContractAddresses> {
   if (cached && !force) return Promise.resolve(cached)
   if (inflight && !force) return inflight
@@ -68,7 +80,7 @@ async function readRegistry(): Promise<ContractAddresses> {
     if (!info.retired && info.experiment !== zeroAddress && !envOverride) labs[info.name] = info.experiment
   }
 
-  return { paint, pass, r3tards, labs }
+  return { paint, pass, r3tards, experimentCount: Number(count), labs }
 }
 
 export const demoConstants = {
@@ -122,6 +134,42 @@ export function readCoreConstants() {
     throw error
   })
   return constantsPromise
+}
+
+
+/** Short-lived shared status read for DXDIAG/boot. These flags may still change until the core is frozen. */
+export function getCachedCoreStatus() {
+  return coreStatusCache.value
+}
+
+export function readCoreStatus(force = false): Promise<CoreStatus> {
+  if (!publicClient || !config.paintAddress) return Promise.reject(new Error('CORE_STATUS_UNAVAILABLE'))
+  if (!force && coreStatusCache.value && Date.now() - coreStatusCache.fetchedAt < CORE_STATUS_FRESH_MS) {
+    return Promise.resolve(coreStatusCache.value)
+  }
+  if (coreStatusCache.promise) return coreStatusCache.promise
+
+  const pending = readMany(
+    [
+      { address: config.paintAddress, abi: R3TARDS_PAINT_ABI, functionName: 'renderersFrozen' },
+      { address: config.paintAddress, abi: R3TARDS_PAINT_ABI, functionName: 'experimentsFrozen' },
+    ],
+    { allowFailure: false },
+  )
+    .then((values) => {
+      const value = {
+        renderersFrozen: Boolean(values[0]),
+        experimentsFrozen: Boolean(values[1]),
+      }
+      coreStatusCache.value = value
+      coreStatusCache.fetchedAt = Date.now()
+      return value
+    })
+    .finally(() => {
+      if (coreStatusCache.promise === pending) coreStatusCache.promise = undefined
+    })
+  coreStatusCache.promise = pending
+  return pending
 }
 
 export function seasonAtTimestamp(timestamp: bigint, constants = demoConstants) {

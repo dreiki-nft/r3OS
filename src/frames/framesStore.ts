@@ -52,6 +52,7 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 const infoMemory = new Map<number, FrameInfo>()
 const ownerCaches = new Map<string, OwnerCache>()
+const ownerScanInflight = new Map<string, Promise<OwnerCache>>()
 const ownershipHints = new Map<number, Address | null>()
 const frameSeasonHints = new Map<number, number>()
 const confirmedRegularFrames = new Map<number, number>()
@@ -515,40 +516,53 @@ async function loadOwnerCache(account: Address) {
 
 export async function scanOwners(account: Address, total = snapshot.total) {
   if (!publicClient || !config.paintAddress) return { ownerById: {}, scannedUpTo: 0, atBlock: '0' }
-  const cache = await loadOwnerCache(account)
-  const client = publicClient
-  const seenHead = getBlockSnapshot().block
-  const atBlock = String(seenHead > 0n ? seenHead : await client.getBlockNumber({ cacheTime: 0 }))
-  if (!Object.prototype.hasOwnProperty.call(cache.ownerById, '0')) {
-    const zero = await client
-      .readContract({
-        address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'ownerOf',
-        args: [0n],
-      })
-      .catch(() => null)
-    cache.ownerById['0'] = zero as Address | null
+  const key = ownerKey(account)
+  const active = ownerScanInflight.get(key)
+  if (active) {
+    const joined = await active
+    if (joined.scannedUpTo >= total) return joined
   }
-  for (const ids of ownerScanBatches(cache.scannedUpTo + 1, total)) {
-    const end = ids[ids.length - 1]
-    const results = await readMany(
-      ids.map((tokenId) => ({
-        address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'ownerOf',
-        args: [BigInt(tokenId)],
-      })),
-      { allowFailure: true },
-    ) as ReadManyResult[]
-    Object.assign(cache.ownerById, ownersFromReadMany(ids, results))
-    cache.scannedUpTo = end
-    cache.atBlock = atBlock
+
+  const pending = (async () => {
+    const cache = await loadOwnerCache(account)
+    const client = publicClient
+    const seenHead = getBlockSnapshot().block
+    const atBlock = String(seenHead > 0n ? seenHead : await client.getBlockNumber({ cacheTime: 0 }))
+    if (!Object.prototype.hasOwnProperty.call(cache.ownerById, '0')) {
+      const zero = await client
+        .readContract({
+          address: config.paintAddress!,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'ownerOf',
+          args: [0n],
+        })
+        .catch(() => null)
+      cache.ownerById['0'] = zero as Address | null
+    }
+    for (const ids of ownerScanBatches(cache.scannedUpTo + 1, total)) {
+      const end = ids[ids.length - 1]
+      const results = (await readMany(
+        ids.map((tokenId) => ({
+          address: config.paintAddress!,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'ownerOf',
+          args: [BigInt(tokenId)],
+        })),
+        { allowFailure: true },
+      )) as ReadManyResult[]
+      Object.assign(cache.ownerById, ownersFromReadMany(ids, results))
+      cache.scannedUpTo = end
+      cache.atBlock = atBlock
+      for (const [tokenId, owner] of ownershipHints) cache.ownerById[String(tokenId)] = owner
+      await idbSet('owners', key, cache)
+    }
     for (const [tokenId, owner] of ownershipHints) cache.ownerById[String(tokenId)] = owner
-    await idbSet('owners', ownerKey(account), cache)
-  }
-  for (const [tokenId, owner] of ownershipHints) cache.ownerById[String(tokenId)] = owner
-  return cache
+    return cache
+  })().finally(() => {
+    if (ownerScanInflight.get(key) === pending) ownerScanInflight.delete(key)
+  })
+  ownerScanInflight.set(key, pending)
+  return pending
 }
 
 async function applyTransfer(activity: CanvasActivity) {
@@ -657,6 +671,7 @@ export function seasonSummary(season: number) {
 export function __resetFramesStoreForTests() {
   infoMemory.clear()
   ownerCaches.clear()
+  ownerScanInflight.clear()
   ownershipHints.clear()
   frameSeasonHints.clear()
   confirmedRegularFrames.clear()

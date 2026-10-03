@@ -3,6 +3,7 @@ import {
   DF1_RENDERER_ABI,
   DIFF_RENDERER_ABI,
   R3TARDS_BRUSHES_ABI,
+  R3TARDS_CD_BURNER_ABI,
   R3TARDS_FINALE_AUCTION_ABI,
   R3TARDS_FLIPBOOK_ABI,
   R3TARDS_FORKS_ABI,
@@ -20,6 +21,7 @@ const ALL = [
   R3TARDS_WEEDS_ABI,
   R3TARDS_FORKS_ABI,
   R3TARDS_BRUSHES_ABI,
+  R3TARDS_CD_BURNER_ABI,
   R3TARDS_FINALE_AUCTION_ABI,
   R3TARDS_QUESTS_ABI,
   DIFF_RENDERER_ABI,
@@ -108,6 +110,30 @@ function copy(name: string, args: readonly unknown[] = [], action?: string): Fri
       return { name, message: 'paint at least one pixel first, then claim.' }
     case 'SessionKeyCannotClaim':
       return { name, message: "a live-mode key can't claim. switch to your main wallet." }
+    case 'SessionKeyCannotBurnCD':
+      return { name, message: "a live-mode key can't burn a CD. use your main wallet." }
+    case 'InvalidTrackCount':
+      return { name, message: 'a CD needs between 1 and 12 tracks.' }
+    case 'DuplicateTrack':
+      return { name, message: `track #${args[0]} is selected twice.` }
+    case 'TokenZeroNotAllowed':
+      return { name, message: 'the canvas token cannot be used as a CD track.' }
+    case 'NotFrameOwner':
+      return { name, message: `frame #${args[0]} is no longer in this wallet. refresh your tracks.` }
+    case 'NotLabsOwner':
+      return { name, message: `Labs token #${args[0]} is no longer in this wallet. refresh your tracks.` }
+    case 'InvalidLabelLength':
+      return { name, message: 'CD labels must be 1–24 characters.' }
+    case 'InvalidLabelCharacter':
+      return { name, message: `that CD label has an unsupported character at position ${Number(args[0] ?? 0) + 1}.` }
+    case 'InvalidTrackKindsLength':
+      return { name, message: 'the CD track list changed while quoting. rebuild the mix and try again.' }
+    case 'InvalidTrackKind':
+      return { name, message: 'that track type cannot be written to this CD.' }
+    case 'NotBlockCameraToken':
+      return { name, message: `Labs token #${args[0]} is not a Block Camera photo.` }
+    case 'BlockCameraTrackReadFailed':
+      return { name, message: `Block Camera photo #${args[0]} could not be read. refresh and try again.` }
     default:
       return {
         name,

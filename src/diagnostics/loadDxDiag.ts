@@ -3,13 +3,13 @@ import packageJson from '../../package.json'
 import { getBlockSnapshot } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { chainName, config } from '../chain/config'
-import { discoverContracts } from '../chain/contracts'
+import { discoverContracts, getCachedContracts, getCachedCoreStatus, readCoreStatus } from '../chain/contracts'
 import { isOfficialCard } from '../chain/monadCard'
-import { readMonadHardware } from '../chain/monadHardware'
+import { getCachedMonadHardware, readMonadHardware } from '../chain/monadHardware'
 import { readMany } from '../chain/readMany'
 import { rpcStatsSnapshot, rpcStatsTotalSnapshot } from '../chain/rpcStats'
-import { eventState, readSystemEventNow } from '../chain/systemEvent'
-import { R3TARDS_CARD_MEMORY_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { eventState, getCachedSystemEvent, readSystemEventNow } from '../chain/systemEvent'
+import { R3TARDS_CARD_MEMORY_ABI } from '../lib/generated/abi'
 import {
   driverState,
   normalizeBuildId,
@@ -26,13 +26,30 @@ export const DXDIAG_DRIVERS = [
   ['system-event', 'System Event'],
 ] as const
 
-async function hasCode(address?: Address) {
-  if (!address || !publicClient) return undefined
-  const code = await settle(publicClient.getCode({ address }))
-  return code === undefined ? undefined : Boolean(code && code !== '0x')
-}
-
 const READ_TIMEOUT_MS = 2_500
+const codePresence = new Map<string, boolean>()
+const codeInflight = new Map<string, Promise<boolean | undefined>>()
+const cardContextCache = new Map<string, DxDiagInput['card']['context']>()
+
+async function hasCode(address?: Address, force = false) {
+  if (!address || !publicClient) return undefined
+  const key = address.toLowerCase()
+  if (!force && codePresence.has(key)) return codePresence.get(key)
+  const active = codeInflight.get(key)
+  if (active) return active
+  const pending = settle(publicClient.getCode({ address }))
+    .then((code) => {
+      if (code === undefined) return undefined
+      const present = Boolean(code && code !== '0x')
+      codePresence.set(key, present)
+      return present
+    })
+    .finally(() => {
+      if (codeInflight.get(key) === pending) codeInflight.delete(key)
+    })
+  codeInflight.set(key, pending)
+  return pending
+}
 
 /** Resolves to undefined on error or after a timeout, so an offline RPC degrades to "unknown" instead of hanging. */
 const settle = <T>(promise: Promise<T>, ms = READ_TIMEOUT_MS) =>
@@ -54,42 +71,54 @@ export async function loadDxDiag(
   const rpcCounts = rpcStatsSnapshot()
   const rpcTotals = rpcStatsTotalSnapshot()
   const block = getBlockSnapshot()
+  const cachedContracts = getCachedContracts()
+  const cachedCoreStatus = getCachedCoreStatus()
   onStep('reading the r3tardOS contract list…')
-  const contracts = await settle(discoverContracts(force))
+  const contracts = (await settle(discoverContracts(force))) ?? cachedContracts
   const paint = contracts?.paint
   onStep('probing Monad devices and drivers…')
 
   const cardDriver = contracts?.labs['card-drv']
-  const [coreRows, multicallPresent, driverCodes, hardware, event, cardRows] = await Promise.all([
-    paint && publicClient
-      ? settle(
-          readMany(
-            [
-              { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'experimentCount' },
-              { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'renderersFrozen' },
-              { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'experimentsFrozen' },
-            ],
-            { allowFailure: true },
-          ),
-        )
-      : Promise.resolve(undefined),
-    config.multicall3Address ? hasCode(config.multicall3Address) : Promise.resolve(undefined),
-    Promise.all(DXDIAG_DRIVERS.map(([name]) => hasCode(contracts?.labs[name]))),
-    settle(readMonadHardware()),
-    settle(readSystemEventNow()),
-    cardDriver && publicClient
+  const cachedHardware = getCachedMonadHardware()
+  const cachedEvent = getCachedSystemEvent()
+  const cardKey = cardDriver?.toLowerCase()
+  const cachedCard = cardKey ? cardContextCache.get(cardKey) : undefined
+
+  // Normal opens are stale-while-revalidate: boot already proved these facts, so DXDIAG renders the
+  // cached snapshot immediately and quietly refreshes it. The explicit REFRESH path (`force`) still
+  // waits for one bounded probe wave so the user can ask for authoritative current values.
+  const coreRead = !force && cachedCoreStatus
+    ? (void readCoreStatus().catch(() => undefined), Promise.resolve(cachedCoreStatus))
+    : paint && publicClient
+      ? settle(readCoreStatus(force))
+      : Promise.resolve(undefined)
+  const hardwareProbe = !force && cachedHardware
+    ? (void readMonadHardware().catch(() => undefined), Promise.resolve(cachedHardware))
+    : settle(readMonadHardware(force))
+  const eventProbe = !force && cachedEvent
+    ? (void readSystemEventNow().catch(() => undefined), Promise.resolve(cachedEvent))
+    : settle(readSystemEventNow(force))
+  const cardProbe = !force && cachedCard
+    ? Promise.resolve(undefined)
+    : cardDriver && publicClient
       ? settle(
           readMany([{ address: cardDriver, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'MONAD_CARD' }], {
             allowFailure: true,
           }),
         )
-      : Promise.resolve(undefined),
-  ])
+      : Promise.resolve(undefined)
 
-  const row = (index: number) => {
-    const entry = (coreRows as any[] | undefined)?.[index]
-    return entry?.status === 'success' ? entry.result : undefined
-  }
+  const [coreStatus, multicallPresent, driverCodes, hardwareRead, eventRead, cardRows] = await Promise.all([
+    coreRead,
+    config.multicall3Address ? hasCode(config.multicall3Address, force) : Promise.resolve(undefined),
+    Promise.all(DXDIAG_DRIVERS.map(([name]) => hasCode(contracts?.labs[name], force))),
+    hardwareProbe,
+    eventProbe,
+    cardProbe,
+  ])
+  const core = coreStatus ?? cachedCoreStatus
+  const hardware = hardwareRead ?? cachedHardware
+  const event = eventRead ?? cachedEvent
 
   const drivers: DriverRow[] = DXDIAG_DRIVERS.map(([name, label], index) => {
     const address = contracts?.labs[name]
@@ -99,10 +128,12 @@ export async function loadDxDiag(
 
   // Card context is part of the same bounded probe wave above. Keeping it parallel avoids a second
   // full timeout window when one public RPC is degraded.
-  let cardContext: DxDiagInput['card']['context'] = 'unknown'
+  let cardContext: DxDiagInput['card']['context'] = cachedCard ?? 'unknown'
   const card = (cardRows as any[] | undefined)?.[0]
-  if (card?.status === 'success')
+  if (card?.status === 'success') {
     cardContext = isOfficialCard(config.chainId, card.result as Address) ? 'official' : 'mock'
+    if (cardKey) cardContextCache.set(cardKey, cardContext)
+  }
 
   // Without a registry read we cannot say "not installed": unknown stays unknown.
   const eventValue: EventState = event
@@ -132,9 +163,9 @@ export async function loadDxDiag(
       paint: paint ?? config.paintAddress,
       r3tards: contracts?.r3tards,
       pass: contracts?.pass,
-      experimentCount: row(0) == null ? undefined : Number(row(0)),
-      renderersFrozen: row(1) as boolean | undefined,
-      experimentsFrozen: row(2) as boolean | undefined,
+      experimentCount: contracts?.experimentCount,
+      renderersFrozen: core?.renderersFrozen,
+      experimentsFrozen: core?.experimentsFrozen,
     },
     drivers,
     hardware: {
