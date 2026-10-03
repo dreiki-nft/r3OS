@@ -2,6 +2,7 @@ import { useEffect, useRef, type PointerEvent } from 'react'
 import { PALETTE } from '../lib/palette'
 import type { Point } from '../lib/paintEngine'
 import type { TilePreviewState } from './cost'
+import type { Box, Ping } from './presence'
 
 interface CanvasViewProps {
   pixels: Uint8Array
@@ -15,6 +16,10 @@ interface CanvasViewProps {
   tileStates: Map<number, TilePreviewState>
   maxHeat: number
   selection?: { x0: number; y0: number; x1: number; y1: number }
+  /** short-lived outlines where someone just painted (drawn over the pixels, never into them) */
+  pings?: readonly Ping[]
+  /** scroll so this box is in view when its id changes */
+  focus?: { id: number; box: Box }
   onDown: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
   onMove: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
   onUp: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
@@ -33,12 +38,24 @@ export function CanvasView({
   tileStates,
   maxHeat,
   selection,
+  pings,
+  focus,
   onDown,
   onMove,
   onUp,
   onHover,
 }: CanvasViewProps) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const well = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const host = well.current
+    if (!focus || !host) return
+    const scale = (ref.current?.clientWidth ?? 256 * zoom) / 256
+    const cx = ((focus.box.x0 + focus.box.x1 + 1) / 2) * scale
+    const cy = ((focus.box.y0 + focus.box.y1 + 1) / 2) * scale
+    host.scrollTo?.({ left: cx - host.clientWidth / 2, top: cy - host.clientHeight / 2, behavior: 'smooth' })
+  }, [focus?.id])
 
   useEffect(() => {
     const canvas = ref.current
@@ -97,6 +114,19 @@ export function CanvasView({
       context.restore()
     }
 
+    if (pings?.length) {
+      context.save()
+      context.lineWidth = 1
+      for (const ping of pings) {
+        const { x0, y0, x1, y1 } = ping.box
+        context.strokeStyle = '#000'
+        context.strokeRect(x0 - 1.5, y0 - 1.5, x1 - x0 + 4, y1 - y0 + 4)
+        context.strokeStyle = ping.self ? '#FEC343' : '#5FEDDF'
+        context.strokeRect(x0 - 0.5, y0 - 0.5, x1 - x0 + 2, y1 - y0 + 2)
+      }
+      context.restore()
+    }
+
     if (grid && zoom >= 4) {
       context.strokeStyle = 'rgba(255,255,255,.08)'
       context.lineWidth = 1 / zoom
@@ -111,7 +141,20 @@ export function CanvasView({
         context.stroke()
       }
     }
-  }, [pixels, outline, face, background, grid, protectedView, zoom, showHeat, tileStates, maxHeat, selection])
+  }, [
+    pixels,
+    outline,
+    face,
+    background,
+    grid,
+    protectedView,
+    zoom,
+    showHeat,
+    tileStates,
+    maxHeat,
+    selection,
+    pings,
+  ])
 
   const point = (event: PointerEvent<HTMLCanvasElement>): Point => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -125,6 +168,7 @@ export function CanvasView({
 
   return (
     <div
+      ref={well}
       className="canvas-well sunken"
       onWheel={(event) => {
         if (event.ctrlKey) event.preventDefault()

@@ -52,6 +52,16 @@ import { regionsFromRunList } from '../xray/regions'
 import { BudgetMeter, type BudgetState } from './BudgetMeter'
 import { CanvasView } from './CanvasView'
 import {
+  agoLabel,
+  focusPaint,
+  getPresenceSnapshot,
+  PRESENCE_WINDOW_BLOCKS,
+  setPresenceAccount,
+  subscribePresence,
+  summarize,
+  windowLabel,
+} from './presence'
+import {
   beginInFlight,
   clearPending,
   getCanvasSnapshot,
@@ -101,6 +111,12 @@ export function PaintProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const tileSnapshot = useSyncExternalStore(subscribeTileCache, getTileCacheSnapshot)
+  const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
+  const together = summarize(presence.strokes, block.block)
+  const togetherWindow = windowLabel(PRESENCE_WINDOW_BLOCKS, block.blockTimeMs)
+  const me = wallet.account?.toLowerCase()
+  const togetherText = together.painters ? ` · ${together.painters} painting now` : ''
+  useEffect(() => setPresenceAccount(wallet.account), [wallet.account])
 
   const [tool, setTool] = useState<Tool>('pencil')
   const [colour, setColour] = useState(1)
@@ -977,6 +993,8 @@ export function PaintProgram() {
           showHeat={heatView}
           tileStates={tileStates}
           maxHeat={Number(constants.MAX_TILE_HEAT)}
+          pings={presence.pings}
+          focus={presence.focus}
           onDown={onDown}
           onMove={onMove}
           onUp={onUp}
@@ -1012,6 +1030,53 @@ export function PaintProgram() {
             {'▮'.repeat(heatBars)}
             {'▯'.repeat(5 - heatBars)} {heatLabel}
           </span>
+          {!config.demo && (
+            <>
+              <br />
+              <b
+                className="paint-term"
+                title={`different wallets that painted this canvas in the last ${togetherWindow}, read from the contract's Painted events. new strokes by others flash on the canvas.`}
+              >
+                painting now
+              </b>
+              <span className="paint-together">
+                <b>
+                  {together.painters
+                    ? `${together.painters} painter${together.painters === 1 ? '' : 's'}`
+                    : 'quiet right now'}
+                </b>
+                <small>
+                  {together.painters ? `${together.pixels.toLocaleString('en-US')} px · ` : ''}last{' '}
+                  {togetherWindow}
+                </small>
+              </span>
+              {presence.season && presence.season.season === canvas.season && (
+                <span
+                  className="paint-together"
+                  title="successful paints and saved frames this season, read from the contract"
+                >
+                  <small>this season</small>
+                  {presence.season.paints.toLocaleString('en-US')} paints ·{' '}
+                  {presence.season.frames.toLocaleString('en-US')} frames
+                </span>
+              )}
+              {presence.strokes.length > 0 && (
+                <ul className="paint-recent" aria-label="recent strokes">
+                  {presence.strokes.slice(0, 3).map((stroke) => (
+                    <li key={stroke.key}>
+                      <button title="show this stroke on the canvas" onClick={() => focusPaint(stroke.box)}>
+                        <span>{stroke.owner === me ? 'you' : short(stroke.owner)}</span>
+                        <small>
+                          {stroke.pixels.toLocaleString('en-US')} px ·{' '}
+                          {agoLabel(stroke.block, block.block, block.blockTimeMs)} ago
+                        </small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
         </aside>
       </div>
       <div className="paint-bottom">
@@ -1065,15 +1130,26 @@ export function PaintProgram() {
       </div>
       <footer className="paint-status">
         <span>
-          {busy
-            ? 'painting…'
-            : lastPaint
-              ? paintedText(lastPaint)
-              : isLive && live.burner
-                ? `LIVE · burner ${short(live.burner.address)} · ${formatBurnerBalance(live.balance)}`
-                : config.demo
-                  ? 'demo canvas'
-                  : `ready · ${short(wallet.account)}`}
+          {busy ? (
+            'painting…'
+          ) : lastPaint ? (
+            <>
+              {paintedText(lastPaint)} ·{' '}
+              <button
+                className="link-button"
+                title="follow this paint from click to finality in Monad X-ray"
+                onClick={() => void openProgram('xray')}
+              >
+                X-ray
+              </button>
+            </>
+          ) : isLive && live.burner ? (
+            `LIVE · burner ${short(live.burner.address)} · ${formatBurnerBalance(live.balance)}${togetherText}`
+          ) : config.demo ? (
+            'demo canvas'
+          ) : (
+            `ready · ${short(wallet.account)}${togetherText}`
+          )}
         </span>
         <span>
           {hover.x}, {hover.y}

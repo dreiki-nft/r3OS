@@ -6,6 +6,8 @@ import { disconnectWallet } from '../chain/wallet'
 import { Welcome } from './Welcome'
 import { getBlockSnapshot, startBlockClock, subscribeBlocks } from '../chain/blocks'
 import { startCanvasStore } from '../paint/canvasStore'
+import { startPresence } from '../paint/presence'
+import { initActivity } from './activity'
 import { Assistant } from './Assistant'
 import { setAssistantTip } from './assistantStore'
 import { clearBalloons, pushBalloon } from './balloons'
@@ -50,6 +52,8 @@ export function R3tardOS() {
     void initReleases()
     void startBlockClock()
     void startCanvasStore()
+    startPresence()
+    initActivity()
     window.addEventListener('resize', clampAllWindows)
     return () => window.removeEventListener('resize', clampAllWindows)
   }, [])

@@ -12,7 +12,16 @@ import {
   subscribeLive,
   unitsLeft,
 } from '../live/liveStore'
+import {
+  getPresenceSnapshot,
+  PRESENCE_WINDOW_BLOCKS,
+  subscribePresence,
+  summarize,
+  windowLabel,
+} from '../paint/presence'
+import { getUnreadPaint, showUnreadPaint, subscribeUnreadPaint } from './activity'
 import { dismissBalloon, getBalloons, pushBalloon, subscribeBalloons } from './balloons'
+import { openProgram } from './programs'
 import { isMuted, setMuted } from './sound'
 import { Icon } from './ui/Icon'
 import { MessageBox } from './ui/MessageBox'
@@ -33,6 +42,9 @@ export function Tray() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const balloons = useSyncExternalStore(subscribeBalloons, getBalloons)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
+  const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
+  const unreadPaint = useSyncExternalStore(subscribeUnreadPaint, getUnreadPaint)
+  const painting = summarize(presence.strokes, block.block)
   const [muted, setM] = useState(isMuted())
   const [storm, setStorm] = useState(false)
   const connectionOpen = balloons.some((notice) => notice.id === 'connection')
@@ -117,6 +129,27 @@ export function Tray() {
           }}
         >
           <Icon name="key" size={20} colour="#5FEDDF" />
+        </button>
+      )}
+      {unreadPaint.length > 0 && (
+        <button
+          className="tray-mail"
+          aria-label="You've got paint"
+          title="You've got paint: see where others just painted"
+          onClick={showUnreadPaint}
+        >
+          <Icon name="mail" size={20} colour="#FEC343" />
+        </button>
+      )}
+      {painting.painters > 0 && (
+        <button
+          className="tray-painters"
+          aria-label={`${painting.painters} painting now`}
+          title={`${painting.painters} wallet${painting.painters === 1 ? '' : 's'} painted in the last ${windowLabel(PRESENCE_WINDOW_BLOCKS, block.blockTimeMs)} · open Paint`}
+          onClick={() => void openProgram('paint')}
+        >
+          <Icon name="paint" size={20} />
+          <span>{painting.painters}</span>
         </button>
       )}
       <span key={block.block.toString()} className="block-dot block-pulse">

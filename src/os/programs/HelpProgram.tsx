@@ -58,6 +58,12 @@ const pages: Record<HelpSlug, ReactNode> = {
         a busy area can make fresh pixels glitch (that's DF1, see “storms & glitches”). the outline of the
         season's character is protected and can't be painted over.
       </p>
+      <p>
+        you're never painting alone: “painting now” shows how many wallets painted in the last few minutes,
+        and a stroke by someone else flashes on the canvas as it lands. click a recent stroke to jump to it.
+        when you're in another program and people paint, a “You've got paint” note appears; the paint icon in
+        the corner shows how many are painting.
+      </p>
       <p>File › Save frame… saves what the canvas looks like right now as your own frame.</p>
     </>
   ),
