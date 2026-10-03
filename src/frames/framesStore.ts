@@ -1,6 +1,8 @@
 import { zeroAddress, type Address } from 'viem'
+import { getBlockSnapshot } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config, deploymentScope } from '../chain/config'
+import { readMany, type ReadManyResult } from '../chain/readMany'
 import { idbGet, idbSet } from '../lib/idb'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { subscribeCanvasActivity, type CanvasActivity } from '../paint/canvasStore'
@@ -198,6 +200,14 @@ export function ownersFromSettled(ids: readonly number[], results: readonly Prom
   return ownerById
 }
 
+export function ownersFromReadMany(ids: readonly number[], results: readonly ReadManyResult[]) {
+  const ownerById: Record<string, Address | null> = {}
+  results.forEach((result, index) => {
+    ownerById[String(ids[index])] = result.status === 'success' ? (result.result as Address) : null
+  })
+  return ownerById
+}
+
 export function applyTransferToOwnerMap(
   ownerById: Record<string, Address | null>,
   tokenId: bigint,
@@ -246,18 +256,15 @@ export async function refreshFrameIndex(force = false) {
         functionName: 'currentSeason',
       }),
     )
-    const values = await Promise.all(
-      Array.from(
-        { length: currentSeason + 1 },
-        (_, season) =>
-          client.readContract({
-            address: config.paintAddress!,
-            abi: R3TARDS_PAINT_ABI,
-            functionName: 'seasonInfo',
-            args: [BigInt(season)],
-          }) as Promise<readonly unknown[]>,
-      ),
-    )
+    const values = (await readMany(
+      Array.from({ length: currentSeason + 1 }, (_, season) => ({
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'seasonInfo',
+        args: [BigInt(season)],
+      })),
+      { allowFailure: false },
+    )) as readonly (readonly unknown[])[]
     const seasons = values.map((value, season): SeasonSummary => {
       const regularFrames = Number(value[4])
       const finaleMinted = Boolean(value[5])
@@ -320,16 +327,14 @@ export async function getFrameInfoBatch(tokenIds: readonly number[]) {
     }),
   )
   if (missing.length && publicClient && config.paintAddress) {
-    const client = publicClient
-    const values = await Promise.all(
-      missing.map((tokenId) =>
-        client.readContract({
-          address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
-          functionName: 'frameInfo',
-          args: [BigInt(tokenId)],
-        }),
-      ),
+    const values = await readMany(
+      missing.map((tokenId) => ({
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'frameInfo',
+        args: [BigInt(tokenId)],
+      })),
+      { allowFailure: false },
     )
     await Promise.all(
       values.map(async (raw, index) => {
@@ -346,19 +351,15 @@ export async function getFrameInfoBatch(tokenIds: readonly number[]) {
 
 export async function seasonTokenIds(season: SeasonSummary) {
   if (!publicClient || !config.paintAddress) return []
-  const client = publicClient
-  const regular = await Promise.all(
-    Array.from(
-      { length: season.regularFrames },
-      (_, index) =>
-        client.readContract({
-          address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
-          functionName: 'seasonFrameToken',
-          args: [BigInt(season.season), index + 1],
-        }) as Promise<bigint>,
-    ),
-  )
+  const regular = await readMany(
+    Array.from({ length: season.regularFrames }, (_, index) => ({
+      address: config.paintAddress!,
+      abi: R3TARDS_PAINT_ABI,
+      functionName: 'seasonFrameToken',
+      args: [BigInt(season.season), index + 1],
+    })),
+    { allowFailure: false },
+  ) as bigint[]
   const ids = regular.map(Number).filter((id) => id > 0)
   if (season.finaleMinted && season.finaleTokenId > 0n) ids.push(Number(season.finaleTokenId))
   return ids.sort((a, b) => b - a)
@@ -378,7 +379,8 @@ export async function scanOwners(account: Address, total = snapshot.total) {
   if (!publicClient || !config.paintAddress) return { ownerById: {}, scannedUpTo: 0, atBlock: '0' }
   const cache = await loadOwnerCache(account)
   const client = publicClient
-  const atBlock = String(await client.getBlockNumber({ cacheTime: 0 }))
+  const seenHead = getBlockSnapshot().block
+  const atBlock = String(seenHead > 0n ? seenHead : await client.getBlockNumber({ cacheTime: 0 }))
   if (!Object.prototype.hasOwnProperty.call(cache.ownerById, '0')) {
     const zero = await client
       .readContract({
@@ -392,17 +394,16 @@ export async function scanOwners(account: Address, total = snapshot.total) {
   }
   for (const ids of ownerScanBatches(cache.scannedUpTo + 1, total)) {
     const end = ids[ids.length - 1]
-    const results = await Promise.allSettled(
-      ids.map((tokenId) =>
-        client.readContract({
-          address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
-          functionName: 'ownerOf',
-          args: [BigInt(tokenId)],
-        }),
-      ),
-    )
-    Object.assign(cache.ownerById, ownersFromSettled(ids, results))
+    const results = await readMany(
+      ids.map((tokenId) => ({
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'ownerOf',
+        args: [BigInt(tokenId)],
+      })),
+      { allowFailure: true },
+    ) as ReadManyResult[]
+    Object.assign(cache.ownerById, ownersFromReadMany(ids, results))
     cache.scannedUpTo = end
     cache.atBlock = atBlock
     await idbSet('owners', ownerKey(account), cache)

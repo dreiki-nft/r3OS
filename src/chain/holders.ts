@@ -1,5 +1,6 @@
 import { parseAbi, type Address, type PublicClient } from 'viem'
 import { config } from './config'
+import { readManyUsing, type ReadManyResult } from './readMany'
 
 const ERC721 = parseAbi([
   'function balanceOf(address) view returns (uint256)',
@@ -10,7 +11,10 @@ const ERC721 = parseAbi([
 ])
 const ENUMERABLE_INTERFACE = '0x780e9d63'
 
-const storageKey = (chainId: number, owner: Address) => `r3os.holders.${chainId}.${owner.toLowerCase()}`
+const storageKey = (chainId: number, collection: Address, owner: Address) =>
+  `r3os.holders.${chainId}.${collection.toLowerCase()}.${owner.toLowerCase()}`
+
+const inFlight = new Map<string, Promise<bigint[]>>()
 
 function sameAddress(a: Address, b: Address) {
   return a.toLowerCase() === b.toLowerCase()
@@ -22,27 +26,21 @@ function uniqueSorted(ids: readonly bigint[]) {
 
 async function verify(client: PublicClient, collection: Address, owner: Address, ids: readonly bigint[]) {
   const candidates = uniqueSorted(ids)
-  const results = await Promise.all(
-    candidates.map(async (id) => {
-      try {
-        const actual = (await client.readContract({
-          address: collection,
-          abi: ERC721,
-          functionName: 'ownerOf',
-          args: [id],
-        })) as Address
-        return sameAddress(actual, owner) ? id : undefined
-      } catch {
-        return undefined
-      }
-    }),
-  )
-  return results.filter((id): id is bigint => id != null)
+  if (!candidates.length) return []
+  const rows = (await readManyUsing(
+    client,
+    candidates.map((id) => ({ address: collection, abi: ERC721, functionName: 'ownerOf', args: [id] })),
+    { allowFailure: true, multicallAddress: config.multicall3Address },
+  )) as ReadManyResult[]
+  return candidates.filter((_, index) => {
+    const row = rows[index]
+    return row?.status === 'success' && sameAddress(row.result as Address, owner)
+  })
 }
 
-function cachedIds(owner: Address) {
+function cachedIds(collection: Address, owner: Address) {
   try {
-    return (JSON.parse(localStorage.getItem(storageKey(config.chainId, owner)) || '[]') as string[]).map(
+    return (JSON.parse(localStorage.getItem(storageKey(config.chainId, collection, owner)) || '[]') as string[]).map(
       BigInt,
     )
   } catch {
@@ -50,7 +48,7 @@ function cachedIds(owner: Address) {
   }
 }
 
-export async function resolveHolderIds(
+async function resolveHolderIdsNow(
   client: PublicClient,
   collection: Address,
   owner: Address,
@@ -74,18 +72,16 @@ export async function resolveHolderIds(
       args: [ENUMERABLE_INTERFACE],
     })) as boolean
     if (enumerable) {
-      discovered = await Promise.all(
-        Array.from(
-          { length: Number(balance) },
-          (_, index) =>
-            client.readContract({
-              address: collection,
-              abi: ERC721,
-              functionName: 'tokenOfOwnerByIndex',
-              args: [owner, BigInt(index)],
-            }) as Promise<bigint>,
-        ),
-      )
+      discovered = (await readManyUsing(
+        client,
+        Array.from({ length: Number(balance) }, (_, index) => ({
+          address: collection,
+          abi: ERC721,
+          functionName: 'tokenOfOwnerByIndex',
+          args: [owner, BigInt(index)],
+        })),
+        { allowFailure: false, multicallAddress: config.multicall3Address },
+      )) as bigint[]
     }
   } catch {
     // Try the next strategy.
@@ -114,16 +110,38 @@ export async function resolveHolderIds(
     }
   }
 
-  if (!discovered.length) discovered = cachedIds(owner)
+  if (!discovered.length) discovered = cachedIds(collection, owner)
 
   // Manual ids supplement every automatic path rather than being ignored once anything was found.
   const checked = await verify(client, collection, owner, [...discovered, ...manual])
   try {
-    localStorage.setItem(storageKey(config.chainId, owner), JSON.stringify(checked.map(String)))
+    localStorage.setItem(storageKey(config.chainId, collection, owner), JSON.stringify(checked.map(String)))
   } catch {
     // The app keeps working with storage blocked.
   }
   return checked
+}
+
+export async function resolveHolderIds(
+  client: PublicClient,
+  collection: Address,
+  owner: Address,
+  manual: bigint[] = [],
+  fetcher: typeof fetch = fetch,
+) {
+  const manualKey = uniqueSorted(manual).map(String).join(',')
+  const key = `${config.chainId}:${collection.toLowerCase()}:${owner.toLowerCase()}:${manualKey}`
+  const active = inFlight.get(key)
+  if (active) return active
+  const pending = resolveHolderIdsNow(client, collection, owner, manual, fetcher).finally(() => {
+    if (inFlight.get(key) === pending) inFlight.delete(key)
+  })
+  inFlight.set(key, pending)
+  return pending
+}
+
+export function __resetHolderResolutionForTests() {
+  inFlight.clear()
 }
 
 export function parseManualIds(value: string) {

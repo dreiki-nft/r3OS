@@ -28,6 +28,26 @@ export interface BurnerStatus {
 type BurnerListener = (owner: Address) => void
 const listeners = new Set<BurnerListener>()
 
+type BalanceCacheEntry = { balance: bigint; at: number }
+const balanceCache = new Map<string, BalanceCacheEntry>()
+
+function balanceKey(owner: Address) {
+  return owner.toLowerCase()
+}
+
+export function cachedBurnerBalance(owner: Address, maxAgeMs = 60_000) {
+  const cached = balanceCache.get(balanceKey(owner))
+  if (!cached || Date.now() - cached.at > maxAgeMs) return undefined
+  return cached.balance
+}
+
+export function debitCachedBurnerBalance(owner: Address, amount: bigint) {
+  const key = balanceKey(owner)
+  const cached = balanceCache.get(key)
+  if (!cached) return
+  balanceCache.set(key, { balance: cached.balance > amount ? cached.balance - amount : 0n, at: Date.now() })
+}
+
 export function burnerStorageKey(owner: Address, chainId = config.chainId) {
   return `r3os.burner.${chainId}.${owner.toLowerCase()}`
 }
@@ -76,6 +96,7 @@ export function deleteBurner(owner: Address, chainId = config.chainId) {
   } catch {
     // Storage can be blocked.
   }
+  balanceCache.delete(balanceKey(owner))
   notifyBurnerChanged(owner)
 }
 
@@ -107,6 +128,7 @@ export async function burnerStatus(owner: Address): Promise<BurnerStatus | undef
     }) as Promise<readonly [Address, bigint, bigint, bigint, boolean, boolean]>,
     client.getBalance({ address: burner.address }),
   ])
+  balanceCache.set(balanceKey(owner), { balance, at: Date.now() })
   return {
     burner,
     session: {

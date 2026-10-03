@@ -41,35 +41,56 @@ export function ownedFromOwnerScan(results: readonly any[], owner: Address, star
   )
 }
 
+let labsAddressPromise: Promise<Address> | undefined
+const ownedLabsInflight = new Map<string, Promise<bigint[]>>()
+
 export async function labsAddress() {
+  if (labsAddressPromise) return labsAddressPromise
   if (!publicClient) throw new Error('DEMO_MODE')
-  const flipbook = (await discoverContracts()).labs.flipbook
-  if (!flipbook) throw new Error("this Lab isn't deployed on this network")
-  return (await publicClient.readContract({
-    address: flipbook,
-    abi: R3TARDS_FLIPBOOK_ABI,
-    functionName: 'LABS',
-  })) as Address
+  labsAddressPromise = (async () => {
+    const flipbook = (await discoverContracts()).labs.flipbook
+    if (!flipbook) throw new Error("this Lab isn't deployed on this network")
+    return (await publicClient.readContract({
+      address: flipbook,
+      abi: R3TARDS_FLIPBOOK_ABI,
+      functionName: 'LABS',
+    })) as Address
+  })().catch((error) => {
+    labsAddressPromise = undefined
+    throw error
+  })
+  return labsAddressPromise
 }
 
 export async function scanOwnedLabs(labs: Address, owner: Address) {
   if (!publicClient) return []
-  const total = BigInt(
-    await publicClient.readContract({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'totalMinted' }),
-  )
-  const owned: bigint[] = []
-  for (let start = 1n; start <= total; start += 100n) {
-    const end = start + 99n < total ? start + 99n : total
-    const calls = Array.from({ length: Number(end - start + 1n) }, (_, i) => ({
-      address: labs,
-      abi: R3TARDS_LABS_ABI,
-      functionName: 'ownerOf',
-      args: [start + BigInt(i)],
-    }))
-    const rows = await readMany(calls, { allowFailure: true })
-    owned.push(...ownedFromOwnerScan(rows, owner, start))
-  }
-  return owned
+  const key = `${labs.toLowerCase()}:${owner.toLowerCase()}`
+  const active = ownedLabsInflight.get(key)
+  if (active) return active
+
+  const pending = (async () => {
+    const total = BigInt(
+      await publicClient.readContract({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'totalMinted' }),
+    )
+    if (total === 0n) return []
+    // readMany already slices Multicall3 into 100-call chunks and runs four chunks at a time.
+    // Feeding it the whole owner scan avoids a serial 100-token waterfall as Labs grows.
+    const rows = await readMany(
+      Array.from({ length: Number(total) }, (_, i) => ({
+        address: labs,
+        abi: R3TARDS_LABS_ABI,
+        functionName: 'ownerOf',
+        args: [1n + BigInt(i)],
+      })),
+      { allowFailure: true },
+    )
+    return ownedFromOwnerScan(rows, owner, 1n)
+  })().finally(() => {
+    if (ownedLabsInflight.get(key) === pending) ownedLabsInflight.delete(key)
+  })
+
+  ownedLabsInflight.set(key, pending)
+  return pending
 }
 
 export async function loadOwnedLabsTokens(owner: Address) {
@@ -78,6 +99,7 @@ export async function loadOwnedLabsTokens(owner: Address) {
   if (!ids.length) return []
   const rows = await readHeavy(
     ids.map((id) => ({ address, abi: R3TARDS_LABS_ABI, functionName: 'tokenURI', args: [id] })),
+    { concurrency: 4 },
   )
   return ids.map((id, index) => ({
     id,

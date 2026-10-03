@@ -4,7 +4,7 @@ export interface StrokeQueue {
   flush: () => Promise<void>
 }
 
-export function createStrokeQueue(send: () => Promise<void>, delay = 300): StrokeQueue {
+export function createStrokeQueue(send: () => Promise<void>, delay = 120): StrokeQueue {
   let timer: ReturnType<typeof setTimeout> | undefined
   let sending = false
   let queued = false

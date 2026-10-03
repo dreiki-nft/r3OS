@@ -6,7 +6,7 @@ const address = '0x0000000000000000000000000000000000000001' as Address
 const call = { address, abi: [] as const, functionName: 'x' }
 
 describe('readMany', () => {
-  it('splits 250 calls into three sequential multicalls', async () => {
+  it('splits 250 calls into three bounded multicalls', async () => {
     const multicall = vi.fn(async ({ contracts }: { contracts: unknown[] }) =>
       contracts.map(() => ({ status: 'success', result: 7n })),
     )
@@ -21,6 +21,32 @@ describe('readMany', () => {
     expect(rows).toHaveLength(250)
     expect(multicall).toHaveBeenCalledTimes(3)
     expect(multicall.mock.calls.map(([args]) => args.contracts.length)).toEqual([100, 100, 50])
+  })
+
+  it('runs at most four Multicall3 chunks at once', async () => {
+    let active = 0
+    let peak = 0
+    const releases: Array<() => void> = []
+    const multicall = vi.fn(async ({ contracts }: { contracts: unknown[] }) => {
+      active++
+      peak = Math.max(peak, active)
+      await new Promise<void>((resolve) => releases.push(resolve))
+      active--
+      return contracts.map(() => ({ status: 'success', result: 7n }))
+    })
+    const promise = readManyUsing(
+      { multicall },
+      Array.from({ length: 450 }, () => call),
+      { allowFailure: true, multicallAddress: address },
+    )
+    await vi.waitFor(() => expect(peak).toBe(4))
+    while (multicall.mock.calls.length < 5 || releases.length) {
+      releases.splice(0).forEach((release) => release())
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+    await promise
+    expect(multicall).toHaveBeenCalledTimes(5)
+    expect(peak).toBe(4)
   })
 
   it('falls back to parallel readContract with the same allowFailure shape', async () => {

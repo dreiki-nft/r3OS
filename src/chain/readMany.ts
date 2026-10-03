@@ -52,17 +52,29 @@ export async function readManyUsing(
   if (!calls.length) return []
   let chunks: ReadManyResult[]
 
-  if (options.multicallAddress) {
-    chunks = []
-    for (let i = 0; i < calls.length; i += 100) {
-      const part = calls.slice(i, i + 100)
-      const result = await client.multicall({
-        contracts: part,
-        allowFailure: true,
-        multicallAddress: options.multicallAddress,
-      })
-      chunks.push(...result)
+  if (options.multicallAddress && typeof client.multicall === 'function') {
+    const parts: ReadManyCall[][] = []
+    for (let i = 0; i < calls.length; i += 100) parts.push(calls.slice(i, i + 100))
+
+    // A Multicall3 batch is one eth_call no matter how many reads it contains. Run a few
+    // chunks together so a large frame/Labs scan costs waves of RPC latency, not one RTT
+    // per 100 tokens. Four concurrent eth_calls stays comfortably below the public-RPC
+    // request budget while removing a very visible waterfall.
+    const grouped: ReadManyResult[][] = new Array(parts.length)
+    let cursor = 0
+    const worker = async () => {
+      while (true) {
+        const index = cursor++
+        if (index >= parts.length) return
+        grouped[index] = await client.multicall({
+          contracts: parts[index],
+          allowFailure: true,
+          multicallAddress: options.multicallAddress,
+        })
+      }
     }
+    await Promise.all(Array.from({ length: Math.min(4, parts.length) }, () => worker()))
+    chunks = grouped.flat()
   } else {
     chunks = await Promise.all(calls.map((call) => fallbackRead(client, call)))
   }

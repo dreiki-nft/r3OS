@@ -381,6 +381,10 @@ export function LiveWizard() {
                     Live mode makes a burner key that lives in this browser. It paints for you, so strokes
                     land without a wallet prompt each time.
                   </p>
+                  <p className="dialog-warning">
+                    Live Mode writes strokes onchain immediately. There is no Undo or Redo after a stroke
+                    is submitted; changing it means painting over it with another transaction.
+                  </p>
                   <div className="live-quick sunken">
                     <b>Quick start</b>
                     <span>
@@ -485,6 +489,9 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                       <p>
                         Ready to start. The burner sends its own startSession transaction. After that, strokes
                         commit on pointer-up.
+                      </p>
+                      <p className="dialog-warning">
+                        No Undo in Live Mode. Confirmed strokes are permanent onchain history.
                       </p>
                       <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
                         formatEther(balance),

@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./clients', () => ({
   appChain: { id: 31337 },
-  publicClient: {
+  actionClient: {
     simulateContract: mocks.simulateContract,
     estimateContractGas: mocks.estimateContractGas,
     estimateFeesPerGas: mocks.estimateFeesPerGas,

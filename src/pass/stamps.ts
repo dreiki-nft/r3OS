@@ -1,5 +1,6 @@
 import { parseAbi, type Address } from 'viem'
 import { publicClient } from '../chain/clients'
+import { readMany, type ReadManyResult } from '../chain/readMany'
 import { R3TARDS_PAINTER_PASS_ABI } from '../lib/generated/abi'
 
 export const STAMP_ABI = parseAbi(['function stamp(address painter) view returns (string name,bool earned)'])
@@ -27,38 +28,38 @@ export async function loadLabStamps(pass: Address, owner: Address) {
     abi: R3TARDS_PAINTER_PASS_ABI,
     functionName: 'stampSourceCount',
   })) as bigint
-  const sources = await Promise.all(
-    Array.from(
-      { length: Number(count) },
-      (_, index) =>
-        client.readContract({
-          address: pass,
-          abi: R3TARDS_PAINTER_PASS_ABI,
-          functionName: 'stampSource',
-          args: [BigInt(index)],
-        }) as Promise<Address>,
-    ),
-  )
-  return Promise.all(
-    sources.map(async (source, index): Promise<StampRow> => {
-      try {
-        const [name, earned] = (await client.readContract({
-          address: source,
-          abi: STAMP_ABI,
-          functionName: 'stamp',
-          args: [owner],
-        })) as readonly [string, boolean]
-        return {
-          name,
-          earned,
-          source,
-          rule: name.startsWith('QUESTS ') ? 'n quests claimed' : (rules[name] ?? 'Lab-specific rule'),
-        }
-      } catch {
-        return { name: `Lab ${index}`, earned: false, source, rule: 'stamp source unavailable' }
-      }
-    }),
-  )
+  const sources = (await readMany(
+    Array.from({ length: Number(count) }, (_, index) => ({
+      address: pass,
+      abi: R3TARDS_PAINTER_PASS_ABI,
+      functionName: 'stampSource',
+      args: [BigInt(index)],
+    })),
+    { allowFailure: false },
+  )) as Address[]
+
+  const stampRows = (await readMany(
+    sources.map((source) => ({
+      address: source,
+      abi: STAMP_ABI,
+      functionName: 'stamp',
+      args: [owner],
+    })),
+    { allowFailure: true },
+  )) as ReadManyResult[]
+
+  return sources.map((source, index): StampRow => {
+    const row = stampRows[index]
+    if (row?.status !== 'success')
+      return { name: `Lab ${index}`, earned: false, source, rule: 'stamp source unavailable' }
+    const [name, earned] = row.result as readonly [string, boolean]
+    return {
+      name,
+      earned,
+      source,
+      rule: name.startsWith('QUESTS ') ? 'n quests claimed' : (rules[name] ?? 'Lab-specific rule'),
+    }
+  })
 }
 
 export const builtInStamps = (stats: {

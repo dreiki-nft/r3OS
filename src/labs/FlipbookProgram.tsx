@@ -310,8 +310,9 @@ export function FlipbookProgram() {
         reelOwnershipCache.set(cacheKey, owned)
       }
       const shown = owned.slice(-4).reverse()
-      const next: { id: bigint; data?: LabsTokenData }[] = []
-      for (const id of shown) next.push({ id, data: await readLabsToken(id).catch(() => undefined) })
+      const next = await Promise.all(
+        shown.map(async (id) => ({ id, data: await readLabsToken(id).catch(() => undefined) })),
+      )
       setReels(next)
     } catch {
       // Ownership is secondary UI. Keep the editor usable if an archival read fails.

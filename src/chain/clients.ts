@@ -25,7 +25,7 @@ export const walletChain = defineChain({
 
 startRpcStatsLogger()
 
-const batch = config.rpcBatchSize > 0 ? { batchSize: config.rpcBatchSize, wait: 16 } : false
+const batch = config.rpcBatchSize > 0 ? { batchSize: config.rpcBatchSize, wait: 4 } : false
 export const appTransport = config.rpcUrls.length
   ? fallback(
       config.rpcUrls.map((url) =>
@@ -49,6 +49,33 @@ export const publicClient = config.demo
       chain: appChain,
       transport: withRpcStats(appTransport),
       pollingInterval: 250,
+      cacheTime: 0,
+    })
+
+/**
+ * Low-latency lane for user-triggered transaction work. Background reads use the
+ * batched/rate-limited publicClient; quotes and receipt checks should not sit
+ * behind that queue or wait for the HTTP batch window.
+ */
+const actionTransport = config.rpcUrls.length
+  ? fallback(
+      config.rpcUrls.map((url) =>
+        http(url, {
+          batch: false,
+          retryCount: 0,
+          timeout: 5_000,
+        }),
+      ),
+      { rank: false, retryCount: 0 },
+    )
+  : http('http://127.0.0.1:8545')
+
+export const actionClient = config.demo
+  ? undefined
+  : createPublicClient({
+      chain: appChain,
+      transport: withRpcStats(actionTransport),
+      pollingInterval: 150,
       cacheTime: 0,
     })
 

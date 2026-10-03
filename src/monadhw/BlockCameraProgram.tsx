@@ -256,8 +256,12 @@ export function BlockCameraProgram() {
         return row?.status === 'success' && String(row.result).toLowerCase() === address.toLowerCase()
       })
       const shown = owned.slice(-6).reverse()
-      const next: RollItem[] = []
-      for (const id of shown) next.push({ id, data: await readLabsToken(id).catch(() => undefined) })
+      const next = await Promise.all(
+        shown.map(async (id): Promise<RollItem> => ({
+          id,
+          data: await readLabsToken(id).catch(() => undefined),
+        })),
+      )
       setRoll(next)
     } catch {
       // The roll is secondary; capture stays usable if archival reads fail.

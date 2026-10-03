@@ -4,14 +4,14 @@ import { createStrokeQueue } from './paintQueue'
 describe('live paint queue', () => {
   afterEach(() => vi.useRealTimers())
 
-  it('coalesces strokes inside 300 ms into one send', async () => {
+  it('coalesces strokes inside the live-mode debounce into one send', async () => {
     vi.useFakeTimers()
     const send = vi.fn().mockResolvedValue(undefined)
-    const queue = createStrokeQueue(send, 300)
+    const queue = createStrokeQueue(send, 120)
     queue.schedule()
-    await vi.advanceTimersByTimeAsync(200)
+    await vi.advanceTimersByTimeAsync(80)
     queue.schedule()
-    await vi.advanceTimersByTimeAsync(299)
+    await vi.advanceTimersByTimeAsync(119)
     expect(send).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(1)
     expect(send).toHaveBeenCalledTimes(1)
@@ -29,15 +29,15 @@ describe('live paint queue', () => {
           }),
       )
       .mockResolvedValueOnce(undefined)
-    const queue = createStrokeQueue(send, 300)
+    const queue = createStrokeQueue(send, 120)
     queue.schedule()
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(120)
     queue.schedule()
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(120)
     expect(send).toHaveBeenCalledTimes(1)
     release()
     await Promise.resolve()
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(120)
     expect(send).toHaveBeenCalledTimes(2)
   })
 })

@@ -149,13 +149,21 @@ export async function startBlockClock() {
   // React StrictMode runs mount effects twice in dev; one clock only, or polling doubles.
   if (clockStarted) return
   clockStarted = true
-  constants = await readCoreConstants().catch(() => demoConstants)
-  if (!publicClient) return
-  const initial = await readLatestHeader(publicClient as never).catch(() => ({
-    number: 0n,
-    timestamp: 0n,
-    miner: zeroAddress,
-  }))
+  if (!publicClient) {
+    constants = await readCoreConstants().catch(() => demoConstants)
+    return
+  }
+  // Constants and the first header are independent boot reads. Fetch them together so the
+  // BIOS screen does not pay two network round trips before it can show real chain facts.
+  const [nextConstants, initial] = await Promise.all([
+    readCoreConstants().catch(() => demoConstants),
+    readLatestHeader(publicClient as never).catch(() => ({
+      number: 0n,
+      timestamp: 0n,
+      miner: zeroAddress,
+    })),
+  ])
+  constants = nextConstants
   accept(initial, wsClient ? 'live' : 'polling')
 
   if (wsClient) {

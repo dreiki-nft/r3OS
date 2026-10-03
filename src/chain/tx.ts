@@ -8,12 +8,19 @@ import {
   type Hex,
   type Log,
 } from 'viem'
-import { publicClient, appChain } from './clients'
+import { actionClient, appChain } from './clients'
 import { getBlockSnapshot } from './blocks'
 import { friendlyError } from './errors'
 import { formatMaxCost, gasLimitFor, maxCostWei, type GasKind } from './gas'
 import { getWalletSnapshot, refreshWalletBalance } from './wallet'
-import { notifyBurnerChanged, burnerAccount, burnerWallet, loadBurner } from '../live/burner'
+import {
+  burnerAccount,
+  burnerWallet,
+  cachedBurnerBalance,
+  debitCachedBurnerBalance,
+  loadBurner,
+  notifyBurnerChanged,
+} from '../live/burner'
 import { sendWithBurnerNonce } from '../live/nonce'
 import { playSound } from '../os/sound'
 import { markTraceReceipt, recordTxTrace, type TxSigner } from './txTrace'
@@ -87,20 +94,20 @@ function isTransfer(opts: ActionOptions): opts is TransferActionOptions {
 
 async function currentBlock() {
   const head = getBlockSnapshot().block
-  if (head > 0n || !publicClient) return head
-  return publicClient.getBlockNumber({ cacheTime: 0 })
+  if (head > 0n || !actionClient) return head
+  return actionClient.getBlockNumber({ cacheTime: 0 })
 }
 
 async function feeQuote(block: bigint) {
   if (feeCache && block >= feeCache.block && block - feeCache.block <= 20n) return feeCache
-  if (!publicClient) throw new Error('DEMO_MODE')
+  if (!actionClient) throw new Error('DEMO_MODE')
 
   // Several programs can ask for a quote at the same time. Share one fee RPC instead of
   // stampeding the public endpoint with identical estimateFeesPerGas calls.
   if (feePromise) return feePromise
 
   feePromise = (async () => {
-    const rawFees = await publicClient.estimateFeesPerGas()
+    const rawFees = await actionClient.estimateFeesPerGas()
     const fees = rawFees as { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint; gasPrice?: bigint }
     feeCache = {
       block,
@@ -113,6 +120,13 @@ async function feeQuote(block: bigint) {
   })
 
   return feePromise
+}
+
+/** Warm the shared fee cap during the boot/splash window so the first visible quote only waits on gas. */
+export async function prewarmActionFees() {
+  if (!actionClient) return
+  const block = await currentBlock()
+  await feeQuote(block)
 }
 
 function senderFor(opts: ActionOptions) {
@@ -134,11 +148,11 @@ function contractBase(opts: ContractActionOptions, sender: Address) {
 }
 
 export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
-  if (!publicClient) throw new Error('DEMO_MODE')
+  if (!actionClient) throw new Error('DEMO_MODE')
   const sender = senderFor(opts)
 
-  // Start every independent quote read immediately. viem's HTTP batch transport can then
-  // combine them, and even without batching the wall time becomes roughly one RPC round-trip.
+  // Start every independent quote read immediately. The action client deliberately avoids
+  // the background batch/queue, so wall time is roughly one RPC round-trip.
   const blockPromise = currentBlock()
   let gasLimitPromise: Promise<bigint>
 
@@ -152,13 +166,13 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
     if (fixedGas) {
       // Fixed-gas actions still need one dry-run so an invalid action is rejected before a
       // burner signs it. The dry-run now overlaps the fee lookup instead of blocking it.
-      gasLimitPromise = publicClient
+      gasLimitPromise = actionClient
         .simulateContract(base)
         .then(() => gasLimitFor(opts.kind, 0n, opts.pixels))
     } else {
       // estimateContractGas already executes the transaction and surfaces reverts. Running a
       // simulateContract first performed the same expensive work twice on every quote.
-      gasLimitPromise = publicClient
+      gasLimitPromise = actionClient
         .estimateContractGas(base)
         .then((estimate) => gasLimitFor(opts.kind, estimate, opts.pixels))
     }
@@ -195,8 +209,8 @@ function actionName(opts: ActionOptions) {
 }
 
 async function sendWithWallet(opts: ActionOptions, quote: ActionQuote, sender: Address) {
-  if (!publicClient) throw new Error('DEMO_MODE')
-  const client = publicClient
+  if (!actionClient) throw new Error('DEMO_MODE')
+  const client = actionClient
   const wallet = getWalletSnapshot().client
   if (!wallet) throw new Error('DEMO_MODE')
   if (isTransfer(opts)) {
@@ -220,12 +234,16 @@ async function sendWithWallet(opts: ActionOptions, quote: ActionQuote, sender: A
 }
 
 async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: Address) {
-  if (!publicClient) throw new Error('DEMO_MODE')
-  const client = publicClient
+  if (!actionClient) throw new Error('DEMO_MODE')
+  const client = actionClient
   const wallet = burnerWallet(opts.account)
   const account = burnerAccount(opts.account)
   if (!wallet || !account) throw new Error('NO_BURNER')
-  const balance = await client.getBalance({ address: sender })
+  // Live Mode keeps an up-to-date burner balance in the live store. Reuse it on the
+  // hot path instead of inserting a getBalance RTT before every stroke. If this is the
+  // first burner action in a cold tab we still do the exact check once.
+  const cachedBalance = cachedBurnerBalance(opts.account)
+  const balance = cachedBalance ?? (await client.getBalance({ address: sender }))
   if (!burnerCanAfford(balance, quote, opts.value)) throw new Error('BURNER_OUT_OF_MON')
 
   return sendWithBurnerNonce(sender, async (nonce) => {
@@ -261,8 +279,8 @@ export function burnerCanAfford(balance: bigint, quote: ActionQuote, value = 0n)
 }
 
 export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
-  if (!publicClient) throw new Error('DEMO_MODE')
-  const client = publicClient
+  if (!actionClient) throw new Error('DEMO_MODE')
+  const client = actionClient
   try {
     const quote = await usableQuote(opts)
     const signer = opts.signer ?? 'wallet'
@@ -289,15 +307,22 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
       t: { signed: signedAt, sent: sentAt },
     })
     playSound('confirm')
-    const receipt = await client.waitForTransactionReceipt({ hash, pollingInterval: 250 })
+    const receipt = await client.waitForTransactionReceipt({ hash, pollingInterval: 125 })
     const receiptAt = typeof performance === 'undefined' ? Date.now() : performance.now()
     markTraceReceipt(hash, {
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed,
       effectiveGasPrice: receipt.effectiveGasPrice,
     })
-    if (signer === 'wallet') await refreshWalletBalance()
-    else notifyBurnerChanged(opts.account)
+    if (signer === 'wallet') {
+      // The receipt is already final from the user's point of view. Do not hold the UI open
+      // for a secondary balance read; refresh it in the background.
+      void refreshWalletBalance()
+    } else {
+      const valueSpent = receipt.status === 'success' ? (opts.value ?? 0n) : 0n
+      debitCachedBurnerBalance(opts.account, receipt.gasUsed * receipt.effectiveGasPrice + valueSpent)
+      notifyBurnerChanged(opts.account)
+    }
     if (receipt.status === 'reverted') {
       throw new Error(`the transaction reverted onchain and still cost up to ${quote.maxCost}`)
     }

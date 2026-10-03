@@ -1,6 +1,7 @@
 import { type Address, zeroAddress } from 'viem'
 import { publicClient } from './clients'
 import { config } from './config'
+import { readMany } from './readMany'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 
 export interface ContractAddresses {
@@ -42,39 +43,26 @@ async function readRegistry(): Promise<ContractAddresses> {
     return { paint: config.paintAddress, labs: { ...config.labs } }
   }
 
-  const client = publicClient
   const paint = config.paintAddress
-  const [pass, r3tards, count] = await Promise.all([
-    client.readContract({
-      address: paint,
-      abi: R3TARDS_PAINT_ABI,
-      functionName: 'painterPass',
-    }) as Promise<Address>,
-    client.readContract({
-      address: paint,
-      abi: R3TARDS_PAINT_ABI,
-      functionName: 'R3TARDS',
-    }) as Promise<Address>,
-    client.readContract({
-      address: paint,
-      abi: R3TARDS_PAINT_ABI,
-      functionName: 'experimentCount',
-    }) as Promise<bigint>,
-  ])
+  const [pass, r3tards, count] = (await readMany(
+    [
+      { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'painterPass' },
+      { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'R3TARDS' },
+      { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'experimentCount' },
+    ],
+    { allowFailure: false },
+  )) as [Address, Address, bigint]
 
   const labs: Record<string, Address | undefined> = { ...config.labs }
-  const infos = await Promise.all(
-    Array.from(
-      { length: Number(count) },
-      (_, index) =>
-        client.readContract({
-          address: paint,
-          abi: R3TARDS_PAINT_ABI,
-          functionName: 'experimentInfo',
-          args: [BigInt(index)],
-        }) as Promise<{ experiment: Address; name: string; retired: boolean }>,
-    ),
-  )
+  const infos = (await readMany(
+    Array.from({ length: Number(count) }, (_, index) => ({
+      address: paint,
+      abi: R3TARDS_PAINT_ABI,
+      functionName: 'experimentInfo',
+      args: [BigInt(index)],
+    })),
+    { allowFailure: false },
+  )) as { experiment: Address; name: string; retired: boolean }[]
   for (const info of infos) {
     const envOverride = config.labs[info.name as keyof typeof config.labs]
     if (!info.retired && info.experiment !== zeroAddress && !envOverride) labs[info.name] = info.experiment
@@ -104,7 +92,6 @@ export function readCoreConstants() {
   if (constantsPromise) return constantsPromise
   constantsPromise = (async () => {
     if (!publicClient || !config.paintAddress) return demoConstants
-    const client = publicClient
     const names = [
       'MAX_RAW_PIXELS_PER_PAINT',
       'MAX_PIXELS_PER_REGION_PER_BLOCK',
@@ -121,16 +108,14 @@ export function readCoreConstants() {
       'SEASON_START',
       'SEASON_LENGTH',
     ] as const
-    const values = await Promise.all(
-      names.map(
-        (name) =>
-          client.readContract({
-            address: config.paintAddress!,
-            abi: R3TARDS_PAINT_ABI,
-            functionName: name,
-          }) as Promise<bigint>,
-      ),
-    )
+    const values = (await readMany(
+      names.map((name) => ({
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: name,
+      })),
+      { allowFailure: false },
+    )) as bigint[]
     return Object.fromEntries(names.map((name, index) => [name, values[index]])) as typeof demoConstants
   })().catch((error) => {
     constantsPromise = undefined

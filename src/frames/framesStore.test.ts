@@ -4,6 +4,7 @@ import {
   seasonIndexChanged,
   applyTransferToOwnerMap,
   ownerScanBatches,
+  ownersFromReadMany,
   ownersFromSettled,
   pageNewestFirst,
   seasonTotal,
@@ -41,6 +42,19 @@ describe('frames store helpers', () => {
         [
           { status: 'fulfilled', value: owner },
           { status: 'rejected', reason: new Error('ERC721NonexistentToken') },
+        ],
+      ),
+    ).toEqual({ '7': owner, '8': null })
+  })
+
+  it('maps Multicall ownerOf failures to burned tokens', () => {
+    const owner = '0x00000000000000000000000000000000000000A1' as Address
+    expect(
+      ownersFromReadMany(
+        [7, 8],
+        [
+          { status: 'success', result: owner },
+          { status: 'failure', error: new Error('ERC721NonexistentToken') },
         ],
       ),
     ).toEqual({ '7': owner, '8': null })

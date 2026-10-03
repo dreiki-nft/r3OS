@@ -7,7 +7,7 @@ import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { discoverContracts } from '../chain/contracts'
 import { choosePassDisplay, resolveHolderIds } from '../chain/holders'
-import { readHeavy } from '../chain/readMany'
+import { readHeavy, readMany } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { formattedBalance, getWalletSnapshot, subscribeWallet, walletOnCorrectChain } from '../chain/wallet'
 import { decodeJsonDataUri } from '../lib/dataUri'
@@ -122,21 +122,27 @@ export function PassProgram() {
     setPassAddress(contracts.pass)
     setCollection(contracts.r3tards)
     if (!contracts.pass || !contracts.r3tards) return
-    const [pass, claimed, ownedIds] = await Promise.all([
-      publicClient.readContract({
-        address: contracts.pass,
-        abi: R3TARDS_PAINTER_PASS_ABI,
-        functionName: 'passOf',
-        args: [wallet.account],
-      }) as Promise<bigint>,
-      publicClient.readContract({
-        address: contracts.pass,
-        abi: R3TARDS_PAINTER_PASS_ABI,
-        functionName: 'hasClaimed',
-        args: [wallet.account],
-      }) as Promise<boolean>,
+    const [identity, ownedIds] = await Promise.all([
+      readMany(
+        [
+          {
+            address: contracts.pass,
+            abi: R3TARDS_PAINTER_PASS_ABI,
+            functionName: 'passOf',
+            args: [wallet.account],
+          },
+          {
+            address: contracts.pass,
+            abi: R3TARDS_PAINTER_PASS_ABI,
+            functionName: 'hasClaimed',
+            args: [wallet.account],
+          },
+        ],
+        { allowFailure: false },
+      ),
       resolveHolderIds(publicClient, contracts.r3tards, wallet.account),
     ])
+    const [pass, claimed] = identity as [bigint, boolean]
     setPassId(pass)
     setHasClaimed(claimed)
     setIds(ownedIds)
@@ -146,20 +152,23 @@ export function PassProgram() {
 
   const loadStats = useCallback(async () => {
     if (!wallet.account || !publicClient || !config.paintAddress) return
-    const [values, holder] = await Promise.all([
-      publicClient.readContract({
-        address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'painterStats',
-        args: [wallet.account],
-      }) as Promise<readonly bigint[]>,
-      publicClient.readContract({
-        address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
-        functionName: 'isR3tardHolder',
-        args: [wallet.account],
-      }) as Promise<boolean>,
-    ])
+    const [values, holder] = (await readMany(
+      [
+        {
+          address: config.paintAddress,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'painterStats',
+          args: [wallet.account],
+        },
+        {
+          address: config.paintAddress,
+          abi: R3TARDS_PAINT_ABI,
+          functionName: 'isR3tardHolder',
+          args: [wallet.account],
+        },
+      ],
+      { allowFailure: false },
+    )) as [readonly bigint[], boolean]
     setStats({
       activeDays: values[0],
       pixels: values[2],

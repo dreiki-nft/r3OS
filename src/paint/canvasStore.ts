@@ -1,6 +1,7 @@
 import { hexToBytes, type Hex } from 'viem'
 import { markTraceProposedFromPlainLog } from '../chain/txTrace'
 import { publicClient, wsClient } from '../chain/clients'
+import { readMany } from '../chain/readMany'
 import { config } from '../chain/config'
 import { getLogsWindow } from '../chain/logs'
 export { chunkBlockRanges } from '../chain/logs'
@@ -613,17 +614,17 @@ export async function readTileStates(tiles: readonly number[], headBlock: bigint
     return tileNeedsFetch(cached, headBlock, force)
   })
   if (needed.length) {
-    const results = await Promise.all(
-      needed.map(
-        (tile) =>
-          client.readContract({
-            address: config.paintAddress!,
-            abi: R3TARDS_PAINT_ABI,
-            functionName: 'tileState',
-            args: [snapshot.season, tile],
-          }) as Promise<readonly bigint[]>,
-      ),
-    )
+    // Heat view can need all 256 tiles at once. Use Multicall3 instead of emitting
+    // hundreds of individual eth_call requests into the public-RPC limiter.
+    const results = (await readMany(
+      needed.map((tile) => ({
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'tileState',
+        args: [snapshot.season, tile],
+      })),
+      { allowFailure: false },
+    )) as readonly (readonly bigint[])[]
     results.forEach((result, index) => {
       tileCache.set(needed[index], {
         state: { heat: Number(result[1]), wetBitmap: result[2] },

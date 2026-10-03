@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { publicClient } from '../chain/clients'
+import { actionClient } from '../chain/clients'
 
 function nonceError(error: unknown) {
   const text = error instanceof Error ? error.message : String(error)
@@ -48,8 +48,8 @@ function manager(address: Address) {
   let current = managers.get(key)
   if (!current) {
     current = createNonceManager(async () => {
-      if (!publicClient) throw new Error('DEMO_MODE')
-      return publicClient.getTransactionCount({ address, blockTag: 'pending' })
+      if (!actionClient) throw new Error('DEMO_MODE')
+      return actionClient.getTransactionCount({ address, blockTag: 'pending' })
     })
     managers.set(key, current)
   }

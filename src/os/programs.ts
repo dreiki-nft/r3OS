@@ -1,6 +1,4 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
-import { PaintProgram } from '../paint/PaintProgram'
-import { PassProgram } from '../pass/PassProgram'
 import type { IconName } from './icons'
 import { bottomRightWindowPosition, nextWindowPosition, openWindow } from './windows'
 import { getReleaseSnapshot, isProgramAvailable, markProgramOpened, type ReleaseSnapshot } from './releases'
@@ -26,6 +24,12 @@ export interface ProgramDef {
   pinToggle?: boolean
 }
 
+const PaintProgram = lazy(() =>
+  import('../paint/PaintProgram').then((module) => ({ default: module.PaintProgram })),
+)
+const PassProgram = lazy(() =>
+  import('../pass/PassProgram').then((module) => ({ default: module.PassProgram })),
+)
 const DxDiagProgram = lazy(() =>
   import('../diagnostics/DxDiagProgram').then((module) => ({ default: module.DxDiagProgram })),
 )
@@ -472,6 +476,26 @@ export const programs: ProgramDef[] = [
     controls: 'close',
   },
 ]
+
+/**
+ * Warm the launch-critical program chunks while the boot screen is already occupying the user.
+ * Dynamic import is deduplicated by the module loader, so opening one of these later is effectively instant.
+ */
+export function preloadLaunchPrograms() {
+  if (typeof window === 'undefined') return
+  void Promise.allSettled([
+    import('../paint/PaintProgram'),
+    import('../pass/PassProgram'),
+    import('../frames/FramesProgram'),
+    import('../monadhw/BlockCameraProgram'),
+    import('../cdrom/CdromProgram'),
+    import('../labs/CDBurnerProgram'),
+    import('../monadhw/MonadHardwareProgram'),
+    import('../labs/QuestsProgram'),
+    import('./programs/RecycleBin'),
+    import('../chain/tx').then((module) => module.prewarmActionFees()),
+  ])
+}
 
 export const programById = (id: string) => programs.find((program) => program.id === id)
 

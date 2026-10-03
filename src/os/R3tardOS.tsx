@@ -18,7 +18,7 @@ import { Assistant } from './Assistant'
 import { setAssistantTip } from './assistantStore'
 import { clearBalloons, pushBalloon } from './balloons'
 import { Desktop } from './Desktop'
-import { openProgram, programById, programIsVisible } from './programs'
+import { openProgram, preloadLaunchPrograms, programById, programIsVisible } from './programs'
 import { playSound } from './sound'
 import { StormScreen } from './StormScreen'
 import { Taskbar } from './Taskbar'
@@ -42,9 +42,17 @@ function ProgramLoading() {
   return <div className="program-loading">⌛ loading program…</div>
 }
 
+const stormActiveSnapshot = () => getBlockSnapshot().storm
+const stormIdSnapshot = () => getBlockSnapshot().stormId
+const stormStartSnapshot = () => getBlockSnapshot().stormStart
+
 export function R3tardOS() {
   const windows = useSyncExternalStore(subscribeWindows, getWindows)
-  const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  // The shell only cares when storm state changes. Subscribing to the whole block snapshot
+  // made the entire desktop/window tree reconcile ~3x per second for no visual benefit.
+  const stormActive = useSyncExternalStore(subscribeBlocks, stormActiveSnapshot)
+  const currentStorm = useSyncExternalStore(subscribeBlocks, stormIdSnapshot)
+  const stormStart = useSyncExternalStore(subscribeBlocks, stormStartSnapshot)
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const booting = useSyncExternalStore(subscribeBooting, isBooting)
   const firstRunOpen = useSyncExternalStore(subscribeFirstRun, isFirstRunOpen)
@@ -52,7 +60,6 @@ export function R3tardOS() {
   const [stormId, setStormId] = useState<bigint>()
   const [notInstalled, setNotInstalled] = useState<string>()
   const [shutdown, setShutdown] = useState(false)
-  const currentStorm = block.stormId
 
   useEffect(() => {
     initSound()
@@ -63,8 +70,14 @@ export function R3tardOS() {
     void startCanvasStore()
     startPresence()
     initActivity()
+    // The boot screen gives us a free preload window. Warm the programs people are most likely
+    // to open first without putting their code back into the initial bundle.
+    const preloadTimer = window.setTimeout(preloadLaunchPrograms, 250)
     window.addEventListener('resize', clampAllWindows)
-    return () => window.removeEventListener('resize', clampAllWindows)
+    return () => {
+      window.clearTimeout(preloadTimer)
+      window.removeEventListener('resize', clampAllWindows)
+    }
   }, [])
 
   useEffect(() => {
@@ -146,7 +159,7 @@ export function R3tardOS() {
   }
 
   return (
-    <main className={`r3os ${block.storm ? 'storm-active' : ''}`}>
+    <main className={`r3os ${stormActive ? 'storm-active' : ''}`}>
       <WallpaperLayer />
       <div className="vignette" />
       <div className="noise" />
@@ -210,7 +223,7 @@ export function R3tardOS() {
           }}
         />
       </ErrorBoundary>
-      {stormId != null && <StormScreen start={block.stormStart ?? 0n} onDismiss={dismissStorm} />}
+      {stormId != null && <StormScreen start={stormStart ?? 0n} onDismiss={dismissStorm} />}
       {notInstalled && (
         <MessageBox
           title={notInstalled}

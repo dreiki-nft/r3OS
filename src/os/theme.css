@@ -1754,6 +1754,13 @@ button:disabled {
   border-top: 1px solid var(--bevel-dark);
 }
 
+.dialog-warning {
+  padding: 6px 8px;
+  border: 1px solid #000;
+  background: #fff4b8;
+  color: #111;
+}
+
 .dialog-error {
   color: #ff8f8f;
 }

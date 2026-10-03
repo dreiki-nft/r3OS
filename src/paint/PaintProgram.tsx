@@ -18,6 +18,7 @@ import { config } from '../chain/config'
 import { demoConstants, discoverContracts, readCoreConstants } from '../chain/contracts'
 import { friendlyError } from '../chain/errors'
 import { parseManualIds, resolveHolderIds } from '../chain/holders'
+import { readMany } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionOptions, type ActionQuote } from '../chain/tx'
 import {
   connectWallet,
@@ -360,6 +361,7 @@ export function PaintProgram() {
       setPaintQuote(undefined)
       return
     }
+    let cancelled = false
     const timer = window.setTimeout(() => {
       void quoteAction({
         kind: 'corePaint',
@@ -371,10 +373,17 @@ export function PaintProgram() {
         pixels: patch.pixelWrites,
         signer: isLive ? 'burner' : 'wallet',
       })
-        .then(setPaintQuote)
-        .catch(() => setPaintQuote(undefined))
-    }, 400)
-    return () => window.clearTimeout(timer)
+        .then((quote) => {
+          if (!cancelled) setPaintQuote(quote)
+        })
+        .catch(() => {
+          if (!cancelled) setPaintQuote(undefined)
+        })
+    }, 100)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
   }, [patch.hex, patch.pixelWrites, wallet.account, holderKey, isLive])
 
   useEffect(() => {
@@ -385,18 +394,26 @@ export function PaintProgram() {
       const command = event.ctrlKey || event.metaKey
       if (command && event.key.toLowerCase() === 'z' && !event.shiftKey) {
         event.preventDefault()
+        if (isLive) {
+          setAssistantTip('Live Mode has no Undo. Confirmed strokes are already onchain.')
+          return
+        }
         undo()
       } else if (
         (event.ctrlKey && event.key.toLowerCase() === 'y') ||
         (command && event.shiftKey && event.key.toLowerCase() === 'z')
       ) {
         event.preventDefault()
+        if (isLive) {
+          setAssistantTip('Live Mode has no Redo. Paint over a pixel with a new transaction instead.')
+          return
+        }
         redo()
       }
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [active, undo, redo])
+  }, [active, undo, redo, isLive])
 
   const confirmHigherCost = (oldQuote: ActionQuote, nextQuote: ActionQuote) =>
     new Promise<boolean>((resolve) => setGasConfirm({ oldQuote, nextQuote, resolve }))
@@ -595,20 +612,17 @@ export function PaintProgram() {
   const day = Math.max(1, Math.floor((Date.now() / 1_000 - seasonSeconds) / 86_400) + 1)
 
   async function regionUsage() {
-    const client = publicClient
-    if (!client || !config.paintAddress) return new Map<number, { block: bigint; pixels: number }>()
-    const values = await Promise.all(
-      Array.from(
-        { length: 16 },
-        (_, region) =>
-          client.readContract({
-            address: config.paintAddress!,
-            abi: R3TARDS_PAINT_ABI,
-            functionName: 'regionState',
-            args: [canvas.season, region],
-          }) as Promise<readonly bigint[]>,
-      ),
-    )
+    if (!publicClient || !config.paintAddress) return new Map<number, { block: bigint; pixels: number }>()
+    // One Multicall3 eth_call instead of sixteen independent reads on every paint.
+    const values = (await readMany(
+      Array.from({ length: 16 }, (_, region) => ({
+        address: config.paintAddress!,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'regionState',
+        args: [canvas.season, region],
+      })),
+      { allowFailure: false },
+    )) as readonly (readonly bigint[])[]
     const map = new Map<number, { block: bigint; pixels: number }>()
     values.forEach((value, region) => map.set(region, { block: value[0], pixels: Number(value[1]) }))
     return map
@@ -637,9 +651,9 @@ export function PaintProgram() {
     setBusy(true)
     cancelRef.current = false
     try {
-      const initialPaintQuote =
+      const initialQuotePromise =
         !andFrame && !paintQuote
-          ? await quoteAction({
+          ? quoteAction({
               kind: 'corePaint',
               address: config.paintAddress,
               abi: R3TARDS_PAINT_ABI,
@@ -649,8 +663,10 @@ export function PaintProgram() {
               pixels: patch.pixelWrites,
               signer: isLive ? 'burner' : 'wallet',
             })
-          : paintQuote
-      const usage = await regionUsage()
+          : Promise.resolve(paintQuote)
+      // Quote and region-cap reads are independent. Start them together so clicking Paint
+      // pays one wall-clock RPC round trip instead of a serial quote -> region waterfall.
+      const [initialPaintQuote, usage] = await Promise.all([initialQuotePromise, regionUsage()])
       const chunks = splitPaintRuns(bytesToRuns(patch.bytes), {
         maxRawPixels: Number(constants.MAX_RAW_PIXELS_PER_PAINT),
         regionCap: Number(constants.MAX_PIXELS_PER_REGION_PER_BLOCK),
@@ -717,8 +733,7 @@ export function PaintProgram() {
           const result = await sendAction(options)
           // Measured by the tx pipeline: from the RPC accepting the transaction to this app holding its receipt.
           setLastPaint({ block: result.blockNumber, receiptMs: result.receiptMs })
-          await settleInFlight(inFlight, result.blockNumber)
-          await refreshBudget()
+          await Promise.all([settleInFlight(inFlight, result.blockNumber), refreshBudget()])
           let corruptions = new Uint8Array()
           let frameId: bigint | undefined
           for (const log of result.receipt.logs) {
@@ -908,8 +923,18 @@ export function PaintProgram() {
     {
       label: 'Edit',
       items: [
-        { label: 'Undo', disabled: !undoStack.length, disabledReason: 'nothing to undo', action: undo },
-        { label: 'Redo', disabled: !redoStack.length, disabledReason: 'nothing to redo', action: redo },
+        {
+          label: 'Undo',
+          disabled: isLive || !undoStack.length,
+          disabledReason: isLive ? 'Live Mode writes onchain immediately; paint over it instead' : 'nothing to undo',
+          action: undo,
+        },
+        {
+          label: 'Redo',
+          disabled: isLive || !redoStack.length,
+          disabledReason: isLive ? 'Live Mode writes onchain immediately; there is no redo history' : 'nothing to redo',
+          action: redo,
+        },
         {
           label: 'Clear pending',
           disabled: patch.pixelWrites === 0,
@@ -1160,7 +1185,7 @@ export function PaintProgram() {
               </button>
             </>
           ) : isLive && live.burner ? (
-            `LIVE · burner ${short(live.burner.address)} · ${formatBurnerBalance(live.balance)}${togetherText}`
+            `LIVE · ONCHAIN · NO UNDO · burner ${short(live.burner.address)} · ${formatBurnerBalance(live.balance)}${togetherText}`
           ) : !wallet.account ? (
             'PREVIEW MODE · local only · connect to commit onchain'
           ) : config.demo ? (
