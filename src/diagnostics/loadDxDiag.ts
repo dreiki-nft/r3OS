@@ -32,7 +32,7 @@ async function hasCode(address?: Address) {
   return code === undefined ? undefined : Boolean(code && code !== '0x')
 }
 
-const READ_TIMEOUT_MS = 6_000
+const READ_TIMEOUT_MS = 2_500
 
 /** Resolves to undefined on error or after a timeout, so an offline RPC degrades to "unknown" instead of hanging. */
 const settle = <T>(promise: Promise<T>, ms = READ_TIMEOUT_MS) =>
@@ -49,13 +49,18 @@ export async function loadDxDiag(
   force = false,
   onStep: (step: string) => void = () => {},
 ): Promise<DxDiagInput> {
+  // Snapshot RPC counters before DXDIAG generates any probes of its own. Diagnostics should report the
+  // workload they found, not inflate the result simply by observing it.
+  const rpcCounts = rpcStatsSnapshot()
+  const rpcTotals = rpcStatsTotalSnapshot()
   const block = getBlockSnapshot()
   onStep('reading the r3tardOS contract list…')
   const contracts = await settle(discoverContracts(force))
   const paint = contracts?.paint
   onStep('probing Monad devices and drivers…')
 
-  const [coreRows, multicallPresent, driverCodes, hardware, event] = await Promise.all([
+  const cardDriver = contracts?.labs['card-drv']
+  const [coreRows, multicallPresent, driverCodes, hardware, event, cardRows] = await Promise.all([
     paint && publicClient
       ? settle(
           readMany(
@@ -72,6 +77,13 @@ export async function loadDxDiag(
     Promise.all(DXDIAG_DRIVERS.map(([name]) => hasCode(contracts?.labs[name]))),
     settle(readMonadHardware()),
     settle(readSystemEventNow()),
+    cardDriver && publicClient
+      ? settle(
+          readMany([{ address: cardDriver, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'MONAD_CARD' }], {
+            allowFailure: true,
+          }),
+        )
+      : Promise.resolve(undefined),
   ])
 
   const row = (index: number) => {
@@ -85,19 +97,12 @@ export async function loadDxDiag(
     return { key: name, label, address, state, source: state === 'unknown' ? 'unknown' : 'onchain' }
   })
 
-  // Card context: official address on chain 143, otherwise a mock driver target.
-  const cardDriver = contracts?.labs['card-drv']
+  // Card context is part of the same bounded probe wave above. Keeping it parallel avoids a second
+  // full timeout window when one public RPC is degraded.
   let cardContext: DxDiagInput['card']['context'] = 'unknown'
-  if (cardDriver && publicClient) {
-    const cardRows = await settle(
-      readMany([{ address: cardDriver, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'MONAD_CARD' }], {
-        allowFailure: true,
-      }),
-    )
-    const card = (cardRows as any[] | undefined)?.[0]
-    if (card?.status === 'success')
-      cardContext = isOfficialCard(config.chainId, card.result as Address) ? 'official' : 'mock'
-  }
+  const card = (cardRows as any[] | undefined)?.[0]
+  if (card?.status === 'success')
+    cardContext = isOfficialCard(config.chainId, card.result as Address) ? 'official' : 'mock'
 
   // Without a registry read we cannot say "not installed": unknown stays unknown.
   const eventValue: EventState = event
@@ -122,7 +127,7 @@ export async function loadDxDiag(
       multicallConfigured: Boolean(config.multicall3Address),
       multicallPresent,
     },
-    rpcStats: { windowSeconds: 10, counts: rpcStatsSnapshot(), totals: rpcStatsTotalSnapshot() },
+    rpcStats: { windowSeconds: 10, counts: rpcCounts, totals: rpcTotals },
     contracts: {
       paint: paint ?? config.paintAddress,
       r3tards: contracts?.r3tards,

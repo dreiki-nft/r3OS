@@ -481,26 +481,46 @@ export const programs: ProgramDef[] = [
 type ProgramPreload = {
   id: string
   label: string
-  load: () => Promise<unknown>
+  load: () => Promise<ComponentType>
 }
 
 const launchPreloads: readonly ProgramPreload[] = [
-  { id: 'paint', label: 'Paint', load: () => import('../paint/PaintProgram') },
-  { id: 'pass', label: 'My Pass', load: () => import('../pass/PassProgram') },
-  { id: 'frames', label: 'My Frames', load: () => import('../frames/FramesProgram') },
-  { id: 'frame-props', label: 'Frame Properties', load: () => import('../frames/FramePropsDialog') },
-  { id: 'block-camera', label: 'Block Camera', load: () => import('../monadhw/BlockCameraProgram') },
-  { id: 'cdrom', label: 'CD-ROM', load: () => import('../cdrom/CdromProgram') },
-  { id: 'cd', label: 'Burn a CD', load: () => import('../labs/CDBurnerProgram') },
-  { id: 'monad-hw', label: 'Explore Monad', load: () => import('../monadhw/MonadHardwareProgram') },
-  { id: 'validators', label: 'Network Neighborhood', load: () => import('../network/NetworkProgram') },
-  { id: 'quests', label: 'Quests', load: () => import('../labs/QuestsProgram') },
-  { id: 'auction', label: 'Auction', load: () => import('../labs/AuctionProgram') },
-  { id: 'bin', label: 'Recycle Bin', load: () => import('./programs/RecycleBin') },
-  { id: 'dxdiag', label: 'DXDIAG', load: () => import('../diagnostics/DxDiagProgram') },
-  { id: 'xray', label: 'Monad X-ray', load: () => import('../xray/XRayProgram') },
-  { id: 'live-wizard', label: 'Live Mode', load: () => import('../live/LiveWizard') },
-  { id: 'help', label: 'Help', load: () => import('./programs/HelpProgram') },
+  { id: 'paint', label: 'Paint', load: () => import('../paint/PaintProgram').then((m) => m.PaintProgram) },
+  { id: 'pass', label: 'My Pass', load: () => import('../pass/PassProgram').then((m) => m.PassProgram) },
+  { id: 'frames', label: 'My Frames', load: () => import('../frames/FramesProgram').then((m) => m.FramesProgram) },
+  {
+    id: 'frame-props',
+    label: 'Frame Properties',
+    load: () => import('../frames/FramePropsDialog').then((m) => m.FramePropsDialog),
+  },
+  {
+    id: 'block-camera',
+    label: 'Block Camera',
+    load: () => import('../monadhw/BlockCameraProgram').then((m) => m.BlockCameraProgram),
+  },
+  { id: 'cdrom', label: 'CD-ROM', load: () => import('../cdrom/CdromProgram').then((m) => m.CdromProgram) },
+  { id: 'cd', label: 'Burn a CD', load: () => import('../labs/CDBurnerProgram').then((m) => m.CDBurnerProgram) },
+  {
+    id: 'monad-hw',
+    label: 'Explore Monad',
+    load: () => import('../monadhw/MonadHardwareProgram').then((m) => m.MonadHardwareProgram),
+  },
+  {
+    id: 'validators',
+    label: 'Network Neighborhood',
+    load: () => import('../network/NetworkProgram').then((m) => m.NetworkProgram),
+  },
+  { id: 'quests', label: 'Quests', load: () => import('../labs/QuestsProgram').then((m) => m.QuestsProgram) },
+  { id: 'auction', label: 'Auction', load: () => import('../labs/AuctionProgram').then((m) => m.AuctionProgram) },
+  { id: 'bin', label: 'Recycle Bin', load: () => import('./programs/RecycleBin').then((m) => m.RecycleBin) },
+  {
+    id: 'dxdiag',
+    label: 'DXDIAG',
+    load: () => import('../diagnostics/DxDiagProgram').then((m) => m.DxDiagProgram),
+  },
+  { id: 'xray', label: 'Monad X-ray', load: () => import('../xray/XRayProgram').then((m) => m.XRayProgram) },
+  { id: 'live-wizard', label: 'Live Mode', load: () => import('../live/LiveWizard').then((m) => m.LiveWizard) },
+  { id: 'help', label: 'Help', load: () => import('./programs/HelpProgram').then((m) => m.HelpProgram) },
 ]
 
 const preloadPromises = new Map<string, Promise<unknown>>()
@@ -508,7 +528,15 @@ const preloadPromises = new Map<string, Promise<unknown>>()
 function preloadEntry(entry: ProgramPreload) {
   const existing = preloadPromises.get(entry.id)
   if (existing) return existing
-  const pending = entry.load()
+  // Loading the raw ES module is not enough to warm React.lazy itself: the lazy wrapper still suspends
+  // once on its first render, which can trigger React's ~300ms Suspense retry throttle. Replace the
+  // registry entry with the already-resolved component as soon as boot/hover preload finishes so the
+  // first real open renders synchronously.
+  const pending = entry.load().then((component) => {
+    const program = programs.find((item) => item.id === entry.id)
+    if (program) program.component = component
+    return component
+  })
   preloadPromises.set(entry.id, pending)
   return pending
 }
@@ -521,7 +549,7 @@ export function preloadProgram(id: string) {
 
 /**
  * Download the launch-critical program chunks while the boot screen is already occupying the user.
- * Dynamic imports are module-loader deduplicated, so the React.lazy mount later reuses these exact chunks.
+ * Dynamic imports are module-loader deduplicated; completed preloads also replace the lazy registry entry so first open renders synchronously.
  */
 export async function preloadLaunchPrograms(
   onProgress?: (done: number, total: number, label: string) => void,
