@@ -106,3 +106,8 @@
     animation: none;
   }
 }
+
+.dxdiag-row > b {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

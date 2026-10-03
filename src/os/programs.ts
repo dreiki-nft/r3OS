@@ -1,8 +1,9 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import type { IconName } from './icons'
-import { bottomRightWindowPosition, nextWindowPosition, openWindow } from './windows'
+import { bottomRightWindowPosition, getWindows, nextWindowPosition, openWindow } from './windows'
 import { getReleaseSnapshot, isProgramAvailable, markProgramOpened, type ReleaseSnapshot } from './releases'
 import { isRetiredProgram } from './retired'
+import { markProgramOpen } from '../chain/perf'
 
 export type WindowControls = 'full' | 'min-close' | 'help-close' | 'close'
 
@@ -523,6 +524,8 @@ export function openProgram(id: string, updateHash = true, hashOverride?: string
     program.placement === 'bottom-right'
       ? bottomRightWindowPosition(program.defaultSize, program.minSize)
       : nextWindowPosition(program.defaultSize, program.minSize)
+  const alreadyOpen = getWindows().windows.some((win) => win.id === program.id)
+  if (!alreadyOpen) markProgramOpen(program.id)
   openWindow(program.id, rect, program.minSize, program.alwaysOnTop, program.placement !== 'bottom-right')
   const hash = hashOverride ?? program.hash
   // Paint is the home surface. Normal opens should not make it the next boot route; explicit deep links still work.

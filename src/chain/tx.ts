@@ -25,6 +25,7 @@ import { sendWithBurnerNonce } from '../live/nonce'
 import { playSound } from '../os/sound'
 import { markTraceReceipt, recordTxTrace, type TxSigner } from './txTrace'
 import { bumpRefresh } from './refreshTick'
+import { recordPerf, startPerf } from './perf'
 
 export interface ActionQuote {
   gasLimit: bigint
@@ -149,6 +150,7 @@ function contractBase(opts: ContractActionOptions, sender: Address) {
 
 export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
   if (!actionClient) throw new Error('DEMO_MODE')
+  const stopQuote = startPerf('quote', actionName(opts))
   const sender = senderFor(opts)
 
   // Start every independent quote read immediately. The action client deliberately avoids
@@ -181,13 +183,15 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
   const feePromiseForQuote = blockPromise.then((block) => feeQuote(block))
   const [gasLimit, block, fees] = await Promise.all([gasLimitPromise, blockPromise, feePromiseForQuote])
 
-  return {
+  const quote = {
     gasLimit,
     maxFeePerGas: fees.maxFeePerGas,
     maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
     maxCost: formatMaxCost(gasLimit, fees.maxFeePerGas),
     quotedAtBlock: block,
   }
+  stopQuote()
+  return quote
 }
 
 async function usableQuote(opts: ActionOptions) {
@@ -282,12 +286,14 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
   if (!actionClient) throw new Error('DEMO_MODE')
   const client = actionClient
   try {
+    const stopTotal = startPerf('tx-total', `${actionName(opts)} · ${opts.signer ?? 'wallet'}`)
     const quote = await usableQuote(opts)
     const signer = opts.signer ?? 'wallet'
     const sender = senderFor(opts)
     let hash: Hex
     let signedAt: number | undefined
     opts.onState?.('signing')
+    const submitStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
     if (signer === 'burner') {
       const sent = await sendWithBurner(opts, quote, sender)
       hash = sent.hash
@@ -297,6 +303,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     }
     opts.onState?.('sent')
     const sentAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+    recordPerf('tx-submit', `${actionName(opts)} · ${signer}`, sentAt - submitStarted)
     recordTxTrace({
       hash,
       action: actionName(opts),
@@ -309,6 +316,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     playSound('confirm')
     const receipt = await client.waitForTransactionReceipt({ hash, pollingInterval: 125 })
     const receiptAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+    recordPerf('tx-receipt', actionName(opts), receiptAt - sentAt)
     markTraceReceipt(hash, {
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed,
@@ -329,6 +337,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
     opts.onState?.('confirmed')
     bumpRefresh()
     playSound(opts.successSound ?? 'success-light')
+    stopTotal()
     return {
       hash,
       blockNumber: receipt.blockNumber,

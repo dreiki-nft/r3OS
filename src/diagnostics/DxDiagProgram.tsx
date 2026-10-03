@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { screenSafeMessage } from '../chain/errors'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
+import {
+  clearPerf,
+  formatPerfReport,
+  getPerfSnapshot,
+  subscribePerf,
+  summarizePerf,
+} from '../chain/perf'
 import type { HardwareSource } from '../chain/monadHardware'
 import { closeWindow } from '../os/windows'
 import { playSound } from '../os/sound'
@@ -12,7 +19,7 @@ import { loadDxDiag } from './loadDxDiag'
 import '../monadhw/monadhw.css'
 import './diagnostics.css'
 
-const TABS = ['System', 'Drivers', 'Monad']
+const TABS = ['System', 'Drivers', 'Monad', 'Performance']
 
 function Badge({ source }: { source: HardwareSource }) {
   return <span className={`hw-source source-${source}`}>{source}</span>
@@ -57,6 +64,8 @@ export function DxDiagProgram() {
   const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
   const [step, setStep] = useState('')
+  const perf = useSyncExternalStore(subscribePerf, getPerfSnapshot)
+  const perfRows = useMemo(() => summarizePerf(perf.samples), [perf.version, perf.samples])
 
   const load = useCallback(async (force: boolean) => {
     setLoading(true)
@@ -93,7 +102,7 @@ export function DxDiagProgram() {
 
   const copy = async () => {
     if (!view) return
-    const ok = await copyText(formatReport(view))
+    const ok = await copyText(`${formatReport(view)}\n\n${formatPerfReport(perf)}`)
     playSound(ok ? 'confirm' : 'error')
     setNote(ok ? 'report copied to the clipboard' : 'copy failed: select the report text manually')
   }
@@ -227,7 +236,7 @@ export function DxDiagProgram() {
               source={d.systemEvent === 'unknown' ? 'unknown' : 'onchain'}
             />
           </GroupBox>
-        ) : (
+        ) : tab === 'Monad' ? (
           <GroupBox title="Monad devices">
             <Row
               label="Staking 0x1000"
@@ -256,6 +265,26 @@ export function DxDiagProgram() {
               presence only: Explore Monad › System Information has the full probes and their sources.
             </p>
           </GroupBox>
+        ) : (
+          <GroupBox title="Local action timings">
+            {perfRows.length ? (
+              perfRows.map((row) => (
+                <Row
+                  key={row.key}
+                  label={`${row.kind} · ${row.label}`}
+                  value={`n ${row.count} · last ${row.last.toFixed(0)} ms · p50 ${row.p50.toFixed(0)} ms · p95 ${row.p95.toFixed(0)} ms · max ${row.max.toFixed(0)} ms`}
+                  source="measured"
+                />
+              ))
+            ) : (
+              <p className="dxdiag-note">
+                no measurements yet. Open programs, request quotes, and send testnet actions; timings appear here immediately.
+              </p>
+            )}
+            <p className="dxdiag-note">
+              local browser measurements only. Nothing in this tab is uploaded or written onchain. Wallet signing time includes the time you spend approving the wallet prompt.
+            </p>
+          </GroupBox>
         )}
       </div>
       <footer className="dxdiag-footer">
@@ -267,6 +296,11 @@ export function DxDiagProgram() {
         >
           Refresh
         </Button>
+        {tab === 'Performance' && (
+          <Button onClick={clearPerf} disabled={!perf.samples.length} title="clear local timing samples">
+            Clear timings
+          </Button>
+        )}
         <Button
           onClick={() => void copy()}
           disabled={!d || loading}

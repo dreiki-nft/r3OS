@@ -1,4 +1,12 @@
-import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+  type LazyExoticComponent,
+} from 'react'
 import { BootScreen } from './BootScreen'
 import { isBooting, subscribeBooting } from './bootState'
 import { WallpaperLayer } from './WallpaperLayer'
@@ -30,6 +38,7 @@ import { Window } from './Window'
 import { clampAllWindows, getWindows, resetWindows, sortWindowsForDisplay, subscribeWindows } from './windows'
 import { initSound } from './sound'
 import { initWalletDiscovery } from '../chain/wallet'
+import { markProgramMounted } from '../chain/perf'
 import {
   availableScheduledPrograms,
   consumeInstallAnnouncement,
@@ -40,6 +49,17 @@ import {
 
 function ProgramLoading() {
   return <div className="program-loading">⌛ loading program…</div>
+}
+
+function MeasuredProgram({
+  id,
+  Component,
+}: {
+  id: string
+  Component: ComponentType | LazyExoticComponent<ComponentType>
+}) {
+  useEffect(() => markProgramMounted(id), [id])
+  return <Component />
 }
 
 const stormActiveSnapshot = () => getBlockSnapshot().storm
@@ -203,7 +223,7 @@ export function R3tardOS() {
             onHelp={() => openProgram('help')}
           >
             <Suspense fallback={<ProgramLoading />}>
-              <Component />
+              <MeasuredProgram id={win.id} Component={Component} />
             </Suspense>
           </Window>
         )
