@@ -52,7 +52,7 @@ A round is fresh only when all of these are true:
 
 The condition is met only when the round is fresh, the answer is positive and the answer is at least the configured threshold.
 
-`MAX_AGE` is deployment configuration. The default deploy value is 90,000 seconds.
+`MAX_AGE` is deployment configuration. Local/testnet deploys default to 90,000 seconds. **Mainnet has no default:** `DeployOperator.s.sol` requires `MON_FEED_MAX_AGE` to be supplied explicitly after checking the live feed heartbeat, so an old permissive test value cannot leak into launch.
 
 ## Activation
 

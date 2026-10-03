@@ -27,7 +27,11 @@ contract DeployOperator is Script {
         R3tardsPaint paint = R3tardsPaint(vm.envAddress("PAINT_ADDRESS"));
         address feed = vm.envAddress("MON_USD_FEED");
         uint256 thresholdMilliUsd = vm.envOr("MON_PRICE_TRIGGER_MILLI_USD", uint256(333));
-        uint256 maxAge = vm.envOr("MON_FEED_MAX_AGE", uint256(90_000));
+        // Mainnet must choose this explicitly after checking the live feed heartbeat; never inherit the
+        // permissive local/testnet default by accident.
+        uint256 maxAge = block.chainid == 143
+            ? vm.envUint("MON_FEED_MAX_AGE")
+            : vm.envOr("MON_FEED_MAX_AGE", uint256(90_000));
 
         Resolved memory resolved = _resolve(paint);
         _logResolved(paint, resolved);

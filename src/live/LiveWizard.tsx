@@ -17,6 +17,7 @@ import {
   buildStartSessionTypedData,
   burnerFundTooLarge,
   fundingSuggestion,
+  FUNDING_TARGET_PAINTS,
   MAX_BURNER_FUND,
   getLiveSnapshot,
   isSessionSignatureExpired,
@@ -131,13 +132,14 @@ export function LiveWizard() {
       .then((quote) => {
         setStartQuote(quote)
         if (!amount && corePaintGas != null) {
-          const suggestion = fundingSuggestion(corePaintGas, quote.gasLimit, quote.maxFeePerGas)
-          // A suggestion above the cap means the fee quote is off: leave the box empty rather than prefill it.
-          if (!burnerFundTooLarge(suggestion)) setAmount(formatEther(suggestion))
+          const target = fundingSuggestion(corePaintGas, quote.gasLimit, quote.maxFeePerGas)
+          const suggestion = target > balance ? target - balance : 0n
+          // A top-up above the cap means the fee quote is off: leave the box empty rather than prefill it.
+          if (suggestion > 0n && !burnerFundTooLarge(suggestion, balance)) setAmount(formatEther(suggestion))
         }
       })
       .catch((caught) => setError(friendlyError(caught, 'startSession').message))
-  }, [wallet.account, burnerAddress, message, signature, amount, corePaintGas])
+  }, [wallet.account, burnerAddress, message, signature, amount, corePaintGas, balance])
 
   useEffect(() => {
     if (!wallet.account || !burnerAddress || !amount) {
@@ -223,7 +225,7 @@ export function LiveWizard() {
       setError('enter a valid MON amount')
       return
     }
-    if (burnerFundTooLarge(value)) {
+    if (burnerFundTooLarge(value, balance)) {
       setError(`a burner should only hold pocket change: send at most ${formatEther(MAX_BURNER_FUND)} MON`)
       return
     }
@@ -348,7 +350,9 @@ export function LiveWizard() {
                     Send the burner its gas money
                     <small>
                       wallet prompt 2 ·{' '}
-                      {quick.funding ? `${quick.funding} MON` : 'enough for about 100 paints'}
+                      {quick.funding
+                        ? `${quick.funding} MON`
+                        : `enough for about ${FUNDING_TARGET_PAINTS.toString()} paints`}
                     </small>
                   </li>
                 )}
@@ -458,7 +462,7 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                     />{' '}
                     MON
                   </label>
-                  <small>≈ 100 paints</small>
+                  <small>≈ {FUNDING_TARGET_PAINTS.toString()} paints</small>
                   <p>max cost: {fundQuote ? `${amount} MON + ${fundQuote.maxCost}` : 'quoting…'}</p>
                   <Button disabled={busy || !fundQuote} onClick={() => void fund()}>
                     Send

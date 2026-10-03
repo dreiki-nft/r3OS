@@ -27,10 +27,11 @@ The pixels are **not** copied into the CD. Each track is a Paint frame id, and t
 - **Desktop:** `CD-ROM (D:)`. With a disc inserted, the icon becomes a disc and the label becomes the volume label, e.g. `MY MIX (D:)`.
 - **Empty drive:** opening it shows *"D:\ is not accessible. The device is not ready."* with **Insert disc…**.
 - **Insert disc:** lists the CDs the wallet holds now (Labs tokens whose `sourceOf` is the CD Burner). The choice is remembered per chain + wallet in localStorage (a convenience only).
+- **Public disc link:** `#/cdrom?cd=<id>` opens any real burned CD read-only straight from its onchain snapshot. No wallet and no ownership are required; this is the share/judge path for community CDs.
 - **Explorer view:** `CDINFO.TXT` plus `TRACK01.BMP` … `TRACKnn.BMP`, in Details or Large Icons. Sizes are the real size of a 256×256 4-bit BMP (32,886 bytes). *Modified* is the frame's mint block time. The left web-view panel shows the CD-R art, then a thumbnail and facts for the selected track.
 - **CDINFO.TXT:** label, tracks, seasons, storm/finale, burn block and time, burner (the `CDBurned` log at the Labs mint block, one single-block query), snapshot pointer, and one line per track.
 - **Imaging:** double-clicking a track opens it full size with Previous/Next, Best Fit/100%/200%, and Properties (source frame, season, created block, whether the frame is now owned or recycled, who burned the CD).
-- **Eject:** clears the drive. When the drive opens and the inserted CD is no longer in the wallet, it is ejected with a notice.
+- **Eject:** clears the drive. Wallet-inserted discs are ownership-checked and auto-ejected if they leave the wallet. Public deep-linked discs are read-only and are never treated as owned.
 
 ## RPC
 

@@ -15,6 +15,7 @@ import { closeWindow } from '../os/windows'
 import {
   cdInfoText,
   cdOwner,
+  cdromIdFromHash,
   explorerSize,
   explorerTotal,
   loadCd,
@@ -92,7 +93,22 @@ function TrackThumb({ frameId, size }: { frameId: number; size: number }) {
 export function CdromProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   useSyncExternalStore(subscribeCdrom, getCdromVersion)
-  const disc = currentDisc(wallet.account)
+  const [routeCdId, setRouteCdId] = useState(() =>
+    cdromIdFromHash(typeof location === 'undefined' ? '' : location.hash),
+  )
+  const publicDisc = routeCdId ? { tokenId: routeCdId, label: `cd #${routeCdId}` } : undefined
+  const disc = publicDisc ?? currentDisc(wallet.account)
+  const publicMode = Boolean(publicDisc)
+
+  useEffect(() => {
+    const route = () => {
+      if (location.hash === '#/cdrom' || location.hash.startsWith('#/cdrom?')) {
+        setRouteCdId(cdromIdFromHash(location.hash))
+      }
+    }
+    window.addEventListener('hashchange', route)
+    return () => window.removeEventListener('hashchange', route)
+  }, [])
 
   const [cd, setCd] = useState<LoadedCd>()
   const [statuses, setStatuses] = useState<Map<number, TrackStatus>>(new Map())
@@ -106,24 +122,26 @@ export function CdromProgram() {
   const [notepad, setNotepad] = useState(false)
   const [notice, setNotice] = useState('')
 
-  // Read the inserted disc (and eject it if it has left the wallet).
+  // Read the inserted disc. Wallet discs are ownership-checked; public deep links are read-only.
   useEffect(() => {
     setCd(undefined)
     setSelected(undefined)
     setError('')
-    if (!wallet.account || !disc) return
+    if (!disc) return
     let cancelled = false
     const account = wallet.account
     const tokenId = BigInt(disc.tokenId)
     setReading(true)
     const started = Date.now()
     void (async () => {
-      const owner = await cdOwner(tokenId)
-      if (owner && owner.toLowerCase() !== account.toLowerCase()) {
-        if (cancelled) return
-        ejectDisc(account)
-        setNotice(`the disc in drive D: (CD #${tokenId}) is no longer in this wallet, so it was ejected.`)
-        return
+      if (!publicMode && account) {
+        const owner = await cdOwner(tokenId)
+        if (owner && owner.toLowerCase() !== account.toLowerCase()) {
+          if (cancelled) return
+          ejectDisc(account)
+          setNotice(`the disc in drive D: (CD #${tokenId}) is no longer in this wallet, so it was ejected.`)
+          return
+        }
       }
       const loaded = await loadCd(tokenId)
       const nextStatuses = await trackStatuses(loaded.snapshot.tracks.map((track) => track.frameId)).catch(
@@ -146,7 +164,7 @@ export function CdromProgram() {
     return () => {
       cancelled = true
     }
-  }, [wallet.account, disc?.tokenId])
+  }, [wallet.account, disc?.tokenId, publicMode])
 
   const openPicker = useCallback(async () => {
     setPicker(true)
@@ -171,14 +189,23 @@ export function CdromProgram() {
     if (!wallet.account || !pickerChoice || !available) return
     const choice = available.find((item) => item.tokenId.toString() === pickerChoice)
     if (!choice) return
+    if (publicMode) {
+      history.replaceState(null, '', '#/cdrom')
+      setRouteCdId(undefined)
+    }
     insertDisc(wallet.account, { tokenId: choice.tokenId.toString(), label: choice.label })
     setPicker(false)
     setNotice('')
   }
 
   const eject = () => {
-    if (!wallet.account || !disc) return
-    ejectDisc(wallet.account)
+    if (!disc) return
+    if (publicMode) {
+      history.replaceState(null, '', '#/cdrom')
+      setRouteCdId(undefined)
+    } else if (wallet.account) {
+      ejectDisc(wallet.account)
+    }
     playSound('cancel')
     setNotice('')
   }
@@ -294,6 +321,7 @@ export function CdromProgram() {
                 {cd.token?.attributes.Format ? ` · ${String(cd.token.attributes.Format)}` : ''}
               </p>
               <p>burned by {shortAddress(cd.burner)}</p>
+              {publicMode && <p className="cdrom-hint">public disc · read-only · no wallet required</p>}
               <p className="cdrom-hint">select an item to view its description.</p>
             </>
           )}
@@ -363,7 +391,7 @@ export function CdromProgram() {
           {!disc && (
             <div className="cdrom-empty cdrom-empty-state">
               {!wallet.account ? (
-                <p>connect a wallet to play the CDs you own.</p>
+                <p>connect a wallet to insert a CD you own, or open a shared CD link.</p>
               ) : (
                 <>
                   <p>drive D: is empty. insert one of your CDs to play it.</p>

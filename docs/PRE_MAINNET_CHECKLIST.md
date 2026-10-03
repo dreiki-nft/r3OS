@@ -11,8 +11,8 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x�
 - The experiment registry is intentionally **not frozen** at initial launch (discovery headroom).
 - CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. ROUTER.EXE stays diagnostic.
 
-- **Retired from the interface (2026-10-01):** Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger, ROUTER.EXE (`src/os/retired.ts`). Their contracts are still deployed unchanged; the app hides them and their quests, Pass stamps and Operator subsystems. CARD.DRV stays deployed (MONAD CARD stamp, CARD CARRIER quest, Block Camera).
-- **Security audit 2026-10-02** ([`SECURITY_AUDIT_2026-10-02.md`](SECURITY_AUDIT_2026-10-02.md)): before mainnet, (1) `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty (EIP-2935 history, auction settle window); (2) the mainnet r3tards collection is a plain non-upgradeable, non-pausable ERC-721 (frame/finale mint calls its `balanceOf`); (3) decide whether the UI-retired labs are deployed/registered on mainnet; (4) `SystemEvent` `MAX_AGE` = feed heartbeat + buffer; (5) the Vercel CSP is live (`curl -sI <site> | grep -i content-security-policy`).
+- **Retired from the interface (2026-10-01):** Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger, ROUTER.EXE (`src/os/retired.ts`). Their contracts **will stay deployed and registered unchanged on mainnet**; this is a UI retirement only. Do not call `retireExperiment` before the hackathon. The app hides their direct programs and the retired quests, Pass stamps and Operator subsystems. CARD.DRV stays deployed (MONAD CARD stamp, CARD CARRIER quest, Block Camera).
+- **Security audit 2026-10-02** ([`SECURITY_AUDIT_2026-10-02.md`](SECURITY_AUDIT_2026-10-02.md)): before mainnet, (1) `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty (EIP-2935 history, auction settle window); (2) the mainnet r3tards collection is a plain non-upgradeable, non-pausable ERC-721 (frame/finale mint calls its `balanceOf`); (3) keep the UI-retired Labs deployed/registered unchanged for launch; (4) explicitly set `MON_FEED_MAX_AGE` to the observed feed heartbeat + buffer; (5) the Vercel CSP is live (`curl -sI <site> | grep -i content-security-policy`).
 - **PAGE.EXE and ROUTER-LAB must still be deployed on mainnet:** Explore Monad's Storage race calls PAGE.EXE `benchRead`/`probePage`, and its Liquidity race calls ROUTER-LAB `compare` (no mock venues on 143). After deploy, open Explore Monad on mainnet, press Run test and Compare, and confirm real numbers (Storage race ratio ≫ 1; at least one venue quoting).
 
 ## F1. Deployment
@@ -20,7 +20,7 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x�
 - [ ] Suite: `Deploy.s.sol` (Paint, Labs, Pass, renderers, nine Labs, quests).
 - [ ] CARD.DRV: `DeployMonadCard.s.sol` (official card `0x0000CA12D5c07085022eBC74867157449919Fd67` on 143; `MockMonadCard` on testnet).
 - [ ] Monad Hardware: `DeployMonadHW.s.sol` **with** `CARD_MEMORY_ADDRESS` (it is optional in the script; a missing value leaves Block Camera without CARD.DRV).
-- [ ] Operator Record + System Event: `DeployOperator.s.sol` (verified MON/USD proxy `0xBcD78f76005B7515837af6b50c7C52BCf73822fb` on 143).
+- [ ] Operator Record + System Event: `DeployOperator.s.sol` (verified MON/USD proxy `0xBcD78f76005B7515837af6b50c7C52BCf73822fb` on 143). **Mainnet requires an explicit `MON_FEED_MAX_AGE`; the script intentionally has no 25 h fallback on chain 143.**
 - [ ] Router Lab: `DeployRouterLab.s.sol` (no mocks on 143).
 - [ ] Record every address, experiment id and the deploy block with the deployment records.
 - [ ] Run the Launch Doctor with the chain you **intend** (`--expected-chain 10143` on testnet, `143` on mainnet) and keep its JSON report. A different actual chain is a FAIL; omitting the flag is only a WARN, so never omit it for the real check.
@@ -113,7 +113,7 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 
 ## F14. Browser / device
 
-- [ ] Desktop and narrow/mobile layout; reload; deep links (`#/…`).
+- [ ] Desktop and narrow/mobile layout; reload; deep links (`#/…`). While disconnected, open a real `#/cdrom?cd=<id>` and confirm the public community CD plays read-only with no wallet.
 - [ ] Start → Run… commands; retired programs (`flipbook`, `router`, `kernel`, `card 1`, …) say "cannot find" and their deep links open nothing.
 - [ ] DXDIAG.EXE report copies cleanly (no RPC URL, no wallet) and shows the deployed `VITE_BUILD_ID` (public; set it per deploy, e.g. the snapshot or commit you deployed).
 - [ ] Program release gating with reveal-all off.
@@ -121,7 +121,8 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 ## F15. Content / operational (decisions, not code)
 
 - [ ] Offensive canvas content: written policy. Canvas pixels are permissionless and frames are immutable; there is no and will be no onchain censorship mechanism. UI-only hiding (if any) must be documented as such.
-- [ ] Session-key user warnings: final wording reviewed (hot browser key, revoke + sweep).
+- [ ] Session-key user warnings: final wording reviewed (hot browser key, 1 MON app-managed balance cap, revoke + sweep).
+- [ ] Burn the launch-week community CD and keep its public `#/cdrom?cd=<id>` link for the submission/demo.
 - [ ] Auction keeper: who runs `scripts/auction-keeper.sh` for every finale auction.
 - [ ] Recovery / support process: where users report problems; DXDIAG report as the first artifact.
 

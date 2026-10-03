@@ -1161,6 +1161,8 @@ export function PaintProgram() {
             </>
           ) : isLive && live.burner ? (
             `LIVE · burner ${short(live.burner.address)} · ${formatBurnerBalance(live.balance)}${togetherText}`
+          ) : !wallet.account ? (
+            'PREVIEW MODE · local only · connect to commit onchain'
           ) : config.demo ? (
             'demo canvas'
           ) : (

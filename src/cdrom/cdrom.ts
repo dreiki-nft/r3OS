@@ -7,12 +7,13 @@ import { getFrameInfoBatch, type FrameInfo } from '../frames/framesStore'
 import { labsAddress, scanOwnedLabs } from '../frames/LabsFolder'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
 import { R3TARDS_CD_BURNER_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { safeRouteInt } from '../lib/route'
 
 /**
  * CD-ROM (D:). A burned CD is an immutable onchain snapshot (R3tardsCDBurner, SSTORE2-style FrameStore):
  * header, label, then one 38-byte record per track holding the source frame id. The pixels of every
  * track stay in the Paint core forever (burning a frame removes its owner, not its frame data), so any
- * holder of the CD can read the original tracks.
+ * viewer can read the original tracks; ownership is only needed for the wallet's Insert disc convenience.
  */
 
 // Layout constants mirror R3tardsCDBurner (snapshot = pointer runtime code minus the STOP byte).
@@ -108,6 +109,13 @@ export function snapshotFromCode(code: Hex | Uint8Array) {
 
 export function trackFileName(index: number) {
   return `TRACK${String(index + 1).padStart(2, '0')}.BMP`
+}
+
+/** `#/cdrom?cd=5` opens any real burned CD read-only, without requiring a wallet or ownership. */
+export function cdromIdFromHash(hash: string) {
+  if (hash !== '#/cdrom' && !hash.startsWith('#/cdrom?')) return undefined
+  const id = safeRouteInt(new URLSearchParams(hash.split('?')[1] ?? '').get('cd'))
+  return id > 0 ? String(id) : undefined
 }
 
 export { volumeLabel } from './cdromStore'

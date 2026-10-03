@@ -125,7 +125,7 @@ export function HardwareProfiles() {
       setTopQuoteNote('enter a valid MON amount')
       return
     }
-    if (burnerFundTooLarge(value)) {
+    if (burnerFundTooLarge(value, live.balance)) {
       setTopQuote(undefined)
       setTopQuoteNote(`a burner should only hold pocket change: at most ${formatEther(MAX_BURNER_FUND)} MON`)
       return
@@ -144,7 +144,7 @@ export function HardwareProfiles() {
         setTopQuote(undefined)
         setTopQuoteNote('quote unavailable')
       })
-  }, [topUp, wallet.account, live.burner, amount])
+  }, [topUp, wallet.account, live.burner, live.balance, amount])
 
   const active = liveActive(live)
   const remaining = unitsLeft(live.session)

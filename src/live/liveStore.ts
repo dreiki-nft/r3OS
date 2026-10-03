@@ -201,18 +201,19 @@ export function sweepAmount(balance: bigint, maxFeePerGas: bigint) {
 }
 
 /**
- * The most MON the app will ever move into a browser-held burner in one go. A burner key lives in
- * localStorage, so it should only ever hold pocket change; a fee quote that asks for more is treated as a
- * broken or hostile RPC, not followed.
+ * App-managed ceiling for a browser-held burner. A burner key lives in localStorage, so it should only ever
+ * hold pocket change; any app funding action that would take its balance above this is refused.
  */
-export const MAX_BURNER_FUND = 10n * 10n ** 18n
+export const MAX_BURNER_FUND = 1n * 10n ** 18n
 
-export function burnerFundTooLarge(value: bigint) {
-  return value > MAX_BURNER_FUND
+export function burnerFundTooLarge(value: bigint, currentBalance = 0n) {
+  return currentBalance + value > MAX_BURNER_FUND
 }
 
+export const FUNDING_TARGET_PAINTS = 20n
+
 export function fundingSuggestion(corePaintGas: bigint, startSessionGas: bigint, maxFeePerGas: bigint) {
-  const wei = (100n * corePaintGas + startSessionGas) * maxFeePerGas
+  const wei = (FUNDING_TARGET_PAINTS * corePaintGas + startSessionGas) * maxFeePerGas
   const tenth = 100_000_000_000_000_000n
   return ((wei + tenth - 1n) / tenth) * tenth
 }

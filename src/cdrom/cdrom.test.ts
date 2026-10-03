@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Address } from 'viem'
 import {
   cdInfoText,
+  cdromIdFromHash,
   explorerSize,
   explorerTotal,
   HEADER_SIZE,
@@ -154,6 +155,15 @@ describe('Explorer formatting', () => {
 })
 
 describe('drive and viewer state', () => {
+  it('parses walletless CD-ROM deep links', () => {
+    expect(cdromIdFromHash('#/cdrom?cd=5')).toBe('5')
+    expect(cdromIdFromHash('#/cdrom?cd=0005')).toBe('5')
+    expect(cdromIdFromHash('#/cdrom?cd=0')).toBeUndefined()
+    expect(cdromIdFromHash('#/cdrom?cd=x')).toBeUndefined()
+    expect(cdromIdFromHash('#/paint?cd=5')).toBeUndefined()
+    expect(cdromIdFromHash('#/cdromx?cd=5')).toBeUndefined()
+  })
+
   it('parses Imaging deep links (1-based track in the URL)', () => {
     expect(imagingTargetFromHash('#/imaging?cd=5&track=2')).toEqual({ cdId: '5', track: 1 })
     expect(imagingTargetFromHash('#/imaging?cd=5')).toEqual({ cdId: '5', track: 0 })

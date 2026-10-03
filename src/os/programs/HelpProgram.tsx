@@ -108,7 +108,7 @@ const pages: Record<HelpSlug, ReactNode> = {
     <>
       <p>
         plays the CDs you own. press Insert disc…, pick a CD, and its tracks show up as picture files you can
-        open.
+        open. a shared <code>#/cdrom?cd=123</code> link plays that CD read-only without a wallet.
       </p>
       <p>
         a CD keeps every track forever, even if a frame on it is later sold or recycled. if the CD leaves your

@@ -13,6 +13,7 @@ import {
   burnerFundTooLarge,
   buildStartSessionTypedData,
   fundingSuggestion,
+  FUNDING_TARGET_PAINTS,
   refreshLiveStatus,
   type StartSessionMessage,
 } from './liveStore'
@@ -23,7 +24,7 @@ export const QUICK_ALLOWANCE = 5_000n
 /** Used only if a sample paint can't be simulated (e.g. the wallet's hourly budget is spent right now). */
 export const FALLBACK_PAINT_GAS = 400_000n
 /** Skip the funding prompt when the burner already holds gas for this many paints plus startSession. */
-export const REUSE_MIN_PAINTS = 20n
+export const REUSE_MIN_PAINTS = FUNDING_TARGET_PAINTS
 const SIGNATURE_TTL_SECONDS = 15 * 60
 
 export type QuickPhase = 'prepare' | 'sign' | 'fund' | 'start' | 'done'
@@ -54,7 +55,7 @@ export function samplePaint64() {
   return encodeChangedRuns(canvas.background, working)
 }
 
-/** What to send the burner: the usual 100-paint suggestion, or nothing when it can already cover a few. */
+/** What to send the burner: about 20 paints of gas, or nothing when it already has enough. */
 export function quickFunding(balance: bigint, paintGas: bigint, startGas: bigint, maxFeePerGas: bigint) {
   const floor = (REUSE_MIN_PAINTS * paintGas + startGas) * maxFeePerGas
   if (balance >= floor) return 0n
@@ -181,7 +182,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
 
   // Prompt 2: gas money for the burner, unless it already has enough left from an earlier session.
   const value = quickFunding(balanceBefore, paintGas, startQuote.gasLimit, startQuote.maxFeePerGas)
-  if (burnerFundTooLarge(value)) {
+  if (burnerFundTooLarge(value, balanceBefore)) {
     throw new Error(
       `the gas quote asks for ${formatEther(value)} MON for the burner, which looks wrong. nothing was sent; try again later.`,
     )
