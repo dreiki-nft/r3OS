@@ -46,7 +46,7 @@ type View = 'details' | 'icons'
 interface DriveFile {
   key: string
   name: string
-  kind: 'txt' | 'bmp'
+  kind: 'txt' | 'image'
   size: number
   type: string
   modified?: number
@@ -63,30 +63,44 @@ function filesFor(cd: LoadedCd, infoText: string): DriveFile[] {
       type: 'Text Document',
       modified: cd.mintTimestamp,
     },
-    ...cd.snapshot.tracks.map((track) => ({
-      key: `track-${track.index}`,
-      name: trackFileName(track.index),
-      kind: 'bmp' as const,
-      size: TRACK_BMP_BYTES,
-      type: 'Bitmap Image',
-      modified: cd.frameTimestamps.get(track.frameId),
-      track: track.index,
-    })),
+    ...cd.snapshot.tracks.map((track) => {
+      const photo = track.kind === 'block-photo' ? cd.photos.get(track.sourceId) : undefined
+      const photoTimestamp = Number(photo?.attributes.Timestamp ?? 0) || undefined
+      return {
+        key: `track-${track.index}`,
+        name: trackFileName(track.index, track.kind),
+        kind: 'image' as const,
+        size:
+          track.kind === 'frame'
+            ? TRACK_BMP_BYTES
+            : new TextEncoder().encode(photo?.image ?? '').length,
+        type: track.kind === 'frame' ? 'Bitmap Image' : 'Onchain SVG Image',
+        modified: track.kind === 'frame' ? cd.frameTimestamps.get(track.sourceId) : photoTimestamp,
+        track: track.index,
+      }
+    }),
   ]
 }
 
-function TrackThumb({ frameId, size }: { frameId: number; size: number }) {
+function TrackThumb({ cd, trackIndex, size }: { cd: LoadedCd; trackIndex: number; size: number }) {
+  const track = cd.snapshot.tracks[trackIndex]
   const [image, setImage] = useState<PixelImage>()
   useEffect(() => {
     let cancelled = false
     setImage(undefined)
-    getFrameImage(frameId)
+    if (!track || track.kind !== 'frame') return
+    getFrameImage(track.sourceId)
       .then((next) => !cancelled && setImage(next))
       .catch(() => undefined)
     return () => {
       cancelled = true
     }
-  }, [frameId])
+  }, [track?.kind, track?.sourceId])
+  if (!track) return null
+  if (track.kind === 'block-photo') {
+    const photo = cd.photos.get(track.sourceId)
+    return <SafeImage src={photo?.image ?? ''} alt={photo?.name ?? `block photo #${track.sourceId}`} width={size} height={size} />
+  }
   return <PixelPreview image={image} size={size} className="cdrom-thumb" />
 }
 
@@ -144,9 +158,10 @@ export function CdromProgram() {
         }
       }
       const loaded = await loadCd(tokenId)
-      const nextStatuses = await trackStatuses(loaded.snapshot.tracks.map((track) => track.frameId)).catch(
-        () => new Map<number, TrackStatus>(),
-      )
+      const frameIds = loaded.snapshot.tracks
+        .filter((track) => track.kind === 'frame')
+        .map((track) => track.sourceId)
+      const nextStatuses = await trackStatuses(frameIds).catch(() => new Map<number, TrackStatus>())
       // A short spin-up so inserting a disc feels like a drive, never longer than the real read.
       const wait = Math.max(0, 700 - (Date.now() - started))
       if (wait) await new Promise((resolve) => setTimeout(resolve, wait))
@@ -228,7 +243,8 @@ export function CdromProgram() {
   }
 
   const selectedTrack = selectedFile?.track != null ? cd?.snapshot.tracks[selectedFile.track] : undefined
-  const selectedStatus = selectedTrack ? statuses.get(selectedTrack.frameId) : undefined
+  const selectedStatus =
+    selectedTrack?.kind === 'frame' ? statuses.get(selectedTrack.sourceId) : undefined
 
   return (
     <div className="cdrom-program">
@@ -329,22 +345,25 @@ export function CdromProgram() {
             <div className="cdrom-webview-selection">
               <b>{selectedFile.name}</b>
               <span>{selectedFile.type}</span>
-              {selectedTrack && <TrackThumb frameId={selectedTrack.frameId} size={128} />}
+              {selectedTrack && cd && <TrackThumb cd={cd} trackIndex={selectedTrack.index} size={128} />}
               {selectedFile.modified && <span>Modified: {win98Date(selectedFile.modified)}</span>}
               <span>Size: {explorerSize(selectedFile.size)}</span>
               {selectedTrack && (
                 <>
                   <span>
-                    frame #{selectedTrack.frameId} · season {selectedTrack.season + 1}
+                    {selectedTrack.kind === 'frame' ? 'frame' : 'block photo'} #{selectedTrack.sourceId} · season{' '}
+                    {selectedTrack.season + 1}
                     {selectedTrack.storm ? ' · storm' : ''}
                     {selectedTrack.finale ? ' · finale' : ''}
                   </span>
                   <span>
-                    {selectedStatus?.recycled
-                      ? 'source frame recycled · the art is still onchain'
-                      : selectedStatus?.owner
-                        ? `source frame owner ${shortAddress(selectedStatus.owner)}`
-                        : ''}
+                    {selectedTrack.kind === 'block-photo'
+                      ? 'source is an immutable r3tards Labs Block Camera NFT'
+                      : selectedStatus?.recycled
+                        ? 'source frame recycled · the art is still onchain'
+                        : selectedStatus?.owner
+                          ? `source frame owner ${shortAddress(selectedStatus.owner)}`
+                          : ''}
                   </span>
                 </>
               )}
@@ -373,9 +392,9 @@ export function CdromProgram() {
             >
               <span className="cdrom-file-name">
                 <Icon
-                  name={file.kind === 'bmp' ? 'gallery' : 'info'}
+                  name={file.kind === 'image' ? 'gallery' : 'info'}
                   size={view === 'icons' ? 36 : 16}
-                  colour={file.kind === 'bmp' ? '#EE93E3' : '#FFFFFF'}
+                  colour={file.kind === 'image' ? '#EE93E3' : '#FFFFFF'}
                 />
                 <span>{file.name}</span>
               </span>
@@ -390,19 +409,22 @@ export function CdromProgram() {
           ))}
           {!disc && (
             <div className="cdrom-empty cdrom-empty-state">
-              {!wallet.account ? (
-                <p>connect a wallet to insert a CD you own, or open a shared CD link.</p>
-              ) : (
-                <>
-                  <p>drive D: is empty. insert one of your CDs to play it.</p>
-                  <div className="cdrom-empty-actions">
-                    <Button primary onClick={() => void openPicker()}>
-                      Insert disc…
-                    </Button>
-                    <Button onClick={() => openProgram('cd')}>Burn a CD</Button>
-                  </div>
-                </>
-              )}
+              <p>
+                {wallet.account
+                  ? 'drive D: is empty. insert one of your CDs to play it.'
+                  : 'connect a wallet to insert a CD you own, or open a shared CD link.'}
+              </p>
+              <div className="cdrom-empty-actions">
+                <Button
+                  primary
+                  onClick={() => void openPicker()}
+                  disabled={!wallet.account}
+                  title={!wallet.account ? 'connect a wallet to insert one of your CDs' : 'choose one of your CDs'}
+                >
+                  Insert disc…
+                </Button>
+                <Button onClick={() => openProgram('cd')}>Burn a CD</Button>
+              </div>
             </div>
           )}
           {disc && reading && <p className="cdrom-empty">Reading D:\…</p>}

@@ -195,6 +195,18 @@ contract MonadHWTest is Test {
         assertEq(value.parentHash, blockhash(block.number - 1));
     }
 
+    function testBlockCameraCdTrackDataCountsExactlyPortraitPixels() public {
+        _mockStaking(123, false, 182);
+        vm.prank(bob);
+        uint256 id = camera.capture();
+        (uint32 season_, uint48 blockNumber_, uint256 counts) = camera.cdTrackData(id);
+        assertEq(season_, 0);
+        assertEq(blockNumber_, block.number);
+        uint256 total;
+        for (uint256 i; i < 16; ++i) total += (counts >> (i * 16)) & 0xffff;
+        assertEq(total, 1024);
+    }
+
     function testSameValidatorProducesSameGlyphAndDifferentValidatorChangesPortrait() public view {
         bytes32 parent = keccak256("parent");
         bytes memory a = camera.previewPortrait(100, parent, 7, false, true, 182, true, 0, alice);

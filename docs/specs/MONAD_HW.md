@@ -153,7 +153,7 @@ The portrait is a deterministic 32×32 grid using the r3tards 16-colour palette 
 
 The timestamp is metadata only because second-resolution timestamps repeat across many fast blocks.
 
-Labs metadata reports Block, Epoch, Epoch Delay, Proposer, Parent Hash, Season, Captured By and Staking Device. Block Camera artifacts cannot be burned through Labs.
+Labs metadata reports Block, Epoch, Epoch Delay, Proposer, Parent Hash, Season, Captured By and Staking Device. Block Camera artifacts cannot themselves be burned through Labs. They may be referenced as immutable tracks on a mixed CD; burning that CD does not transfer or destroy the photo NFT.
 
 The live viewfinder is only a preview of the current head. The actual NFT is rebuilt from the inclusion block captured onchain.
 

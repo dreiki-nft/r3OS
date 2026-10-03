@@ -2,13 +2,13 @@ import { helpHash } from '../os/helpTopics'
 import { screenSafeMessage } from '../chain/errors'
 import './phase3c2c.css'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { hexToBytes, parseEventLogs, type Address, type Hex, type Log } from 'viem'
+import { hexToBytes, parseAbi, parseEventLogs, type Address, type Hex, type Log } from 'viem'
 import { publicClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { getFrameImage } from '../frames/frameImage'
-import { getFrameInfo, getFrameInfoBatch, mineTokenIds, type FrameInfo } from '../frames/framesStore'
+import { getFrameInfoBatch, mineTokenIds, type FrameInfo } from '../frames/framesStore'
 import { labsAddress, labsBucket, loadOwnedLabsTokens, type LabsOwnedToken } from '../frames/LabsFolder'
 import { R3TARDS_CD_BURNER_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import {
@@ -29,9 +29,26 @@ import { SafeImage } from '../os/ui/SafeImage'
 import { readLabsToken, type LabsTokenData } from './labsToken'
 import { cdEligibleFrames } from './recycle'
 
-interface Track {
-  id: number
-  info: FrameInfo
+type FrameTrack = { kind: 'frame'; id: number; info: FrameInfo }
+type PhotoTrack = { kind: 'block-photo'; id: number; data: LabsTokenData }
+type Track = FrameTrack | PhotoTrack
+
+const MIXED_CD_ABI = parseAbi([
+  'function burnMixedCD(uint256[] trackIds,uint8[] trackKinds,string label) returns (uint256 tokenId)',
+])
+const BLOCK_CAMERA_CD_ABI = parseAbi([
+  'function cdTrackData(uint256 tokenId) view returns (uint32 season,uint48 blockNumber,uint256 colourCounts)',
+])
+
+const PHOTO_SEED_BIT = 1n << 255n
+const sampledPhotos = new Map<number, number[]>()
+
+function trackKey(track: Track) {
+  return `${track.kind}:${track.id}`
+}
+
+function trackLabel(track: Track) {
+  return track.kind === 'frame' ? `frame #${track.id}` : `photo #${track.id}`
 }
 
 type TxState = 'idle' | 'signing' | 'sent' | 'confirmed'
@@ -63,7 +80,30 @@ async function countsForFrame(id: number, info: FrameInfo) {
   return counts
 }
 
-function FrameChoice({
+async function countsForPhoto(id: number) {
+  const cached = sampledPhotos.get(id)
+  if (cached) return cached
+  if (!publicClient) throw new Error('block photo data unavailable')
+  const camera = (await discoverContracts()).labs['block-camera']
+  if (!camera) throw new Error('Block Camera is not deployed on this network')
+  const [, , packed] = (await publicClient.readContract({
+    address: camera,
+    abi: BLOCK_CAMERA_CD_ABI,
+    functionName: 'cdTrackData',
+    args: [BigInt(id)],
+  })) as readonly [number, number, bigint]
+  const counts = Array.from({ length: 16 }, (_, index) =>
+    Number((packed >> BigInt(index * 16)) & 0xffffn),
+  )
+  sampledPhotos.set(id, counts)
+  return counts
+}
+
+async function countsForTrack(track: Track) {
+  return track.kind === 'frame' ? countsForFrame(track.id, track.info) : countsForPhoto(track.id)
+}
+
+function TrackChoice({
   track,
   selected,
   onClick,
@@ -74,8 +114,12 @@ function FrameChoice({
   onClick: () => void
   onDoubleClick: () => void
 }) {
-  const [src, setSrc] = useState('')
+  const [src, setSrc] = useState(track.kind === 'block-photo' ? track.data.image : '')
   useEffect(() => {
+    if (track.kind === 'block-photo') {
+      setSrc(track.data.image)
+      return
+    }
     let cancelled = false
     void getFrameImage(track.id)
       .then((image) => {
@@ -92,18 +136,24 @@ function FrameChoice({
     return () => {
       cancelled = true
     }
-  }, [track.id])
+  }, [track])
+
+  const season =
+    track.kind === 'frame'
+      ? track.info.season + 1
+      : Number(track.data.attributes.Season ?? 0) || undefined
   return (
     <button
       className={`cd-frame-choice ${selected ? 'selected' : ''}`}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
     >
-      <SafeImage src={src} alt={`frame #${track.id}`} width={72} height={72} />
-      <span>frame #{track.id}</span>
+      <SafeImage src={src} alt={trackLabel(track)} width={72} height={72} />
+      <span>{trackLabel(track)}</span>
       <small>
-        season {track.info.season + 1}
-        {track.info.finale ? ' · finale' : ''}
+        {track.kind === 'block-photo' ? 'Block Camera' : 'Paint'}
+        {season != null ? ` · season ${season}` : ''}
+        {track.kind === 'frame' && track.info.finale ? ' · finale' : ''}
       </small>
     </button>
   )
@@ -113,9 +163,9 @@ export function CDBurnerProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const [step, setStep] = useState(0)
   const [burner, setBurner] = useState<Address>()
-  const [frames, setFrames] = useState<Track[]>([])
-  const [framesFor, setFramesFor] = useState<string>()
-  const [selected, setSelected] = useState<number>()
+  const [sources, setSources] = useState<Track[]>([])
+  const [sourcesFor, setSourcesFor] = useState<string>()
+  const [selected, setSelected] = useState<string>()
   const [tracks, setTracks] = useState<Track[]>([])
   const [label, setLabel] = useState('')
   const [previewToken, setPreviewToken] = useState(1n)
@@ -129,7 +179,7 @@ export function CDBurnerProgram() {
 
   const load = useCallback(async () => {
     if (!wallet.account || !publicClient) {
-      setFrames([])
+      setSources([])
       setCds([])
       return
     }
@@ -146,14 +196,31 @@ export function CDBurnerProgram() {
           .map((id) => ({ id, info: infos.get(id)! }))
           .filter((item) => item.info),
       )
-      setFrames(eligible)
+      // Labs tokens are already owned by this wallet; only Block Camera portraits are valid photo tracks.
+      const owned = await loadOwnedLabsTokens(wallet.account)
+      const photos: PhotoTrack[] = owned
+        .filter(
+          (token) =>
+            token.data &&
+            labsBucket(token.data) === 'Portraits' &&
+            String(token.data.attributes.Lab ?? '').toLowerCase() === 'block camera',
+        )
+        .map((token) => ({ kind: 'block-photo' as const, id: Number(token.id), data: token.data! }))
+      const frameTracks: FrameTrack[] = eligible.map((item) => ({ kind: 'frame', ...item }))
+      const allSources: Track[] = [...frameTracks, ...photos]
+      setSources(allSources)
       // Opened from My Frames with a frame selected (#/cd?frame=12): start with that frame as track 1.
       const rawRouteFrame = new URLSearchParams(location.hash.split('?')[1] ?? '').get('frame')
       if (rawRouteFrame && /^\d+$/.test(rawRouteFrame)) {
-        const routed = eligible.find((track) => track.id === Number(rawRouteFrame))
+        const routed = frameTracks.find((track) => track.id === Number(rawRouteFrame))
         if (routed) setTracks((current) => (current.length ? current : [routed]))
       }
-      setFramesFor(wallet.account)
+      const rawRoutePhoto = new URLSearchParams(location.hash.split('?')[1] ?? '').get('photo')
+      if (rawRoutePhoto && /^\d+$/.test(rawRoutePhoto)) {
+        const routed = photos.find((track) => track.id === Number(rawRoutePhoto))
+        if (routed) setTracks((current) => (current.length ? current : [routed]))
+      }
+      setSourcesFor(wallet.account)
       const labs = await labsAddress()
       const total = BigInt(
         await publicClient.readContract({
@@ -163,7 +230,6 @@ export function CDBurnerProgram() {
         }),
       )
       setPreviewToken(total + 1n)
-      const owned = await loadOwnedLabsTokens(wallet.account)
       const ownedCds = owned.filter((token) => labsBucket(token.data) === 'CDs')
       setCds(ownedCds)
       const rawRouteToken = new URLSearchParams(location.hash.split('?')[1] ?? '').get('token')
@@ -187,13 +253,13 @@ export function CDBurnerProgram() {
       return
     }
     let cancelled = false
-    void Promise.all(tracks.map((track) => countsForFrame(track.id, track.info)))
+    void Promise.all(tracks.map(countsForTrack))
       .then((counts) => !cancelled && setDiscMask(discMaskFromCounts(counts)))
       .catch((error) => !cancelled && setMessage(screenSafeMessage(error)))
     return () => {
       cancelled = true
     }
-  }, [tracks.map((track) => track.id).join(',')])
+  }, [tracks.map(trackKey).join(',')])
 
   const normalized = normalizeCdLabel(label)
   const preview = useMemo(() => {
@@ -201,7 +267,9 @@ export function CDBurnerProgram() {
     return dataUri(
       cdSvg({
         tokenId: previewToken,
-        frameIds: tracks.map((track) => track.id),
+        frameIds: tracks.map((track) =>
+          track.kind === 'block-photo' ? PHOTO_SEED_BIT | BigInt(track.id) : BigInt(track.id),
+        ),
         label: normalized.value || 'untitled',
         mask: discMask,
       }).svg,
@@ -214,17 +282,32 @@ export function CDBurnerProgram() {
       return
     }
     let cancelled = false
+    const hasPhotos = tracks.some((track) => track.kind === 'block-photo')
     void quoteAction({
       kind: 'estimate',
       address: burner,
-      abi: R3TARDS_CD_BURNER_ABI,
-      functionName: 'burnCD',
-      args: [tracks.map((track) => BigInt(track.id)), normalized.value],
+      abi: hasPhotos ? MIXED_CD_ABI : R3TARDS_CD_BURNER_ABI,
+      functionName: hasPhotos ? 'burnMixedCD' : 'burnCD',
+      args: hasPhotos
+        ? [
+            tracks.map((track) => BigInt(track.id)),
+            tracks.map((track) => (track.kind === 'block-photo' ? 1 : 0)),
+            normalized.value,
+          ]
+        : [tracks.map((track) => BigInt(track.id)), normalized.value],
       account: wallet.account,
       action: 'burn mix CD-R',
     })
       .then((next) => !cancelled && setQuote(next))
-      .catch((error) => !cancelled && setMessage(screenSafeMessage(error)))
+      .catch((error) => {
+        if (cancelled) return
+        setQuote(undefined)
+        setMessage(
+          hasPhotos
+            ? `mixed-photo CDs require the snapshot-28 CD Burner on this network · ${screenSafeMessage(error)}`
+            : screenSafeMessage(error),
+        )
+      })
     return () => {
       cancelled = true
     }
@@ -232,15 +315,15 @@ export function CDBurnerProgram() {
     step,
     wallet.account,
     burner,
-    tracks.map((track) => track.id).join(','),
+    tracks.map(trackKey).join(','),
     normalized.value,
     normalized.valid,
   ])
 
-  const add = (id?: number) => {
-    if (id == null || tracks.length >= 12 || tracks.some((track) => track.id === id)) return
-    const frame = frames.find((item) => item.id === id)
-    if (frame) setTracks((current) => [...current, frame])
+  const add = (key?: string) => {
+    if (!key || tracks.length >= 12 || tracks.some((track) => trackKey(track) === key)) return
+    const source = sources.find((item) => trackKey(item) === key)
+    if (source) setTracks((current) => [...current, source])
   }
 
   const move = (index: number, delta: number) => {
@@ -258,12 +341,19 @@ export function CDBurnerProgram() {
     burningRef.current = true
     setMinted(undefined)
     try {
+      const hasPhotos = tracks.some((track) => track.kind === 'block-photo')
       const result = await sendAction({
         kind: 'estimate',
         address: burner,
-        abi: R3TARDS_CD_BURNER_ABI,
-        functionName: 'burnCD',
-        args: [tracks.map((track) => BigInt(track.id)), normalized.value],
+        abi: hasPhotos ? MIXED_CD_ABI : R3TARDS_CD_BURNER_ABI,
+        functionName: hasPhotos ? 'burnMixedCD' : 'burnCD',
+        args: hasPhotos
+          ? [
+              tracks.map((track) => BigInt(track.id)),
+              tracks.map((track) => (track.kind === 'block-photo' ? 1 : 0)),
+              normalized.value,
+            ]
+          : [tracks.map((track) => BigInt(track.id)), normalized.value],
         account: wallet.account,
         quote,
         action: 'burn mix CD-R',
@@ -344,7 +434,7 @@ export function CDBurnerProgram() {
         <aside className="cd-banner">
           <Icon name="music" size={72} colour="#5FEDDF" />
           <h2>Burn a CD</h2>
-          <p>write 1–12 of your saved frames onto one onchain mix CD-R.</p>
+          <p>write 1–12 saved Paint frames or Block Camera photos onto one onchain mix CD-R.</p>
           <ol>
             <li className={step === 0 ? 'active' : ''}>Select tracks</li>
             <li className={step === 1 ? 'active' : ''}>Label</li>
@@ -360,21 +450,21 @@ export function CDBurnerProgram() {
               <div className="cd-select-layout">
                 <section className="cd-source sunken">
                   {!wallet.account ? (
-                    <p className="cd-empty">connect a wallet to see your saved frames.</p>
-                  ) : framesFor === wallet.account && !frames.length ? (
+                    <p className="cd-empty">connect a wallet to see your saved frames and block photos.</p>
+                  ) : sourcesFor === wallet.account && !sources.length ? (
                     <div className="cd-empty">
-                      <p>you have no saved frames to burn yet.</p>
-                      <p>paint something, then in Paint choose File › Save frame….</p>
+                      <p>you have no saved frames or Block Camera photos to burn yet.</p>
+                      <p>save a Paint frame or capture a Block Camera photo first.</p>
                       <Button onClick={() => openProgram('paint')}>Open Paint</Button>
                     </div>
                   ) : null}
-                  {frames.map((track) => (
-                    <FrameChoice
-                      key={track.id}
+                  {sources.map((track) => (
+                    <TrackChoice
+                      key={trackKey(track)}
                       track={track}
-                      selected={selected === track.id}
-                      onClick={() => setSelected(track.id)}
-                      onDoubleClick={() => add(track.id)}
+                      selected={selected === trackKey(track)}
+                      onClick={() => setSelected(trackKey(track))}
+                      onDoubleClick={() => add(trackKey(track))}
                     />
                   ))}
                 </section>
@@ -386,8 +476,8 @@ export function CDBurnerProgram() {
                       tracks.length >= 12
                         ? 'a CD holds 12 tracks at most'
                         : selected == null
-                          ? 'pick a frame on the left first'
-                          : 'add this frame to the CD'
+                          ? 'pick a frame or photo on the left first'
+                          : 'add this item to the CD'
                     }
                   >
                     Add ›
@@ -395,9 +485,9 @@ export function CDBurnerProgram() {
                 </div>
                 <section className="cd-tracklist sunken">
                   {tracks.map((track, index) => (
-                    <div key={track.id}>
+                    <div key={trackKey(track)}>
                       <span>{String(index + 1).padStart(2, '0')}</span>
-                      <b>frame #{track.id}</b>
+                      <b>{trackLabel(track)}</b>
                       <button onClick={() => move(index, -1)} disabled={index === 0}>
                         ↑
                       </button>
@@ -405,7 +495,9 @@ export function CDBurnerProgram() {
                         ↓
                       </button>
                       <button
-                        onClick={() => setTracks((current) => current.filter((item) => item.id !== track.id))}
+                        onClick={() =>
+                          setTracks((current) => current.filter((item) => trackKey(item) !== trackKey(track)))
+                        }
                       >
                         ×
                       </button>

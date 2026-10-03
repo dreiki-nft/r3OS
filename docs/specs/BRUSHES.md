@@ -49,7 +49,7 @@ Stamping is **not** a special core privilege. It spends the user's normal paint 
 - holder quota/trust/wet paint/heat/region caps all still apply;
 - DF1 corruption, especially during a storm, can damage the intended pattern.
 
-A brush usually contains roughly 24–48 filled cells. That can exceed a brand-new wallet's 32 px/hour allowance, so show the exact previewed cost and suggest building up budget or using r3tard holder quota where applicable.
+A brush usually contains roughly 24–48 filled cells. Show the exact previewed cost against the launch budget (512 px/hour base, rising by 32 per active day to 2,048) and suggest r3tard holder quota where applicable.
 
 ## Verify
 

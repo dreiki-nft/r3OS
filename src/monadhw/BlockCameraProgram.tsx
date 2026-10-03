@@ -14,6 +14,7 @@ import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
 import { errorText, labAddress, labLoadError, LabNotDeployedError, shortAddress } from '../labs/labCommon'
 import { WalletChooser } from '../os/WalletChooser'
 import { requestFloppy } from '../os/floppy'
+import { openProgram } from '../os/programs'
 import { applyWallpaperResource, rememberSessionPhoto } from '../os/wallpaper'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -492,6 +493,9 @@ export function BlockCameraProgram() {
               </Button>
               <Button onClick={() => requestFloppy({ kind: 'photo', labsId: captured.id })}>
                 Save to Floppy…
+              </Button>
+              <Button onClick={() => openProgram('cd', true, `#/cd?photo=${captured.id}`)}>
+                Burn to CD…
               </Button>
               <Button
                 onClick={() => {

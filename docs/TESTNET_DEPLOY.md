@@ -31,7 +31,7 @@ cast send $MOCK "mint(address,uint256)" $DEPLOYER 1 --rpc-url $RPC --account r3t
 
 ## 3. Deploy the suite
 
-These pixel numbers are **testnet values** (the same as the core tests). Pick the real launch numbers before mainnet.
+These are the **snapshot-28 launch-candidate values**. Existing testnet Paint deployments keep their older immutable budget; redeploy the suite if the rehearsal must match mainnet exactly.
 
 `SEASON_START` below is set **29 days 20 hours in the past**, so the first season ends about 4 hours after the deploy. That lets the soak test the whole finale path within two days, instead of waiting 30 days: paint for 4 hours, then mint the finale (holder of #0), list it in the Auction, bid for 24 hours, and settle with the keeper. The next season then runs a normal 30 days. On mainnet, use the real launch time instead.
 
@@ -39,8 +39,8 @@ These pixel numbers are **testnet values** (the same as the core tests). Pick th
 DEPLOYER_ADDRESS=$DEPLOYER \
 R3TARDS_ADDRESS=$MOCK \
 SEASON_START=$(( $(date +%s) - 29*86400 - 20*3600 )) \
-BASE_PIXELS_PER_HOUR=32 PIXELS_PER_ACTIVE_DAY=16 MAX_PIXELS_PER_HOUR=256 \
-MIN_PIXELS_FOR_ACTIVE_DAY=16 HOLDER_PIXELS_PER_DAY=256 \
+BASE_PIXELS_PER_HOUR=512 PIXELS_PER_ACTIVE_DAY=32 MAX_PIXELS_PER_HOUR=2048 \
+MIN_PIXELS_FOR_ACTIVE_DAY=16 HOLDER_PIXELS_PER_DAY=512 \
 FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 

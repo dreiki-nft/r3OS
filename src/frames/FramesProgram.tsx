@@ -714,8 +714,8 @@ export function FramesProgram() {
     {
       label: 'Burn CD',
       icon: 'disc' as const,
-      enabled: Boolean(wallet.account),
-      reason: 'connect a wallet to burn your frames onto a CD',
+      enabled: true,
+      reason: 'open the CD burner',
       action: () =>
         openProgram('cd', true, selectedRegular && ownsSelected ? `#/cd?frame=${selected}` : '#/cd'),
     },

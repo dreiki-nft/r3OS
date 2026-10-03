@@ -1,0 +1,27 @@
+Snapshot 27 -> 28 candidate
+
+Changed files:
+- docs/PRE_MAINNET_CHECKLIST.md
+- docs/TESTNET_DEPLOY.md
+- docs/specs/MONAD_HW.md
+- docs/specs/CD_BURNER.md
+- docs/specs/CDROM.md
+- docs/specs/BRUSHES.md
+- src/frames/FramesProgram.tsx
+- src/os/layout.test.ts
+- src/os/layout.ts
+- src/os/programs.ts
+- src/labs/CDBurnerProgram.tsx
+- src/cdrom/CdromProgram.tsx
+- src/cdrom/ImagingProgram.tsx
+- src/cdrom/cdrom.test.ts
+- src/cdrom/cdrom.ts
+- src/monadhw/BlockCameraProgram.tsx
+- src/chain/contracts.ts
+- contracts/test/RecycleBinCDBurner.t.sol
+- contracts/test/MonadHW.t.sol
+- contracts/src/labs/R3tardsCDBurner.sol
+- contracts/src/monadhw/R3tardsBlockCamera.sol
+
+Deleted files:
+- none

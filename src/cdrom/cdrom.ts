@@ -17,19 +17,26 @@ import { safeRouteInt } from '../lib/route'
  */
 
 // Layout constants mirror R3tardsCDBurner (snapshot = pointer runtime code minus the STOP byte).
-export const SNAPSHOT_VERSION = 2
+export const LEGACY_SNAPSHOT_VERSION = 2
+export const SNAPSHOT_VERSION = 3
 export const HEADER_SIZE = 80
 export const TRACK_SIZE = 38
 export const LABEL_OFFSET = 50
 export const DISC_MASK_OFFSET = 48
+export const FRAME_COUNT_OFFSET = 74
+export const PHOTO_COUNT_OFFSET = 75
 export const MAX_TRACKS = 12
+export const BLOCK_PHOTO_FLAG = 4
 
 /** A 256×256, 4-bit BMP: 14 file header + 40 info header + 16×4 palette + 128 bytes × 256 rows. */
 export const TRACK_BMP_BYTES = 14 + 40 + 16 * 4 + 128 * 256
 
+export type CdTrackKind = 'frame' | 'block-photo'
+
 export interface CdTrack {
   index: number
-  frameId: number
+  sourceId: number
+  kind: CdTrackKind
   season: number
   storm: boolean
   finale: boolean
@@ -49,6 +56,8 @@ export interface CdSnapshot {
   minSeason: number
   maxSeason: number
   discMask: number
+  frameTracks: number
+  photoTracks: number
   tracks: CdTrack[]
 }
 
@@ -62,7 +71,8 @@ function readUint(bytes: Uint8Array, offset: number, length: number) {
 export function parseCdSnapshot(snapshot: Uint8Array): CdSnapshot {
   if (snapshot.length < HEADER_SIZE) throw new Error('CD snapshot too short')
   const version = snapshot[0]
-  if (version !== SNAPSHOT_VERSION) throw new Error(`unknown CD snapshot version ${version}`)
+  if (version !== LEGACY_SNAPSHOT_VERSION && version !== SNAPSHOT_VERSION)
+    throw new Error(`unknown CD snapshot version ${version}`)
   const trackCount = snapshot[1]
   if (trackCount === 0 || trackCount > MAX_TRACKS) throw new Error(`invalid track count ${trackCount}`)
   if (snapshot.length !== HEADER_SIZE + trackCount * TRACK_SIZE)
@@ -76,13 +86,20 @@ export function parseCdSnapshot(snapshot: Uint8Array): CdSnapshot {
     const flags = snapshot[record + 36]
     tracks.push({
       index,
-      frameId: Number(readUint(snapshot, record, 32)),
+      sourceId: Number(readUint(snapshot, record, 32)),
+      kind: version >= SNAPSHOT_VERSION && (flags & BLOCK_PHOTO_FLAG) !== 0 ? 'block-photo' : 'frame',
       season: Number(readUint(snapshot, record + 32, 4)),
       storm: (flags & 1) !== 0,
       finale: (flags & 2) !== 0,
       colourPair: snapshot[record + 37],
     })
   }
+  const frameTracks = version >= SNAPSHOT_VERSION ? snapshot[FRAME_COUNT_OFFSET] : trackCount
+  const photoTracks = version >= SNAPSHOT_VERSION ? snapshot[PHOTO_COUNT_OFFSET] : 0
+  if (frameTracks + photoTracks !== trackCount) throw new Error('CD mixed-track counts mismatch')
+  if (tracks.filter((track) => track.kind === 'frame').length !== frameTracks) throw new Error('CD frame count mismatch')
+  if (tracks.filter((track) => track.kind === 'block-photo').length !== photoTracks)
+    throw new Error('CD photo count mismatch')
   return {
     version,
     label,
@@ -96,6 +113,8 @@ export function parseCdSnapshot(snapshot: Uint8Array): CdSnapshot {
     minSeason: Number(readUint(snapshot, 40, 4)),
     maxSeason: Number(readUint(snapshot, 44, 4)),
     discMask: Number(readUint(snapshot, DISC_MASK_OFFSET, 2)),
+    frameTracks,
+    photoTracks,
     tracks,
   }
 }
@@ -107,8 +126,9 @@ export function snapshotFromCode(code: Hex | Uint8Array) {
   return bytes.slice(1)
 }
 
-export function trackFileName(index: number) {
-  return `TRACK${String(index + 1).padStart(2, '0')}.BMP`
+export function trackFileName(index: number, kind: CdTrackKind = 'frame') {
+  const number = String(index + 1).padStart(2, '0')
+  return kind === 'block-photo' ? `PHOTO${number}.SVG` : `TRACK${number}.BMP`
 }
 
 /** `#/cdrom?cd=5` opens any real burned CD read-only, without requiring a wallet or ownership. */
@@ -167,6 +187,7 @@ export interface LoadedCd {
   token?: LabsTokenData
   frames: Map<number, FrameInfo>
   frameTimestamps: Map<number, number>
+  photos: Map<number, LabsTokenData>
 }
 
 export function cdInfoText(cd: LoadedCd, statuses: ReadonlyMap<number, TrackStatus> = new Map()) {
@@ -190,7 +211,7 @@ export function cdInfoText(cd: LoadedCd, statuses: ReadonlyMap<number, TrackStat
     `snapshot ...... ${cd.pointer}`,
     '',
     ...s.tracks.map((track) => {
-      const status = statuses.get(track.frameId)
+      const status = track.kind === 'frame' ? statuses.get(track.sourceId) : undefined
       const flags = [
         track.storm ? 'storm' : '',
         track.finale ? 'finale' : '',
@@ -198,10 +219,13 @@ export function cdInfoText(cd: LoadedCd, statuses: ReadonlyMap<number, TrackStat
       ]
         .filter(Boolean)
         .join(' ')
-      return `${trackFileName(track.index)}  frame #${track.frameId}  season ${track.season + 1}${flags ? `  ${flags}` : ''}`
+      const source = track.kind === 'frame' ? `frame #${track.sourceId}` : `block photo #${track.sourceId}`
+      return `${trackFileName(track.index, track.kind)}  ${source}  season ${track.season + 1}${flags ? `  ${flags}` : ''}`
     }),
     '',
-    'every track is read from the Paint contract, where frame pixels stay forever.',
+    s.photoTracks
+      ? 'paint tracks read from the Paint core; block photos read from their immutable Labs source.'
+      : 'every track is read from the Paint contract, where frame pixels stay forever.',
   ]
   return lines.join('\r\n')
 }
@@ -280,9 +304,11 @@ async function loadCdUncached(tokenId: bigint): Promise<LoadedCd> {
   const mint = (mintRow as any)?.status === 'success' ? (mintRow as any).result : undefined
   const mintBlock = mint ? BigInt(mint.blockNumber ?? mint[2] ?? 0) : undefined
 
-  const frameIds = snapshot.tracks.map((track) => track.frameId)
-  const [frames, token, mintTimestamp, burnerAddress] = await Promise.all([
+  const frameIds = snapshot.tracks.filter((track) => track.kind === 'frame').map((track) => track.sourceId)
+  const photoIds = snapshot.tracks.filter((track) => track.kind === 'block-photo').map((track) => track.sourceId)
+  const [frames, photoRows, token, mintTimestamp, burnerAddress] = await Promise.all([
     getFrameInfoBatch(frameIds),
+    Promise.all(photoIds.map((id) => readLabsToken(BigInt(id)).catch(() => undefined))),
     readLabsToken(tokenId).catch(() => undefined),
     mintBlock ? blockTimestamp(mintBlock) : Promise.resolve(undefined),
     // The burner is the CDBurned emitter at the mint block: one bounded single-block log query.
@@ -298,6 +324,12 @@ async function loadCdUncached(tokenId: bigint): Promise<LoadedCd> {
           .catch(() => undefined)
       : Promise.resolve(undefined),
   ])
+
+  const photos = new Map<number, LabsTokenData>()
+  photoIds.forEach((id, index) => {
+    const data = photoRows[index]
+    if (data) photos.set(id, data)
+  })
 
   const frameTimestamps = new Map<number, number>()
   const times = await readHeavy(
@@ -323,6 +355,7 @@ async function loadCdUncached(tokenId: bigint): Promise<LoadedCd> {
     token,
     frames,
     frameTimestamps,
+    photos,
   }
 }
 

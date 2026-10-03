@@ -177,6 +177,21 @@ contract R3tardsBlockCamera is ILabTokenSource {
         present = value.present;
     }
 
+    /// @notice Compact immutable data used by the CD Burner for Block Camera tracks.
+    /// @dev colourCounts packs sixteen uint16 lanes; a portrait contains only 1,024 pixels, so every lane fits.
+    function cdTrackData(uint256 tokenId) external view returns (uint32 season, uint48 blockNumber, uint256 colourCounts) {
+        Shot memory value = _shots[tokenId];
+        if (value.capturer == address(0)) revert ShotDoesNotExist(tokenId);
+        (uint8[1024] memory pixels,,) = _portrait(value);
+        CardShot memory card = _cardShots[tokenId];
+        if (card.present) _applyCardHash(pixels, card.cardPageHash);
+        for (uint256 i; i < 1024; ++i) {
+            colourCounts += uint256(1) << (uint256(pixels[i]) * 16);
+        }
+        season = value.season;
+        blockNumber = value.blockNumber;
+    }
+
     function previewPortrait(
         uint256 blockNumber,
         bytes32 parentHash,

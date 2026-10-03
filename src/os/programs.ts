@@ -501,6 +501,8 @@ export function openProgram(id: string, updateHash = true, hashOverride?: string
       : nextWindowPosition(program.defaultSize, program.minSize)
   openWindow(program.id, rect, program.minSize, program.alwaysOnTop, program.placement !== 'bottom-right')
   const hash = hashOverride ?? program.hash
-  if (updateHash && location.hash !== hash) location.hash = hash
+  // Paint is the home surface. Normal opens should not make it the next boot route; explicit deep links still work.
+  const shouldUpdateHash = updateHash && (program.id !== 'paint' || hashOverride != null)
+  if (shouldUpdateHash && location.hash !== hash) location.hash = hash
   return true
 }

@@ -6,26 +6,26 @@
 
 /** Desktop icons, in order. Auction joins them only while an auction is running (see `desktopProgramIds`). */
 export const DESKTOP_PROGRAMS = [
-  'paint',
-  'monad-hw',
   'pass',
   'frames',
-  'quests',
+  'paint',
   'block-camera',
   'cdrom',
+  'monad-hw',
+  'quests',
   'bin',
 ] as const
 
 /** Start › Programs: everything a person uses, desktop or not. */
 export const START_PROGRAMS = [
-  'paint',
   'pass',
   'frames',
-  'quests',
+  'paint',
   'block-camera',
-  'auction',
-  'cd',
   'cdrom',
+  'quests',
+  'cd',
+  'auction',
   'bin',
 ] as const
 
@@ -38,7 +38,7 @@ export const EXPLORE_PROGRAM = 'monad-hw'
 /** Desktop ids to show, given which programs are visible and whether an auction is live right now. */
 export function desktopProgramIds(isVisible: (id: string) => boolean, auctionLive: boolean): string[] {
   const ids: string[] = DESKTOP_PROGRAMS.filter(isVisible)
-  if (auctionLive && isVisible('auction')) ids.splice(ids.indexOf('block-camera') + 1, 0, 'auction')
+  if (auctionLive && isVisible('auction')) ids.push('auction')
   return ids
 }
 

@@ -30,9 +30,10 @@ function writeUint(out: Uint8Array, offset: number, length: number, value: bigin
 function buildSnapshot(
   label: string,
   tracks: { id: number; season: number; flags?: number; pair?: number }[],
+  version = 2,
 ) {
   const out = new Uint8Array(HEADER_SIZE + tracks.length * TRACK_SIZE)
-  out[0] = 2
+  out[0] = version
   out[1] = tracks.length
   out[2] = label.length
   out[3] = 9
@@ -45,6 +46,10 @@ function buildSnapshot(
   writeUint(out, 44, 4, BigInt(Math.max(...tracks.map((track) => track.season))))
   writeUint(out, 48, 2, 0x0510n)
   out.set(new TextEncoder().encode(label), LABEL_OFFSET)
+  if (version >= 3) {
+    out[74] = tracks.filter((track) => ((track.flags ?? 0) & 4) === 0).length
+    out[75] = tracks.filter((track) => ((track.flags ?? 0) & 4) !== 0).length
+  }
   tracks.forEach((track, index) => {
     const record = HEADER_SIZE + index * TRACK_SIZE
     writeUint(out, record, 32, BigInt(track.id))
@@ -72,15 +77,35 @@ describe('CD snapshot parsing', () => {
     expect(snapshot.discMask).toBe(0x0510)
     expect(snapshot.stormTracks).toBe(1)
     expect(snapshot.hasFinale).toBe(true)
-    expect(snapshot.tracks.map((track) => track.frameId)).toEqual([12, 15, 20])
+    expect(snapshot.tracks.map((track) => track.sourceId)).toEqual([12, 15, 20])
     expect(snapshot.tracks[1]).toMatchObject({ storm: true, finale: false, colourPair: 0x49 })
     expect(snapshot.tracks[2]).toMatchObject({ season: 1, storm: false, finale: true })
+  })
+
+  it('parses version 3 mixed frame and Block Camera tracks', () => {
+    const snapshot = parseCdSnapshot(
+      buildSnapshot(
+        'camera roll',
+        [
+          { id: 12, season: 0 },
+          { id: 77, season: 1, flags: 4 },
+        ],
+        3,
+      ),
+    )
+    expect(snapshot.version).toBe(3)
+    expect(snapshot.frameTracks).toBe(1)
+    expect(snapshot.photoTracks).toBe(1)
+    expect(snapshot.tracks[0]).toMatchObject({ sourceId: 12, kind: 'frame' })
+    expect(snapshot.tracks[1]).toMatchObject({ sourceId: 77, kind: 'block-photo' })
+    expect(trackFileName(0, 'frame')).toBe('TRACK01.BMP')
+    expect(trackFileName(1, 'block-photo')).toBe('PHOTO02.SVG')
   })
 
   it('handles large frame ids and the 12-track maximum', () => {
     const tracks = Array.from({ length: 12 }, (_, index) => ({ id: 100_000 + index, season: 3 }))
     const snapshot = parseCdSnapshot(buildSnapshot('album', tracks))
-    expect(snapshot.tracks.at(-1)?.frameId).toBe(100_011)
+    expect(snapshot.tracks.at(-1)?.sourceId).toBe(100_011)
   })
 
   it('rejects malformed snapshots', () => {
@@ -110,6 +135,7 @@ describe('Explorer formatting', () => {
   it('names tracks like a Win98 CD', () => {
     expect(trackFileName(0)).toBe('TRACK01.BMP')
     expect(trackFileName(11)).toBe('TRACK12.BMP')
+    expect(trackFileName(1, 'block-photo')).toBe('PHOTO02.SVG')
   })
 
   it('uppercases and bounds the volume label', () => {
@@ -143,6 +169,7 @@ describe('Explorer formatting', () => {
       burner: '0x00000000000000000000000000000000000000aa' as Address,
       frames: new Map(),
       frameTimestamps: new Map(),
+      photos: new Map(),
     }
     const text = cdInfoText(cd, new Map([[15, { recycled: true }]]))
     expect(text).toContain('r3tards labs cd #5')
@@ -151,6 +178,30 @@ describe('Explorer formatting', () => {
     expect(text).toContain('TRACK01.BMP  frame #12  season 1')
     expect(text).toContain('TRACK02.BMP  frame #15  season 2  storm recycled')
     expect(text).toContain('block 150000')
+  })
+
+  it('writes mixed Block Camera tracks into CDINFO.TXT', () => {
+    const cd: LoadedCd = {
+      tokenId: 8n,
+      snapshot: parseCdSnapshot(
+        buildSnapshot(
+          'camera roll',
+          [
+            { id: 12, season: 0 },
+            { id: 77, season: 0, flags: 4 },
+          ],
+          3,
+        ),
+      ),
+      pointer: '0x0000000000000000000000000000000000000abc' as Address,
+      frames: new Map(),
+      frameTimestamps: new Map(),
+      photos: new Map(),
+    }
+    const text = cdInfoText(cd)
+    expect(text).toContain('TRACK01.BMP  frame #12  season 1')
+    expect(text).toContain('PHOTO02.SVG  block photo #77  season 1')
+    expect(text).toContain('block photos read from their immutable Labs source')
   })
 })
 

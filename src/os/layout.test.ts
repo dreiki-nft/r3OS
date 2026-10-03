@@ -14,21 +14,21 @@ const visible = (id: string) => {
 describe('desktop', () => {
   it('shows a small set of primary programs, in order', () => {
     expect(desktopProgramIds(visible, false)).toEqual([
-      'paint',
-      'monad-hw',
       'pass',
       'frames',
-      'quests',
+      'paint',
       'block-camera',
       'cdrom',
+      'monad-hw',
+      'quests',
       'bin',
     ])
   })
 
-  it('adds Auction right after Block Camera only while an auction is live', () => {
+  it('adds Auction after the primary desktop order only while an auction is live', () => {
     const ids = desktopProgramIds(visible, true)
     expect(ids).toHaveLength(9)
-    expect(ids.indexOf('auction')).toBe(ids.indexOf('block-camera') + 1)
+    expect(ids.at(-1)).toBe('auction')
     expect(auctionIsLive(0n, undefined)).toBe(false)
     expect(auctionIsLive(2n, 1)).toBe(true)
     expect(auctionIsLive(2n, 2)).toBe(false)

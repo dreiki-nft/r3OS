@@ -17,6 +17,7 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0xâ
 
 ## F1. Deployment
 
+- [ ] **Pixel budget immutables:** `BASE_PIXELS_PER_HOUR=512`, `PIXELS_PER_ACTIVE_DAY=32`, `MAX_PIXELS_PER_HOUR=2048`, `MIN_PIXELS_FOR_ACTIVE_DAY=16`, `HOLDER_PIXELS_PER_DAY=512`. Verify the exact env before `Deploy.s.sol`; these cannot be changed after deploy.
 - [ ] Suite: `Deploy.s.sol` (Paint, Labs, Pass, renderers, nine Labs, quests).
 - [ ] CARD.DRV: `DeployMonadCard.s.sol` (official card `0x0000CA12D5c07085022eBC74867157449919Fd67` on 143; `MockMonadCard` on testnet).
 - [ ] Monad Hardware: `DeployMonadHW.s.sol` **with** `CARD_MEMORY_ADDRESS` (it is optional in the script; a missing value leaves Block Camera without CARD.DRV).
@@ -48,6 +49,7 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0xâ
 - [ ] No test-only entry (`router-mock-venues`) on mainnet.
 - [ ] Renderers: built-in, `diff`, `season timelapse`, `df1`.
 - [ ] Labs bound to their registry id: Flipbook, Forks, Sleepwalker, Recycle Bin, CD Burner, Block Camera.
+- [ ] Mixed-CD smoke test: capture a Block Camera photo, burn a v3 CD containing that photo (optionally plus a Paint frame), open it in CD-ROM, and confirm both source NFTs remain owned. Legacy v2 frame-only CDs must still open.
 
 ## F5. Freeze policy
 

@@ -14,8 +14,12 @@ interface IR3tardsCDBurnerCore is IR3tardsPaintData {
     function ownerOf(uint256 tokenId) external view returns (address);
 }
 
-/// @notice Snapshots 1-12 owned Paint frames into one immutable onchain mix CD-R in R3tardsLabs.
-/// @dev Burning a CD means minting the mix; source frames are never transferred or burned by this contract.
+interface IR3tardsBlockCameraCD {
+    function cdTrackData(uint256 tokenId) external view returns (uint32 season, uint48 blockNumber, uint256 colourCounts);
+}
+
+/// @notice Snapshots 1-12 owned Paint frames and/or Block Camera photos into one immutable onchain mix CD-R.
+/// @dev Burning a CD means minting the mix; source NFTs are never transferred or burned by this contract.
 contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
     using Strings for uint256;
 
@@ -28,8 +32,17 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
     uint256 private constant TRACKS_OFFSET = HEADER_SIZE;
     uint256 private constant DISC_MASK_OFFSET = 48;
     uint256 private constant LABEL_OFFSET = 50;
-    uint8 private constant SNAPSHOT_VERSION = 2;
+    uint256 private constant FRAME_COUNT_OFFSET = 74;
+    uint256 private constant PHOTO_COUNT_OFFSET = 75;
+    uint8 private constant LEGACY_SNAPSHOT_VERSION = 2;
+    uint8 private constant MIXED_SNAPSHOT_VERSION = 3;
+    uint8 private constant TRACK_KIND_FRAME = 0;
+    uint8 private constant TRACK_KIND_BLOCK_PHOTO = 1;
+    uint8 private constant FLAG_STORM = 1;
+    uint8 private constant FLAG_FINALE = 2;
+    uint8 private constant FLAG_BLOCK_PHOTO = 4;
     uint16 private constant DISC_COLOUR_MASK = 0x7f70;
+    bytes32 private constant BLOCK_CAMERA_NAME_HASH = keccak256("block-camera");
 
     IR3tardsCDBurnerCore public immutable PAINT;
     R3tardsLabs public immutable LABS;
@@ -54,9 +67,14 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
     error ExperimentNotBound();
     error SessionKeyCannotBurnCD();
     error InvalidTrackCount(uint256 count);
-    error DuplicateTrack(uint256 frameId);
+    error DuplicateTrack(uint256 tokenId);
     error TokenZeroNotAllowed();
     error NotFrameOwner(uint256 frameId, address owner);
+    error InvalidTrackKindsLength(uint256 tracks, uint256 kinds);
+    error InvalidTrackKind(uint8 kind);
+    error NotLabsOwner(uint256 tokenId, address owner);
+    error NotBlockCameraToken(uint256 tokenId);
+    error BlockCameraTrackReadFailed(uint256 tokenId);
     error InvalidLabelLength(uint256 length);
     error InvalidLabelCharacter(uint256 index, bytes1 character);
     error CDDoesNotExist(uint256 tokenId);
@@ -89,7 +107,7 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         stats.oldestTrack = type(uint256).max;
         stats.minSeason = type(uint32).max;
 
-        init[FRAMESTORE_DATA_OFFSET] = bytes1(SNAPSHOT_VERSION);
+        init[FRAMESTORE_DATA_OFFSET] = bytes1(LEGACY_SNAPSHOT_VERSION);
         init[FRAMESTORE_DATA_OFFSET + 1] = bytes1(uint8(count));
         init[FRAMESTORE_DATA_OFFSET + 2] = bytes1(uint8(normalized.length));
         for (uint256 i; i < normalized.length; ++i) init[FRAMESTORE_DATA_OFFSET + LABEL_OFFSET + i] = normalized[i];
@@ -122,6 +140,71 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         emit CDBurned(msg.sender, tokenId, uint8(count), string(normalized));
     }
 
+    /// @notice Burn an ordered mix of Paint frames (kind 0) and Block Camera Labs tokens (kind 1).
+    /// @dev Version 3 keeps the same 38-byte track records as v2. Flag bit 2 identifies a Block Camera track.
+    function burnMixedCD(uint256[] calldata trackIds, uint8[] calldata trackKinds, string calldata label)
+        external
+        returns (uint256 tokenId)
+    {
+        if (PAINT.isActiveSessionKey(msg.sender)) revert SessionKeyCannotBurnCD();
+        uint256 count = trackIds.length;
+        if (count == 0 || count > MAX_TRACKS) revert InvalidTrackCount(count);
+        if (trackKinds.length != count) revert InvalidTrackKindsLength(count, trackKinds.length);
+        uint256 boundExperimentId = experimentId;
+        if (boundExperimentId == type(uint256).max) revert ExperimentNotBound();
+
+        bytes memory normalized = _normalizeLabel(label);
+        bytes memory init = FrameStore.allocateInit(HEADER_SIZE + count * TRACK_SIZE);
+        BuildStats memory stats;
+        stats.oldestTrack = type(uint256).max;
+        stats.minSeason = type(uint32).max;
+        uint8 frameTracks;
+        uint8 photoTracks;
+
+        init[FRAMESTORE_DATA_OFFSET] = bytes1(MIXED_SNAPSHOT_VERSION);
+        init[FRAMESTORE_DATA_OFFSET + 1] = bytes1(uint8(count));
+        init[FRAMESTORE_DATA_OFFSET + 2] = bytes1(uint8(normalized.length));
+        for (uint256 i; i < normalized.length; ++i) init[FRAMESTORE_DATA_OFFSET + LABEL_OFFSET + i] = normalized[i];
+
+        for (uint256 i; i < count; ++i) {
+            uint256 tokenId_ = trackIds[i];
+            uint8 kind = trackKinds[i];
+            for (uint256 j; j < i; ++j) {
+                if (trackKinds[j] == kind && trackIds[j] == tokenId_) revert DuplicateTrack(tokenId_);
+            }
+            if (kind == TRACK_KIND_FRAME) {
+                if (tokenId_ == 0) revert TokenZeroNotAllowed();
+                address owner = PAINT.ownerOf(tokenId_);
+                if (owner != msg.sender) revert NotFrameOwner(tokenId_, owner);
+                _snapshotTrack(init, i, tokenId_, stats);
+                ++frameTracks;
+            } else if (kind == TRACK_KIND_BLOCK_PHOTO) {
+                _snapshotBlockPhoto(init, i, tokenId_, stats);
+                ++photoTracks;
+            } else {
+                revert InvalidTrackKind(kind);
+            }
+        }
+
+        (uint8 dominant, uint8 coloursUsed) = _finishColours(stats.colourCounts);
+        init[FRAMESTORE_DATA_OFFSET + 3] = bytes1(dominant);
+        init[FRAMESTORE_DATA_OFFSET + 4] = bytes1(coloursUsed);
+        init[FRAMESTORE_DATA_OFFSET + 5] = bytes1(stats.seasonCount);
+        init[FRAMESTORE_DATA_OFFSET + 6] = bytes1(stats.stormTracks);
+        init[FRAMESTORE_DATA_OFFSET + 7] = stats.hasFinale ? bytes1(uint8(1)) : bytes1(uint8(0));
+        _writeUint256(init, FRAMESTORE_DATA_OFFSET + 8, frameTracks == 0 ? 0 : stats.oldestTrack);
+        _writeUint32(init, FRAMESTORE_DATA_OFFSET + 40, stats.minSeason);
+        _writeUint32(init, FRAMESTORE_DATA_OFFSET + 44, stats.maxSeason);
+        _writeUint16(init, FRAMESTORE_DATA_OFFSET + DISC_MASK_OFFSET, stats.discMask);
+        init[FRAMESTORE_DATA_OFFSET + FRAME_COUNT_OFFSET] = bytes1(frameTracks);
+        init[FRAMESTORE_DATA_OFFSET + PHOTO_COUNT_OFFSET] = bytes1(photoTracks);
+
+        address pointer = FrameStore.writePrepared(init);
+        tokenId = LABS.mint(msg.sender, boundExperimentId);
+        snapshotPointer[tokenId] = pointer;
+        emit CDBurned(msg.sender, tokenId, uint8(count), string(normalized));
+    }
+
     function labTokenName(uint256 tokenId) external view returns (string memory) {
         bytes memory snapshot = _snapshot(tokenId);
         return string.concat("r3tards labs cd #", tokenId.toString(), ": ", _label(snapshot));
@@ -137,6 +220,9 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
     ) {
         bytes memory snapshot = _snapshot(tokenId);
         uint256 tracks = uint8(snapshot[1]);
+        uint8 version = uint8(snapshot[0]);
+        uint256 frameTracks = version >= MIXED_SNAPSHOT_VERSION ? uint8(snapshot[FRAME_COUNT_OFFSET]) : tracks;
+        uint256 photoTracks = version >= MIXED_SNAPSHOT_VERSION ? uint8(snapshot[PHOTO_COUNT_OFFSET]) : 0;
         uint256 seasons = uint8(snapshot[5]);
         uint256 stormTracks = uint8(snapshot[6]);
         bool hasFinale = uint8(snapshot[7]) != 0;
@@ -145,8 +231,12 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         uint256 discColours = _popcount(discMask);
 
         kind = "CD";
-        description = "a mix CD-R burned from r3tards paint frames. the frames themselves were not harmed.";
-        imageSvg = CDArt.svg(tokenId, _frameIds(snapshot), bytes(_label(snapshot)), discMask);
+        description = photoTracks == 0
+            ? "a mix CD-R burned from r3tards paint frames. the frames themselves were not harmed."
+            : frameTracks == 0
+                ? "a mix CD-R burned from Block Camera photos. the source NFTs were not harmed."
+                : "a mix CD-R burned from r3tards paint frames and Block Camera photos. the source NFTs were not harmed.";
+        imageSvg = CDArt.svg(tokenId, _artIds(snapshot), bytes(_label(snapshot)), discMask);
         attributes = string(
             abi.encodePacked(
                 ',{"trait_type":"Tracks","display_type":"number","value":',
@@ -167,9 +257,21 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
                 ',{"trait_type":"Has finale","value":"',
                 hasFinale ? "yes" : "no",
                 '"}',
-                ',{"trait_type":"Oldest track","display_type":"number","value":',
-                oldestTrack.toString(),
-                '}',
+                version < MIXED_SNAPSHOT_VERSION
+                    ? string.concat(',{"trait_type":"Oldest track","display_type":"number","value":', oldestTrack.toString(), '}')
+                    : frameTracks == 0
+                        ? ""
+                        : string.concat(',{"trait_type":"Oldest frame","display_type":"number","value":', oldestTrack.toString(), '}'),
+                version < MIXED_SNAPSHOT_VERSION
+                    ? ""
+                    : string.concat(
+                        ',{"trait_type":"Paint frames","display_type":"number","value":',
+                        frameTracks.toString(),
+                        '}',
+                        ',{"trait_type":"Block photos","display_type":"number","value":',
+                        photoTracks.toString(),
+                        '}'
+                    ),
                 ',{"trait_type":"Disc colours","display_type":"number","value":',
                 discColours.toString(),
                 '}',
@@ -196,7 +298,7 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         _writeUint256(init, record, frameId);
         _writeUint32(init, record + 32, info.season);
         bool storm = PAINT.isStorm(info.blockNumber);
-        init[record + 36] = bytes1(uint8((storm ? 1 : 0) | (info.finale ? 2 : 0)));
+        init[record + 36] = bytes1(uint8((storm ? FLAG_STORM : 0) | (info.finale ? FLAG_FINALE : 0)));
 
         uint256 freeMemory;
         assembly {
@@ -218,6 +320,47 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         if (storm) ++stats.stormTracks;
         if (info.finale) stats.hasFinale = true;
         if (frameId < stats.oldestTrack) stats.oldestTrack = frameId;
+    }
+
+    function _snapshotBlockPhoto(bytes memory init, uint256 trackIndex, uint256 tokenId, BuildStats memory stats)
+        private
+        view
+    {
+        address owner = LABS.ownerOf(tokenId);
+        if (owner != msg.sender) revert NotLabsOwner(tokenId, owner);
+        address source = LABS.sourceOf(tokenId);
+        uint256 sourceExperiment = LABS.experimentOf(tokenId);
+        IR3tardsPaintData.ExperimentData memory info_ = PAINT.experimentInfo(sourceExperiment);
+        if (info_.experiment != source || keccak256(bytes(info_.name)) != BLOCK_CAMERA_NAME_HASH) {
+            revert NotBlockCameraToken(tokenId);
+        }
+
+        uint32 season;
+        uint48 blockNumber;
+        uint256 counts;
+        try IR3tardsBlockCameraCD(source).cdTrackData(tokenId) returns (
+            uint32 season_, uint48 blockNumber_, uint256 colourCounts_
+        ) {
+            season = season_;
+            blockNumber = blockNumber_;
+            counts = colourCounts_;
+        } catch {
+            revert BlockCameraTrackReadFailed(tokenId);
+        }
+
+        uint256 record = FRAMESTORE_DATA_OFFSET + TRACKS_OFFSET + trackIndex * TRACK_SIZE;
+        _writeUint256(init, record, tokenId);
+        _writeUint32(init, record + 32, season);
+        bool storm = PAINT.isStorm(blockNumber);
+        init[record + 36] = bytes1(uint8((storm ? FLAG_STORM : 0) | FLAG_BLOCK_PHOTO));
+        (uint8 pair, uint16 trackMask) = _trackColours(counts);
+        init[record + 37] = bytes1(pair);
+        unchecked {
+            stats.colourCounts += counts;
+        }
+        stats.discMask |= trackMask;
+        _addSeason(stats, season);
+        if (storm) ++stats.stormTracks;
     }
 
     /// @dev 16 packed uint16 lanes. Samples top-left pixel of every 8x8 source block.
@@ -296,7 +439,9 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         address pointer = snapshotPointer[tokenId];
         if (pointer == address(0)) revert CDDoesNotExist(tokenId);
         snapshot = FrameStore.read(pointer);
-        if (snapshot.length < HEADER_SIZE || uint8(snapshot[0]) != SNAPSHOT_VERSION) revert CDDoesNotExist(tokenId);
+        if (snapshot.length < HEADER_SIZE) revert CDDoesNotExist(tokenId);
+        uint8 version = uint8(snapshot[0]);
+        if (version != LEGACY_SNAPSHOT_VERSION && version != MIXED_SNAPSHOT_VERSION) revert CDDoesNotExist(tokenId);
         uint256 tracks = uint8(snapshot[1]);
         if (tracks == 0 || tracks > MAX_TRACKS || snapshot.length != HEADER_SIZE + tracks * TRACK_SIZE) {
             revert CDDoesNotExist(tokenId);
@@ -310,10 +455,16 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         return string(out);
     }
 
-    function _frameIds(bytes memory snapshot) private pure returns (uint256[] memory ids) {
+    function _artIds(bytes memory snapshot) private pure returns (uint256[] memory ids) {
         uint256 tracks = uint8(snapshot[1]);
+        bool mixed = uint8(snapshot[0]) >= MIXED_SNAPSHOT_VERSION;
         ids = new uint256[](tracks);
-        for (uint256 i; i < tracks; ++i) ids[i] = _readUint256(snapshot, TRACKS_OFFSET + i * TRACK_SIZE);
+        for (uint256 i; i < tracks; ++i) {
+            uint256 record = TRACKS_OFFSET + i * TRACK_SIZE;
+            uint256 id = _readUint256(snapshot, record);
+            if (mixed && (uint8(snapshot[record + 36]) & FLAG_BLOCK_PHOTO) != 0) id |= uint256(1) << 255;
+            ids[i] = id;
+        }
     }
 
     function _normalizeLabel(string calldata label) private pure returns (bytes memory out) {

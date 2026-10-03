@@ -8,6 +8,7 @@ import {R3tardsLabs} from "../src/R3tardsLabs.sol";
 import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
 import {R3tardsRecycleBin} from "../src/labs/R3tardsRecycleBin.sol";
 import {R3tardsCDBurner} from "../src/labs/R3tardsCDBurner.sol";
+import {R3tardsBlockCamera} from "../src/monadhw/R3tardsBlockCamera.sol";
 import {IR3tardsPaintData} from "../src/interfaces/IR3tardsPaintData.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
@@ -172,6 +173,7 @@ contract RecycleBinCDBurnerTest is Test {
     R3tardsLabs labs;
     R3tardsRecycleBin bin;
     R3tardsCDBurner cd;
+    R3tardsBlockCamera camera;
 
     uint256 alicePk = 0xA11CE;
     address alice;
@@ -190,6 +192,7 @@ contract RecycleBinCDBurnerTest is Test {
         labs = new R3tardsLabs(address(paint), royalty);
         bin = new R3tardsRecycleBin(address(paint));
         cd = new R3tardsCDBurner(address(paint), address(labs));
+        camera = new R3tardsBlockCamera(address(paint), address(labs), address(0));
 
         vm.prank(alice);
         uint256 binExperiment = paint.addExperiment(address(bin), "recycle-bin", "");
@@ -197,6 +200,9 @@ contract RecycleBinCDBurnerTest is Test {
         vm.prank(alice);
         uint256 cdExperiment = paint.addExperiment(address(cd), "cd-burner", "");
         cd.bindExperimentId(cdExperiment);
+        vm.prank(alice);
+        uint256 cameraExperiment = paint.addExperiment(address(camera), "block-camera", "");
+        camera.bindExperimentId(cameraExperiment);
     }
 
     function testRecycleWithApprovalSnapshotsAndEvents() public {
@@ -473,6 +479,42 @@ contract RecycleBinCDBurnerTest is Test {
         bytes memory json = _json(labs.tokenURI(cdId));
         vm.parseJson(string(json));
         assertEq(vm.parseJsonString(string(json), ".name"), string.concat("r3tards labs cd #", vm.toString(cdId), ": my mix #1"));
+    }
+
+    function testCDBurnerMixedBlockPhotoWritesV3AndKeepsSources() public {
+        uint256 frame = _makeFrame(alice, 0);
+        vm.roll(vm.getBlockNumber() + 1);
+        vm.prank(alice);
+        uint256 photo = camera.capture();
+
+        (,, uint256 packedCounts) = camera.cdTrackData(photo);
+        uint256 total;
+        for (uint256 i; i < 16; ++i) total += (packedCounts >> (i * 16)) & 0xffff;
+        assertEq(total, 1024);
+
+        uint256[] memory ids = new uint256[](2);
+        ids[0] = frame;
+        ids[1] = photo;
+        uint8[] memory kinds = new uint8[](2);
+        kinds[0] = 0;
+        kinds[1] = 1;
+
+        vm.prank(alice);
+        uint256 cdId = cd.burnMixedCD(ids, kinds, "camera roll");
+        assertEq(paint.ownerOf(frame), alice);
+        assertEq(labs.ownerOf(photo), alice);
+
+        bytes memory code = cd.snapshotPointer(cdId).code;
+        assertEq(uint8(code[1]), 3); // runtime is STOP || snapshot
+        assertEq(uint8(code[75]), 1); // snapshot offset 74: frame count
+        assertEq(uint8(code[76]), 1); // snapshot offset 75: photo count
+        uint256 secondRecord = 1 + 80 + 38;
+        assertTrue((uint8(code[secondRecord + 36]) & 4) != 0);
+
+        bytes memory json = _json(labs.tokenURI(cdId));
+        vm.parseJson(string(json));
+        assertEq(vm.parseJsonUint(string(json), ".attributes[17].value"), 1); // Paint frames
+        assertEq(vm.parseJsonUint(string(json), ".attributes[18].value"), 1); // Block photos
     }
 
     function testCDBurnerLeavesFramesUntouchedAndSnapshotSurvivesRecycle() public {
