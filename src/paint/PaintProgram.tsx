@@ -67,6 +67,7 @@ import {
   windowLabel,
 } from './presence'
 import {
+  applyReceiptActivity,
   beginInFlight,
   clearPending,
   getActivityFeedSnapshot,
@@ -924,7 +925,8 @@ export function PaintProgram() {
         confirmHigherCost,
         successSound: heavy ? 'success-heavy' : 'success-light',
       })
-      await refreshBudget()
+      await applyReceiptActivity(result.receipt.logs, result.blockNumber)
+      void refreshBudget()
       if (functionName === 'mintFrame') {
         let frameId: bigint | undefined
         for (const log of result.receipt.logs) {

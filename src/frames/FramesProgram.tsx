@@ -44,6 +44,7 @@ import {
 } from './frameImage'
 import {
   finaleIds,
+  frameSeasonHint,
   getFrameInfo,
   getFrameInfoBatch,
   getFramesSnapshot,
@@ -145,11 +146,20 @@ function FrameTile({
   useEffect(() => {
     if (!visible) return
     let cancelled = false
-    void getFrameImage(tokenId)
-      .then((next) => {
-        if (!cancelled) setImage(next)
-      })
-      .catch(() => undefined)
+    void (async () => {
+      const delays = tokenId > 0 ? [0, 300, 700] : [0]
+      for (const delay of delays) {
+        if (delay) await new Promise<void>((resolve) => setTimeout(resolve, delay))
+        if (cancelled) return
+        try {
+          const next = await getFrameImage(tokenId)
+          if (!cancelled) setImage(next)
+          return
+        } catch {
+          // A just-minted frame can be visible in the receipt before every read RPC serves its bytes.
+        }
+      }
+    })()
     return () => {
       cancelled = true
     }
@@ -230,6 +240,8 @@ export function FramesProgram() {
   const [ids, setIds] = useState<number[]>([])
   const [mineIds, setMineIds] = useState<number[]>([])
   const [mineFor, setMineFor] = useState<string>()
+  const [mineLoading, setMineLoading] = useState(false)
+  const [mineError, setMineError] = useState('')
   const [infos, setInfos] = useState(new Map<number, FrameInfo>())
   const [selected, setSelected] = useState<number | undefined>(routeFrame || undefined)
   const [selectedInfo, setSelectedInfo] = useState<FrameInfo>()
@@ -248,6 +260,7 @@ export function FramesProgram() {
   const [finaleMinting, setFinaleMinting] = useState<number>()
   const sentinel = useRef<HTMLDivElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
+  const mineRequestRef = useRef(0)
 
   useEffect(() => {
     void refreshFrameIndex()
@@ -346,14 +359,30 @@ export function FramesProgram() {
   }, [routeSeason, routeFrame, params])
 
   const loadMine = useCallback(async () => {
-    if (!wallet.account) {
+    const account = wallet.account
+    const request = ++mineRequestRef.current
+    if (!account) {
       setMineIds([])
+      setMineFor(undefined)
+      setMineLoading(false)
+      setMineError('')
       return
     }
-    await refreshFrameIndex()
-    setMineIds(await mineTokenIds(wallet.account))
-    setMineFor(wallet.account)
-  }, [wallet.account, frames.total])
+    setMineLoading(true)
+    setMineError('')
+    try {
+      await refreshFrameIndex()
+      const next = await mineTokenIds(account)
+      if (request !== mineRequestRef.current) return
+      setMineIds(next)
+      setMineFor(account)
+    } catch (error) {
+      if (request !== mineRequestRef.current) return
+      setMineError(screenSafeMessage(error))
+    } finally {
+      if (request === mineRequestRef.current) setMineLoading(false)
+    }
+  }, [wallet.account])
 
   useEffect(() => {
     if (filter === 'Mine') void loadMine()
@@ -361,9 +390,11 @@ export function FramesProgram() {
 
   useEffect(() => {
     if (!routeFrame || season != null) return
-    void getFrameInfo(routeFrame).then((info) => {
-      if (info) setSeason(info.season)
-    })
+    void getFrameInfo(routeFrame)
+      .then((info) => {
+        if (info) setSeason(info.season)
+      })
+      .catch(() => undefined)
   }, [routeFrame, season])
 
   const loadIds = useCallback(async () => {
@@ -522,17 +553,19 @@ export function FramesProgram() {
     const counts = new Map<number, number>()
     for (const id of mineIds) {
       if (id === 0) continue
-      const info = infos.get(id)
-      if (info) counts.set(info.season, (counts.get(info.season) ?? 0) + 1)
+      const season = infos.get(id)?.season ?? frameSeasonHint(id)
+      if (season != null) counts.set(season, (counts.get(season) ?? 0) + 1)
     }
     return counts
-  }, [mineIds, infos])
+  }, [mineIds, infos, frames.version])
 
   useEffect(() => {
     if (filter !== 'Mine' || !mineIds.length) return
     const missing = mineIds.filter((id) => id > 0 && !infos.has(id))
     if (!missing.length) return
-    void getFrameInfoBatch(missing).then((next) => setInfos((current) => new Map([...current, ...next])))
+    void getFrameInfoBatch(missing)
+      .then((next) => setInfos((current) => new Map([...current, ...next])))
+      .catch(() => undefined)
   }, [filter, mineIds, infos])
 
   const navigateSeason = (next: number | undefined) => {
@@ -980,6 +1013,23 @@ export function FramesProgram() {
                     <small>CDs · block portraits</small>
                   </button>
                 )}
+                {filter === 'Mine' && wallet.account && (mineLoading || mineFor !== wallet.account) && (
+                  <div className="frames-empty">
+                    <p>
+                      <b>loading saved frames…</b>
+                    </p>
+                    <p>checking the onchain frame index and your ownership.</p>
+                  </div>
+                )}
+                {filter === 'Mine' && wallet.account && mineError && !mineLoading && (
+                  <div className="frames-empty">
+                    <p>
+                      <b>couldn't refresh My Frames.</b>
+                    </p>
+                    <p>{mineError}</p>
+                    <Button onClick={() => void loadMine()}>Retry</Button>
+                  </div>
+                )}
                 {filter === 'Mine' && mineIds.includes(0) && (
                   <FrameTile
                     tokenId={0}
@@ -993,6 +1043,8 @@ export function FramesProgram() {
                 )}
                 {filter === 'Mine' &&
                   (!wallet.account || mineFor === wallet.account) &&
+                  !mineLoading &&
+                  !mineError &&
                   !mineIds.some((id) => id > 0) && (
                     <div className="frames-empty">
                       {!wallet.account ? (

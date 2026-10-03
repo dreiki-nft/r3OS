@@ -5,7 +5,7 @@ import { config, deploymentScope } from '../chain/config'
 import { readMany, type ReadManyResult } from '../chain/readMany'
 import { idbGet, idbSet } from '../lib/idb'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
-import { subscribeCanvasActivity, type CanvasActivity } from '../paint/canvasStore'
+import { getActivityFeedSnapshot, subscribeCanvasActivity, type CanvasActivity } from '../paint/canvasStore'
 
 export interface FrameInfo {
   minter: Address
@@ -52,6 +52,10 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 const infoMemory = new Map<number, FrameInfo>()
 const ownerCaches = new Map<string, OwnerCache>()
+const ownershipHints = new Map<number, Address | null>()
+const frameSeasonHints = new Map<number, number>()
+const confirmedRegularFrames = new Map<number, number>()
+const confirmedFinales = new Map<number, bigint>()
 let snapshot: FramesSnapshot = {
   version: 0,
   loading: false,
@@ -65,6 +69,7 @@ let snapshot: FramesSnapshot = {
 let started = false
 let flaggedPromise: Promise<void> | undefined
 let indexPromise: Promise<void> | undefined
+let indexReconcileTimer: ReturnType<typeof setTimeout> | undefined
 
 function emit(patch: Partial<FramesSnapshot>) {
   snapshot = { ...snapshot, ...patch, version: snapshot.version + 1 }
@@ -167,16 +172,118 @@ async function loadFlagged() {
   return flaggedPromise
 }
 
+function handleCanvasActivity(activity: CanvasActivity) {
+  if (activity.eventName === 'FrameMinted' || activity.eventName === 'SeasonFinaleMinted') {
+    applyConfirmedFrameActivity(activity)
+    scheduleIndexReconcile()
+  }
+  if (activity.eventName === 'Transfer') void applyTransfer(activity)
+}
+
 function ensureStarted() {
   if (started) return
   started = true
   void loadFlagged()
-  subscribeCanvasActivity((activity) => {
-    if (activity.eventName === 'FrameMinted' || activity.eventName === 'SeasonFinaleMinted') {
-      void refreshFrameIndex(true)
-    }
-    if (activity.eventName === 'Transfer') void applyTransfer(activity)
-  })
+  subscribeCanvasActivity(handleCanvasActivity)
+  // My Frames is lazy-loaded. Replay the recent receipt/websocket feed so a frame minted before the
+  // program was opened is still indexed and attributed immediately instead of being lost to timing.
+  for (const activity of getActivityFeedSnapshot().items) handleCanvasActivity(activity)
+}
+
+function trimHintMap<T>(map: Map<number, T>, max = 512) {
+  while (map.size > max) {
+    const first = map.keys().next().value as number | undefined
+    if (first == null) break
+    map.delete(first)
+  }
+}
+
+function mergeConfirmedSeasonHints(seasons: readonly SeasonSummary[]) {
+  const merged = seasons.map((row) => ({ ...row }))
+  const maxSeason = Math.max(
+    merged.length - 1,
+    ...confirmedRegularFrames.keys(),
+    ...confirmedFinales.keys(),
+    0,
+  )
+  while (merged.length <= maxSeason) {
+    const season = merged.length
+    merged.push({ season, regularFrames: 0, finaleMinted: false, finaleTokenId: 0n, count: 0 })
+  }
+  for (const [season, regularFrames] of confirmedRegularFrames) {
+    const row = merged[season]
+    row.regularFrames = Math.max(row.regularFrames, regularFrames)
+  }
+  for (const [season, tokenId] of confirmedFinales) {
+    const row = merged[season]
+    row.finaleMinted = true
+    row.finaleTokenId = tokenId
+  }
+  for (const row of merged) row.count = row.regularFrames + (row.finaleMinted ? 1 : 0)
+  return merged
+}
+
+export function applyConfirmedFrameActivityToIndex(
+  previous: Pick<FramesSnapshot, 'currentSeason' | 'seasons' | 'total'>,
+  activity: Pick<CanvasActivity, 'eventName' | 'tokenId' | 'season' | 'seasonFrameIndex'>,
+) {
+  if (
+    (activity.eventName !== 'FrameMinted' && activity.eventName !== 'SeasonFinaleMinted') ||
+    activity.tokenId == null ||
+    activity.season == null
+  ) {
+    return previous
+  }
+  const season = Number(activity.season)
+  const seasons = previous.seasons.map((row) => ({ ...row }))
+  while (seasons.length <= season) {
+    const index = seasons.length
+    seasons.push({ season: index, regularFrames: 0, finaleMinted: false, finaleTokenId: 0n, count: 0 })
+  }
+  const row = seasons[season]
+  if (activity.eventName === 'FrameMinted') {
+    const seasonFrameIndex = Number(activity.seasonFrameIndex ?? BigInt(row.regularFrames + 1))
+    row.regularFrames = Math.max(row.regularFrames, seasonFrameIndex)
+  } else {
+    row.finaleMinted = true
+    row.finaleTokenId = activity.tokenId
+  }
+  row.count = row.regularFrames + (row.finaleMinted ? 1 : 0)
+  return {
+    currentSeason: Math.max(previous.currentSeason, season),
+    seasons,
+    total: Math.max(previous.total, seasonTotal(seasons), Number(activity.tokenId)),
+  }
+}
+
+function applyConfirmedFrameActivity(activity: CanvasActivity) {
+  if (activity.tokenId == null || activity.season == null) return
+  const tokenId = Number(activity.tokenId)
+  const season = Number(activity.season)
+  frameSeasonHints.set(tokenId, season)
+  trimHintMap(frameSeasonHints)
+  if (activity.eventName === 'FrameMinted') {
+    confirmedRegularFrames.set(
+      season,
+      Math.max(confirmedRegularFrames.get(season) ?? 0, Number(activity.seasonFrameIndex ?? 0n)),
+    )
+  } else if (activity.eventName === 'SeasonFinaleMinted') {
+    confirmedFinales.set(season, activity.tokenId)
+  }
+  const next = applyConfirmedFrameActivityToIndex(snapshot, activity)
+  emit(next)
+}
+
+function scheduleIndexReconcile(delayMs = 1_200) {
+  if (indexReconcileTimer) clearTimeout(indexReconcileTimer)
+  indexReconcileTimer = setTimeout(() => {
+    indexReconcileTimer = undefined
+    void refreshFrameIndex(true).catch(() => undefined)
+  }, delayMs)
+}
+
+export function frameSeasonHint(tokenId: number) {
+  return frameSeasonHints.get(tokenId)
 }
 
 export function seasonTotal(seasons: readonly Pick<SeasonSummary, 'regularFrames' | 'finaleMinted'>[]) {
@@ -240,9 +347,11 @@ export function seasonIndexChanged(
   })
 }
 
-export async function refreshFrameIndex(force = false) {
+export async function refreshFrameIndex(_force = false) {
   ensureStarted()
-  if (indexPromise && !force) return indexPromise
+  // Never run overlapping index refreshes. Receipt-driven frame hints update the local index immediately,
+  // and a delayed reconcile catches the authoritative chain view once every RPC has caught up.
+  if (indexPromise) return indexPromise
   indexPromise = (async () => {
     if (!publicClient || !config.paintAddress) return
     // Only the first load shows a loading state; later refreshes emit only on real changes,
@@ -276,13 +385,38 @@ export async function refreshFrameIndex(force = false) {
         count: regularFrames + (finaleMinted ? 1 : 0),
       }
     })
-    const total = seasonTotal(seasons)
-    if (!snapshot.loading && !seasonIndexChanged(snapshot, currentSeason, seasons, total)) return
-    emit({ loading: false, currentSeason, seasons, total })
+    const mergedSeasons = mergeConfirmedSeasonHints(seasons)
+    const hintedMaxToken = Math.max(0, ...frameSeasonHints.keys())
+    const total = Math.max(seasonTotal(mergedSeasons), hintedMaxToken)
+    const mergedCurrentSeason = Math.max(currentSeason, mergedSeasons.length - 1)
+    if (!snapshot.loading && !seasonIndexChanged(snapshot, mergedCurrentSeason, mergedSeasons, total)) return
+    emit({ loading: false, currentSeason: mergedCurrentSeason, seasons: mergedSeasons, total })
   })().finally(() => {
     indexPromise = undefined
   })
   return indexPromise
+}
+
+async function readFrameInfoFromChain(tokenId: number) {
+  if (!publicClient || !config.paintAddress) return undefined
+  const delays = frameSeasonHints.has(tokenId) ? [0, 250, 600, 1_000] : [0]
+  let lastError: unknown
+  for (const delay of delays) {
+    if (delay) await new Promise<void>((resolve) => setTimeout(resolve, delay))
+    try {
+      const raw = await publicClient.readContract({
+        address: config.paintAddress,
+        abi: R3TARDS_PAINT_ABI,
+        functionName: 'frameInfo',
+        args: [BigInt(tokenId)],
+      })
+      return toFrameInfo(raw)
+    } catch (error) {
+      lastError = error
+    }
+  }
+  if (lastError) throw lastError
+  return undefined
 }
 
 export async function getFrameInfo(tokenId: number) {
@@ -294,14 +428,8 @@ export async function getFrameInfo(tokenId: number) {
     infoMemory.set(tokenId, cached)
     return cached
   }
-  if (!publicClient || !config.paintAddress) return undefined
-  const raw = await publicClient.readContract({
-    address: config.paintAddress,
-    abi: R3TARDS_PAINT_ABI,
-    functionName: 'frameInfo',
-    args: [BigInt(tokenId)],
-  })
-  const info = toFrameInfo(raw)
+  const info = await readFrameInfoFromChain(tokenId)
+  if (!info) return undefined
   infoMemory.set(tokenId, info)
   await idbSet('frameInfo', cacheKey(tokenId), info)
   return info
@@ -327,20 +455,25 @@ export async function getFrameInfoBatch(tokenIds: readonly number[]) {
     }),
   )
   if (missing.length && publicClient && config.paintAddress) {
-    const values = await readMany(
+    const values = (await readMany(
       missing.map((tokenId) => ({
         address: config.paintAddress!,
         abi: R3TARDS_PAINT_ABI,
         functionName: 'frameInfo',
         args: [BigInt(tokenId)],
       })),
-      { allowFailure: false },
-    )
+      { allowFailure: true },
+    )) as ReadManyResult[]
     await Promise.all(
-      values.map(async (raw, index) => {
+      values.map(async (result, index) => {
         const tokenId = missing[index]
-        const info = toFrameInfo(raw)
+        let info: FrameInfo | undefined
+        if (result.status === 'success') info = toFrameInfo(result.result)
+        else info = await readFrameInfoFromChain(tokenId).catch(() => undefined)
+        if (!info) return
         infoMemory.set(tokenId, info)
+        frameSeasonHints.set(tokenId, info.season)
+        trimHintMap(frameSeasonHints)
         out.set(tokenId, info)
         await idbSet('frameInfo', cacheKey(tokenId), info)
       }),
@@ -371,6 +504,7 @@ async function loadOwnerCache(account: Address) {
   if (memory) return memory
   const cached = await idbGet<OwnerCache>('owners', key)
   const value = cached ?? { ownerById: {}, scannedUpTo: 0, atBlock: '0' }
+  for (const [tokenId, owner] of ownershipHints) value.ownerById[String(tokenId)] = owner
   ownerCaches.set(key, value)
   return value
 }
@@ -406,18 +540,26 @@ export async function scanOwners(account: Address, total = snapshot.total) {
     Object.assign(cache.ownerById, ownersFromReadMany(ids, results))
     cache.scannedUpTo = end
     cache.atBlock = atBlock
+    for (const [tokenId, owner] of ownershipHints) cache.ownerById[String(tokenId)] = owner
     await idbSet('owners', ownerKey(account), cache)
   }
+  for (const [tokenId, owner] of ownershipHints) cache.ownerById[String(tokenId)] = owner
   return cache
 }
 
 async function applyTransfer(activity: CanvasActivity) {
   if (activity.tokenId == null) return
   const tokenId = activity.tokenId
+  const tokenNumber = Number(tokenId)
+  const to = activity.to as Address | undefined
+  const owner = !to || to.toLowerCase() === zeroAddress ? null : to
+  ownershipHints.set(tokenNumber, owner)
+  trimHintMap(ownershipHints)
   await Promise.all(
     [...ownerCaches.entries()].map(async ([key, cache]) => {
-      applyTransferToOwnerMap(cache.ownerById, tokenId, activity.to as Address | undefined)
-      if (tokenId > 0n) cache.scannedUpTo = Math.max(cache.scannedUpTo, Number(tokenId))
+      applyTransferToOwnerMap(cache.ownerById, tokenId, to)
+      // Transfer events are exact ownership hints, but they are not a contiguous enumeration scan.
+      // Never jump scannedUpTo over older ids just because we observed a high token id transfer.
       cache.atBlock = activity.blockNumber.toString()
       await idbSet('owners', key, cache)
     }),
@@ -511,6 +653,12 @@ export function seasonSummary(season: number) {
 export function __resetFramesStoreForTests() {
   infoMemory.clear()
   ownerCaches.clear()
+  ownershipHints.clear()
+  frameSeasonHints.clear()
+  confirmedRegularFrames.clear()
+  confirmedFinales.clear()
+  if (indexReconcileTimer) clearTimeout(indexReconcileTimer)
+  indexReconcileTimer = undefined
   snapshot = {
     version: 0,
     loading: false,

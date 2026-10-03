@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Address } from 'viem'
 import {
+  applyConfirmedFrameActivityToIndex,
   seasonIndexChanged,
   applyTransferToOwnerMap,
   ownerScanBatches,
@@ -72,6 +73,59 @@ describe('frames store helpers', () => {
 
   it('keeps flagged ids hidden until the viewer restores them', () => {
     expect(visibleFlaggedIds([4, 9, 12], [9])).toEqual([12, 4])
+  })
+
+  it('applies a confirmed FrameMinted event before lagging read RPCs catch up', () => {
+    const previous = {
+      currentSeason: 0,
+      total: 0,
+      seasons: [] as any[],
+    }
+    expect(
+      applyConfirmedFrameActivityToIndex(previous, {
+        eventName: 'FrameMinted',
+        tokenId: 1n,
+        season: 0n,
+        seasonFrameIndex: 1n,
+      }),
+    ).toEqual({
+      currentSeason: 0,
+      total: 1,
+      seasons: [
+        {
+          season: 0,
+          regularFrames: 1,
+          finaleMinted: false,
+          finaleTokenId: 0n,
+          count: 1,
+        },
+      ],
+    })
+  })
+
+  it('does not regress a locally confirmed frame count when another mint arrives', () => {
+    const previous = {
+      currentSeason: 0,
+      total: 4,
+      seasons: [
+        {
+          season: 0,
+          regularFrames: 4,
+          finaleMinted: false,
+          finaleTokenId: 0n,
+          count: 4,
+        },
+      ],
+    }
+    const next = applyConfirmedFrameActivityToIndex(previous, {
+      eventName: 'FrameMinted',
+      tokenId: 5n,
+      season: 0n,
+      seasonFrameIndex: 5n,
+    })
+    expect(next.total).toBe(5)
+    expect(next.seasons[0].regularFrames).toBe(5)
+    expect(next.seasons[0].count).toBe(5)
   })
 })
 

@@ -43,6 +43,8 @@ export interface CanvasActivity {
   to?: string
   sessionKey?: string
   tokenId?: bigint
+  season?: bigint
+  seasonFrameIndex?: bigint
   rendererId?: bigint
   transactionHash?: Hex
   blockNumber: bigint
@@ -339,12 +341,15 @@ async function applyDeliveredLogs(
         ...common,
         minter: String(args.minter ?? ''),
         tokenId: BigInt(args.frameId as bigint),
+        season: BigInt(args.season as bigint),
+        seasonFrameIndex: BigInt(args.seasonFrameIndex as bigint),
       })
     } else if (eventName === 'SeasonFinaleMinted') {
       emitActivity({
         ...common,
         minter: String(args.recipient ?? ''),
         tokenId: BigInt(args.tokenId as bigint),
+        season: BigInt(args.season as bigint),
       })
     } else if (eventName === 'Transfer') {
       emitActivity({
@@ -643,6 +648,21 @@ export function settleInFlightFromReceipt(
     emitCanvas()
     // Reconcile in the background. The UI is already exact for this transaction, while this catches
     // sibling transactions from the same block and preserves the store's canonical overlap checks.
+    void catchUp(receiptBlock).catch(() => undefined)
+  })
+}
+
+/**
+ * Apply confirmed Paint-contract receipt logs immediately, even for writes that do not include a Painted event
+ * (for example mintFrame, face/background changes, transfers and renderer changes). This keeps dependent UI
+ * stores in sync with the receipt instead of waiting for a websocket or a possibly lagging read RPC.
+ */
+export function applyReceiptActivity(receiptLogs: readonly Log[], receiptBlock: bigint) {
+  return enqueue(async () => {
+    const coreLogs = receiptCoreLogs(receiptLogs, receiptBlock)
+    if (!coreLogs.length) return
+    const needsReload = await applyDeliveredLogs(coreLogs, { advanceSnapshot: false })
+    if (needsReload) await loadCanvasNow()
     void catchUp(receiptBlock).catch(() => undefined)
   })
 }
