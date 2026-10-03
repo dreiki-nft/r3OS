@@ -8,7 +8,13 @@ import {
   type Hex,
   type Log,
 } from 'viem'
-import { actionClient, appChain } from './clients'
+import { appChain } from './clients'
+import {
+  actionRpcRequest,
+  broadcastActionRawTransaction,
+  probeActionRpcs,
+  waitForActionReceipt,
+} from './actionRpc'
 import { getBlockSnapshot } from './blocks'
 import { friendlyError } from './errors'
 import { formatMaxCost, gasLimitFor, maxCostWei, type GasKind } from './gas'
@@ -95,20 +101,18 @@ function isTransfer(opts: ActionOptions): opts is TransferActionOptions {
 
 async function currentBlock() {
   const head = getBlockSnapshot().block
-  if (head > 0n || !actionClient) return head
-  return actionClient.getBlockNumber({ cacheTime: 0 })
+  if (head > 0n) return head
+  return actionRpcRequest((client) => client.getBlockNumber({ cacheTime: 0 }))
 }
 
 async function feeQuote(block: bigint) {
   if (feeCache && block >= feeCache.block && block - feeCache.block <= 20n) return feeCache
-  if (!actionClient) throw new Error('DEMO_MODE')
-
   // Several programs can ask for a quote at the same time. Share one fee RPC instead of
   // stampeding the public endpoint with identical estimateFeesPerGas calls.
   if (feePromise) return feePromise
 
   feePromise = (async () => {
-    const rawFees = await actionClient.estimateFeesPerGas()
+    const rawFees = await actionRpcRequest((client) => client.estimateFeesPerGas())
     const fees = rawFees as { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint; gasPrice?: bigint }
     feeCache = {
       block,
@@ -125,7 +129,7 @@ async function feeQuote(block: bigint) {
 
 /** Warm the shared fee cap during the boot/splash window so the first visible quote only waits on gas. */
 export async function prewarmActionFees() {
-  if (!actionClient) return
+  await probeActionRpcs().catch(() => undefined)
   const block = await currentBlock()
   await feeQuote(block)
 }
@@ -149,7 +153,6 @@ function contractBase(opts: ContractActionOptions, sender: Address) {
 }
 
 export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
-  if (!actionClient) throw new Error('DEMO_MODE')
   const stopQuote = startPerf('quote', actionName(opts))
   const sender = senderFor(opts)
 
@@ -168,15 +171,15 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
     if (fixedGas) {
       // Fixed-gas actions still need one dry-run so an invalid action is rejected before a
       // burner signs it. The dry-run now overlaps the fee lookup instead of blocking it.
-      gasLimitPromise = actionClient
-        .simulateContract(base)
-        .then(() => gasLimitFor(opts.kind, 0n, opts.pixels))
+      gasLimitPromise = actionRpcRequest((client) => client.simulateContract(base)).then(() =>
+        gasLimitFor(opts.kind, 0n, opts.pixels),
+      )
     } else {
       // estimateContractGas already executes the transaction and surfaces reverts. Running a
       // simulateContract first performed the same expensive work twice on every quote.
-      gasLimitPromise = actionClient
-        .estimateContractGas(base)
-        .then((estimate) => gasLimitFor(opts.kind, estimate, opts.pixels))
+      gasLimitPromise = actionRpcRequest((client) => client.estimateContractGas(base)).then((estimate) =>
+        gasLimitFor(opts.kind, estimate, opts.pixels),
+      )
     }
   }
 
@@ -242,8 +245,6 @@ async function sendWithWallet(opts: ActionOptions, quote: ActionQuote, sender: A
 }
 
 async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: Address) {
-  if (!actionClient) throw new Error('DEMO_MODE')
-  const client = actionClient
   const wallet = burnerWallet(opts.account)
   const account = burnerAccount(opts.account)
   if (!wallet || !account) throw new Error('NO_BURNER')
@@ -251,7 +252,8 @@ async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: A
   // hot path instead of inserting a getBalance RTT before every stroke. If this is the
   // first burner action in a cold tab we still do the exact check once.
   const cachedBalance = cachedBurnerBalance(opts.account)
-  const balance = cachedBalance ?? (await client.getBalance({ address: sender }))
+  const balance =
+    cachedBalance ?? (await actionRpcRequest((client) => client.getBalance({ address: sender })))
   if (!burnerCanAfford(balance, quote, opts.value)) throw new Error('BURNER_OUT_OF_MON')
 
   return sendWithBurnerNonce(sender, async (nonce) => {
@@ -262,7 +264,7 @@ async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: A
           functionName: opts.functionName as ContractFunctionName<Abi>,
           args: (opts.args ?? []) as ContractFunctionArgs<Abi>,
         })
-    const signedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+    const signStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
     const serialized = await wallet.signTransaction({
       account,
       chain: appChain,
@@ -275,10 +277,14 @@ async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: A
       nonce,
       type: 'eip1559',
     })
+    const signedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+    recordPerf('burner-sign', actionName(opts), signedAt - signStarted)
     const expectedHash = keccak256(serialized)
-    const hash = await client.sendRawTransaction({ serializedTransaction: serialized })
-    if (hash !== expectedHash) throw new Error('RAW_TX_HASH_MISMATCH')
-    return { hash, signedAt }
+    const broadcastStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
+    const accepted = await broadcastActionRawTransaction(serialized, expectedHash)
+    const broadcastAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+    recordPerf('burner-broadcast', actionName(opts), broadcastAt - broadcastStarted)
+    return { hash: accepted.hash, signedAt }
   })
 }
 
@@ -287,8 +293,6 @@ export function burnerCanAfford(balance: bigint, quote: ActionQuote, value = 0n)
 }
 
 export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
-  if (!actionClient) throw new Error('DEMO_MODE')
-  const client = actionClient
   try {
     const stopTotal = startPerf('tx-total', `${actionName(opts)} · ${opts.signer ?? 'wallet'}`)
     const quote = await usableQuote(opts)
@@ -322,7 +326,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
       t: { signed: signedAt, sent: sentAt },
     })
     playSound('confirm')
-    const receipt = await client.waitForTransactionReceipt({ hash, pollingInterval: 125 })
+    const receipt = await waitForActionReceipt(hash)
     const receiptAt = typeof performance === 'undefined' ? Date.now() : performance.now()
     recordPerf('tx-receipt', actionName(opts), receiptAt - sentAt)
     markTraceReceipt(hash, {

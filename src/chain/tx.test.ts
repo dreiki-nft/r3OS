@@ -15,14 +15,21 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./clients', () => ({
   appChain: { id: 31337 },
-  actionClient: {
+}))
+vi.mock('./actionRpc', () => {
+  const client = {
     simulateContract: mocks.simulateContract,
     estimateContractGas: mocks.estimateContractGas,
     estimateFeesPerGas: mocks.estimateFeesPerGas,
     getBlockNumber: mocks.getBlockNumber,
-    waitForTransactionReceipt: mocks.waitForTransactionReceipt,
-  },
-}))
+  }
+  return {
+    actionRpcRequest: vi.fn((work: (rpc: typeof client) => Promise<unknown>) => work(client)),
+    probeActionRpcs: vi.fn().mockResolvedValue(undefined),
+    broadcastActionRawTransaction: vi.fn(),
+    waitForActionReceipt: mocks.waitForTransactionReceipt,
+  }
+})
 vi.mock('./blocks', () => ({ getBlockSnapshot: () => ({ block: mocks.block }) }))
 vi.mock('./wallet', () => ({
   getWalletSnapshot: () => ({ client: { sendTransaction: mocks.sendTransaction } }),

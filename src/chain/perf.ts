@@ -3,6 +3,8 @@ export type PerfKind =
   | 'tx-prewallet'
   | 'tx-wallet'
   | 'tx-submit'
+  | 'burner-sign'
+  | 'burner-broadcast'
   | 'tx-receipt'
   | 'tx-total'
   | 'program-open'

@@ -8,6 +8,13 @@ import {
   subscribePerf,
   summarizePerf,
 } from '../chain/perf'
+import {
+  actionRpcEndpointLabel,
+  formatActionRpcReport,
+  getActionRpcSnapshot,
+  probeActionRpcs,
+  subscribeActionRpc,
+} from '../chain/actionRpc'
 import type { HardwareSource } from '../chain/monadHardware'
 import { closeWindow } from '../os/windows'
 import { playSound } from '../os/sound'
@@ -66,6 +73,7 @@ export function DxDiagProgram() {
   const [step, setStep] = useState('')
   const perf = useSyncExternalStore(subscribePerf, getPerfSnapshot)
   const perfRows = useMemo(() => summarizePerf(perf.samples), [perf.version, perf.samples])
+  const actionRpc = useSyncExternalStore(subscribeActionRpc, getActionRpcSnapshot)
 
   const load = useCallback(async (force: boolean) => {
     setLoading(true)
@@ -266,25 +274,56 @@ export function DxDiagProgram() {
             </p>
           </GroupBox>
         ) : (
-          <GroupBox title="Local action timings">
-            {perfRows.length ? (
-              perfRows.map((row) => (
-                <Row
-                  key={row.key}
-                  label={`${row.kind} · ${row.label}`}
-                  value={`n ${row.count} · last ${row.last.toFixed(0)} ms · p50 ${row.p50.toFixed(0)} ms · p95 ${row.p95.toFixed(0)} ms · max ${row.max.toFixed(0)} ms`}
-                  source="measured"
-                />
-              ))
-            ) : (
+          <>
+            <GroupBox title="Action RPC health">
+              {actionRpc.endpoints.length ? (
+                actionRpc.endpoints.map((endpoint) => {
+                  const cooling = endpoint.cooldownUntil != null && endpoint.cooldownUntil > Date.now()
+                  const state = cooling
+                    ? 'cooldown'
+                    : endpoint.samples === 0
+                      ? 'unmeasured'
+                      : endpoint.consecutiveFailures
+                        ? 'degraded'
+                        : 'healthy'
+                  const latency = endpoint.ewmaMs == null ? '—' : `${endpoint.ewmaMs.toFixed(0)} ms EWMA`
+                  return (
+                    <Row
+                      key={endpoint.index}
+                      label={actionRpcEndpointLabel(endpoint.index)}
+                      value={`${state} · ${latency} · ok ${endpoint.successes} · fail ${endpoint.failures}`}
+                      source="measured"
+                    />
+                  )
+                })
+              ) : (
+                <p className="dxdiag-note">no HTTP action endpoints configured.</p>
+              )}
               <p className="dxdiag-note">
-                no measurements yet. Open programs, request quotes, and send testnet actions; timings appear here immediately.
+                Live Mode signs locally and redundantly broadcasts the same raw transaction to the configured HTTP
+                endpoints. Endpoint URLs are never shown here or copied into the report.
               </p>
-            )}
-            <p className="dxdiag-note">
-              local browser measurements only. Nothing in this tab is uploaded or written onchain. Wallet signing time includes the time you spend approving the wallet prompt.
-            </p>
-          </GroupBox>
+            </GroupBox>
+            <GroupBox title="Local action timings">
+              {perfRows.length ? (
+                perfRows.map((row) => (
+                  <Row
+                    key={row.key}
+                    label={`${row.kind} · ${row.label}`}
+                    value={`n ${row.count} · last ${row.last.toFixed(0)} ms · p50 ${row.p50.toFixed(0)} ms · p95 ${row.p95.toFixed(0)} ms · max ${row.max.toFixed(0)} ms`}
+                    source="measured"
+                  />
+                ))
+              ) : (
+                <p className="dxdiag-note">
+                  no measurements yet. Open programs, request quotes, and send testnet actions; timings appear here immediately.
+                </p>
+              )}
+              <p className="dxdiag-note">
+                local browser measurements only. Nothing in this tab is uploaded or written onchain. Wallet signing time includes the time you spend approving the wallet prompt.
+              </p>
+            </GroupBox>
+          </>
         )}
       </div>
       <footer className="dxdiag-footer">
@@ -297,9 +336,14 @@ export function DxDiagProgram() {
           Refresh
         </Button>
         {tab === 'Performance' && (
-          <Button onClick={clearPerf} disabled={!perf.samples.length} title="clear local timing samples">
-            Clear timings
-          </Button>
+          <>
+            <Button onClick={() => void probeActionRpcs()} title="ping each configured action RPC once">
+              Probe RPCs
+            </Button>
+            <Button onClick={clearPerf} disabled={!perf.samples.length} title="clear local timing samples">
+              Clear timings
+            </Button>
+          </>
         )}
         <Button
           onClick={() => void copy()}

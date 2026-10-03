@@ -53,31 +53,28 @@ export const publicClient = config.demo
     })
 
 /**
- * Low-latency lane for user-triggered transaction work. Background reads use the
- * batched/rate-limited publicClient; quotes and receipt checks should not sit
- * behind that queue or wait for the HTTP batch window.
+ * Independent low-latency HTTP clients for user-triggered action work.
+ *
+ * Do not wrap these in the background batch/rate-limit queue. The action RPC pool measures them locally,
+ * prefers the healthy/fast endpoints for reads, and can broadcast one signed raw transaction to every
+ * configured endpoint without ever exposing the endpoint URLs in diagnostics.
  */
-const actionTransport = config.rpcUrls.length
-  ? fallback(
-      config.rpcUrls.map((url) =>
-        http(url, {
-          batch: false,
-          retryCount: 0,
-          timeout: 5_000,
-        }),
-      ),
-      { rank: false, retryCount: 0 },
+export const actionEndpointClients = config.demo
+  ? []
+  : config.rpcUrls.map((url) =>
+      createPublicClient({
+        chain: appChain,
+        transport: withRpcStats(
+          http(url, {
+            batch: false,
+            retryCount: 0,
+            timeout: 1_500,
+          }),
+        ),
+        pollingInterval: 125,
+        cacheTime: 0,
+      }),
     )
-  : http('http://127.0.0.1:8545')
-
-export const actionClient = config.demo
-  ? undefined
-  : createPublicClient({
-      chain: appChain,
-      transport: withRpcStats(actionTransport),
-      pollingInterval: 150,
-      cacheTime: 0,
-    })
 
 export const wsClient = config.wsUrl
   ? createPublicClient({

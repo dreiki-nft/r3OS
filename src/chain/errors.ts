@@ -162,6 +162,19 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
   if (message === 'NO_BURNER') {
     return { name: 'NoBurner', message: 'no burner key is stored for this wallet.' }
   }
+  if (message === 'ACTION_RPC_UNAVAILABLE' || message === 'ACTION_RPC_BROADCAST_FAILED') {
+    return {
+      name: 'ActionRpcUnavailable',
+      message: 'the action RPCs did not confirm acceptance. wait a moment or check the explorer before retrying.',
+    }
+  }
+  if (message === 'ACTION_RECEIPT_TIMEOUT') {
+    return {
+      name: 'ActionReceiptTimeout',
+      message:
+        'the transaction was sent, but r3tardOS could not read its receipt yet. check the explorer before retrying.',
+    }
+  }
   return { name: 'Unknown', message: screenSafeMessage(error), details: raw }
 }
 

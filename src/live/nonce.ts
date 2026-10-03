@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import { actionClient } from '../chain/clients'
+import { actionRpcRequest } from '../chain/actionRpc'
 
 function nonceError(error: unknown) {
   const text = error instanceof Error ? error.message : String(error)
@@ -47,10 +47,9 @@ function manager(address: Address) {
   const key = address.toLowerCase()
   let current = managers.get(key)
   if (!current) {
-    current = createNonceManager(async () => {
-      if (!actionClient) throw new Error('DEMO_MODE')
-      return actionClient.getTransactionCount({ address, blockTag: 'pending' })
-    })
+    current = createNonceManager(() =>
+      actionRpcRequest((client) => client.getTransactionCount({ address, blockTag: 'pending' })),
+    )
     managers.set(key, current)
   }
   return current
