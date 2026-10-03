@@ -41,6 +41,14 @@ export function cachedBurnerBalance(owner: Address, maxAgeMs = 60_000) {
   return cached.balance
 }
 
+/**
+ * Seed the hot-path balance cache from a balance transition we already know was confirmed.
+ * This avoids immediately asking a different RPC endpoint for state that may lag the receipt by a block.
+ */
+export function setCachedBurnerBalance(owner: Address, balance: bigint) {
+  balanceCache.set(balanceKey(owner), { balance, at: Date.now() })
+}
+
 export function debitCachedBurnerBalance(owner: Address, amount: bigint) {
   const key = balanceKey(owner)
   const cached = balanceCache.get(key)
@@ -152,4 +160,8 @@ export function subscribeBurnerChanges(listener: BurnerListener) {
 
 export function notifyBurnerChanged(owner: Address) {
   for (const listener of listeners) listener(owner)
+}
+
+export function __resetBurnerBalanceCacheForTests() {
+  balanceCache.clear()
 }

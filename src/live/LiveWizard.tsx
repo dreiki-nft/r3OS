@@ -12,7 +12,7 @@ import { closeWindow } from '../os/windows'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { SafeImage } from '../os/ui/SafeImage'
-import { createBurner, loadBurner } from './burner'
+import { createBurner, loadBurner, setCachedBurnerBalance } from './burner'
 import { QUICK_ALLOWANCE, samplePaint64, startLiveQuick, type QuickProgress } from './quickStart'
 import {
   buildStartSessionTypedData,
@@ -244,8 +244,10 @@ export function LiveWizard() {
         confirmHigherCost,
         action: 'fund burner',
       })
+      const nextBalance = balance + value
+      setCachedBurnerBalance(wallet.account, nextBalance)
+      setBalance(nextBalance)
       setSentAmount(amount)
-      await refreshBalance()
     } catch (caught) {
       setError(friendlyError(caught, 'transfer').message)
     } finally {

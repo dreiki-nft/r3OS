@@ -1,11 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Address } from 'viem'
-import { burnerStorageKey, loadBurner } from './burner'
+import {
+  __resetBurnerBalanceCacheForTests,
+  burnerStorageKey,
+  cachedBurnerBalance,
+  loadBurner,
+  setCachedBurnerBalance,
+} from './burner'
 
 const owner = '0x00000000000000000000000000000000000000A1' as Address
 
 describe('burner storage', () => {
   afterEach(() => {
+    __resetBurnerBalanceCacheForTests()
     vi.unstubAllGlobals()
   })
 
@@ -15,6 +22,11 @@ describe('burner storage', () => {
     expect(burnerStorageKey(owner, 143)).not.toBe(
       burnerStorageKey('0x00000000000000000000000000000000000000B2', 143),
     )
+  })
+
+  it('can seed a confirmed funding balance without waiting for another RPC endpoint', () => {
+    setCachedBurnerBalance(owner, 1_000_000_000_000_000_000n)
+    expect(cachedBurnerBalance(owner)).toBe(1_000_000_000_000_000_000n)
   })
 
   it('treats blocked storage as no burner instead of throwing', () => {

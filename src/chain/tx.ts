@@ -336,7 +336,12 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
       void refreshWalletBalance()
     } else {
       const valueSpent = receipt.status === 'success' ? (opts.value ?? 0n) : 0n
-      debitCachedBurnerBalance(opts.account, receipt.gasUsed * receipt.effectiveGasPrice + valueSpent)
+      // Monad charges the transaction gas LIMIT, not receipt.gasUsed. Keep the local burner balance
+      // conservative and chain-accurate so a long Live session does not drift into a surprise rejection.
+      debitCachedBurnerBalance(
+        opts.account,
+        maxCostWei(quote.gasLimit, receipt.effectiveGasPrice) + valueSpent,
+      )
       notifyBurnerChanged(opts.account)
     }
     if (receipt.status === 'reverted') {

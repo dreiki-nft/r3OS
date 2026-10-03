@@ -9,7 +9,7 @@ import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { encodeChangedRuns } from '../lib/patch'
 import { getCanvasSnapshot } from '../paint/canvasStore'
 import { confirmHigherCost } from '../os/confirm'
-import { burnerStatus, createBurner, loadBurner } from './burner'
+import { burnerStatus, createBurner, loadBurner, setCachedBurnerBalance } from './burner'
 import { resetBurnerNonce } from './nonce'
 import {
   burnerFundTooLarge,
@@ -228,6 +228,9 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
     }
     const fundQuote = await quoteAction(transfer).catch((error: unknown) => fail(error, 'transfer'))
     await sendAction({ ...transfer, quote: fundQuote, confirmHigherCost })
+    // The transfer receipt proves the burner received this exact value. Seed the cache immediately instead
+    // of reading through another RPC endpoint, which can briefly lag the receipt and report the old balance.
+    setCachedBurnerBalance(owner, balanceBefore + value)
   } else {
     report({ prompts: 1 })
   }
