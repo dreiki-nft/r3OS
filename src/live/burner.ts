@@ -1,6 +1,6 @@
-import { createWalletClient, type Address, type Hex } from 'viem'
+import type { Address, Hex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
-import { appChain, appTransport, publicClient } from '../chain/clients'
+import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 
@@ -111,16 +111,6 @@ export function deleteBurner(owner: Address, chainId = config.chainId) {
 export function burnerAccount(owner: Address) {
   const burner = loadBurner(owner)
   return burner ? privateKeyToAccount(burner.privateKey) : undefined
-}
-
-export function burnerWallet(owner: Address) {
-  const account = burnerAccount(owner)
-  if (!account || config.demo) return undefined
-  return createWalletClient({
-    account,
-    chain: appChain,
-    transport: appTransport,
-  })
 }
 
 export async function burnerStatus(owner: Address): Promise<BurnerStatus | undefined> {

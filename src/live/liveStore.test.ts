@@ -8,6 +8,8 @@ import {
   type Address,
 } from 'viem'
 import {
+  burnerTopUpValue,
+  MAX_BURNER_FUND,
   START_SESSION_TYPES,
   START_SESSION_TYPE_STRING,
   sweepAmount,
@@ -54,5 +56,14 @@ describe('live session typed data', () => {
     expect(sweepAmount(100_000n, 2n)).toBe(58_000n)
     expect(sweepAmount(42_000n, 2n)).toBe(0n)
     expect(sweepAmount(10_000n, 2n)).toBe(0n)
+  })
+})
+
+describe('burner top-up cap', () => {
+  it('treats the entered amount as a request and clamps the transfer to remaining headroom', () => {
+    expect(burnerTopUpValue(MAX_BURNER_FUND, 0n)).toBe(MAX_BURNER_FUND)
+    expect(burnerTopUpValue(MAX_BURNER_FUND, 10n ** 16n)).toBe(MAX_BURNER_FUND - 10n ** 16n)
+    expect(burnerTopUpValue(5n * 10n ** 17n, 2n * 10n ** 17n)).toBe(5n * 10n ** 17n)
+    expect(burnerTopUpValue(1n, MAX_BURNER_FUND)).toBe(0n)
   })
 })

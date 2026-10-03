@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
   getBlockNumber: vi.fn(),
   waitForTransactionReceipt: vi.fn(),
   sendTransaction: vi.fn(),
+  signBurnerTransaction: vi.fn(),
+  broadcastRawTransaction: vi.fn(),
+  debitBurnerBalance: vi.fn(),
+  notifyBurnerChanged: vi.fn(),
   refreshWalletBalance: vi.fn(),
   playSound: vi.fn(),
 }))
@@ -26,7 +30,7 @@ vi.mock('./actionRpc', () => {
   return {
     actionRpcRequest: vi.fn((work: (rpc: typeof client) => Promise<unknown>) => work(client)),
     probeActionRpcs: vi.fn().mockResolvedValue(undefined),
-    broadcastActionRawTransaction: vi.fn(),
+    broadcastActionRawTransaction: mocks.broadcastRawTransaction,
     waitForActionReceipt: mocks.waitForTransactionReceipt,
   }
 })
@@ -36,6 +40,17 @@ vi.mock('./wallet', () => ({
   refreshWalletBalance: mocks.refreshWalletBalance,
 }))
 vi.mock('../os/sound', () => ({ playSound: mocks.playSound }))
+
+vi.mock('../live/burner', () => ({
+  burnerAccount: () => ({ signTransaction: mocks.signBurnerTransaction }),
+  cachedBurnerBalance: () => 10n ** 30n,
+  debitCachedBurnerBalance: mocks.debitBurnerBalance,
+  loadBurner: () => ({ address: '0x00000000000000000000000000000000000000c1' }),
+  notifyBurnerChanged: mocks.notifyBurnerChanged,
+}))
+vi.mock('../live/nonce', () => ({
+  sendWithBurnerNonce: (_address: Address, sender: (nonce: number) => Promise<unknown>) => sender(7),
+}))
 
 import { __resetFeeCacheForTests, burnerCanAfford, quoteAction, sendAction, type ActionQuote } from './tx'
 
@@ -66,6 +81,10 @@ describe('transaction pipeline', () => {
     mocks.estimateFeesPerGas.mockResolvedValue({ maxFeePerGas: 20n, maxPriorityFeePerGas: 3n })
     mocks.getBlockNumber.mockResolvedValue(10n)
     mocks.sendTransaction.mockResolvedValue(`0x${'11'.repeat(32)}`)
+    mocks.signBurnerTransaction.mockResolvedValue('0x1234')
+    mocks.broadcastRawTransaction.mockImplementation(
+      async (_serialized: string, expectedHash: string) => ({ hash: expectedHash, endpointIndex: 0 }),
+    )
     mocks.waitForTransactionReceipt.mockResolvedValue({
       status: 'success',
       blockNumber: 11n,
@@ -141,6 +160,31 @@ describe('transaction pipeline', () => {
     ).rejects.toThrow('you closed the wallet')
     expect(confirm).toHaveBeenCalledTimes(1)
     expect(mocks.sendTransaction).not.toHaveBeenCalled()
+  })
+
+  it('signs burner transactions locally before broadcasting the exact raw transaction', async () => {
+    const shown = quote({ gasLimit: 21_000n, maxFeePerGas: 10n, maxPriorityFeePerGas: 2n })
+    await sendAction({
+      kind: 'estimate',
+      address,
+      abi,
+      functionName: 'ping',
+      account,
+      signer: 'burner',
+      quote: shown,
+      action: 'paint 1 px',
+    })
+    expect(mocks.signBurnerTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chainId: 31337,
+        gas: 21_000n,
+        maxFeePerGas: 10n,
+        maxPriorityFeePerGas: 2n,
+        nonce: 7,
+        type: 'eip1559',
+      }),
+    )
+    expect(mocks.broadcastRawTransaction).toHaveBeenCalledWith('0x1234', expect.stringMatching(/^0x/))
   })
 
   it('keeps a burner send pending when its balance cannot cover the gas cap', () => {

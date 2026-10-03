@@ -14,9 +14,10 @@ import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { Icon } from '../os/ui/Icon'
 import { MessageBox } from '../os/ui/MessageBox'
-import { deleteBurner } from '../live/burner'
+import { cachedBurnerBalance, deleteBurner, setCachedBurnerBalance } from '../live/burner'
 import {
-  burnerFundTooLarge,
+  burnerTopUpValue,
+  confirmBurnerBalance,
   formatBurnerBalance,
   MAX_BURNER_FUND,
   formatLiveTime,
@@ -41,6 +42,7 @@ export function HardwareProfiles() {
   const [topUp, setTopUp] = useState(false)
   const [amount, setAmount] = useState('0.5')
   const [topQuote, setTopQuote] = useState<ActionQuote>()
+  const [topQuoteValue, setTopQuoteValue] = useState<bigint>()
   const [ending, setEnding] = useState(false)
   const [endProgress, setEndProgress] = useState('')
   const [error, setError] = useState('')
@@ -115,20 +117,27 @@ export function HardwareProfiles() {
   }, [wallet.account])
 
   useEffect(() => {
+    setTopQuote(undefined)
+    setTopQuoteValue(undefined)
     if (!topUp || !wallet.account || !live.burner) return
     setTopQuoteNote('')
-    let value: bigint
+    let requested: bigint
     try {
-      value = parseEther(amount)
+      requested = parseEther(amount)
     } catch {
-      setTopQuote(undefined)
       setTopQuoteNote('enter a valid MON amount')
       return
     }
-    if (burnerFundTooLarge(value, live.balance)) {
-      setTopQuote(undefined)
-      setTopQuoteNote(`a burner should only hold pocket change: at most ${formatEther(MAX_BURNER_FUND)} MON`)
+    const currentBalance = cachedBurnerBalance(wallet.account) ?? live.balance
+    const value = burnerTopUpValue(requested, currentBalance)
+    if (value <= 0n) {
+      setTopQuoteNote(`burner is already at the ${formatEther(MAX_BURNER_FUND)} MON browser-key cap`)
       return
+    }
+    if (value < requested) {
+      setTopQuoteNote(
+        `will send ${formatEther(value)} MON so the burner stays at or below the ${formatEther(MAX_BURNER_FUND)} MON cap`,
+      )
     }
     void quoteAction({
       type: 'transfer',
@@ -139,9 +148,13 @@ export function HardwareProfiles() {
       value,
       action: 'top up burner',
     })
-      .then(setTopQuote)
+      .then((quote) => {
+        setTopQuote(quote)
+        setTopQuoteValue(value)
+      })
       .catch(() => {
         setTopQuote(undefined)
+        setTopQuoteValue(undefined)
         setTopQuoteNote('quote unavailable')
       })
   }, [topUp, wallet.account, live.burner, live.balance, amount])
@@ -152,22 +165,28 @@ export function HardwareProfiles() {
   const segments = max > 0n ? Number((remaining * 20n) / max) : 0
 
   async function sendTopUp() {
-    if (!wallet.account || !live.burner || !topQuote) return
-    const value = parseEther(amount)
+    if (!wallet.account || !live.burner || !topQuote || topQuoteValue == null) return
+    const owner = wallet.account
+    const value = topQuoteValue
     try {
       await sendAction({
         type: 'transfer',
         kind: 'estimate',
         to: live.burner.address,
         functionName: 'transfer',
-        account: wallet.account,
+        account: owner,
         value,
         quote: topQuote,
         confirmHigherCost,
         action: 'top up burner',
       })
+      const currentBalance = cachedBurnerBalance(owner) ?? live.balance
+      const nextBalance = currentBalance + value
+      setCachedBurnerBalance(owner, nextBalance)
+      confirmBurnerBalance(owner, nextBalance)
       setTopUp(false)
-      await refreshLiveStatus(wallet.account)
+      // Funding is already proven by the receipt. Event-driven refreshes will reconcile later; do not
+      // immediately replace this confirmed balance with a potentially lagging public-RPC read.
     } catch (caught) {
       setError(screenSafeMessage(caught))
     }
@@ -391,7 +410,11 @@ export function HardwareProfiles() {
           <label>
             MON <input value={amount} onChange={(event) => setAmount(event.target.value)} />
           </label>
-          <p>max gas: {topQuote?.maxCost ?? (topQuoteNote || 'quoting…')}</p>
+          <p>
+            {topQuoteValue != null ? `sending ${formatEther(topQuoteValue)} MON · ` : ''}max gas:{' '}
+            {topQuote?.maxCost ?? (topQuoteNote || 'quoting…')}
+          </p>
+          {topQuote && topQuoteNote && <small>{topQuoteNote}</small>}
         </MessageBox>
       )}
       {ending && (

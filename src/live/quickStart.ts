@@ -14,6 +14,7 @@ import { resetBurnerNonce } from './nonce'
 import {
   burnerFundTooLarge,
   buildStartSessionTypedData,
+  confirmLiveSessionStarted,
   fundingSuggestion,
   MAX_BURNER_FUND,
   refreshLiveStatus,
@@ -215,6 +216,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
       `the burner top-up would exceed the ${formatEther(MAX_BURNER_FUND)} MON browser-key cap. nothing was sent.`,
     )
   }
+  let sendStartQuote = startQuote
   if (value > 0n) {
     report({ phase: 'fund', funding: formatEther(value) })
     const transfer = {
@@ -227,10 +229,14 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
       action: 'fund burner',
     }
     const fundQuote = await quoteAction(transfer).catch((error: unknown) => fail(error, 'transfer'))
-    await sendAction({ ...transfer, quote: fundQuote, confirmHigherCost })
+    const fundingResult = await sendAction({ ...transfer, quote: fundQuote, confirmHigherCost })
     // The transfer receipt proves the burner received this exact value. Seed the cache immediately instead
     // of reading through another RPC endpoint, which can briefly lag the receipt and report the old balance.
     setCachedBurnerBalance(owner, balanceBefore + value)
+    // The startSession call was already simulated before the wallet funding prompt. Treat the just-confirmed
+    // funding block as its freshness point so usableQuote does not immediately re-estimate against an RPC that
+    // may still report the burner's pre-funding balance.
+    sendStartQuote = { ...startQuote, quotedAtBlock: fundingResult.blockNumber }
   } else {
     report({ prompts: 1 })
   }
@@ -238,7 +244,11 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   // No prompt: the burner sends startSession itself. The pending nonce should already be warm.
   await nonceWarm
   report({ phase: 'start' })
-  await sendAction({ ...startBase, quote: startQuote, confirmHigherCost })
-  await refreshLiveStatus(owner)
+  await sendAction({ ...startBase, quote: sendStartQuote, confirmHigherCost })
+  // The successful receipt is canonical proof that the session exists. Do not turn that success into an
+  // error just because a follow-up public RPC is a block behind. Drain any queued refreshes, then commit the
+  // known session locally; later events/reads will reconcile it normally.
+  await refreshLiveStatus(owner).catch(() => undefined)
+  confirmLiveSessionStarted(owner, message)
   report({ phase: 'done' })
 }

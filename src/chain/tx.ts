@@ -21,7 +21,6 @@ import { formatMaxCost, gasLimitFor, maxCostWei, type GasKind } from './gas'
 import { getWalletSnapshot, refreshWalletBalance } from './wallet'
 import {
   burnerAccount,
-  burnerWallet,
   cachedBurnerBalance,
   debitCachedBurnerBalance,
   loadBurner,
@@ -245,9 +244,8 @@ async function sendWithWallet(opts: ActionOptions, quote: ActionQuote, sender: A
 }
 
 async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: Address) {
-  const wallet = burnerWallet(opts.account)
   const account = burnerAccount(opts.account)
-  if (!wallet || !account) throw new Error('NO_BURNER')
+  if (!account) throw new Error('NO_BURNER')
   // Live Mode keeps an up-to-date burner balance in the live store. Reuse it on the
   // hot path instead of inserting a getBalance RTT before every stroke. If this is the
   // first burner action in a cold tab we still do the exact check once.
@@ -265,12 +263,15 @@ async function sendWithBurner(opts: ActionOptions, quote: ActionQuote, sender: A
           args: (opts.args ?? []) as ContractFunctionArgs<Abi>,
         })
     const signStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
-    const serialized = await wallet.signTransaction({
-      account,
-      chain: appChain,
+    // Sign directly with the Local Account. WalletClient.signTransaction may consult its transport
+    // while asserting/preparing chain context, which turned the supposedly local "sign" stage into
+    // 0.2-5 s RPC jitter in real Live Mode traces. Every required field is already known here, so this
+    // is pure secp256k1 signing with no network dependency.
+    const serialized = await account.signTransaction({
+      chainId: appChain.id,
       to: isTransfer(opts) ? opts.to : opts.address,
       data,
-      value: opts.value,
+      value: opts.value ?? 0n,
       gas: quote.gasLimit,
       maxFeePerGas: quote.maxFeePerGas,
       maxPriorityFeePerGas: quote.maxPriorityFeePerGas,

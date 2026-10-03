@@ -6,6 +6,7 @@ import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
 import { subscribeCanvasActivity } from '../paint/canvasStore'
 import {
   burnerStatus,
+  cachedBurnerBalance,
   loadBurner,
   subscribeBurnerChanges,
   type BurnerRecord,
@@ -155,6 +156,37 @@ export function refreshLiveStatus(owner = snapshot.owner) {
   return run
 }
 
+/** Update the visible burner balance from a transition whose receipt already confirmed. */
+export function confirmBurnerBalance(owner: Address, balance: bigint) {
+  if (!sameOwner(owner, snapshot.owner)) return
+  emit({ balance })
+}
+
+/**
+ * Commit a session we just saw succeed in a transaction receipt. The receipt is stronger evidence than an
+ * immediate follow-up read from another public RPC, which may briefly lag the accepted block. We still
+ * refresh from chain afterward, but Live Mode should become active from the confirmed receipt immediately.
+ */
+export function confirmLiveSessionStarted(owner: Address, message: StartSessionMessage) {
+  ensureStarted()
+  const burner = loadBurner(owner)
+  if (!burner || burner.address.toLowerCase() !== message.sessionKey.toLowerCase()) return
+  if (!sameOwner(owner, snapshot.owner)) return
+  emit({
+    burner,
+    session: {
+      owner,
+      expiryBlock: message.expiryBlock,
+      maxUnits: message.maxUnits,
+      unitsSpent: 0n,
+      revoked: false,
+      active: true,
+    },
+    balance: cachedBurnerBalance(owner) ?? snapshot.balance,
+    loading: false,
+  })
+}
+
 export function buildStartSessionTypedData(message: StartSessionMessage) {
   return {
     domain: {
@@ -208,6 +240,12 @@ export const MAX_BURNER_FUND = 1n * 10n ** 18n
 
 export function burnerFundTooLarge(value: bigint, currentBalance = 0n) {
   return currentBalance + value > MAX_BURNER_FUND
+}
+
+export function burnerTopUpValue(requested: bigint, currentBalance = 0n) {
+  if (requested <= 0n || currentBalance >= MAX_BURNER_FUND) return 0n
+  const headroom = MAX_BURNER_FUND - currentBalance
+  return requested > headroom ? headroom : requested
 }
 
 export const FUNDING_TARGET_PAINTS = 20n
