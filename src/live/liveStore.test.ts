@@ -8,6 +8,7 @@ import {
   type Address,
 } from 'viem'
 import {
+  advanceObservedSessionUsage,
   burnerTopUpValue,
   paintEip712Name,
   MAX_BURNER_FUND,
@@ -63,6 +64,19 @@ describe('live session typed data', () => {
     expect(sweepAmount(100_000n, 2n)).toBe(58_000n)
     expect(sweepAmount(42_000n, 2n)).toBe(0n)
     expect(sweepAmount(10_000n, 2n)).toBe(0n)
+  })
+
+  it('advances locally observed session usage without exceeding the session cap', () => {
+    const session = {
+      owner,
+      expiryBlock: 100n,
+      maxUnits: 20n,
+      unitsSpent: 7n,
+      revoked: false,
+      active: true,
+    }
+    expect(advanceObservedSessionUsage(session, 5n)?.unitsSpent).toBe(12n)
+    expect(advanceObservedSessionUsage(session, 50n)?.unitsSpent).toBe(20n)
   })
 })
 

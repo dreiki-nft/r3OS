@@ -52,6 +52,10 @@ const listeners = new Set<Listener>()
 let snapshot: LiveSnapshot = { balance: 0n, sessionPaints: 0n, loading: false, version: 0 }
 let started = false
 let refreshSerial = Promise.resolve()
+let reconcileTimer: ReturnType<typeof setTimeout> | undefined
+let reconcileOwner: Address | undefined
+let reconcileForceProfile = false
+const LIVE_RECONCILE_DELAY_MS = 1_200
 
 function emit(patch: Partial<LiveSnapshot>) {
   snapshot = { ...snapshot, ...patch, version: snapshot.version + 1 }
@@ -73,11 +77,49 @@ function sameOwner(a?: Address, b?: Address) {
   return a?.toLowerCase() === b?.toLowerCase()
 }
 
+function clearScheduledReconcile(owner?: Address) {
+  if (!reconcileTimer) return
+  if (owner && reconcileOwner && !sameOwner(owner, reconcileOwner)) return
+  clearTimeout(reconcileTimer)
+  reconcileTimer = undefined
+  reconcileOwner = undefined
+  reconcileForceProfile = false
+}
+
+function scheduleLiveReconcile(owner: Address, forceProfile = false) {
+  reconcileOwner = owner
+  reconcileForceProfile ||= forceProfile
+  if (reconcileTimer) clearTimeout(reconcileTimer)
+  reconcileTimer = setTimeout(() => {
+    const nextOwner = reconcileOwner
+    const nextForceProfile = reconcileForceProfile
+    reconcileTimer = undefined
+    reconcileOwner = undefined
+    reconcileForceProfile = false
+    if (nextOwner) void refreshLiveStatus(nextOwner, nextForceProfile)
+  }, LIVE_RECONCILE_DELAY_MS)
+}
+
+export function advanceObservedSessionUsage(session: BurnerSession | undefined, units: bigint) {
+  if (!session || units <= 0n) return session
+  const unitsSpent = session.unitsSpent + units
+  return { ...session, unitsSpent: unitsSpent > session.maxUnits ? session.maxUnits : unitsSpent }
+}
+
 function ensureStarted() {
   if (started) return
   started = true
   subscribeBurnerChanges((owner) => {
-    if (sameOwner(owner, snapshot.owner)) void refreshLiveStatus()
+    if (!sameOwner(owner, snapshot.owner)) return
+    const burner = loadBurner(owner)
+    const cachedBalance = cachedBurnerBalance(owner)
+    const burnerChanged = burner?.address.toLowerCase() !== snapshot.burner?.address.toLowerCase()
+    if (burnerChanged || !burner) {
+      void refreshLiveStatus(owner)
+      return
+    }
+    emit({ burner, ...(cachedBalance == null ? {} : { balance: cachedBalance }) })
+    scheduleLiveReconcile(owner)
   })
   subscribeCanvasActivity((activity) => {
     if (!snapshot.owner) return
@@ -91,7 +133,21 @@ function ensureStarted() {
       activity.eventName === 'Painted' &&
       sameOwner(activity.owner as Address | undefined, snapshot.owner)
     ) {
-      void refreshLiveStatus(snapshot.owner, true)
+      const owner = snapshot.owner
+      const burner = snapshot.burner
+      const paintedByCurrentSession =
+        owner &&
+        burner &&
+        activity.sessionKey &&
+        sameOwner(activity.sessionKey as Address, burner.address)
+      if (owner && paintedByCurrentSession) {
+        emit({
+          session: advanceObservedSessionUsage(snapshot.session, activity.units ?? 0n),
+          sessionPaints: snapshot.sessionPaints + 1n,
+        })
+        // Chain reads are reconciliation, not the interaction loop. Coalesce them until the user pauses.
+        scheduleLiveReconcile(owner, true)
+      }
     }
   })
   subscribeBlocks(() => {
@@ -106,6 +162,7 @@ function ensureStarted() {
 export function setLiveOwner(owner?: Address) {
   ensureStarted()
   if (sameOwner(owner, snapshot.owner)) return
+  clearScheduledReconcile()
   const burner = owner ? loadBurner(owner) : undefined
   snapshot = {
     owner,
@@ -122,6 +179,7 @@ export function setLiveOwner(owner?: Address) {
 
 export function refreshLiveStatus(owner = snapshot.owner, forceProfile = false) {
   if (!owner) return Promise.resolve()
+  clearScheduledReconcile(owner)
   const run = refreshSerial.then(async () => {
     const burner = loadBurner(owner)
     if (!publicClient || !config.paintAddress) {

@@ -10,6 +10,7 @@ import {
 } from 'viem'
 import { appChain } from './clients'
 import {
+  actionRpcHedgedRequest,
   actionRpcRequest,
   broadcastActionRawTransaction,
   probeActionRpcs,
@@ -113,7 +114,7 @@ async function feeQuote(block: bigint) {
   if (feePromise) return feePromise
 
   feePromise = (async () => {
-    const rawFees = await actionRpcRequest((client) => client.estimateFeesPerGas())
+    const rawFees = await actionRpcHedgedRequest((client) => client.estimateFeesPerGas())
     const fees = rawFees as { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint; gasPrice?: bigint }
     feeCache = {
       block,
@@ -194,7 +195,7 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
     const base = contractBase(opts, sender)
     // estimateContractGas already executes the transaction and surfaces reverts. Running a
     // simulateContract first performed the same expensive work twice on every quote.
-    gasLimitPromise = actionRpcRequest((client) => client.estimateContractGas(base)).then((estimate) =>
+    gasLimitPromise = actionRpcHedgedRequest((client) => client.estimateContractGas(base)).then((estimate) =>
       gasLimitFor(opts.kind, estimate, opts.pixels),
     )
   }

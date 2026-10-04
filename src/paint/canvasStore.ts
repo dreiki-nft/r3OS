@@ -52,6 +52,7 @@ export interface CanvasActivity {
   blockNumber: bigint
   logIndex?: number | null
   runs?: Hex
+  units?: bigint
   regionsMask?: number
 }
 
@@ -350,6 +351,7 @@ async function applyDeliveredLogs(
         owner,
         ...(sender && sender.toLowerCase() !== owner.toLowerCase() ? { sessionKey: sender } : {}),
         runs: args.runs as Hex,
+        units: BigInt(args.units as bigint),
         regionsMask: Number(args.regionsMask ?? 0),
       })
     } else if (eventName === 'FaceChanged') {
@@ -675,30 +677,48 @@ export function receiptCoreLogs(
   })
 }
 
-export function settleInFlightFromReceipt(
+export async function settleInFlightFromReceipt(
   sent: ReadonlyMap<number, number>,
   receiptLogs: readonly Log[],
   receiptBlock: bigint,
 ) {
-  return enqueue(async () => {
-    const coreLogs = receiptCoreLogs(receiptLogs, receiptBlock)
-    const hasPainted = coreLogs.some((log) => decodeCoreLog(log)?.eventName === 'Painted')
-    if (!hasPainted) {
-      // Unexpected receipt shape. Keep the old canonical path rather than making the stroke disappear.
+  const coreLogs = receiptCoreLogs(receiptLogs, receiptBlock)
+  const hasPainted = coreLogs.some((log) => decodeCoreLog(log)?.eventName === 'Painted')
+
+  if (!hasPainted) {
+    // Unexpected receipt shape. Keep the canonical serialized path rather than making the stroke disappear.
+    return enqueue(async () => {
       await catchUpNow(receiptBlock)
-    } else {
-      const needsReload = await applyDeliveredLogs(coreLogs, { advanceSnapshot: false })
-      if (needsReload) await loadCanvasNow()
-    }
-    snapshot = {
-      ...snapshot,
-      working: clearMatchingInFlight(snapshot.working, snapshot.background, sent),
-    }
-    emitCanvas()
-    // Reconcile in the background. The UI is already exact for this transaction, while this catches
-    // sibling transactions from the same block and preserves the store's canonical overlap checks.
-    void catchUp(receiptBlock).catch(() => undefined)
-  })
+      snapshot = {
+        ...snapshot,
+        working: clearMatchingInFlight(snapshot.working, snapshot.background, sent),
+      }
+      emitCanvas()
+    })
+  }
+
+  // Receipt inclusion is stronger evidence for this transaction than an older queued getLogs/reconcile read.
+  // Apply the exact Painted log immediately, matching the websocket fast path, so a slow public RPC cannot
+  // strand a locally confirmed stroke behind the reconciliation queue for seconds. Canonical overlap repair
+  // still runs in the background and remains authoritative for sibling transactions/reorg detection.
+  const needsReload = await applyDeliveredLogs(coreLogs, { advanceSnapshot: false })
+  if (needsReload) {
+    return enqueue(async () => {
+      await loadCanvasNow()
+      snapshot = {
+        ...snapshot,
+        working: clearMatchingInFlight(snapshot.working, snapshot.background, sent),
+      }
+      emitCanvas()
+    })
+  }
+
+  snapshot = {
+    ...snapshot,
+    working: clearMatchingInFlight(snapshot.working, snapshot.background, sent),
+  }
+  emitCanvas()
+  void catchUp(receiptBlock).catch(() => undefined)
 }
 
 /**

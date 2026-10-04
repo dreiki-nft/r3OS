@@ -38,6 +38,31 @@ describe('action RPC pool', () => {
     expect(second.getBlockNumber).toHaveBeenCalledTimes(1)
   })
 
+  it('hedges a slow read to the next ranked endpoint after the latency window', async () => {
+    vi.useFakeTimers()
+    let release!: () => void
+    const slow = client({
+      getBlockNumber: vi.fn(() =>
+        new Promise<bigint>((resolve) => {
+          release = () => resolve(11n)
+        }),
+      ),
+    })
+    const fast = client({ getBlockNumber: vi.fn().mockResolvedValue(22n) })
+    const pool = createActionRpcPool([slow, fast])
+
+    const result = pool.hedgedRequest((rpc) => rpc.getBlockNumber(), 80)
+    await vi.advanceTimersByTimeAsync(79)
+    expect(fast.getBlockNumber).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    await expect(result).resolves.toBe(22n)
+    expect(slow.getBlockNumber).toHaveBeenCalledTimes(1)
+    expect(fast.getBlockNumber).toHaveBeenCalledTimes(1)
+
+    release()
+    vi.useRealTimers()
+  })
+
   it('broadcasts one signed raw transaction to every endpoint and takes the first acceptance', async () => {
     let release!: () => void
     const slow = client({

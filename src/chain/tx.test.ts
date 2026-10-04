@@ -29,6 +29,7 @@ vi.mock('./actionRpc', () => {
   }
   return {
     actionRpcRequest: vi.fn((work: (rpc: typeof client) => Promise<unknown>) => work(client)),
+    actionRpcHedgedRequest: vi.fn((work: (rpc: typeof client) => Promise<unknown>) => work(client)),
     probeActionRpcs: vi.fn().mockResolvedValue(undefined),
     broadcastActionRawTransaction: mocks.broadcastRawTransaction,
     waitForActionReceipt: mocks.waitForTransactionReceipt,

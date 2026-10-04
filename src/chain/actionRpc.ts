@@ -156,6 +156,64 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
     throw Object.assign(new Error('ACTION_RPC_UNAVAILABLE'), { cause: lastError })
   }
 
+  /**
+   * Latency-sensitive, read-only action RPC request. Start with the currently fastest endpoint, then
+   * launch one backup if the first has not answered within the hedge window. This cuts long-tail
+   * estimateGas/fee latency without broadcasting writes or permanently doubling ordinary RPC load.
+   */
+  const hedgedRequest = async <T>(
+    work: (client: ActionRpcClient) => Promise<T>,
+    hedgeAfterMs = 80,
+  ): Promise<T> => {
+    if (!clients.length) throw new Error('DEMO_MODE')
+    const order = ranked()
+    if (order.length === 1) return measured(order[0], work)
+
+    return new Promise<T>((resolve, reject) => {
+      let done = false
+      let active = 0
+      let next = 0
+      let hedgeTimer: ReturnType<typeof setTimeout> | undefined
+      const errors: unknown[] = []
+
+      const finishIfExhausted = () => {
+        if (done || active > 0 || next < order.length) return
+        done = true
+        if (hedgeTimer) clearTimeout(hedgeTimer)
+        const semantic = errors.find((error) => !isRpcInfrastructureError(error))
+        if (semantic) reject(semantic)
+        else reject(Object.assign(new Error('ACTION_RPC_UNAVAILABLE'), { cause: errors.at(-1) }))
+      }
+
+      const launch = () => {
+        if (done || next >= order.length) return
+        const index = order[next++]
+        active += 1
+        void measured(index, work).then(
+          (value) => {
+            active -= 1
+            if (done) return
+            done = true
+            if (hedgeTimer) clearTimeout(hedgeTimer)
+            resolve(value)
+          },
+          (error) => {
+            active -= 1
+            errors.push(error)
+            // A failed primary should fail over immediately instead of waiting for the hedge delay.
+            launch()
+            finishIfExhausted()
+          },
+        )
+      }
+
+      launch()
+      hedgeTimer = setTimeout(() => {
+        if (!done) launch()
+      }, Math.max(0, hedgeAfterMs))
+    })
+  }
+
   const probe = async () => {
     if (!clients.length) return snapshot
     await Promise.allSettled(
@@ -311,6 +369,7 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
 
   return {
     request,
+    hedgedRequest,
     probe,
     waitForBalance,
     waitForFundingSettlement,
@@ -343,6 +402,7 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
 const pool = createActionRpcPool(actionEndpointClients as unknown as ActionRpcClient[])
 
 export const actionRpcRequest = pool.request
+export const actionRpcHedgedRequest = pool.hedgedRequest
 export const probeActionRpcs = pool.probe
 export const waitForActionBalance = pool.waitForBalance
 export const waitForActionFundingSettlement = pool.waitForFundingSettlement
