@@ -728,7 +728,7 @@ contract RecycleBinCDBurnerTest is Test {
 
     function _makeFrame(address painter, uint256 index) private returns (uint256 id) {
         uint8 colour = uint8(2 + (index % 14));
-        // Same known-clear test patch used by the Forks suite: row 200, x 200..215.
+        // Known-clear test patch: row 200, x 200..215.
         bytes memory run = abi.encodePacked(bytes1(uint8(200)), bytes1(uint8(200)), bytes1(uint8(215)), bytes1(colour));
         vm.prank(painter);
         paint.paint(run, new uint256[](0));

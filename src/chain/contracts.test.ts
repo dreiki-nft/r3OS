@@ -15,7 +15,7 @@ vi.mock('./clients', () => ({
       if (functionName === 'experimentInfo')
         return {
           experiment: `0x000000000000000000000000000000000000000${Number(args![0]) + 1}`,
-          name: ['quests', 'cd-burner', 'flipbook'][Number(args![0])],
+          name: ['quests', 'cd-burner', 'recycle-bin'][Number(args![0])],
           retired: false,
         }
       return '0x0000000000000000000000000000000000000009'

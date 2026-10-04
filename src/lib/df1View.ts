@@ -48,7 +48,7 @@ export function outlineCellCounts(outlineGenesis: Uint8Array): Uint8Array {
 /**
  * Mirror of Source64.rows: 64x64 palette indices, top-down, one byte per cell (index 0 = background).
  * Each cell samples the top-left pixel of its 4x4 block; 6+ outline pixels in the block make it `face`.
- * DF1Renderer and R3OSForks both start from exactly this grid.
+ * DF1Renderer starts from exactly this grid.
  */
 export function source64Indices(frameData: Uint8Array, outlineGenesis: Uint8Array, face: number): Uint8Array {
   if (frameData.length !== 32_768) throw new Error('frameData must be 32768 bytes')

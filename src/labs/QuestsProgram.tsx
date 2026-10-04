@@ -41,12 +41,7 @@ const RULES = [
 ] as const
 
 const EXPERIMENT_PROGRAMS: Record<string, string> = {
-  flipbook: 'flipbook',
-  weeds: 'weeds',
-  forks: 'forks',
-  brushes: 'brushes',
   'finale auction': 'auction',
-  sleepwalker: 'sleepwalker',
   'recycle-bin': 'bin',
   'cd-burner': 'cd',
 }
@@ -57,12 +52,6 @@ const DAY_ONE_DETAIL: Record<string, string> = {
   'LIVE WIRE': 'live-mode paints',
   '10K PIXELS': 'canvas pixels',
   ARCHIVIST: 'frames saved',
-  ANIMATOR: 'Flipbook frames',
-  'REEL MAKER': 'Flipbook reels owned',
-  'GREEN THUMB': 'weeds plants',
-  TIMELINES: 'different forks painted',
-  'DNA HUNTER': 'verified brushes',
-  'LAB RAT': 'Lab stamps',
   'PADDLE UP': 'finale-auction bids',
   RECYCLER: 'frames recycled',
   'CARD CARRIER': 'Monad Card + canvas pixels',
@@ -75,12 +64,6 @@ function questSubtitle(name: string, goal: bigint) {
   if (name === 'LIVE WIRE') return `${n} live-mode paints`
   if (name === '10K PIXELS') return `${n} canvas pixels`
   if (name === 'ARCHIVIST') return `save ${n} frames`
-  if (name === 'ANIMATOR') return `${n} Flipbook frames`
-  if (name === 'REEL MAKER') return goal === 1n ? 'own a Flipbook reel' : `own ${n} Flipbook reels`
-  if (name === 'GREEN THUMB') return `${n} weeds plants`
-  if (name === 'TIMELINES') return `paint in ${n} distinct forks`
-  if (name === 'DNA HUNTER') return `${n} verified brushes`
-  if (name === 'LAB RAT') return goal === 4n ? 'earn four Lab stamps' : `earn ${n} Lab stamps`
   if (name === 'PADDLE UP')
     return goal === 1n ? 'place a finale-auction bid' : `place ${n} finale-auction bids`
   if (name === 'RECYCLER') return `burn ${n} frames`
@@ -88,26 +71,17 @@ function questSubtitle(name: string, goal: bigint) {
   return `${n} onchain value`
 }
 
-export function badgeSrc(id: number) {
-  return id < 13
-    ? `/os/badges/q${String(id).padStart(2, '0')}_${
-        [
-          'month_in',
-          'storm_regular',
-          'live_wire',
-          'pixels_10k',
-          'archivist',
-          'animator',
-          'reel_maker',
-          'green_thumb',
-          'timelines',
-          'dna_hunter',
-          'lab_rat',
-          'paddle_up',
-          'recycler',
-        ][id]
-      }.png`
-    : '/os/icons/trophy@2x.png'
+export function badgeSrc(name: string) {
+  const activeBadges: Readonly<Record<string, string>> = {
+    'MONTH IN': '/os/badges/q00_month_in.png',
+    'STORM REGULAR': '/os/badges/q01_storm_regular.png',
+    'LIVE WIRE': '/os/badges/q02_live_wire.png',
+    '10K PIXELS': '/os/badges/q03_pixels_10k.png',
+    ARCHIVIST: '/os/badges/q04_archivist.png',
+    'PADDLE UP': '/os/badges/q11_paddle_up.png',
+    RECYCLER: '/os/badges/q12_recycler.png',
+  }
+  return activeBadges[name] ?? '/os/icons/trophy@2x.png'
 }
 
 export function QuestsProgram() {
@@ -402,7 +376,7 @@ export function QuestsProgram() {
                 >
                   <SafeImage
                     className="quest-mini-badge"
-                    src={badgeSrc(quest.id)}
+                    src={badgeSrc(quest.name)}
                     alt={isLocked ? 'locked quest' : quest.name}
                     width={34}
                     height={34}
@@ -461,7 +435,7 @@ export function QuestsProgram() {
                     onClick={() => setSelected(quest.id)}
                   >
                     <SafeImage
-                      src={badgeSrc(quest.id)}
+                      src={badgeSrc(quest.name)}
                       alt={isLocked ? 'locked quest' : quest.name}
                       width={60}
                       height={60}
@@ -477,7 +451,7 @@ export function QuestsProgram() {
             {chosenDef && locked(chosenDef) ? (
               <div className="quest-detail">
                 <SafeImage
-                  src={badgeSrc(chosenDef.id)}
+                  src={badgeSrc(chosenDef.name)}
                   alt="locked quest"
                   width={60}
                   height={60}
@@ -488,7 +462,7 @@ export function QuestsProgram() {
               </div>
             ) : chosenDef ? (
               <div className="quest-detail">
-                <SafeImage src={badgeSrc(chosenDef.id)} alt={chosenDef.name} width={60} height={60} />
+                <SafeImage src={badgeSrc(chosenDef.name)} alt={chosenDef.name} width={60} height={60} />
                 <p>
                   {chosenDef.conditions.length > 1
                     ? `${chosenProgress?.value ?? 0n} of ${chosenDef.conditions.length} conditions`

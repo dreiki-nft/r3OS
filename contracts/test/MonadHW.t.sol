@@ -6,62 +6,12 @@ import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {R3OSLabs} from "../src/R3OSLabs.sol";
 import {R3OSPageExe} from "../src/monadhw/R3OSPageExe.sol";
 import {R3OSBlockCamera} from "../src/monadhw/R3OSBlockCamera.sol";
-import {R3OSKernelDebugger} from "../src/monadhw/R3OSKernelDebugger.sol";
 import {MockR3tards} from "./MockR3tards.sol";
-
-contract ReserveBalanceMock {
-    function dippedIntoReserve() external view returns (bool) {
-        return tx.origin.balance < 1 ether;
-    }
-}
-
-contract RejectRefund {
-    R3OSKernelDebugger immutable KERNEL;
-
-    constructor(R3OSKernelDebugger kernel) {
-        KERNEL = kernel;
-    }
-
-    function run() external payable {
-        KERNEL.run{value: msg.value}(true, false);
-    }
-
-    receive() external payable {
-        revert("no refund");
-    }
-}
-
-contract ReenterWithdraw {
-    R3OSKernelDebugger immutable KERNEL;
-    bool public attempted;
-
-    constructor(R3OSKernelDebugger kernel) {
-        KERNEL = kernel;
-    }
-
-    function deposit() external payable {
-        KERNEL.run{value: msg.value}(false, false);
-    }
-
-    function withdraw() external {
-        KERNEL.withdraw();
-    }
-
-    receive() external payable {
-        attempted = true;
-        // The nested call must fail under nonReentrant, but the outer withdrawal can complete.
-        (bool ok,) = address(KERNEL).call(abi.encodeWithSelector(KERNEL.withdraw.selector));
-        ok;
-    }
-}
 
 contract MonadHWTest is Test {
     address constant STAKING = 0x0000000000000000000000000000000000001000;
-    address constant RESERVE = 0x0000000000000000000000000000000000001001;
-
     R3OSPageExe page;
     R3OSBlockCamera camera;
-    R3OSKernelDebugger kernel;
     R3OSPaint paint;
     R3OSLabs labs;
     MockR3tards r3tards;
@@ -85,7 +35,6 @@ contract MonadHWTest is Test {
         labs = new R3OSLabs(address(paint), royalty);
         page = new R3OSPageExe();
         camera = new R3OSBlockCamera(address(paint), address(labs), address(0));
-        kernel = new R3OSKernelDebugger();
 
         vm.prank(alice);
         uint256 cameraId = paint.addExperiment(address(camera), "block-camera", "");
@@ -257,92 +206,4 @@ contract MonadHWTest is Test {
         assertLt(used, 6_000_000);
     }
 
-    // ---------------------------------------------------------------------
-    // Kernel Debugger
-    // ---------------------------------------------------------------------
-
-    function testGracefulDippedRunRefundsAndClearsCondition() public {
-        // Monad-mode forge refuses vm.etch on the reserve precompile, so script its answers in order:
-        // dipped at entry, then clear after the refund.
-        bytes[] memory answers = new bytes[](2);
-        answers[0] = abi.encode(true);
-        answers[1] = abi.encode(false);
-        vm.mockCalls(RESERVE, abi.encodeWithSelector(bytes4(keccak256("dippedIntoReserve()"))), answers);
-        vm.deal(alice, 1 ether);
-
-        vm.prank(alice, alice);
-        kernel.run{value: 0.2 ether}(true, false);
-
-        assertEq(alice.balance, 1 ether);
-        assertEq(kernel.credits(alice), 0);
-        assertEq(kernel.processCount(alice), 1);
-    }
-
-    function testNotDippedCreditsValue() public {
-        vm.mockCall(
-            RESERVE,
-            abi.encodeWithSelector(bytes4(keccak256("dippedIntoReserve()"))),
-            abi.encode(false)
-        );
-        vm.prank(alice);
-        kernel.run{value: 0.2 ether}(true, false);
-        assertEq(kernel.credits(alice), 0.2 ether);
-    }
-
-    function testNaiveRunKeepsValueWhenProbeSaysDipped() public {
-        vm.mockCall(
-            RESERVE,
-            abi.encodeWithSelector(bytes4(keccak256("dippedIntoReserve()"))),
-            abi.encode(true)
-        );
-        vm.prank(alice);
-        kernel.run{value: 0.2 ether}(false, false);
-        assertEq(kernel.credits(alice), 0.2 ether);
-    }
-
-    function testOptionalFailurePreservesPrimaryStep() public {
-        vm.mockCall(
-            RESERVE,
-            abi.encodeWithSelector(bytes4(keccak256("dippedIntoReserve()"))),
-            abi.encode(false)
-        );
-        vm.prank(alice);
-        kernel.run(false, true);
-        assertEq(kernel.processCount(alice), 1);
-        assertEq(kernel.lastRunBlock(alice), block.number);
-        assertEq(kernel.lastNote(alice), 0);
-    }
-
-    function testRefundToRejectingContractReverts() public {
-        vm.mockCall(
-            RESERVE,
-            abi.encodeWithSelector(bytes4(keccak256("dippedIntoReserve()"))),
-            abi.encode(true)
-        );
-        RejectRefund rejector = new RejectRefund(kernel);
-        vm.deal(address(rejector), 1 ether);
-        vm.expectRevert(R3OSKernelDebugger.RefundFailed.selector);
-        rejector.run{value: 0.1 ether}();
-    }
-
-    function testOptionalStepOnlySelf() public {
-        vm.prank(alice);
-        vm.expectRevert(R3OSKernelDebugger.OnlySelf.selector);
-        kernel.optionalStep(alice, false);
-    }
-
-    function testWithdrawResistsReentrancy() public {
-        vm.mockCall(
-            RESERVE,
-            abi.encodeWithSelector(bytes4(keccak256("dippedIntoReserve()"))),
-            abi.encode(false)
-        );
-        ReenterWithdraw receiver = new ReenterWithdraw(kernel);
-        vm.deal(address(receiver), 1 ether);
-        receiver.deposit{value: 0.2 ether}();
-        assertEq(kernel.credits(address(receiver)), 0.2 ether);
-        receiver.withdraw();
-        assertTrue(receiver.attempted());
-        assertEq(kernel.credits(address(receiver)), 0);
-    }
 }

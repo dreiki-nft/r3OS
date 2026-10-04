@@ -175,7 +175,7 @@ interface StaticProbe {
 let staticProbePromise: Promise<StaticProbe> | undefined
 
 async function findLabsAddress(labs: Record<string, Address | undefined>) {
-  const candidates = ['block-camera', 'flipbook', 'forks', 'sleepwalker', 'cd-burner']
+  const candidates = ['block-camera', 'cd-burner']
     .map((name) => labs[name])
     .filter((value): value is Address => Boolean(value))
   if (!candidates.length) return undefined

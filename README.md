@@ -128,7 +128,7 @@ A few implementation choices matter to the user experience:
 - historical/heavy art reads are bounded instead of preloading the entire collection;
 - wallet-facing chain metadata uses only `VITE_WALLET_RPC_URL`; internal RPC endpoints are never shown by DXDIAG.
 
-The currently active UI is intentionally smaller than the set of contracts deployed during development. Retired experiments remain documented where they matter to immutable history or active backend dependencies, but their direct UI programs are removed from the production program registry and bundle.
+The fresh-mainnet contract surface is intentionally as small as the current r3OS product. Phase 7.6 removes discontinued experiments from source, deployment wiring, generated ABIs and public docs; Git history is the archive. The existing snapshot-28 testnet may still contain historical registry entries, so a small compatibility policy remains to hide them when the frontend points at that deployment.
 
 ## Current testnet
 
@@ -170,7 +170,7 @@ npm run check
 Useful individual commands:
 
 ```bash
-npm run repo:doctor   # stale files, broken local docs links, README placeholders, retired UI reachability
+npm run repo:doctor   # stale/dead files, broken docs links, placeholders, submission-surface checks
 npm run test:web      # Vitest
 npm run build         # TypeScript + Vite production build
 npm run generated:check # generated outline + ABI must match source
@@ -209,7 +209,8 @@ Browser security matters because Live Mode intentionally holds an EOA key locall
 - Performance / boot-prefetch work is complete and measured locally in DXDIAG.
 - Cold-user / judge-path and repository-hygiene work is complete.
 - Live Mode hero UI, one-flow wallet handoff, two-browser remote proof, explorer/X-ray proof and demo choreography are implemented and validated on testnet.
-- Phase 7 is complete. Next is mainnet rehearsal, real community activity, final metrics, recording and submission.
+- Phase 7.6 submission-surface cleanup is complete: discontinued experiments are omitted from fresh-mainnet source/deploy/ABI/docs.
+- Next is Phase 8: mainnet rehearsal, real community activity, final metrics, recording and submission.
 
 ## Credits
 

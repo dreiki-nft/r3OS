@@ -228,7 +228,7 @@ contract R3OSLabs is ERC721, ERC2981, Ownable2Step {
         );
         bytes memory json = abi.encodePacked(
             '{"name":"r3OS labs",',
-            '"description":"Everything the r3OS labs make: reels, forks, dreams and mix CD-Rs from r3OS paint. Fully onchain on Monad.",',
+            '"description":"Everything r3OS Labs makes: onchain artifacts, block portraits and mix CD-Rs from r3OS Paint. Fully onchain on Monad.",',
             '"image":"data:image/svg+xml;base64,', Base64.encode(svg), '",',
             '"external_link":"', _jsonEscape(_externalLink), '",',
             '"seller_fee_basis_points":500,',
@@ -301,15 +301,12 @@ contract R3OSLabs is ERC721, ERC2981, Ownable2Step {
 
     function _fallbackKind(string memory labName) private pure returns (string memory) {
         bytes32 hash = keccak256(bytes(labName));
-        if (hash == keccak256(bytes("flipbook"))) return "Reel";
-        if (hash == keccak256(bytes("forks"))) return "Fork";
-        if (hash == keccak256(bytes("sleepwalker"))) return "Dream";
         if (hash == keccak256(bytes("cd-burner"))) return "CD";
         string memory title = _titleCase(labName);
         return bytes(title).length == 0 ? "Lab" : title;
     }
 
-    /// @dev "flipbook" -> "Flipbook", "finale auction" -> "Finale Auction", "cd-burner" -> "CD Burner".
+    /// @dev "finale auction" -> "Finale Auction", "cd-burner" -> "CD Burner".
     ///      Separators (space, '-', '_') become spaces; words of one or two letters are fully uppercased.
     function _titleCase(string memory value) private pure returns (string memory) {
         bytes memory out = bytes(value);

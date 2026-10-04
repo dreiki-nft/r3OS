@@ -103,13 +103,13 @@ function healthy(chainId = 31337): Fixture {
     [RENDERERS[2], 'df1'],
   ].forEach((value, index) => set(PAINT, 'rendererInfo', value, [BigInt(index)]))
 
-  for (const name of ['flipbook', 'forks', 'sleepwalker', 'cd-burner', 'block-camera']) {
+  for (const name of ['cd-burner', 'block-camera']) {
     set(lab[name], 'PAINT', PAINT)
     set(lab[name], 'LABS', LABS)
   }
-  for (const name of ['weeds', 'brushes', 'finale auction']) set(lab[name], 'PAINT', PAINT)
+  set(lab['finale auction'], 'PAINT', PAINT)
   set(lab['recycle-bin'], 'CORE', PAINT)
-  for (const name of ['flipbook', 'forks', 'sleepwalker', 'recycle-bin', 'cd-burner', 'block-camera'])
+  for (const name of ['recycle-bin', 'cd-burner', 'block-camera'])
     set(lab[name], 'experimentId', BigInt(NAMES.indexOf(name)))
 
   for (const address of [LABS, PASS, lab.quests]) {
@@ -207,8 +207,8 @@ async function run(fixture: Fixture, extra: Record<string, unknown> = {}) {
     reader: readerFor(fixture),
     paint: PAINT,
     expectedOwner: OWNER,
-    releases: { programs: { forks: '2026-11-08T18:00:00Z' } },
-    knownProgramIds: ['paint', 'forks', 'brushes'],
+    releases: { programs: { quests: '2026-11-08T18:00:00Z' } },
+    knownProgramIds: ['paint', 'quests', 'auction'],
     venues: [],
     mrcRevision: '6e4f86333923f0c4ec77bc92b3702f1b21f37446',
     now: NOW,
@@ -248,22 +248,22 @@ describe('launch doctor: pure helpers', () => {
     }))
     expect(analyzeExperiments(entries).missing).toEqual([])
     const broken = [
-      ...entries.filter((e: any) => e.name !== 'router-lab' && e.name !== 'weeds'),
-      { id: 90, name: 'weeds', address: hex(0x99), retired: true, hasCode: true },
-      { id: 91, name: 'flipbook', address: hex(0x98), retired: false, hasCode: true },
+      ...entries.filter((e: any) => e.name !== 'router-lab' && e.name !== 'recycle-bin'),
+      { id: 90, name: 'recycle-bin', address: hex(0x99), retired: true, hasCode: true },
+      { id: 91, name: 'quests', address: hex(0x98), retired: false, hasCode: true },
       { id: 92, name: 'router-mock-venues', address: hex(0x97), retired: false, hasCode: true },
       { id: 93, name: 'mystery', address: hex(0x10), retired: false, hasCode: false },
     ]
     const result = analyzeExperiments(broken, { chainId: 143 })
     expect(result.missing).toEqual(['router-lab'])
-    expect(result.retiredExpected).toEqual(['weeds'])
-    expect(result.duplicateActiveNames).toEqual(['flipbook'])
+    expect(result.retiredExpected).toEqual(['recycle-bin'])
+    expect(result.duplicateActiveNames).toEqual(['quests'])
     expect(result.duplicateActiveAddresses.length).toBe(1)
     expect(result.testOnlyOnMainnet).toEqual(['router-mock-venues'])
     expect(result.unexpected).toEqual(['mystery'])
     expect(result.noCode).toEqual(['mystery'])
     // the app resolves a duplicated name to its last active entry
-    expect(result.resolved.flipbook.address).toBe(hex(0x98))
+    expect(result.resolved.quests.address).toBe(hex(0x98))
   })
 
   it('classifies runtime code hashes', () => {
@@ -295,19 +295,19 @@ describe('launch doctor: pure helpers', () => {
     const result = validateReleases(
       {
         programs: {
-          forks: '2026-11-08T18:00:00Z',
-          brushes: '2026-01-01T00:00:00Z',
+          quests: '2026-11-08T18:00:00Z',
+          auction: '2026-01-01T00:00:00Z',
           nope: '2027-01-01',
           paint: 'soon',
         },
       },
-      ['forks', 'brushes', 'paint'],
+      ['quests', 'auction', 'paint'],
       NOW,
     )
     const byId = Object.fromEntries(result.rows.map((row: any) => [row.id, row]))
-    expect(byId.forks.status).toBe('OK')
-    expect(byId.forks.hidden).toBe(true)
-    expect(byId.brushes.status).toBe('WARN')
+    expect(byId.quests.status).toBe('OK')
+    expect(byId.quests.hidden).toBe(true)
+    expect(byId.auction.status).toBe('WARN')
     expect(byId.nope.status).toBe('FAIL')
     expect(byId.paint.status).toBe('FAIL')
     expect(validateReleases({ programs: [] }, [], NOW).ok).toBe(false)
@@ -414,17 +414,17 @@ describe('launch doctor: full run against fixtures', () => {
 
   it('flags a retired expected entry and an unbound experiment id', async () => {
     const fixture = healthy()
-    const index = NAMES.indexOf('weeds')
+    const index = NAMES.indexOf('recycle-bin')
     fixture.reads.set(key(PAINT, 'experimentInfo', [BigInt(index)]), {
-      experiment: lab.weeds,
-      name: 'weeds',
+      experiment: lab['recycle-bin'],
+      name: 'recycle-bin',
       uri: '',
       retired: true,
     })
-    fixture.reads.set(key(lab.forks, 'experimentId'), (1n << 256n) - 1n)
+    fixture.reads.set(key(lab['cd-burner'], 'experimentId'), (1n << 256n) - 1n)
     const result = await run(fixture)
-    expect(find(result, 'REGISTRY', 'Expected but retired').value).toBe('weeds')
-    expect(find(result, 'WIRING', 'forks experiment id').value).toBe('not bound')
+    expect(find(result, 'REGISTRY', 'Expected but retired').value).toBe('recycle-bin')
+    expect(find(result, 'WIRING', 'cd-burner experiment id').value).toBe('not bound')
   })
 
   it('stops after CHAIN/CORE when Paint has no code', async () => {
@@ -539,32 +539,32 @@ describe('launch doctor: aggregates never hide uncertainty', () => {
 
   it('expected registry source missing → UNKNOWN; several unknowns stay UNKNOWN', async () => {
     const fixture = healthy()
-    const index = NAMES.indexOf('kernel-debugger')
+    const index = NAMES.indexOf('block-camera')
     fixture.reads.set(key(PAINT, 'experimentInfo', [BigInt(index)]), {
-      experiment: lab['kernel-debugger'],
-      name: 'kernel-debugger',
+      experiment: lab['block-camera'],
+      name: 'block-camera',
       uri: '',
       retired: true,
     })
-    fixture.reads.delete(key(lab['operator-record'], 'WEEDS'))
+    fixture.reads.delete(key(lab['operator-record'], 'RECYCLE_BIN'))
     const result = await run(fixture)
-    expect(find(result, 'OPERATOR', '→ KERNEL_DEBUGGER').status).toBe('UNKNOWN')
+    expect(find(result, 'OPERATOR', '→ BLOCK_CAMERA').status).toBe('UNKNOWN')
     expect(find(result, 'OPERATOR', 'Sources')).toMatchObject({
       status: 'UNKNOWN',
-      value: '13 match · 2 unresolved',
+      value: '7 match · 2 unresolved',
     })
   })
 
   it('E/F. a mismatch dominates an unreadable source: aggregate FAIL with both counts', async () => {
     const fixture = healthy()
-    fixture.reads.set(key(lab['operator-record'], 'FORKS'), hex(0xbad))
+    fixture.reads.set(key(lab['operator-record'], 'AUCTION'), hex(0xbad))
     fixture.reads.delete(key(lab['operator-record'], 'QUESTS'))
     const result = await run(fixture)
-    expect(find(result, 'OPERATOR', '→ FORKS').status).toBe('FAIL')
+    expect(find(result, 'OPERATOR', '→ AUCTION').status).toBe('FAIL')
     expect(find(result, 'OPERATOR', '→ QUESTS').status).toBe('UNKNOWN')
     expect(find(result, 'OPERATOR', 'Sources')).toMatchObject({
       status: 'FAIL',
-      value: '13 match · 1 mismatch · 1 unresolved',
+      value: '7 match · 1 mismatch · 1 unresolved',
     })
     expect(result.exitCode).toBe(1)
   })

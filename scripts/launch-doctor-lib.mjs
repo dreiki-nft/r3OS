@@ -12,19 +12,13 @@ const UINT256_MAX = (1n << 256n) - 1n
 
 /** Registry names exactly as the deploy scripts register them (note "finale auction" has a space). */
 export const EXPECTED_EXPERIMENTS = Object.freeze([
-  { name: 'flipbook', script: 'Deploy.s.sol' },
-  { name: 'weeds', script: 'Deploy.s.sol' },
-  { name: 'forks', script: 'Deploy.s.sol' },
-  { name: 'brushes', script: 'Deploy.s.sol' },
   { name: 'finale auction', script: 'Deploy.s.sol' },
   { name: 'quests', script: 'Deploy.s.sol' },
-  { name: 'sleepwalker', script: 'Deploy.s.sol' },
   { name: 'recycle-bin', script: 'Deploy.s.sol' },
   { name: 'cd-burner', script: 'Deploy.s.sol' },
   { name: 'card-drv', script: 'DeployMonadCard.s.sol' },
   { name: 'page-exe', script: 'DeployMonadHW.s.sol' },
   { name: 'block-camera', script: 'DeployMonadHW.s.sol' },
-  { name: 'kernel-debugger', script: 'DeployMonadHW.s.sol' },
   { name: 'operator-record', script: 'DeployOperator.s.sol' },
   { name: 'system-event', script: 'DeployOperator.s.sol' },
   { name: 'router-lab', script: 'DeployRouterLab.s.sol' },
@@ -37,16 +31,7 @@ export const TEST_ONLY_EXPERIMENTS = Object.freeze(['router-mock-venues'])
 export const EXPECTED_RENDERERS = Object.freeze(['built-in', 'diff', 'season timelapse', 'df1'])
 
 /** Pass stamp sources in deploy order (Deploy.s.sol, then DeployMonadCard.s.sol). Pin = 6 + index. */
-export const EXPECTED_STAMP_SOURCES = Object.freeze([
-  'flipbook',
-  'weeds',
-  'forks',
-  'brushes',
-  'quests',
-  'sleepwalker',
-  'recycle-bin',
-  'card-drv',
-])
+export const EXPECTED_STAMP_SOURCES = Object.freeze(['quests', 'recycle-bin', 'card-drv'])
 
 /** From R3OSPainterPass / PassArt: six built-in pins, then one pin per stamp source, 16 drawn. */
 export const PASS_BUILTIN_PINS = 6
@@ -55,30 +40,17 @@ export const PASS_MAX_PINS = 16
 export const PASS_RESERVED_PINS = 2
 
 /** Labs bound to their registry id with bindExperimentId(). */
-export const BOUND_EXPERIMENTS = Object.freeze([
-  'flipbook',
-  'forks',
-  'sleepwalker',
-  'recycle-bin',
-  'cd-burner',
-  'block-camera',
-])
+export const BOUND_EXPERIMENTS = Object.freeze(['recycle-bin', 'cd-burner', 'block-camera'])
 
 /** Operator Record v1 source immutable → the registry entry (or core pointer) it must equal. */
 export const OPERATOR_SOURCES = Object.freeze([
   { fn: 'PAINT', target: 'core:paint' },
   { fn: 'PASS', target: 'core:pass' },
-  { fn: 'FLIPBOOK', target: 'flipbook' },
-  { fn: 'WEEDS', target: 'weeds' },
-  { fn: 'FORKS', target: 'forks' },
-  { fn: 'BRUSHES', target: 'brushes' },
-  { fn: 'AUCTION', target: 'finale auction' },
   { fn: 'QUESTS', target: 'quests' },
-  { fn: 'SLEEPWALKER', target: 'sleepwalker' },
+  { fn: 'AUCTION', target: 'finale auction' },
   { fn: 'RECYCLE_BIN', target: 'recycle-bin' },
   { fn: 'PAGE_EXE', target: 'page-exe' },
   { fn: 'BLOCK_CAMERA', target: 'block-camera' },
-  { fn: 'KERNEL_DEBUGGER', target: 'kernel-debugger' },
   { fn: 'CARD_MEMORY', target: 'card-drv' },
   { fn: 'MONAD_CARD', target: 'card:monad-card' },
 ])
@@ -115,7 +87,6 @@ export const EXTERNAL_CHECKS = Object.freeze([
       'block.coinbase semantics (frame "Sealed by")',
       'EIP-2935 historical block-hash correctness and 8,191-block window',
       'auction close-hash path and candle-start fallback',
-      'MIP-4 reserve enforcement (Kernel Debugger BURST NAIVE)',
       'production gas limits from real distributions',
       'public RPC soak: bounded getLogs, idle rates, ws → polling fallback',
     ],
@@ -886,7 +857,7 @@ export async function runDoctor({
 
   // ---- OWNERSHIP
   report.section('OWNERSHIP')
-  const labsAddress = addr(await read(lab('flipbook') ?? ZERO, 'function LABS() view returns (address)'))
+  const labsAddress = addr(await read(lab('cd-burner') ?? ZERO, 'function LABS() view returns (address)'))
   const questsAddress = lab('quests')
   const ownables = [
     ['Paint', paint],
@@ -948,13 +919,13 @@ export async function runDoctor({
       lr.ok && lb.ok ? `${short(lr.value)} · ${Number(lb.value) / 100}%` : 'unreadable',
     )
   }
-  for (const name of ['flipbook', 'forks', 'sleepwalker', 'cd-burner', 'block-camera']) {
+  for (const name of ['cd-burner', 'block-camera']) {
     if (!lab(name)) continue
     await link(`${name} → Paint`, lab(name), 'function PAINT() view returns (address)', paint)
     await link(`${name} → Labs`, lab(name), 'function LABS() view returns (address)', labsAddress)
   }
-  for (const name of ['weeds', 'brushes', 'finale auction'])
-    if (lab(name)) await link(`${name} → Paint`, lab(name), 'function PAINT() view returns (address)', paint)
+  if (lab('finale auction'))
+    await link('finale auction → Paint', lab('finale auction'), 'function PAINT() view returns (address)', paint)
   if (lab('recycle-bin'))
     await link('recycle-bin → Paint', lab('recycle-bin'), 'function CORE() view returns (address)', paint)
   for (const name of BOUND_EXPERIMENTS) {
@@ -1132,7 +1103,7 @@ export async function runDoctor({
 
   // ---- MONAD HARDWARE
   report.section('MONAD HARDWARE')
-  for (const name of ['page-exe', 'block-camera', 'kernel-debugger']) {
+  for (const name of ['page-exe', 'block-camera']) {
     const entry = registry.resolved[name]
     report.add(
       name,
@@ -1389,7 +1360,7 @@ export async function runDoctor({
         'Mock venue directory',
         directory ? STATUS.OK : STATUS.WARN,
         directory ? short(directory) : 'not registered',
-        'off-mainnet ROUTER.EXE reads mocks from here',
+        'off-mainnet Router Lab reads mocks from here',
       )
     }
   }

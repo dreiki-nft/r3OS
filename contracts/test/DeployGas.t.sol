@@ -5,16 +5,12 @@ import {Test, console} from "forge-std/Test.sol";
 import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
 import {R3OSLabs} from "../src/R3OSLabs.sol";
-import {R3OSFlipbook} from "../src/labs/R3OSFlipbook.sol";
-import {R3OSForks} from "../src/labs/R3OSForks.sol";
 import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
-import {R3OSSleepwalker} from "../src/labs/R3OSSleepwalker.sol";
-import {SleepwalkerKey} from "../src/labs/SleepwalkerKey.sol";
 import {R3OSRecycleBin} from "../src/labs/R3OSRecycleBin.sol";
 import {R3OSCDBurner} from "../src/labs/R3OSCDBurner.sol";
 
 /// @notice Transaction-sized deployment regression under the Monad Foundry profile.
-/// @dev Deploys from artifact creation code so this test does not embed every creation blob in its own runtime.
+/// @dev Covers the canonical hackathon/mainnet deployment surface only.
 contract DeployGasTest is Test {
     uint256 private constant MAX_TX_GAS = 25_000_000;
 
@@ -39,70 +35,28 @@ contract DeployGasTest is Test {
         (address passAddress,) = _deploy("R3OSPainterPass.sol:R3OSPainterPass", abi.encode(paintAddress), "R3OSPainterPass");
         R3OSPainterPass pass = R3OSPainterPass(passAddress);
 
-        bytes memory genesis = vm.parseBytes(vm.trim(vm.readFile("script/flipbook-genesis.hex")));
-        assertEq(genesis.length, 512);
-        (address flipbookAddress,) = _deploy(
-            "R3OSFlipbook.sol:R3OSFlipbook",
-            abi.encode(paintAddress, labsAddress, seasonStart, uint256(300), genesis),
-            "R3OSFlipbook"
-        );
-        (address weedsAddress,) = _deploy("R3OSWeeds.sol:R3OSWeeds", abi.encode(paintAddress, seasonStart), "R3OSWeeds");
-        (address forksAddress,) = _deploy(
-            "R3OSForks.sol:R3OSForks", abi.encode(paintAddress, labsAddress, seasonStart), "R3OSForks"
-        );
-        (address brushesAddress,) = _deploy("R3OSBrushes.sol:R3OSBrushes", abi.encode(paintAddress, seasonStart), "R3OSBrushes");
         (address auctionAddress,) = _deploy("R3OSFinaleAuction.sol:R3OSFinaleAuction", abi.encode(paintAddress), "R3OSFinaleAuction");
         (address questsAddress,) = _deploy("R3OSQuests.sol:R3OSQuests", abi.encode(paintAddress, seasonStart, address(this)), "R3OSQuests");
         R3OSQuests quests = R3OSQuests(questsAddress);
+        (address recycleBinAddress,) = _deploy(
+            "R3OSRecycleBin.sol:R3OSRecycleBin", abi.encode(paintAddress), "R3OSRecycleBin"
+        );
+        (address cdBurnerAddress,) = _deploy(
+            "R3OSCDBurner.sol:R3OSCDBurner", abi.encode(paintAddress, labsAddress), "R3OSCDBurner"
+        );
 
+        _call(paintAddress, abi.encodeCall(paint.setPainterPass, (passAddress)), "wire Painter Pass");
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (diffAddress, "diff")), "wire renderer diff");
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (timelapseAddress, "season timelapse")), "wire renderer timelapse");
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (df1Address, "df1")), "wire renderer df1");
 
-        uint256 flipbookExperimentId = _wireLab(paint, pass, flipbookAddress, "flipbook", true);
-        _call(
-            flipbookAddress,
-            abi.encodeCall(R3OSFlipbook.bindExperimentId, (flipbookExperimentId)),
-            "wire flipbook experiment id"
-        );
-        _wireLab(paint, pass, weedsAddress, "weeds", true);
-        uint256 forksExperimentId = _wireLab(paint, pass, forksAddress, "forks", true);
-        _call(
-            forksAddress,
-            abi.encodeCall(R3OSForks.bindExperimentId, (forksExperimentId)),
-            "wire forks experiment id"
-        );
-        _wireLab(paint, pass, brushesAddress, "brushes", true);
         _wireLab(paint, pass, auctionAddress, "finale auction", false);
         _wireLab(paint, pass, questsAddress, "quests", true);
-
-        (address sleepwalkerKeyAddress,) = _deploy(
-            "SleepwalkerKey.sol:SleepwalkerKey", bytes(""), "SleepwalkerKey implementation"
-        );
-        (address sleepwalkerAddress,) = _deploy(
-            "R3OSSleepwalker.sol:R3OSSleepwalker",
-            abi.encode(paintAddress, labsAddress, sleepwalkerKeyAddress),
-            "R3OSSleepwalker"
-        );
-        uint256 sleepwalkerExperimentId = _wireLab(paint, pass, sleepwalkerAddress, "sleepwalker", true);
-        _call(
-            sleepwalkerAddress,
-            abi.encodeCall(R3OSSleepwalker.bindExperimentId, (sleepwalkerExperimentId)),
-            "wire sleepwalker experiment id"
-        );
-
-        (address recycleBinAddress,) = _deploy(
-            "R3OSRecycleBin.sol:R3OSRecycleBin", abi.encode(paintAddress), "R3OSRecycleBin"
-        );
         uint256 recycleBinExperimentId = _wireLab(paint, pass, recycleBinAddress, "recycle-bin", true);
         _call(
             recycleBinAddress,
             abi.encodeCall(R3OSRecycleBin.bindExperimentId, (recycleBinExperimentId)),
             "wire recycle-bin experiment id"
-        );
-
-        (address cdBurnerAddress,) = _deploy(
-            "R3OSCDBurner.sol:R3OSCDBurner", abi.encode(paintAddress, labsAddress), "R3OSCDBurner"
         );
         uint256 cdBurnerExperimentId = _wireLab(paint, pass, cdBurnerAddress, "cd-burner", false);
         _call(
@@ -116,19 +70,6 @@ contract DeployGasTest is Test {
         _addOne(quests, "LIVE WIRE", paintAddress, bytes4(keccak256("painterStats(address)")), 8, 500);
         _addOne(quests, "10K PIXELS", paintAddress, bytes4(keccak256("painterStats(address)")), 2, 10_000);
         _addOne(quests, "ARCHIVIST", paintAddress, bytes4(keccak256("painterStats(address)")), 3, 10);
-        _addOne(quests, "ANIMATOR", flipbookAddress, bytes4(keccak256("painterInfo(address)")), 4, 100);
-        _addOne(quests, "REEL MAKER", flipbookAddress, bytes4(keccak256("balanceOf(address)")), 0, 1);
-        _addOne(quests, "GREEN THUMB", weedsAddress, bytes4(keccak256("gardenerInfo(address)")), 1, 25);
-        _addOne(quests, "TIMELINES", forksAddress, bytes4(keccak256("painterInfo(address)")), 0, 10);
-        _addOne(quests, "DNA HUNTER", brushesAddress, bytes4(keccak256("box(address)")), 11, 10);
-
-        R3OSQuests.Condition[] memory labRat = new R3OSQuests.Condition[](4);
-        bytes4 stampSelector = bytes4(keccak256("stamp(address)"));
-        labRat[0] = R3OSQuests.Condition(flipbookAddress, stampSelector, 1, 0, 1);
-        labRat[1] = R3OSQuests.Condition(weedsAddress, stampSelector, 1, 0, 1);
-        labRat[2] = R3OSQuests.Condition(forksAddress, stampSelector, 1, 0, 1);
-        labRat[3] = R3OSQuests.Condition(brushesAddress, stampSelector, 1, 0, 1);
-        _call(questsAddress, abi.encodeCall(quests.addQuest, ("LAB RAT", uint48(0), uint48(0), labRat)), "quest LAB RAT");
         _addOne(quests, "PADDLE UP", auctionAddress, bytes4(keccak256("bidderStats(address)")), 0, 1);
         _addOne(quests, "RECYCLER", recycleBinAddress, bytes4(keccak256("burnedBy(address)")), 0, 100);
 
@@ -136,15 +77,13 @@ contract DeployGasTest is Test {
         assertEq(labs.owner(), address(this));
         assertEq(pass.owner(), address(this));
         assertEq(quests.owner(), address(this));
-        assertEq(paint.experimentCount(), 9);
-        assertEq(quests.questCount(), 13);
-        assertEq(pass.stampSourceCount(), 7);
-        assertEq(pass.stampSource(5), sleepwalkerAddress);
-        assertEq(pass.stampSource(6), recycleBinAddress);
+        assertEq(paint.experimentCount(), 4);
+        assertEq(quests.questCount(), 7);
+        assertEq(pass.stampSourceCount(), 2);
+        assertEq(pass.stampSource(0), questsAddress);
+        assertEq(pass.stampSource(1), recycleBinAddress);
         assertTrue(auctionAddress.code.length != 0);
         assertTrue(questsAddress.code.length != 0);
-        assertTrue(sleepwalkerKeyAddress.code.length != 0);
-        assertTrue(sleepwalkerAddress.code.length != 0);
         assertTrue(recycleBinAddress.code.length != 0);
         assertTrue(cdBurnerAddress.code.length != 0);
     }

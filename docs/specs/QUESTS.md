@@ -1,65 +1,42 @@
 # Quests
 
-Phase 3 UI specification for `R3OSQuests`.
+`R3OSQuests` provides small, display-only onchain goals. Each quest has one to four immutable conditions that read one ABI word from Paint or another configured contract for the resolved painter address.
 
-## Model
+The quest owner is append-only through `Ownable2Step`: it can add quests but cannot edit, remove, revoke or retroactively complete an existing quest. Quests grant no Paint budget, NFT permission, token entitlement or economic advantage.
 
-Quests are small display-only goals. Each quest has one to four immutable conditions that read one ABI word from the core or a Lab contract for the resolved painter address.
-
-The quest owner is append-only through `Ownable2Step`: it can add new quests, including later-season goals, but can never edit, remove or revoke an existing quest. Quests grant no paint budget, NFT permission, token entitlement, or other advantage.
-
-Claims are explicit transactions. Once claimed, completion is stored as one bit, which lets the Painter Pass show a cheap `QUESTS n` badge instead of performing thirteen cross-contract checks inside `tokenURI`.
-
-Active core session keys may claim for their owner.
+Claims are explicit transactions. Once claimed, completion is stored as one bit so Painter Pass can expose `QUESTS n` without re-running every condition during `tokenURI`. Active Paint session keys may claim for their resolved owner.
 
 ## Board
 
-For every quest show:
+For each quest the UI shows name, optional block window, conditions, current values, pass/fail state, completion and claimability. `claimable(account)` is used for highlighting. Claim-all is a sequence of ordinary `claim(questId)` transactions, not a hidden batch transaction.
 
-- name;
-- active block window, if bounded;
-- every condition with its threshold;
-- the current value from `progress`;
-- a per-condition progress bar and pass/fail state;
-- completed state;
-- claim availability.
-
-Use `claimable(account)` to highlight immediately claimable quests. A **claim all** action is a sequence of separate `claim(questId)` transactions, not one bundled contract call.
-
-## Day-1 quests
+## Fresh-mainnet base quests
 
 | # | Quest | Goal |
 |---:|---|---|
-| 0 | MONTH IN | 30 active core days |
+| 0 | MONTH IN | 30 active Paint days |
 | 1 | STORM REGULAR | 50 storm paints |
 | 2 | LIVE WIRE | 500 session paints |
-| 3 | 10K PIXELS | 10,000 total core pixels |
-| 4 | ARCHIVIST | 10 core frames minted |
-| 5 | ANIMATOR | 100 Flipbook frames painted |
-| 6 | REEL MAKER | own at least one Flipbook reel |
-| 7 | GREEN THUMB | 25 Weeds plants |
-| 8 | TIMELINES | paint 10 distinct forks |
-| 9 | DNA HUNTER | 10 lifetime verified Block DNA brushes |
-| 10 | LAB RAT | earn FLIPBOOK, GARDENER, FORKER and BLOCK DNA stamps |
-| 11 | PADDLE UP | place at least one finale-auction bid |
-| 12 | RECYCLER | burn 100 frames through the Recycle Bin |
+| 3 | 10K PIXELS | 10,000 total Paint pixels |
+| 4 | ARCHIVIST | 10 Paint frames minted |
+| 5 | PADDLE UP | place at least one finale-auction bid |
+| 6 | RECYCLER | burn 100 frames through Recycle Bin |
 
-All day-1 quests are unbounded in block time.
-
-## Painter Pass
-
-After the first completed quest, the live Pass stamp is `QUESTS 1`; it increments with lifetime quest completions. The stamp is display-only.
-
-## Gas and errors
-
-Use `eth_estimateGas + 10%` for claims. If a condition target reverts, returns too little data, or exhausts its 150K condition gas cap, that condition simply evaluates as not met and the claim reverts with `ConditionNotMet`.
-
+All base quests are unbounded in block time.
 
 ## CARD CARRIER
 
-`DeployMonadCard.s.sol` appends **CARD CARRIER** after the base suite; with the current deployment it is quest id 13 and is not part of `Deploy.s.sol`'s day-one quest list. It is unbounded in block time and has two conditions:
+`DeployMonadCard.s.sol` appends **CARD CARRIER** after the base suite, making it quest id **7** in a canonical fresh deployment. It has two conditions:
 
-1. the configured Monad Card contract `balanceOf(painter)` return word 0 is at least 1;
-2. `R3OSPaint.painterStats(painter)` return word 2 (`totalPixelsPainted`) is at least 143.
+1. configured Monad Card `balanceOf(painter) >= 1`;
+2. Paint `painterStats(painter)` word 2 (`totalPixelsPainted`) >= 143.
 
-The quest therefore means: **hold a Monad Card and paint 143 pixels**. On testnet the first condition points to `MockMonadCard`; mainnet uses the official card address supplied to CARD.DRV.
+So the requirement is: **hold a Monad Card and paint 143 pixels**. Testnet points to `MockMonadCard`; mainnet uses the official card contract.
+
+## Painter Pass
+
+After the first completed quest, the live external Pass stamp is `QUESTS 1`; the number rises with lifetime completions. It is presentation-only.
+
+## Gas and failure isolation
+
+Claims use the normal exact-action `eth_estimateGas + 10%` policy. Each condition is a gas-capped `staticcall` that copies only one requested 32-byte return word. Reverting, missing, malformed, oversized or gas-burning targets fail the condition rather than creating an unbounded callback or bricking unrelated reads.

@@ -7,18 +7,14 @@ import {R3OSOperatorRecord} from "../src/operator/R3OSOperatorRecord.sol";
 import {R3OSSystemEvent, IAggregatorV3} from "../src/operator/R3OSSystemEvent.sol";
 
 /// @notice Add-on deployment for the operator record and permanent system-event latch.
+/// @dev Operator Record v1 keeps legacy source slots for testnet/history compatibility. Fresh r3OS mainnet
+///      deployments intentionally pass zero for retired subsystems instead of deploying dead applications.
 contract DeployOperator is Script {
     struct Resolved {
         address quests;
-        address flipbook;
-        address weeds;
-        address forks;
-        address brushes;
         address auction;
-        address sleepwalker;
         address recycleBin;
         address blockCamera;
-        address kernelDebugger;
         address pageExe;
         address cardMemory;
     }
@@ -41,15 +37,15 @@ contract DeployOperator is Script {
             paint: address(paint),
             pass: paint.painterPass(),
             quests: resolved.quests,
-            flipbook: resolved.flipbook,
-            weeds: resolved.weeds,
-            forks: resolved.forks,
-            brushes: resolved.brushes,
+            flipbook: address(0),
+            weeds: address(0),
+            forks: address(0),
+            brushes: address(0),
             auction: resolved.auction,
-            sleepwalker: resolved.sleepwalker,
+            sleepwalker: address(0),
             recycleBin: resolved.recycleBin,
             blockCamera: resolved.blockCamera,
-            kernelDebugger: resolved.kernelDebugger,
+            kernelDebugger: address(0),
             pageExe: resolved.pageExe,
             cardMemory: resolved.cardMemory
         });
@@ -94,15 +90,9 @@ contract DeployOperator is Script {
             if (info.retired || info.experiment == address(0)) continue;
             bytes32 name = keccak256(bytes(info.name));
             if (name == keccak256("quests")) out.quests = info.experiment;
-            else if (name == keccak256("flipbook")) out.flipbook = info.experiment;
-            else if (name == keccak256("weeds")) out.weeds = info.experiment;
-            else if (name == keccak256("forks")) out.forks = info.experiment;
-            else if (name == keccak256("brushes")) out.brushes = info.experiment;
             else if (name == keccak256("finale auction")) out.auction = info.experiment;
-            else if (name == keccak256("sleepwalker")) out.sleepwalker = info.experiment;
             else if (name == keccak256("recycle-bin")) out.recycleBin = info.experiment;
             else if (name == keccak256("block-camera")) out.blockCamera = info.experiment;
-            else if (name == keccak256("kernel-debugger")) out.kernelDebugger = info.experiment;
             else if (name == keccak256("page-exe")) out.pageExe = info.experiment;
             else if (name == keccak256("card-drv")) out.cardMemory = info.experiment;
         }
@@ -131,17 +121,12 @@ contract DeployOperator is Script {
         console.log("Paint", address(paint));
         console.log("Painter Pass", paint.painterPass());
         _logSource("quests", r.quests);
-        _logSource("flipbook", r.flipbook);
-        _logSource("weeds", r.weeds);
-        _logSource("forks", r.forks);
-        _logSource("brushes", r.brushes);
         _logSource("finale auction", r.auction);
-        _logSource("sleepwalker", r.sleepwalker);
         _logSource("recycle-bin", r.recycleBin);
         _logSource("block-camera", r.blockCamera);
-        _logSource("kernel-debugger", r.kernelDebugger);
         _logSource("page-exe", r.pageExe);
         _logSource("card-drv", r.cardMemory);
+        console.log("legacy Operator Record v1 sources: zeroed on fresh mainnet");
     }
 
     function _logSource(string memory name, address value) private pure {

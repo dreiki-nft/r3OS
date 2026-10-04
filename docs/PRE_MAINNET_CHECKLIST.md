@@ -1,141 +1,147 @@
 # Pre-mainnet checklist
 
-The single canonical launch list. Other docs link here instead of repeating it. Order after this phase: **TESTNET → SOAK → MAINNET PRE-FLIGHT → LAUNCH**.
+The canonical launch list. Order: **TESTNET → SOAK → MAINNET PRE-FLIGHT → LAUNCH**.
 
-Tools: the **Launch Doctor** (`RPC_URL="$MONAD_RPC_URL" npm run -s launch:doctor -- --paint <0x…> --expected-owner <0x…> --expected-chain <id> [--json]`) checks deployment wiring read-only; **DXDIAG.EXE** reports what a browser can see; the two mainnet fork tests check real third-party contracts. None of them turns code presence into proof of chain behaviour; the TESTNET items below need real Monad data.
+Tools: **Launch Doctor** (`RPC_URL="$MONAD_RPC_URL" npm run -s launch:doctor -- --paint <0x…> --expected-owner <0x…> --expected-chain <id> [--json]`) checks deployed wiring read-only. **DXDIAG.EXE** reports what one browser can measure. Fork tests validate real third-party contracts. None of those turns code presence into proof of live chain behavior, so the TESTNET/MAINNET items below still need real Monad data.
 
-## F0. Architecture decisions (already made; changing one needs a documented decision)
+## F0. Architecture decisions
 
-- Operator Record v1 is fixed at 16 domains. Future history uses companion / versioned records, never v1's unused words.
-- The final two Painter Pass visual pins (14, 15) are reserved. No new stamp source for ROUTER or DXDIAG.
-- The experiment registry is intentionally **not frozen** at initial launch (discovery headroom).
-- CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. Router Lab remains read-only research behind Explore Monad; the ROUTER.EXE window stays retired.
-
-- **Retired from the interface (2026-10-01):** Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger, ROUTER.EXE (`src/os/retired.ts`). Their contracts **will stay deployed and registered unchanged on mainnet**; this is a UI retirement only. Do not call `retireExperiment` before the hackathon. The app hides their direct programs and the retired quests, Pass stamps and Operator subsystems. CARD.DRV stays deployed (MONAD CARD stamp, CARD CARRIER quest, Block Camera).
-- **Security audit 2026-10-02** ([`SECURITY_AUDIT_2026-10-02.md`](SECURITY_AUDIT_2026-10-02.md)): before mainnet, (1) `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty (EIP-2935 history, auction settle window); (2) the mainnet r3tards collection is a plain non-upgradeable, non-pausable ERC-721 (frame/finale mint calls its `balanceOf`); (3) keep the UI-retired Labs deployed/registered unchanged for launch; (4) explicitly set `MON_FEED_MAX_AGE` to the observed feed heartbeat + buffer; (5) the Vercel CSP is live (`curl -sI <site> | grep -i content-security-policy`).
-- **PAGE.EXE and ROUTER-LAB must still be deployed on mainnet:** Explore Monad's Storage race calls PAGE.EXE `benchRead`/`probePage`, and its Liquidity race calls ROUTER-LAB `compare` (no mock venues on 143). After deploy, open Explore Monad on mainnet, press Run test and Compare, and confirm real numbers (Storage race ratio ≫ 1; at least one venue quoting).
+- Fresh mainnet omits discontinued experiments entirely. Git history is their archive; do not recreate an `/archive` or `/deprecated` source tree in the submission branch.
+- The existing snapshot-28 testnet is untouched and may still contain historical registry entries. `src/os/retired.ts` exists only to hide those legacy entries/quests/stamps/subsystems when connected to that deployment.
+- PAGE.EXE, CARD.DRV and Router Lab **remain production backends**: Explore Monad uses PAGE.EXE and Router Lab; Monad Card / Block Camera / Pass flows use CARD.DRV.
+- Operator Record keeps its v1 fixed layout for compatibility. Fresh mainnet passes zero addresses for its retired source slots; new history uses a versioned/companion record rather than repurposing v1 fields.
+- The experiment registry is intentionally **not frozen** at initial launch. Registration grants no Paint write privilege.
+- CARD BUS words remain reserved. DEVICE 07's next stage stays unknown.
 
 ## F1. Deployment
 
-- [ ] **Pixel budget immutables:** `BASE_PIXELS_PER_HOUR=512`, `PIXELS_PER_ACTIVE_DAY=32`, `MAX_PIXELS_PER_HOUR=2048`, `MIN_PIXELS_FOR_ACTIVE_DAY=16`, `HOLDER_PIXELS_PER_DAY=512`. Verify the exact env before `Deploy.s.sol`; these cannot be changed after deploy.
-- [ ] **Phase 7.5 partner bonuses:** source constants are Skrumpeys `0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0` +128 px/day and Monad Cards `0x0000CA12D5c07085022eBC74867157449919Fd67` +128 px/day, mainnet-only and once per current-holder wallet. Launch Doctor must report both `OK`.
-- [ ] Suite: `Deploy.s.sol` (Paint, Labs, Pass, renderers, nine Labs, quests).
-- [ ] CARD.DRV: `DeployMonadCard.s.sol` (official card `0x0000CA12D5c07085022eBC74867157449919Fd67` on 143; `MockMonadCard` on testnet).
-- [ ] Monad Hardware: `DeployMonadHW.s.sol` **with** `CARD_MEMORY_ADDRESS` (it is optional in the script; a missing value leaves Block Camera without CARD.DRV).
-- [ ] Operator Record + System Event: `DeployOperator.s.sol` (verified MON/USD proxy `0xBcD78f76005B7515837af6b50c7C52BCf73822fb` on 143). **Mainnet requires an explicit `MON_FEED_MAX_AGE`; the script intentionally has no 25 h fallback on chain 143.**
-- [ ] Router Lab: `DeployRouterLab.s.sol` (no mocks on 143).
-- [ ] Record every address, experiment id and the deploy block with the deployment records.
-- [ ] Run the Launch Doctor with the chain you **intend** (`--expected-chain 10143` on testnet, `143` on mainnet) and keep its JSON report. A different actual chain is a FAIL; omitting the flag is only a WARN, so never omit it for the real check.
+- [ ] Paint budget immutables: `BASE_PIXELS_PER_HOUR=512`, `PIXELS_PER_ACTIVE_DAY=32`, `MAX_PIXELS_PER_HOUR=2048`, `MIN_PIXELS_FOR_ACTIVE_DAY=16`, `HOLDER_PIXELS_PER_DAY=512`.
+- [ ] Partner constants: Skrumpeys `0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0` +128 px/day; Monad Cards `0x0000CA12D5c07085022eBC74867157449919Fd67` +128 px/day; both mainnet-only.
+- [ ] `Deploy.s.sol`: Paint, Labs, Pass, 3 renderers, Finale Auction, Quests, Recycle Bin, CD Burner.
+- [ ] Core deploy registers exactly **4** experiments, **2** initial Pass stamp sources and **7** day-one quests.
+- [ ] `DeployMonadCard.s.sol`: official Monad Card on 143; test mock only on testnet. Confirm CARD.DRV, MONAD CARD stamp and CARD CARRIER quest.
+- [ ] `DeployMonadHW.s.sol`: PAGE.EXE + Block Camera, with `CARD_MEMORY_ADDRESS` wired.
+- [ ] `DeployOperator.s.sol`: Operator Record + System Event. Mainnet requires explicit `MON_FEED_MAX_AGE`; retired v1 source slots must be zero.
+- [ ] `DeployRouterLab.s.sol`: production adapters only on 143; no mock venue registry.
+- [ ] Record every address, experiment id and deploy block.
+- [ ] Run Launch Doctor with the intended chain explicitly (`10143` rehearsal, `143` mainnet) and keep its JSON report.
 
 ## F2. Ownership
 
-- [ ] Paint, Labs, Painter Pass and Quests: `owner()` is the intended project wallet / Safe.
-- [ ] No `pendingOwner()` left dangling: every two-step transfer has been **accepted** (a pending owner is not an owner).
-- [ ] The deployer key retains no ownership it should not have.
-- [ ] Launch Doctor `OWNERSHIP` section: all OK with `--expected-owner`.
+- [ ] Paint, Labs, Painter Pass and Quests `owner()` equal the intended project wallet / Safe.
+- [ ] Every `pendingOwner()` transfer has been accepted; no deployer ownership remains accidentally.
+- [ ] Launch Doctor `OWNERSHIP` section is all OK with `--expected-owner`.
 
-## F3. Immutables
+## F3. Immutables and fixed links
 
-- [ ] Paint `R3TARDS`, `painterPass`, `ROYALTY_RECEIVER` / `ROYALTY_BPS` (5%), token #0 owner.
-- [ ] Fresh mainnet Paint is the Phase 7.5 `R3OSPaint` build: ERC-721 `r3OS paint` / `R3OSPAINT`, EIP-712 domain `r3OS paint` version `2`. Do **not** use the snapshot-28 testnet domain (`r3tards paint`) for chain 143.
-- [ ] Mainnet `SKRUMPEYS` / `MONAD_CARDS` constants match the two intended collections, both addresses have code, and both bonus constants equal `128`.
-- [ ] Labs `CORE`, `ROYALTY_RECEIVER` / `ROYALTY_BPS`; Pass `PAINT`; Quests `PAINT`.
-- [ ] CARD.DRV `MONAD_CARD` is the official card on 143 (Launch Doctor FAILs otherwise).
+- [ ] Paint `R3TARDS`, `painterPass`, royalty receiver/BPS and token #0 owner.
+- [ ] Mainnet Paint identity: ERC-721 `r3OS paint` / `R3OSPAINT`, EIP-712 `r3OS paint`, version `2`. Chain 10143 intentionally keeps `r3tards paint`.
+- [ ] `SKRUMPEYS` / `MONAD_CARDS` addresses have code and both bonus constants equal `128`.
+- [ ] Labs `CORE` and royalties; Pass `PAINT`; Quests `PAINT`.
+- [ ] CARD.DRV points to the official Monad Card contract on 143.
 - [ ] Block Camera `PAINT`, `LABS`, `CARD_MEMORY` match the live suite.
-- [ ] Operator Record: every source pointer matches the live registry / core (Launch Doctor `OPERATOR → Sources: MATCH`).
-- [ ] System Event `FEED` is the verified proxy on 143; threshold and max age are the intended values.
-- [ ] Router Lab `INTERFACE` names the pinned MRC-17 revision; mainnet adapter code hashes match the manifest.
+- [ ] Operator active source pointers match Paint/Pass/Quests/Auction/Recycle/PAGE.EXE/Block Camera/CARD.DRV/Monad Card; retired v1 pointers are zero on fresh mainnet.
+- [ ] System Event feed, threshold and max age are intentional.
+- [ ] Router Lab interface/adapters/code hashes match the pinned manifest.
 
 ## F4. Registries
 
-- [ ] Every expected experiment present and active, exact names (note `finale auction` has a space), no duplicate active names, no active zero address, every entry has code.
-- [ ] No test-only entry (`router-mock-venues`) on mainnet.
+- [ ] Active experiment names are exactly: `finale auction`, `quests`, `recycle-bin`, `cd-burner`, `card-drv`, `page-exe`, `block-camera`, `operator-record`, `system-event`, `router-lab` (plus test-only entries only on testnet when intentionally configured).
+- [ ] No discontinued experiment name is present in the fresh mainnet registry.
+- [ ] No active zero address, duplicate active name or missing runtime code.
 - [ ] Renderers: built-in, `diff`, `season timelapse`, `df1`.
-- [ ] Labs bound to their registry id: Flipbook, Forks, Sleepwalker, Recycle Bin, CD Burner, Block Camera.
-- [ ] Mixed-CD smoke test: capture a Block Camera photo, burn a v3 CD containing that photo (optionally plus a Paint frame), open it in CD-ROM, and confirm both source NFTs remain owned. Legacy v2 frame-only CDs must still open.
+- [ ] Bound Labs: Recycle Bin, CD Burner and Block Camera report the correct registry id where binding applies.
+- [ ] Mixed-CD smoke test: capture a Block Camera portrait, burn a CD containing it (optionally with a Paint frame), play it in CD-ROM, and confirm source NFTs remain owned.
 
 ## F5. Freeze policy
 
-- **Renderers:** review after complete verification. Freeze only once every expected renderer is confirmed; the Launch Doctor reports `REVIEW BEFORE MAINNET` until then.
-- **Experiments: do not freeze at initial launch.** The registry is left open **intentionally** for discovery headroom (it grants no Paint permissions). Trade-off: the owner can still append/retire entries. Changing this requires a deliberate, documented decision.
-- Operator Record v1 stays fixed at 16 subsystems; extensions are separate contracts (`docs/specs/OPERATOR_RECORD.md`).
+- **Renderers:** freeze only after every expected renderer has been verified on mainnet.
+- **Experiments:** leave unfrozen at initial launch for discovery headroom. Changing this requires a documented decision.
+- Operator Record v1 remains fixed; extensions are separate/versioned contracts.
 
-## F6. Pass capacity
+## F6. Painter Pass capacity
 
-- [ ] Launch Doctor `PASS`: 6 built-in pins + 8 sources = **14 / 16 visual pins, 2 remaining**.
-- [ ] The final two visual pins stay **reserved**. Extra stamp sources beyond capacity are metadata-only. ROUTER and DXDIAG get no pin.
+- [ ] Fresh mainnet starts with 6 built-ins + Quests + Recycle Bin + MONAD CARD = **9 / 16** visual pins used after CARD.DRV wiring.
+- [ ] Any later stamp source is reviewed before addition. Sources beyond visual capacity are metadata-only.
 
-## F7. Monad testnet behaviour (TESTNET REQUIRED)
+## F7. Monad behavior
 
-- [ ] `block.coinbase` meaning for frame "Sealed by".
-- [ ] EIP-2935 behaviour and the 8,191-block window; contract `blockhash(n)` vs RPC hashes.
-- [ ] Auction settle via native hash, via EIP-2935, and the candle-start fallback.
-- [ ] MIP-4 reserve enforcement for the retained Kernel experiment: run the Foundry/direct-contract SINGLE, BURST GRACEFUL and BURST NAIVE smoke tests and save receipts. The retired Kernel Debugger UI is not part of this check.
-- [ ] Production-like gas and every fixed gas limit (F8).
-- [ ] Websocket failure falls back to polling; public RPC throttling; long soak.
+- [ ] Verify the meaning of `block.coinbase` before finalizing any “validator/proposer” wording.
+- [ ] Verify EIP-2935 presence/behavior and the effective history window; compare contract history reads with RPC hashes.
+- [ ] Exercise Finale Auction settlement through native `blockhash`, EIP-2935 history and the documented late fallback.
+- [ ] Verify PAGE.EXE MIP-8 measurements on the live target chain.
+- [ ] Verify Block Camera proposer/epoch device behavior and unknown fallbacks.
+- [ ] WebSocket failure falls back cleanly; public RPC throttling and long soak are stable.
 
-## F8. Gas (TESTNET REQUIRED unless marked)
+## F8. Gas and transaction policy
 
-- [ ] Core paint (preflight + DF1 headroom).
-- [ ] Retained Flipbook contract paint (fixed 240K; historical/compatibility regression, UI retired).
-- [ ] Retained Fork contract paint (fixed 250K; historical/compatibility regression, UI retired).
-- [ ] Retained Sleepwalker contract step (fixed 1M; historical/compatibility regression, UI retired).
-- [ ] Auction list / bid / settle / withdrawals.
-- [ ] CARD.DRV write, Block Camera capture, Operator RECORD.
-- [ ] Explore Monad Liquidity race / Router Lab `compare` `eth_call` accepted by the production RPCs (about 5.9M gas for 5 venues at defaults).
-- Details and current numbers: `docs/specs/GAS_LIMITS.md`. Do not write a final number without real data.
+- [ ] Core Paint: preflight + DF1 headroom policy measured under calm/storm and representative crowd pressure.
+- [ ] Frame/Pass/Quest/session actions measured with exact-action estimate + 10% policy.
+- [ ] Finale Auction list/bid/settle/withdraw paths measured.
+- [ ] Recycle representative batch sizes; CD Burner representative track counts including 12 tracks.
+- [ ] CARD.DRV write, PAGE.EXE write, Block Camera capture and Operator RECORD measured.
+- [ ] Explore Monad Router Lab `compare` and PAGE.EXE benchmark `eth_call`s accepted by production RPCs.
+- [ ] Every wallet prompt shows maximum MON cost. Do not promote a local number to a production guarantee without live evidence.
 
-## F9. Mainnet fork (MAINNET FORK REQUIRED)
+See `docs/specs/GAS_LIMITS.md`.
 
-Run from `contracts/` with Foundry ≥ 1.8.3 after `npm ci` in the repo root, and save the output:
+## F9. Mainnet fork / third-party dependencies
 
-- [ ] `MONAD_MAINNET_RPC=… CARD_ID=<id> forge test --match-contract MonadCardFork -vv` (2026-10-01: passed with card #307; transfers revert `Soulbound()`).
-- [ ] `MONAD_MAINNET_RPC=… forge test --match-contract RouterLabFork -vv` (2026-10-01: passed; all 5 WMON/USDC code hashes matched).
-- [ ] `cast code 0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty, and a known holder's `balanceOf(address)` succeeds.
-- [ ] `cast code 0x0000CA12D5c07085022eBC74867157449919Fd67 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty, and a known holder's `balanceOf(address)` succeeds.
+Run from `contracts/` and save output:
 
-## F10. Oracle (MAINNET REQUIRED)
+- [ ] `MONAD_MAINNET_RPC=… CARD_ID=<id> forge test --match-contract MonadCardFork -vv`.
+- [ ] `MONAD_MAINNET_RPC=… forge test --match-contract RouterLabFork -vv`.
+- [ ] Skrumpeys address has code and a known holder `balanceOf(address)` succeeds.
+- [ ] Monad Cards address has code and a known holder `balanceOf(address)` succeeds.
+- [ ] Mainnet r3tards collection is verified as the intended ERC-721 dependency and its `balanceOf` behavior is stable.
+- [ ] `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty before relying on the extended auction history window.
 
-- [ ] MON/USD proxy address, `description()`, `decimals()` = 8.
-- [ ] Freshness and heartbeat against `MAX_AGE`; latest answer sane.
-- [ ] Condition state, and System Event still **not activated** unless the real threshold has occurred.
+## F10. Oracle
 
-## F11. Release schedule
+- [ ] MON/USD proxy address, description and decimals verified.
+- [ ] `MAX_AGE` matches observed heartbeat + buffer; latest answer/freshness sane.
+- [ ] System Event remains unlatched unless the real condition has actually occurred.
 
-- [ ] `public/releases.json` dates are intentional (currently empty: Forks and Block DNA were retired from the interface on 2026-10-01, see `src/os/retired.ts`); the Launch Doctor WARNs on dates already in the past and FAILs on unknown ids or malformed dates.
-- [ ] `VITE_REVEAL_ALL` is set **only** on testnet / preview; unset on mainnet.
+## F11. Release/build configuration
+
+- [ ] `public/releases.json` contains only intentional active-program release gates; no discontinued program ids.
+- [ ] `VITE_REVEAL_ALL` is testnet/preview only and unset on production mainnet.
+- [ ] `VITE_DEPLOY_BLOCK` is the real mainnet Paint deploy block.
+- [ ] `VITE_BUILD_ID` identifies the deployed revision.
 
 ## F12. Public RPC soak
 
-- [ ] No scans from block 0 (`VITE_DEPLOY_BLOCK` set); every `eth_getLogs` ≤ `VITE_LOGS_RANGE`.
-- [ ] Idle call rate within budget (dev `rpcStats`).
-- [ ] Degraded RPC, fallback RPC, websocket failure → polling.
-- [ ] Long browser session, reload, wallet switch, multiple tabs.
+- [ ] No history scans from block 0; every `eth_getLogs` window is bounded by `VITE_LOGS_RANGE`.
+- [ ] Idle and active RPC rates stay within configured per-endpoint budgets.
+- [ ] Degraded primary RPC, fallback RPC and websocket→polling transitions recover cleanly.
+- [ ] Remembered-wallet boot latency and action-RPC readiness are measured on at least two browsers.
+- [ ] Long session, reload, wallet switch and multiple-tab behavior remain stable.
 
 ## F13. Wallet matrix
 
-- [ ] Normal EOA; session-key (Live mode) flows including revoke and sweep.
-- [ ] Disconnected; rejected signature; rejected transaction; wrong network.
-- [ ] Contract wallet where relevant (Operator Record, CARD.DRV writes).
+- [ ] Normal EOA, Live session-key start/revoke/sweep, disconnected mode.
+- [ ] Rejected signature, rejected transaction and wrong-network paths.
+- [ ] Contract wallet where relevant to Operator/CARD.DRV reads or writes.
+- [ ] r3tards, Skrumpeys and Monad Cards holder-budget paths checked on mainnet/fork with known holders.
 
-## F14. Browser / device
+## F14. Browser / judge path
 
-- [ ] Desktop and narrow/mobile layout; reload; deep links (`#/…`). While disconnected, open a real `#/cdrom?cd=<id>` and confirm the public community CD plays read-only with no wallet.
-- [ ] Start → Run… commands; retired programs (`flipbook`, `router`, `kernel`, `page`, …) say "cannot find" and their deep links open nothing.
-- [ ] DXDIAG.EXE report copies cleanly (no RPC URL, no wallet) and shows the deployed `VITE_BUILD_ID` (public; set it per deploy, e.g. the snapshot or commit you deployed).
-- [ ] Program release gating with reveal-all off.
+- [ ] Desktop + narrow layout, reload and deep links.
+- [ ] Disconnected user can boot, open Paint and inspect Monad before connecting.
+- [ ] Two-browser Live test shows remote strokes and separate receipt/commit-state proof.
+- [ ] DXDIAG report contains no wallet or RPC URL and shows the deployed build id.
+- [ ] Historical discontinued program commands/deep links do not open a production program.
+- [ ] Fresh r3OS OG image and submission screenshots match the actual shipped UI.
 
-## F15. Content / operational (decisions, not code)
+## F15. Operational/content decisions
 
-- [ ] Offensive canvas content: written policy. Canvas pixels are permissionless and frames are immutable; there is no and will be no onchain censorship mechanism. UI-only hiding (if any) must be documented as such.
-- [ ] Session-key user warnings: final wording reviewed (hot browser key, 1 MON app-managed balance cap, revoke + sweep).
-- [ ] Burn the launch-week community CD and keep its public `#/cdrom?cd=<id>` link for the submission/demo.
-- [ ] Auction keeper: who runs `scripts/auction-keeper.sh` for every finale auction.
-- [ ] Recovery / support process: where users report problems; DXDIAG report as the first artifact.
+- [ ] Permissionless-canvas/offensive-content policy documented; onchain frames remain immutable.
+- [ ] Live burner warning reviewed: hot browser key, 1 MON app-managed balance cap, revoke + sweep.
+- [ ] Launch-week community CD and shareable read-only link prepared.
+- [ ] Auction keeper responsibility assigned.
+- [ ] User support path asks for DXDIAG output first.
 
 ## F16. Final Launch Doctor
-
-Before the public mainnet announcement:
 
 ```bash
 RPC_URL="$MONAD_MAINNET_RPC" npm run -s launch:doctor -- \
@@ -145,9 +151,8 @@ RPC_URL="$MONAD_MAINNET_RPC" npm run -s launch:doctor -- \
   --json > launch-doctor-mainnet.json
 ```
 
-- [ ] Run once without `--json` to read it, once with `--json` to keep it. Pass the RPC through `RPC_URL` with `npm run -s` (as above): the doctor never prints it, but `npm run` without `-s` echoes every `--rpc` argument, which would leak a private provider key.
-- [ ] `Chain match` is OK (actual chain 143 = expected 143).
+- [ ] Run once human-readable, once as JSON; pass RPC via `RPC_URL` so shell/npm output never exposes a provider key.
+- [ ] Chain match is OK.
 - [ ] **FAIL = 0.**
-- [ ] Every WARN manually reviewed and either fixed or explained.
-- [ ] Every UNKNOWN manually reviewed: UNKNOWN means a required read failed, not that it passed.
-- [ ] The JSON report saved with the deployment records.
+- [ ] Every WARN/UNKNOWN is manually reviewed and explained or fixed.
+- [ ] JSON report saved with deployment records.

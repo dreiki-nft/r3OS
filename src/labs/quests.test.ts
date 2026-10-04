@@ -6,14 +6,16 @@ import { badgeSrc } from './QuestsProgram'
 
 describe('quest progress mapping', () => {
   it('locks a quest when one of its target contracts belongs to a hidden Lab', () => {
-    const targets = { '0xabc': 'forks', '0xdef': 'brushes' }
-    expect(questLockedByHiddenLab([{ target: '0xAbC' }], targets, (id) => id === 'forks')).toBe(true)
-    expect(questLockedByHiddenLab([{ target: '0xDef' }], targets, (id) => id === 'forks')).toBe(false)
+    const targets = { '0xabc': 'historical-a', '0xdef': 'historical-b' }
+    expect(questLockedByHiddenLab([{ target: '0xAbC' }], targets, (id) => id === 'historical-a')).toBe(true)
+    expect(questLockedByHiddenLab([{ target: '0xDef' }], targets, (id) => id === 'historical-a')).toBe(false)
     expect(questLockedByHiddenLab([{ target: '0x123' }], targets, () => true)).toBe(false)
   })
-  it('maps all 13 quest ids to badges including RECYCLER', () => {
-    expect(Array.from({ length: 13 }, (_, id) => badgeSrc(id))).toHaveLength(13)
-    expect(badgeSrc(12)).toBe('/os/badges/q12_recycler.png')
+  it('maps active quest names to stable badge assets', () => {
+    expect(badgeSrc('MONTH IN')).toBe('/os/badges/q00_month_in.png')
+    expect(badgeSrc('PADDLE UP')).toBe('/os/badges/q11_paddle_up.png')
+    expect(badgeSrc('RECYCLER')).toBe('/os/badges/q12_recycler.png')
+    expect(badgeSrc('CARD CARRIER')).toBe('/os/icons/trophy@2x.png')
   })
   it('maps a single-condition quest', () => {
     expect(mapQuestProgress([{ threshold: 30n, op: 0 }], [23n], [false], false, false)).toMatchObject({

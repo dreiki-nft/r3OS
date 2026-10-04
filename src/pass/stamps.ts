@@ -13,10 +13,6 @@ export interface StampRow {
 }
 
 const rules: Record<string, string> = {
-  FLIPBOOK: '10 distinct Flipbook frames',
-  GARDENER: '5 plants or 25 ticks',
-  FORKER: '3 distinct forks painted',
-  'BLOCK DNA': '3 verifications',
   'MONAD CARD': 'hold a Monad Card',
 }
 

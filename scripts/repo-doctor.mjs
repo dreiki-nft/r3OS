@@ -8,6 +8,7 @@ const forbiddenRootFiles = [
   'APPLY_PHASE6_CLEANUP.sh',
   'APPLY_R3OS_REBRAND.sh',
   'APPLY_PHASE7_5_CONTRACT_REBRAND.sh',
+  'APPLY_PHASE7_6_SUBMISSION_CLEANUP.sh',
   'APPLY.txt',
   'CLAUDE_SNAPSHOT_28_REVIEW.md',
   'DELETIONS.txt',
@@ -64,6 +65,39 @@ const deadFiles = [
   'src/os/programs/Placeholder.tsx',
 ]
 
+const removedSubmissionFiles = [
+  'contracts/src/interfaces/IR3OSSleepwalkerCore.sol',
+  'contracts/src/labs/R3OSBrushes.sol',
+  'contracts/src/labs/R3OSFlipbook.sol',
+  'contracts/src/labs/R3OSForks.sol',
+  'contracts/src/labs/R3OSSleepwalker.sol',
+  'contracts/src/labs/SleepwalkerKey.sol',
+  'contracts/src/labs/R3OSWeeds.sol',
+  'contracts/src/lib/BrushDNA.sol',
+  'contracts/src/monadhw/R3OSKernelDebugger.sol',
+  'contracts/test/Brushes.t.sol',
+  'contracts/test/Flipbook.t.sol',
+  'contracts/test/Forks.t.sol',
+  'contracts/test/Sleepwalker.t.sol',
+  'contracts/test/Weeds.t.sol',
+  'contracts/script/flipbook-genesis.hex',
+  'scripts/export-flipbook-genesis.mjs',
+  'docs/specs/BRUSHES.md',
+  'docs/specs/FLIPBOOK.md',
+  'docs/specs/FORKS.md',
+  'docs/specs/KERNEL_DEBUGGER.md',
+  'docs/specs/LANES.md',
+  'docs/specs/SLEEPWALKER.md',
+  'docs/specs/WEEDS.md',
+  'docs/specs/ROUTER_EXE.md',
+  'public/os/badges/q05_animator.png',
+  'public/os/badges/q06_reel_maker.png',
+  'public/os/badges/q07_green_thumb.png',
+  'public/os/badges/q08_timelines.png',
+  'public/os/badges/q09_dna_hunter.png',
+  'public/os/badges/q10_lab_rat.png',
+]
+
 const legacyContractSources = [
   'contracts/src/R3tardsPaint.sol',
   'contracts/src/R3tardsPainterPass.sol',
@@ -96,6 +130,9 @@ for (const file of retiredUiFiles) {
 }
 for (const file of deadFiles) {
   if (existsSync(resolve(root, file))) problems.push(`dead frontend source still present: ${file}`)
+}
+for (const file of removedSubmissionFiles) {
+  if (existsSync(resolve(root, file))) problems.push(`pruned submission artifact still present: ${file}`)
 }
 for (const file of legacyContractSources) {
   if (existsSync(resolve(root, file))) problems.push(`legacy pre-mainnet contract source still present: ${file}`)
@@ -164,6 +201,30 @@ const markdownFiles = [
   ...markdownUnder('docs'),
 ]
 
+const removedContractIdentifiers = [
+  'R3OSFlipbook',
+  'R3OSWeeds',
+  'R3OSForks',
+  'R3OSBrushes',
+  'R3OSSleepwalker',
+  'SleepwalkerKey',
+  'IR3OSSleepwalkerCore',
+  'BrushDNA',
+  'R3OSKernelDebugger',
+]
+const submissionWiringFiles = [
+  'contracts/script/Deploy.s.sol',
+  'contracts/script/DeployMonadHW.s.sol',
+  'contracts/script/DeployOperator.s.sol',
+  'scripts/export-abi.mjs',
+]
+for (const file of submissionWiringFiles) {
+  const source = read(file)
+  for (const id of removedContractIdentifiers) {
+    if (source.includes(id)) problems.push(`pruned contract is still wired in ${file}: ${id}`)
+  }
+}
+
 for (const file of markdownFiles) {
   const source = read(file)
   const link = /!?\[[^\]]*\]\(([^)]+)\)/g
@@ -191,5 +252,5 @@ if (problems.length) {
   for (const problem of problems) console.error(`- ${problem}`)
   process.exitCode = 1
 } else {
-  console.log('repo doctor: OK — root, docs, links, r3OS branding and retired UI reachability are clean')
+  console.log('repo doctor: OK — root, docs, links, r3OS branding and submission surface are clean')
 }

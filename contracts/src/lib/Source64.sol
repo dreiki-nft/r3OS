@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @notice The shared 64x64 view of a 256x256 frame, used by DF1Renderer and R3OSForks.
+/// @notice The shared 64x64 view of a 256x256 frame, used by DF1Renderer.
 /// @dev Output rows are top-down. Row y is one word: pixel x is the nibble at bits [252 - 4x, 255 - 4x],
 /// which is also the byte layout of a 4bpp BMP row (high nibble = left pixel).
 /// Each 64x64 cell samples the top-left pixel of its 4x4 source block. A cell becomes the face colour when

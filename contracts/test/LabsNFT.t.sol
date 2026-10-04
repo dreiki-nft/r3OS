@@ -45,10 +45,10 @@ contract MockLabTokenSource is ILabTokenSource {
             if (n != 0) revert("spent gas");
         }
         return (
-            "Dream",
-            "a mock dream",
+            "Artifact",
+            "a mock artifact",
             bytes("<svg/>"),
-            ',{"trait_type":"Pixels dreamt","display_type":"number","value":321}',
+            ',{"trait_type":"Payload units","display_type":"number","value":321}',
             11,
             3
         );
@@ -61,12 +61,10 @@ contract MockLabTokenSource is ILabTokenSource {
 
 contract LabTraitsHarness {
     function palette(uint256 n) external pure returns (string memory) { return LabTraits.palette(n); }
-    function reelLength(uint256 n) external pure returns (string memory) { return LabTraits.reelLength(n); }
     function tempo(uint256 n) external pure returns (string memory) { return LabTraits.tempo(n); }
     function validatorMix(uint256 n) external pure returns (string memory) { return LabTraits.validatorMix(n); }
     function crowd(uint256 n) external pure returns (string memory) { return LabTraits.crowd(n); }
     function activity(uint256 n) external pure returns (string memory) { return LabTraits.activity(n); }
-    function lineage(uint256 n) external pure returns (string memory) { return LabTraits.lineage(n); }
 }
 
 contract LabsNFTTest is Test {
@@ -92,8 +90,8 @@ contract LabsNFTTest is Test {
         labs = new R3OSLabs(address(paint), royalty);
         sourceA = new MockLabTokenSource(labs);
         sourceB = new MockLabTokenSource(labs);
-        experimentA = paint.addExperiment(address(sourceA), "sleepwalker", "");
-        experimentB = paint.addExperiment(address(sourceB), "sleepwalker", "");
+        experimentA = paint.addExperiment(address(sourceA), "test-source", "");
+        experimentB = paint.addExperiment(address(sourceB), "test-source", "");
         sourceA.configure(experimentA, 0, false);
         sourceB.configure(experimentB, 0, false);
         traits = new LabTraitsHarness();
@@ -155,7 +153,7 @@ contract LabsNFTTest is Test {
 
         bytes memory json = _json(labs.tokenURI(first));
         vm.parseJson(string(json));
-        assertEq(vm.parseJsonString(string(json), ".attributes[0].value"), "Dream");
+        assertEq(vm.parseJsonString(string(json), ".attributes[0].value"), "Artifact");
     }
 
     function testBurnRequiresOwnerAndSourcePermission() public {
@@ -190,10 +188,10 @@ contract LabsNFTTest is Test {
 
         bytes memory json = _json(labs.tokenURI(id));
         vm.parseJson(string(json));
-        assertEq(vm.parseJsonString(string(json), ".name"), "r3OS labs dream #1");
+        assertEq(vm.parseJsonString(string(json), ".name"), "r3OS labs artifact #1");
         assertEq(vm.parseJsonString(string(json), ".external_url"), "https://r3tards.example/#/labs?token=1");
-        assertEq(vm.parseJsonString(string(json), ".attributes[0].value"), "Dream");
-        assertEq(vm.parseJsonString(string(json), ".attributes[1].value"), "Sleepwalker");
+        assertEq(vm.parseJsonString(string(json), ".attributes[0].value"), "Artifact");
+        assertEq(vm.parseJsonString(string(json), ".attributes[1].value"), "Test Source");
         assertEq(vm.parseJsonUint(string(json), ".attributes[2].value"), 1);
         assertEq(vm.parseJsonString(string(json), ".attributes[5].value"), "yes");
         assertEq(vm.parseJsonString(string(json), ".attributes[7].value"), "DF1 cyan");
@@ -216,7 +214,7 @@ contract LabsNFTTest is Test {
         sourceA.configure(experimentA, 1, false);
         bytes memory revertJson = _json(labs.tokenURI(revertId));
         vm.parseJson(string(revertJson));
-        assertEq(vm.parseJsonString(string(revertJson), ".attributes[0].value"), "Dream");
+        assertEq(vm.parseJsonString(string(revertJson), ".attributes[0].value"), "Artifact");
         assertEq(vm.parseJsonString(string(revertJson), ".attributes[9].value"), "Mono");
 
         sourceB.configure(experimentB, 0, false);
@@ -224,16 +222,10 @@ contract LabsNFTTest is Test {
         sourceB.configure(experimentB, 2, false);
         bytes memory gasJson = _json(labs.tokenURI(gasId));
         vm.parseJson(string(gasJson));
-        assertEq(vm.parseJsonString(string(gasJson), ".attributes[0].value"), "Dream");
+        assertEq(vm.parseJsonString(string(gasJson), ".attributes[0].value"), "Artifact");
     }
 
     function testBucketEdges() public view {
-        assertEq(traits.reelLength(11), "Short");
-        assertEq(traits.reelLength(12), "Medium");
-        assertEq(traits.reelLength(19), "Medium");
-        assertEq(traits.reelLength(20), "Long");
-        assertEq(traits.reelLength(27), "Long");
-        assertEq(traits.reelLength(28), "Epic");
 
         assertEq(traits.tempo(400), "Real-time");
         assertEq(traits.tempo(401), "Smooth");
@@ -264,9 +256,6 @@ contract LabsNFTTest is Test {
         assertEq(traits.palette(6), "Rich");
         assertEq(traits.palette(10), "Rich");
         assertEq(traits.palette(11), "Full");
-        assertEq(traits.lineage(1), "Original");
-        assertEq(traits.lineage(2), "Remix");
-        assertEq(traits.lineage(3), "Deep remix");
     }
 
     function testGasLabsMint() public {

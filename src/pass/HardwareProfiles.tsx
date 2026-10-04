@@ -3,12 +3,11 @@ import { screenSafeMessage } from '../chain/errors'
 import { confirmHigherCost } from '../os/confirm'
 import { formatEther, parseEther } from 'viem'
 import { publicClient } from '../chain/clients'
-import { discoverContracts } from '../chain/contracts'
 import { useRefreshTick } from '../chain/refreshTick'
 import { config } from '../chain/config'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3OS_PAINT_ABI, R3OS_SLEEPWALKER_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -50,14 +49,12 @@ export function HardwareProfiles() {
   const [cancelQuote, setCancelQuote] = useState<ActionQuote>()
   const [cancelQuoteFailed, setCancelQuoteFailed] = useState(false)
   const [topQuoteNote, setTopQuoteNote] = useState('')
-  const [dreamSessionsLeft, setDreamSessionsLeft] = useState(0n)
   const [cancelling, setCancelling] = useState(false)
   const endWorkRef = useRef(false)
 
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
 
   useEffect(() => {
-    setDreamSessionsLeft(0n)
     if (!wallet.account || !publicClient || !config.paintAddress) return
     const client = publicClient
     const account = wallet.account
@@ -72,17 +69,6 @@ export function HardwareProfiles() {
         }),
       )
       if (!cancelled) setSessionNonce(nonce)
-      const contracts = await discoverContracts()
-      const sleepwalker = contracts.labs.sleepwalker
-      if (sleepwalker) {
-        const dream = (await client.readContract({
-          address: sleepwalker,
-          abi: R3OS_SLEEPWALKER_ABI,
-          functionName: 'dreamOf',
-          args: [account],
-        })) as readonly unknown[]
-        if (!cancelled) setDreamSessionsLeft(BigInt(dream[5] as bigint))
-      }
     })().catch(() => undefined)
     return () => {
       cancelled = true
@@ -358,11 +344,6 @@ export function HardwareProfiles() {
           Every session you signed but haven't started stops working. Sessions already running keep going;
           revoke those separately.
         </p>
-        {dreamSessionsLeft > 0n && (
-          <p className="warning-line">
-            your Sleepwalker dream stalls at its next night. Resume with new signatures or wake up.
-          </p>
-        )}
         <Button
           disabled={!wallet.account || !cancelQuote || cancelling}
           onClick={() => void cancelUnusedSignatures()}

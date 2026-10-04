@@ -2,7 +2,7 @@
 
 Phase MONAD CARD plugs the official Monad Card into r3OS as a hardware identity device without modifying the card contract. `R3OSCardMemory` is a separate, ownerless driver: every card id addresses one raw 4 KiB storage page and only the card's current `ownerOf(cardId)` may write it.
 
-The driver is registered in the Paint experiment registry as `card-drv`. The frontend program is `CARDMEM.EXE`. PAGE.EXE, Kernel Debugger, Block Camera, Monad Hardware, the Painter Pass and Quests all consume the same driver/page state.
+The driver is registered in the Paint experiment registry as `card-drv`. The current submission has no standalone card-programmer window; System Information, Block Camera, Painter Pass and Quests consume the driver state directly. PAGE.EXE remains a separate MIP-8 comparison backend in Explore Monad.
 
 The official card contract is never wrapped, escrowed, transferred or modified by this feature.
 
@@ -58,7 +58,7 @@ Bytes are offsets inside the 4 KiB page. Bytes inside each 32-byte word are disp
 | `0x380–0x3FF` | W28–W31 | reserved | zero by convention |
 | `0x400–0xFFF` | W32–W127 | USER | 3,072 free-form bytes |
 
-Only W0 is enforced by the contract. W1–W127 are raw EEPROM. CARDMEM.EXE respects the v1 regions and does not write reserved words, but a direct owner call may write any non-header word. Non-zero reserved words are displayed as `non-standard`; they are not censored or rewritten.
+Only W0 is enforced by the contract. W1–W127 are raw EEPROM. The region map is a client convention: a direct owner call may write any non-header word. Readers can label non-zero reserved words as `non-standard`; the contract does not censor or rewrite them.
 
 ### Header W0
 
@@ -120,62 +120,19 @@ The hash of a completely empty 4 KiB page is:
 
 ## Discovery
 
-The frontend deliberately does not scan historical card `Transfer` or claim events. Months of 300 ms blocks are not compatible with the app's bounded Phase-5 log policy, and the official card ABI was not available when this phase was written.
+The frontend deliberately does not scan historical card `Transfer` or claim events. Months of fast blocks are incompatible with the app's bounded log policy.
 
 Discovery order is:
 
-1. `R3OSCardMemory.cardOf(wallet)`, then verify the id with the card's `ownerOf`;
-2. a per-chain/per-wallet id remembered in localStorage, then verify it with `ownerOf`;
-3. the Found New Hardware flow in CARDMEM.EXE, where the user enters an id and the app verifies `ownerOf`.
+1. `R3OSCardMemory.cardOf(wallet)`, revalidated with the card's `ownerOf`;
+2. a per-chain/per-wallet id already remembered locally, also revalidated with `ownerOf`;
+3. otherwise `balanceOf(wallet)` can still prove that a card exists even when its id is unknown.
 
-If `balanceOf(wallet) > 0` but no id can be resolved, the truthful state is `card detected, number unknown`.
+If `balanceOf(wallet) > 0` but no id is resolvable, the truthful state is `card detected, number unknown`. Local storage is convenience only and grants no authorization.
 
-LocalStorage is convenience only. It grants no authorization and a stale remembered id is ignored when `ownerOf` no longer matches.
+CARD.DRV remains composable even though the hackathon UI does not expose a general EEPROM editor: owners or contract wallets can call `write` directly, and Block Camera/Operator/System Information consume the resulting onchain state.
 
-## CARDMEM.EXE
-
-CARDMEM.EXE is the structured EEPROM programmer.
-
-It provides:
-
-- a generic r3OS cartridge drawing, not official Monad Card artwork;
-- capacity, used/free bytes, writes, page, slot, owner and last-write block;
-- label and message ASCII editors;
-- a 32×32 palette icon editor;
-- boot-banner and accent fields;
-- 3,072 bytes of free-form USER hex memory;
-- a raw 128-word hexdump with region labels and pending changes;
-- one `WRITE TO CARD` operation using the minimal contiguous changed word range;
-- a receipt-derived write log with block, word range, gas used and status.
-
-When the owner is a contract wallet and the connected EOA is not the owner, CARDMEM.EXE stays read-only and can copy the exact `write` calldata for submission through that contract wallet.
-
-## PAGE.EXE and private-page traffic
-
-PAGE.EXE can switch between `WALLET PAGE` and `CARD PAGE`.
-
-The card page reuses the same 128×64 nibble view and hexdump but is read-only there. Programming stays centralized in CARDMEM.EXE.
-
-CARD READ shows the standalone `readCost(cardId)` result next to PAGE.EXE's measured 128-scattered-slot benchmark.
-
-`CARD TRAFFIC · PRIVATE PAGES` runs only when the user presses SCAN. It reads `CardWritten` logs for the last 3,000 blocks through `src/chain/logs.ts`, then fetches at most 50 transaction receipts and groups real writes by block.
-
-The table can report where writes landed, distinct pages, words written, receipt gas and status. Monad RPC does **not** expose conflict or re-execution counts, so the UI does not pretend to measure them. The aggregation helper is generic so a future shared/contended page source can use the same table.
-
-## Kernel Debugger
-
-Kernel Debugger adds a local command line:
-
-```text
-C:\KERNEL>help
-C:\KERNEL>device <id>
-C:\KERNEL>dump <id> [word] [count]
-```
-
-`device` prints CARD.DRV ownership, page, slot, format, write blocks and page hash.
-
-`dump` reads the requested words and prints their absolute storage slots, raw hex, ASCII and v1 region. It separately calls `eth_getStorageAt` for the CARD.DRV base slot and compares that value to `readPage[0]`, making the storage inspector a real RPC cross-check rather than a rendered copy of the same frontend state.
-
+## Block Camera commitment
 ## Block Camera commitment
 
 Plain `capture()` remains a normal Block Camera shot.
@@ -201,14 +158,14 @@ MONAD CARD = balanceOf(painter) > 0
 
 Failures return false instead of reverting. The Pass already gas-caps and validates external stamp-source returndata.
 
-`DeployMonadCard.s.sol` appends the `MONAD CARD` stamp source and the `CARD CARRIER` quest. With the current deployment order the card source is source id 7, so its Pass pin is 13 (`6 + sourceId`) and two pin positions remain.
+`DeployMonadCard.s.sol` appends the `MONAD CARD` stamp source and the `CARD CARRIER` quest. In the canonical Phase 7.6 deployment the two core sources are Quests and Recycle Bin, so MONAD CARD becomes source id 2 and visual pin 8 (`6 + sourceId`).
 
 CARD CARRIER has two immutable onchain conditions:
 
 1. Monad Card `balanceOf(painter) >= 1`;
 2. Paint `painterStats(painter)` return word 2 (`totalPixelsPainted`) >= 143.
 
-It is quest id 13 in the current suite and is added by the CARD.DRV add-on script, not by the base day-one deploy script.
+It is quest id 7 in the canonical fresh deployment and is added by the CARD.DRV add-on script, not by the base seven-quest deploy script.
 
 ## Device Manager provenance
 

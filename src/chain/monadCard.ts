@@ -505,7 +505,7 @@ export async function readMonadCard(account?: Address): Promise<MonadCardSnapsho
 let sharedRead: { key: string; promise: Promise<MonadCardSnapshot> } | undefined
 let lastSnapshot: { account?: Address; value: MonadCardSnapshot } | undefined
 
-/** HardwareBus, Monad Hardware, CARDMEM, PAGE.EXE and Block Camera all share one read per refresh. */
+/** System Information and Block Camera share one card/driver read per refresh. */
 function readMonadCardShared(account: Address | undefined, key: string) {
   if (sharedRead?.key === key) return sharedRead.promise
   const promise = readMonadCard(account).then((value) => {

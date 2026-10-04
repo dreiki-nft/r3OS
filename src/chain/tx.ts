@@ -192,22 +192,11 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
     gasLimitPromise = Promise.resolve(21_000n)
   } else {
     const base = contractBase(opts, sender)
-    const fixedGas =
-      opts.kind === 'flipbookPaint' || opts.kind === 'forkPaint' || opts.kind === 'sleepwalkerStep'
-
-    if (fixedGas) {
-      // Fixed-gas actions still need one dry-run so an invalid action is rejected before a
-      // burner signs it. The dry-run now overlaps the fee lookup instead of blocking it.
-      gasLimitPromise = actionRpcRequest((client) => client.simulateContract(base)).then(() =>
-        gasLimitFor(opts.kind, 0n, opts.pixels),
-      )
-    } else {
-      // estimateContractGas already executes the transaction and surfaces reverts. Running a
-      // simulateContract first performed the same expensive work twice on every quote.
-      gasLimitPromise = actionRpcRequest((client) => client.estimateContractGas(base)).then((estimate) =>
-        gasLimitFor(opts.kind, estimate, opts.pixels),
-      )
-    }
+    // estimateContractGas already executes the transaction and surfaces reverts. Running a
+    // simulateContract first performed the same expensive work twice on every quote.
+    gasLimitPromise = actionRpcRequest((client) => client.estimateContractGas(base)).then((estimate) =>
+      gasLimitFor(opts.kind, estimate, opts.pixels),
+    )
   }
 
   const feePromiseForQuote = blockPromise.then((block) => feeQuote(block))

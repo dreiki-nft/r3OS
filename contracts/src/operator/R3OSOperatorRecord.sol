@@ -12,6 +12,8 @@ contract R3OSOperatorRecord {
     uint32 private constant MAGIC = 0x4f505231; // "OPR1"
     uint256 private constant PAGE_WORDS = 128;
 
+    // v1 protocol ids are immutable history. Phase 7.6 leaves discontinued ids reserved rather than reusing them.
+    // Fresh mainnet passes address(0) for those Sources fields, so their predicates remain unanswered forever.
     uint256 public constant PAINT_ID = 0;
     uint256 public constant FRAMES_ID = 1;
     uint256 public constant PASS_ID = 2;
@@ -50,6 +52,8 @@ contract R3OSOperatorRecord {
     bytes4 private constant BALANCE_OF = bytes4(keccak256("balanceOf(address)"));
     bytes4 private constant CURRENT_SEASON = bytes4(keccak256("currentSeason()"));
 
+    // Sources keeps the original v1 tuple layout for compatibility with the fixed record schema.
+    // Discontinued source fields are expected to be zero on fresh-mainnet deployments.
     struct Sources {
         address paint;
         address pass;

@@ -1,6 +1,6 @@
-# ROUTER.EXE
+# Router Lab
 
-ROUTER.EXE is a read-only execution-routing laboratory for r3OS. It demonstrates MRC-17-style propAMM quoting inside one EVM execution without moving user assets. The lab compares adapter quotes at one block state, isolates every quote in an always-reverting child frame, and returns diagnostics to an `eth_call` caller.
+Router Lab is a read-only execution-routing laboratory for r3OS. It demonstrates MRC-17-style propAMM quoting inside one EVM execution without moving user assets. The lab compares adapter quotes at one block state, isolates every quote in an always-reverting child frame, and returns diagnostics to an `eth_call` caller.
 
 ## MRC-17 revision
 
@@ -14,7 +14,7 @@ Reference adapter behavior was studied at `haythemsellami/mrc-17-adapters` commi
 
 The self-call/revert pattern follows the architecture demonstrated by Monoper, with two additional resource limits here: adapter gas is capped and revert/success returndata is bounded. A venue cannot make quote-side state persist, and a revert from one venue does not by itself discard reports from the others.
 
-The UI's `rolled back` label is **by construction**, not an RPC measurement. Foundry isolation tests are the proof. ROUTER.EXE does not use `debug_*` or trace RPC methods.
+The Liquidity race UI's `rolled back` label is **by construction**, not an RPC measurement. Foundry isolation tests are the proof. Router Lab does not use `debug_*` or trace RPC methods.
 
 ## Same-state comparison
 
@@ -32,7 +32,7 @@ Adapter revert data is truncated to 512 bytes while the full `returndatasize` is
 
 `REVERTED_AT_GAS_CAP` is a measured heuristic: the adapter failed with empty returndata and consumed approximately the EIP-150-adjusted cap. It is not a statement about the venue's intent or general availability.
 
-Measured locally (Monad-mode anvil, `monad:MonadTen`): `compare` over five mock venues costs 166k gas without the probe; the probe adds the full cap of any venue whose quote path writes state, because a state write inside STATICCALL halts the frame. `testWorstCaseVenuesFitPreflightBudget` runs eight hostile venues at the 5M cap (four burn their whole quote frame, return the largest accepted payload and then burn the whole probe; four revert with 1 MiB) with exactly the preflight budget plus 20k, and every row still comes back. Above about 3.5M per frame the 63/64 rule gives the adapter slightly less than the nominal cap (about 4.97M at 5M). Public Monad RPCs accept `eth_call` up to 200M gas, but calls above 8.1M gas run in the providers' smaller high-gas pool. Mainnet quotes measured on 2026-10-01 (1 WMON → USDC) used 55k–723k gas, so ROUTER.EXE defaults to 1M per frame with the STATICCALL probe off: a five-venue RUN asks for about 5.9M and stays in the low-gas pool. The INPUT DEVICE shows the request size, and a row that hits its cap suggests raising Gas / frame. Kernel `quote` (one venue) always includes the probe.
+Measured locally (Monad-mode anvil, `monad:MonadTen`): `compare` over five mock venues costs 166k gas without the probe; the probe adds the full cap of any venue whose quote path writes state, because a state write inside STATICCALL halts the frame. `testWorstCaseVenuesFitPreflightBudget` runs eight hostile venues at the 5M cap (four burn their whole quote frame, return the largest accepted payload and then burn the whole probe; four revert with 1 MiB) with exactly the preflight budget plus 20k, and every row still comes back. Above about 3.5M per frame the 63/64 rule gives the adapter slightly less than the nominal cap (about 4.97M at 5M). Public Monad RPCs accept `eth_call` up to 200M gas, but calls above 8.1M gas run in the providers' smaller high-gas pool. Mainnet quotes measured on 2026-10-01 (1 WMON → USDC) used 55k–723k gas, so Router Lab defaults to 1M per frame with the STATICCALL probe off: a five-venue RUN asks for about 5.9M and stays in the low-gas pool. The INPUT DEVICE shows the request size, and a row that hits its cap suggests raising Gas / frame. `quote` (one venue) always includes the probe.
 
 ## Status taxonomy
 
@@ -47,7 +47,7 @@ Per-venue quote status is one of:
 - `NO CODE`: the adapter address has no runtime code;
 - `FRAME ERROR`: the self-call failed to produce the lab's expected sandbox envelope.
 
-MRC-17 defines no generic distinction between an unsupported pair, temporarily unavailable liquidity, and an internal failure. Adapter-specific selectors may provide more context, but ROUTER.EXE labels those decodes as adapter-specific and otherwise shows the raw selector. A Metric `FeedStalled()` revert, for example, is reported as the decoded provider condition rather than converted into a judgment about the adapter.
+MRC-17 defines no generic distinction between an unsupported pair, temporarily unavailable liquidity, and an internal failure. Adapter-specific selectors may provide more context, but Router Lab labels those decodes as adapter-specific and otherwise shows the raw selector. A Metric `FeedStalled()` revert, for example, is reported as the decoded provider condition rather than converted into a judgment about the adapter.
 
 ## STATICCALL probe
 
@@ -57,7 +57,7 @@ Metric's legacy quote path is the important reference case: its quote mechanism 
 
 ## Validity and expiry
 
-The draft contains no generic quote-expiry field. The reference adapters in this phase return empty `swapData`; for them ROUTER.EXE shows `VALIDITY: not exposed (swapData empty)`.
+The draft contains no generic quote-expiry field. The reference adapters in this phase return empty `swapData`; for them Router Lab shows `VALIDITY: not exposed (swapData empty)`.
 
 For non-empty `swapData`, the lab reports its length and hash but treats its contents as opaque. The UI shows `VALIDITY: UNKNOWN (opaque swapData, N bytes)`. It does not invent a TTL or decode adapter-specific expiry unless a future standardized field exists.
 
@@ -84,7 +84,7 @@ A same-state preview is not a guarantee for a later block. Hanji's reference ada
 
 ## Mainnet venue configuration
 
-Market discovery is outside MRC-17. ROUTER.EXE therefore does not invent a registry. Monad mainnet uses a static per-chain manifest of known adapter addresses, token pairs and expected runtime-code hashes. Before display, the frontend reads adapter runtime code and classifies it as `code hash matches manifest`, `code differs`, or `no code`.
+Market discovery is outside MRC-17. Router Lab therefore does not invent a registry. Monad mainnet uses a static per-chain manifest of known adapter addresses, token pairs and expected runtime-code hashes. Before display, the frontend reads adapter runtime code and classifies it as `code hash matches manifest`, `code differs`, or `no code`.
 
 A code-hash mismatch is a warning, not an automatic accusation and not an execution block: the address remains quotable so diagnostics can show what is actually deployed. Thog's underlying venue is upgradeable; the configured hash is for the adapter runtime itself.
 
@@ -127,4 +127,4 @@ It cannot prove future execution quality, future liquidity, absence of front-run
 
 ## No-asset-execution decision
 
-ROUTER.EXE is not a production exchange interface. The lab exposes no persistent execution entry point, performs no user token pull, takes no fee, stores no balances, and has no owner or mutable configuration. The frontend never sends a transaction to it. The one payable diagnostic entry point always reverts.
+Router Lab is not a production exchange interface. The lab exposes no persistent execution entry point, performs no user token pull, takes no fee, stores no balances, and has no owner or mutable configuration. The frontend never sends a transaction to it. The one payable diagnostic entry point always reverts.

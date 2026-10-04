@@ -1,10 +1,12 @@
 /**
- * Programs retired from the r3OS interface (2026-10-01 product decision). Their contracts stay deployed and
- * untouched; the app just never opens them, lists them, links to them or counts them. Pure data, no React, so
- * Run…, the program registry, Quests, My Pass and the Operator view all share one list.
+ * Compatibility filters for the historical snapshot-28 testnet deployment.
+ *
+ * Phase 7.6 removes discontinued experiments from the fresh-mainnet source/deployment surface, but the existing
+ * testnet registry and Operator Record v1 can still expose their historical ids and addresses. Keep those records
+ * intact and hide them at the product boundary rather than pretending the old chain state disappeared.
  */
 
-/** Program ids (src/os/programs.ts) that can no longer be opened by any route. */
+/** Program ids that can no longer be opened by any current r3OS route. */
 export const RETIRED_PROGRAMS: ReadonlySet<string> = new Set([
   'flipbook',
   'weeds',
@@ -20,9 +22,8 @@ export const RETIRED_PROGRAMS: ReadonlySet<string> = new Set([
 ])
 
 /**
- * Paint experiment-registry names whose only interface was a retired program. Quests and Pass stamps that read
- * from these contracts are hidden. `card-drv` is deliberately NOT here: its MONAD CARD stamp and the CARD CARRIER
- * quest are earned by holding a Monad Card, and Block Camera still reads the card.
+ * Historical Paint registry names that should not leak back into current Quests/Pass discovery when r3OS is
+ * connected to snapshot-28 testnet state. Active backends such as `card-drv` are deliberately not included.
  */
 export const RETIRED_EXPERIMENTS: ReadonlySet<string> = new Set([
   'flipbook',
@@ -37,15 +38,15 @@ export const RETIRED_EXPERIMENTS: ReadonlySet<string> = new Set([
 ])
 
 /**
- * Operator Record v1 subsystem ids that are only reachable through retired programs: FLIPBOOK 4, WEEDS 5,
- * FORKS 6, BLOCK DNA 7, SLEEPWALKER 9, KERNEL DEBUGGER 12, PAGE.EXE 13, CARD.DRV 14 (a formatted card page
- * needs CARDMEM.EXE). The onchain record is unchanged; the app only stops showing and counting them.
+ * Fixed Operator Record v1 ids that are hidden from the current product surface. The v1 ids are historical
+ * protocol slots and are never repurposed; fresh mainnet passes zero source addresses for discontinued slots.
+ * PAGE.EXE/CARD.DRV also remain hidden as standalone programs even though their active backends are used elsewhere.
  */
 export const RETIRED_SUBSYSTEMS: ReadonlySet<number> = new Set([4, 5, 6, 7, 9, 12, 13, 14])
 
 export const isRetiredProgram = (id: string) => RETIRED_PROGRAMS.has(id)
 
-/** Lower-cased addresses of retired experiments, from the registry's `name → address` map. */
+/** Lower-cased addresses of historical experiments, from the registry's `name → address` map. */
 export function retiredAddresses(labs: Readonly<Record<string, string | undefined>>): Set<string> {
   const out = new Set<string>()
   for (const name of RETIRED_EXPERIMENTS) {
@@ -55,7 +56,7 @@ export function retiredAddresses(labs: Readonly<Record<string, string | undefine
   return out
 }
 
-/** A quest is retired when any of its conditions reads a retired experiment. */
+/** A quest is historical when any of its conditions reads a historical experiment. */
 export function questIsRetired(conditions: readonly { target: string }[], retired: ReadonlySet<string>) {
   return conditions.some((condition) => retired.has(condition.target.toLowerCase()))
 }

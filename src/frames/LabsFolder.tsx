@@ -19,7 +19,7 @@ import {
   type LabsOwnedToken,
 } from './labsStore'
 
-export type LabsFilter = 'All' | 'Reels' | 'Forks' | 'Dreams' | 'CDs' | 'Portraits'
+export type LabsFilter = 'All' | 'CDs' | 'Portraits'
 
 function labFor(data?: LabsTokenData) {
   return labsBucket(data) === 'CDs' ? 'cd' : undefined

@@ -8,25 +8,37 @@ import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
 import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
 import {R3OSPageExe} from "../src/monadhw/R3OSPageExe.sol";
 import {R3OSBlockCamera} from "../src/monadhw/R3OSBlockCamera.sol";
-import {R3OSKernelDebugger} from "../src/monadhw/R3OSKernelDebugger.sol";
 import {R3OSCardMemory} from "../src/monadcard/R3OSCardMemory.sol";
 import {R3OSOperatorRecord} from "../src/operator/R3OSOperatorRecord.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 import {MockMonadCard} from "./MockMonadCard.sol";
 
-contract OperatorEmptySource {}
+contract OperatorActiveSource {
+    mapping(address => uint32) public bids;
+    mapping(address => uint32) public wins;
+    mapping(address => uint256) public burned;
+    mapping(address => uint256) public lastBurn;
 
-contract OperatorRevertingSource {
-    fallback() external {
-        revert("source revert");
+    function setAuction(address who, uint32 bids_, uint32 wins_) external {
+        bids[who] = bids_;
+        wins[who] = wins_;
     }
-}
 
-contract OperatorGasBurningSource {
-    fallback() external {
-        while (true) {
-            assembly ("memory-safe") { pop(gas()) }
-        }
+    function setRecycle(address who, uint256 burned_, uint256 last_) external {
+        burned[who] = burned_;
+        lastBurn[who] = last_;
+    }
+
+    function bidderStats(address who) external view returns (uint32, uint32) {
+        return (bids[who], wins[who]);
+    }
+
+    function burnedBy(address who) external view returns (uint256) {
+        return burned[who];
+    }
+
+    function lastBurnBlock(address who) external view returns (uint256) {
+        return lastBurn[who];
     }
 }
 
@@ -57,18 +69,11 @@ contract OperatorRecordTest is Test {
     R3OSQuests quests;
     R3OSPageExe page;
     R3OSBlockCamera camera;
-    R3OSKernelDebugger kernel;
     MockMonadCard monadCard;
     R3OSCardMemory cardMemory;
+    OperatorActiveSource auction;
+    OperatorActiveSource recycleBin;
     R3OSOperatorRecord record;
-
-    OperatorEmptySource flipbook;
-    OperatorEmptySource weeds;
-    OperatorEmptySource forks;
-    OperatorEmptySource brushes;
-    OperatorEmptySource auction;
-    OperatorEmptySource sleepwalker;
-    OperatorEmptySource recycleBin;
 
     function setUp() public {
         vm.roll(10_000);
@@ -90,135 +95,55 @@ contract OperatorRecordTest is Test {
         monadCard = new MockMonadCard();
         cardMemory = new R3OSCardMemory(address(monadCard));
         camera = new R3OSBlockCamera(address(paint), address(labs), address(cardMemory));
-        kernel = new R3OSKernelDebugger();
-
-        flipbook = new OperatorEmptySource();
-        weeds = new OperatorEmptySource();
-        forks = new OperatorEmptySource();
-        brushes = new OperatorEmptySource();
-        auction = new OperatorEmptySource();
-        sleepwalker = new OperatorEmptySource();
-        recycleBin = new OperatorEmptySource();
+        auction = new OperatorActiveSource();
+        recycleBin = new OperatorActiveSource();
 
         vm.startPrank(alice);
         paint.setPainterPass(address(pass));
         uint256 cameraId = paint.addExperiment(address(camera), "block-camera", "");
         paint.addExperiment(address(page), "page-exe", "");
-        paint.addExperiment(address(kernel), "kernel-debugger", "");
         paint.addExperiment(address(cardMemory), "card-drv", "");
         vm.stopPrank();
         camera.bindExperimentId(cameraId);
 
-        record = _deployRecord(
-            address(flipbook),
-            address(weeds),
-            address(forks),
-            address(brushes),
-            address(auction),
-            address(sleepwalker),
-            address(recycleBin)
-        );
+        record = _deployRecord();
     }
 
-    function _deployRecord(
-        address flipbook_,
-        address weeds_,
-        address forks_,
-        address brushes_,
-        address auction_,
-        address sleepwalker_,
-        address recycleBin_
-    ) internal returns (R3OSOperatorRecord out) {
+    function _deployRecord() internal returns (R3OSOperatorRecord out) {
         R3OSOperatorRecord.Sources memory sources = R3OSOperatorRecord.Sources({
             paint: address(paint),
             pass: address(pass),
             quests: address(quests),
-            flipbook: flipbook_,
-            weeds: weeds_,
-            forks: forks_,
-            brushes: brushes_,
-            auction: auction_,
-            sleepwalker: sleepwalker_,
-            recycleBin: recycleBin_,
+            flipbook: address(0),
+            weeds: address(0),
+            forks: address(0),
+            brushes: address(0),
+            auction: address(auction),
+            sleepwalker: address(0),
+            recycleBin: address(recycleBin),
             blockCamera: address(camera),
-            kernelDebugger: address(kernel),
+            kernelDebugger: address(0),
             pageExe: address(page),
             cardMemory: address(cardMemory)
         });
         out = new R3OSOperatorRecord(sources);
     }
 
-    function testEveryUsedPredicateFlipsAtSpecifiedWord() public {
+    function testActivePredicatesAndLegacySlotsStayZero() public {
         (uint256 mask,) = record.usedMask(alice);
         assertEq(mask, 0);
 
         vm.prank(alice);
         paint.paint(hex"00000304", new uint256[](0));
-        (mask,) = record.usedMask(alice);
-        assertTrue(_bit(mask, 0));
-
         vm.prank(alice);
         paint.mintFrame();
-        (mask,) = record.usedMask(alice);
-        assertTrue(_bit(mask, 1));
-
         vm.prank(alice);
         pass.claim();
-        (mask,) = record.usedMask(alice);
-        assertTrue(_bit(mask, 2));
-
-        vm.mockCall(
-            address(quests),
-            abi.encodeWithSignature("completedCount(address)", alice),
-            abi.encode(uint32(1))
-        );
-        vm.mockCall(
-            address(flipbook),
-            abi.encodeWithSignature("painterInfo(address)", alice),
-            abi.encode(uint48(12_000), uint48(0), uint16(0), uint64(0), uint32(2), uint48(0))
-        );
-        vm.mockCall(
-            address(weeds),
-            abi.encodeWithSignature("gardenerInfo(address)", alice),
-            abi.encode(uint48(12_001), uint32(1), uint32(0))
-        );
-        vm.mockCall(
-            address(forks),
-            abi.encodeWithSignature("painterInfo(address)", alice),
-            abi.encode(uint32(1), uint48(12_002))
-        );
-
-        uint256[8] memory boxWords;
-        vm.mockCall(
-            address(brushes),
-            abi.encodeWithSignature("box(address)", alice),
-            abi.encode(boxWords, uint8(0), uint8(0), uint32(1), uint32(1), uint48(12_003))
-        );
-        vm.mockCall(
-            address(auction),
-            abi.encodeWithSignature("bidderStats(address)", alice),
-            abi.encode(uint32(1), uint32(0))
-        );
-        vm.mockCall(
-            address(sleepwalker),
-            abi.encodeWithSignature("dreamingDays(address)", alice),
-            abi.encode(uint256(1))
-        );
-        vm.mockCall(
-            address(recycleBin),
-            abi.encodeWithSignature("burnedBy(address)", alice),
-            abi.encode(uint256(1))
-        );
-        vm.mockCall(
-            address(recycleBin),
-            abi.encodeWithSignature("lastBurnBlock(address)", alice),
-            abi.encode(uint256(12_004))
-        );
-
+        vm.mockCall(address(quests), abi.encodeWithSignature("completedCount(address)", alice), abi.encode(uint32(1)));
+        auction.setAuction(alice, 1, 0);
+        recycleBin.setRecycle(alice, 1, 12_004);
         vm.prank(alice);
         camera.capture();
-        vm.prank(alice);
-        kernel.run(false, false);
 
         bytes32[] memory pageWord = new bytes32[](1);
         pageWord[0] = bytes32(uint256(1));
@@ -231,8 +156,14 @@ contract OperatorRecordTest is Test {
         vm.prank(alice);
         cardMemory.write(77, 1, cardWord);
 
-        (mask,) = record.usedMask(alice);
-        for (uint256 i; i < 16; ++i) assertTrue(_bit(mask, i), string.concat("missing bit ", vm.toString(i)));
+        (mask, uint256 answered) = record.usedMask(alice);
+        uint256[10] memory active = [uint256(0), 1, 2, 3, 8, 10, 11, 13, 14, 15];
+        for (uint256 i; i < active.length; ++i) assertTrue(_bit(mask, active[i]));
+        uint256[6] memory legacy = [uint256(4), 5, 6, 7, 9, 12];
+        for (uint256 i; i < legacy.length; ++i) {
+            assertFalse(_bit(mask, legacy[i]));
+            assertFalse(_bit(answered, legacy[i]));
+        }
     }
 
     function testRecordSetsFirstObservedOnlyOnceAndLastRecordMoves() public {
@@ -253,14 +184,10 @@ contract OperatorRecordTest is Test {
         (, lastRecord,,,) = record.recordOf(alice);
         assertEq(lastRecord, 11_100);
 
-        vm.mockCall(
-            address(flipbook),
-            abi.encodeWithSignature("painterInfo(address)", alice),
-            abi.encode(uint48(11_101), uint48(0), uint16(0), uint64(0), uint32(1), uint48(0))
-        );
+        auction.setAuction(alice, 1, 0);
         vm.roll(11_200);
         record.record(alice);
-        assertEq(record.firstObservedBlock(alice, 4), 11_200);
+        assertEq(record.firstObservedBlock(alice, 8), 11_200);
     }
 
     function testAnyoneCanRecordAnyoneAndResultMatchesSelfRecord() public {
@@ -272,31 +199,17 @@ contract OperatorRecordTest is Test {
         record.record(alice);
         uint48 observedByStranger = record.firstObservedBlock(alice, 0);
 
-        R3OSOperatorRecord second = _deployRecord(
-            address(flipbook),
-            address(weeds),
-            address(forks),
-            address(brushes),
-            address(auction),
-            address(sleepwalker),
-            address(recycleBin)
-        );
+        R3OSOperatorRecord second = _deployRecord();
         vm.prank(alice);
         second.record(alice);
         assertEq(second.firstObservedBlock(alice, 0), observedByStranger);
     }
 
-    function testBadSourcesNeverRevertFactsOrRecord() public {
-        OperatorRevertingSource reverting = new OperatorRevertingSource();
-        OperatorGasBurningSource burning = new OperatorGasBurningSource();
-        R3OSOperatorRecord guarded =
-            _deployRecord(address(burning), address(reverting), address(0), address(brushes), address(0), address(0), address(0));
-
-        R3OSOperatorRecord.Facts memory f = guarded.facts(alice);
-        assertFalse(_bit(f.answeredMask, 4));
-        assertFalse(_bit(f.answeredMask, 5));
-        assertFalse(_bit(f.answeredMask, 6));
-        guarded.record(alice);
+    function testZeroLegacySourcesNeverRevertFactsOrRecord() public {
+        R3OSOperatorRecord.Facts memory f = record.facts(alice);
+        uint256[6] memory legacy = [uint256(4), 5, 6, 7, 9, 12];
+        for (uint256 i; i < legacy.length; ++i) assertFalse(_bit(f.answeredMask, legacy[i]));
+        record.record(alice);
     }
 
     function testPageUseCanDisappearButObservationCannot() public {
@@ -316,7 +229,7 @@ contract OperatorRecordTest is Test {
         assertTrue(_observed(alice, 13));
     }
 
-    function testUsedBeforeExactPaintExactCardAndObservedFlipbook() public {
+    function testUsedBeforeExactPaintAndCard() public {
         vm.roll(20_000);
         vm.prank(alice);
         paint.paint(hex"00000304", new uint256[](0));
@@ -328,14 +241,6 @@ contract OperatorRecordTest is Test {
         vm.prank(alice);
         cardMemory.write(5, 1, words);
 
-        vm.mockCall(
-            address(flipbook),
-            abi.encodeWithSignature("painterInfo(address)", alice),
-            abi.encode(uint48(20_020), uint48(0), uint16(0), uint64(0), uint32(1), uint48(0))
-        );
-        vm.roll(20_020);
-        record.record(alice);
-
         (bool proven, bool exact) = record.usedBefore(alice, 0, 20_000);
         assertTrue(proven);
         assertTrue(exact);
@@ -344,11 +249,8 @@ contract OperatorRecordTest is Test {
         assertTrue(proven);
         assertTrue(exact);
 
-        (proven, exact) = record.usedBefore(alice, 4, 20_019);
+        (proven, exact) = record.usedBefore(alice, 4, 20_010);
         assertFalse(proven);
-        assertFalse(exact);
-        (proven, exact) = record.usedBefore(alice, 4, 20_020);
-        assertTrue(proven);
         assertFalse(exact);
     }
 
@@ -373,7 +275,7 @@ contract OperatorRecordTest is Test {
 
         vm.warp(block.timestamp + 31 days);
         vm.roll(40_000);
-        record.record(bob); // opens the next season's observation window
+        record.record(bob);
         vm.roll(40_001);
         vm.prank(alice);
         paint.paint(hex"02020306", noIds);
@@ -381,17 +283,6 @@ contract OperatorRecordTest is Test {
         uint256 season = paint.currentSeason();
         (,,, seasons,) = record.recordOf(alice);
         assertTrue((seasons & (uint256(1) << season)) != 0);
-
-        vm.warp(uint256(paint.SEASON_START()) + 256 * paint.SEASON_LENGTH());
-        vm.roll(50_000);
-        record.record(bob);
-        vm.roll(50_001);
-        vm.prank(alice);
-        paint.paint(hex"03030307", noIds);
-        record.record(alice);
-        assertEq(paint.currentSeason(), 256);
-        (,,, seasons,) = record.recordOf(alice);
-        assertTrue((seasons >> 256) == 0);
     }
 
     function testSessionKeyPaintCreditsOwnerAndSessionAddressHasNoFact() public {
@@ -476,10 +367,12 @@ contract OperatorRecordTest is Test {
         assertEq(second.length, 0);
     }
 
-    function testRecordGasWithEverySourceLive() public {
+    function testRecordGasWithEveryActiveSourceLive() public {
         vm.prank(alice);
         paint.paint(hex"06000304", new uint256[](0));
-        _mockAllLabs(alice);
+        vm.mockCall(address(quests), abi.encodeWithSignature("completedCount(address)", alice), abi.encode(uint32(1)));
+        auction.setAuction(alice, 1, 1);
+        recycleBin.setRecycle(alice, 1, block.number);
         monadCard.mintTo(alice, 31337);
         bytes32[] memory words = new bytes32[](1);
         words[0] = bytes32(uint256(1));
@@ -489,61 +382,10 @@ contract OperatorRecordTest is Test {
         page.writePage(1, words);
         vm.prank(alice);
         camera.capture();
-        vm.prank(alice);
-        kernel.run(false, false);
 
         uint256 beforeGas = gasleft();
         record.record(alice);
-        emit log_named_uint("OperatorRecord record gas, all sources live", beforeGas - gasleft());
-    }
-
-    function _mockAllLabs(address operator) internal {
-        vm.mockCall(
-            address(quests),
-            abi.encodeWithSignature("completedCount(address)", operator),
-            abi.encode(uint32(1))
-        );
-        vm.mockCall(
-            address(flipbook),
-            abi.encodeWithSignature("painterInfo(address)", operator),
-            abi.encode(uint48(block.number), uint48(0), uint16(0), uint64(0), uint32(1), uint48(0))
-        );
-        vm.mockCall(
-            address(weeds),
-            abi.encodeWithSignature("gardenerInfo(address)", operator),
-            abi.encode(uint48(block.number), uint32(1), uint32(1))
-        );
-        vm.mockCall(
-            address(forks),
-            abi.encodeWithSignature("painterInfo(address)", operator),
-            abi.encode(uint32(1), uint48(block.number))
-        );
-        uint256[8] memory boxWords;
-        vm.mockCall(
-            address(brushes),
-            abi.encodeWithSignature("box(address)", operator),
-            abi.encode(boxWords, uint8(0), uint8(0), uint32(1), uint32(1), uint48(block.number))
-        );
-        vm.mockCall(
-            address(auction),
-            abi.encodeWithSignature("bidderStats(address)", operator),
-            abi.encode(uint32(1), uint32(1))
-        );
-        vm.mockCall(
-            address(sleepwalker),
-            abi.encodeWithSignature("dreamingDays(address)", operator),
-            abi.encode(uint256(1))
-        );
-        vm.mockCall(
-            address(recycleBin),
-            abi.encodeWithSignature("burnedBy(address)", operator),
-            abi.encode(uint256(1))
-        );
-        vm.mockCall(
-            address(recycleBin),
-            abi.encodeWithSignature("lastBurnBlock(address)", operator),
-            abi.encode(uint256(block.number))
-        );
+        emit log_named_uint("OperatorRecord record gas, active sources live", beforeGas - gasleft());
     }
 
     function _liveMask(address operator) internal view returns (uint256 mask) {

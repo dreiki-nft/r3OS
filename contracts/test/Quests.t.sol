@@ -3,14 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
 import {R3OSPaint} from "../src/R3OSPaint.sol";
-import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
-import {R3OSLabs} from "../src/R3OSLabs.sol";
 import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
-import {R3OSFlipbook} from "../src/labs/R3OSFlipbook.sol";
-import {R3OSWeeds} from "../src/labs/R3OSWeeds.sol";
-import {R3OSForks} from "../src/labs/R3OSForks.sol";
-import {R3OSBrushes} from "../src/labs/R3OSBrushes.sol";
-import {BrushDNA} from "../src/lib/BrushDNA.sol";
 import {IStampSource} from "../src/interfaces/IStampSource.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
@@ -32,7 +25,6 @@ contract QuestTarget is IStampSource {
 
 contract QuestsTest is Test {
     R3OSPaint paint;
-    R3OSPainterPass pass;
     R3OSQuests quests;
     MockR3tards r3tards;
     QuestTarget target;
@@ -51,9 +43,6 @@ contract QuestsTest is Test {
                 address(r3tards), uint64(vm.getBlockTimestamp()), alice, makeAddr("royalty"),
                 uint32(512), uint32(0), uint32(512), uint32(16), uint32(256)
             )
-        ));
-        pass = R3OSPainterPass(deployCode(
-            "R3OSPainterPass.sol:R3OSPainterPass", abi.encode(address(paint))
         ));
         vm.prank(alice);
         quests = new R3OSQuests(address(paint), uint64(vm.getBlockTimestamp()), address(this));
@@ -219,106 +208,6 @@ contract QuestsTest is Test {
         vm.expectRevert(abi.encodeWithSelector(R3OSQuests.NoQuest.selector, 99));
         vm.prank(alice);
         quests.claim(99);
-    }
-
-    function testLabRatWithFourRealLabsAndPainterPassBadgePath() public {
-        // Earn a core paint first, seed a frame for Forks, and configure season 1 with no outline for brush stamping.
-        vm.prank(alice);
-        paint.paint(hex"c8c8d704", new uint256[](0));
-        vm.prank(alice);
-        uint256 frameId = paint.mintFrame();
-        vm.prank(alice);
-        paint.setSeasonOutline(1, bytes(""), "");
-        vm.warp(paint.seasonStartTime(1));
-        vm.roll(vm.getBlockNumber() + 700);
-
-        bytes memory genesis = new bytes(512);
-        R3OSLabs labs = new R3OSLabs(address(paint), makeAddr("royalty"));
-        R3OSFlipbook flipbook = R3OSFlipbook(deployCode(
-            "R3OSFlipbook.sol:R3OSFlipbook",
-            abi.encode(address(paint), address(labs), uint64(vm.getBlockTimestamp()), uint256(300), genesis)
-        ));
-        vm.prank(alice);
-        uint256 flipbookExperimentId = paint.addExperiment(address(flipbook), "flipbook", "");
-        flipbook.bindExperimentId(flipbookExperimentId);
-        R3OSWeeds weeds = R3OSWeeds(deployCode(
-            "R3OSWeeds.sol:R3OSWeeds", abi.encode(address(paint), uint64(vm.getBlockTimestamp()))
-        ));
-        R3OSForks forks = R3OSForks(deployCode(
-            "R3OSForks.sol:R3OSForks",
-            abi.encode(address(paint), address(labs), uint64(vm.getBlockTimestamp()))
-        ));
-        vm.prank(alice);
-        uint256 forksExperimentId = paint.addExperiment(address(forks), "forks", "");
-        forks.bindExperimentId(forksExperimentId);
-        R3OSBrushes brushes = R3OSBrushes(deployCode(
-            "R3OSBrushes.sol:R3OSBrushes", abi.encode(address(paint), uint64(vm.getBlockTimestamp()))
-        ));
-
-        // FLIPBOOK: ten distinct frames painted.
-        for (uint256 i; i < 10; ++i) {
-            if (i != 0) vm.roll(vm.getBlockNumber() + 1);
-            vm.prank(alice);
-            flipbook.paint(abi.encodePacked(bytes1(uint8(i % 32)), bytes1(uint8(i % 32)), bytes1(uint8(i % 32)), bytes1(uint8(2 + (i & 1)))));
-        }
-        (, bool flipEarned) = flipbook.stamp(alice);
-        assertTrue(flipEarned);
-
-        // GARDENER: five plants separated by the cooldown.
-        for (uint256 i; i < 5; ++i) {
-            if (i != 0) vm.roll(vm.getBlockNumber() + weeds.PLANT_COOLDOWN_BLOCKS());
-            vm.prank(alice);
-            weeds.plant(15, uint8(i * 10), 0, 5);
-        }
-        (, bool weedEarned) = weeds.stamp(alice);
-        assertTrue(weedEarned);
-
-        // FORKER: paint three different forks.
-        for (uint256 i; i < 3; ++i) {
-            if (i != 0) vm.roll(vm.getBlockNumber() + forks.FORK_COOLDOWN_BLOCKS());
-            vm.prank(alice);
-            uint256 forkId = forks.forkFrame(frameId);
-            vm.prank(alice);
-            forks.paint(forkId, abi.encodePacked(bytes1(uint8(i)), bytes1(uint8(0)), bytes1(uint8(0)), bytes1(uint8(3 + i))));
-        }
-        (, bool forkEarned) = forks.stamp(alice);
-        assertTrue(forkEarned);
-
-        // BLOCK DNA: catch, stamp and verify three brushes on the outline-free season.
-        for (uint256 i; i < 3; ++i) {
-            vm.roll(vm.getBlockNumber() + 1);
-            uint256 sourceBlock = vm.getBlockNumber() - 1;
-            vm.setBlockhash(sourceBlock, keccak256(abi.encode("lab rat brush", i)));
-            vm.prank(alice);
-            uint8 slot = brushes.catchBrush(sourceBlock);
-            (uint256[8] memory words,,,,,) = brushes.box(alice);
-            uint8 x = uint8(10 + i * 70);
-            uint8 y = 120;
-            vm.prank(alice);
-            paint.paint(BrushDNA.runs(words[slot], x, y), new uint256[](0));
-            vm.prank(alice);
-            brushes.verify(slot, x, y);
-        }
-        (, bool brushEarned) = brushes.stamp(alice);
-        assertTrue(brushEarned);
-
-        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](4);
-        bytes4 stampSelector = bytes4(keccak256("stamp(address)"));
-        conditions[0] = R3OSQuests.Condition(address(flipbook), stampSelector, 1, 0, 1);
-        conditions[1] = R3OSQuests.Condition(address(weeds), stampSelector, 1, 0, 1);
-        conditions[2] = R3OSQuests.Condition(address(forks), stampSelector, 1, 0, 1);
-        conditions[3] = R3OSQuests.Condition(address(brushes), stampSelector, 1, 0, 1);
-        uint256 labRat = quests.addQuest("LAB RAT", 0, 0, conditions);
-        vm.prank(alice);
-        quests.claim(labRat);
-        (string memory questStamp, bool questEarned) = quests.stamp(alice);
-        assertEq(questStamp, "QUESTS 1");
-        assertTrue(questEarned);
-
-        pass.addStampSource(address(quests));
-        vm.prank(alice);
-        uint256 passId = pass.claim();
-        assertGt(bytes(pass.tokenURI(passId)).length, 0);
     }
 
     function testGasTargets() public {

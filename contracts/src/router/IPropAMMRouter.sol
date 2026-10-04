@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @notice Minimal MRC-17 draft interface targeted by ROUTER.EXE.
+/// @notice Minimal MRC-17 draft interface used by the r3OS Router Lab.
 /// @dev Pinned to monad-crypto/MIPs PR #91 @ 6e4f86333923f0c4ec77bc92b3702f1b21f37446.
 /// Reference adapters: haythemsellami/mrc-17-adapters @ 2f1400d17c262cec6c4860a99916accf7f3044d8.
 interface IPropAMMRouter {

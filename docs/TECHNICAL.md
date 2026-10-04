@@ -14,13 +14,13 @@ Internal deterministic storage/hash derivation salts such as `r3tards.paint.*`, 
 
 ## Core freeze
 
-Phase 7.5 is the final planned pre-mainnet Paint-source revision. It changes product/protocol naming for the fresh mainnet deployment and adds two deliberately smaller mainnet-only holder bonuses, then re-freezes `contracts/src/R3OSPaint.sol`. Existing snapshot-28 testnet bytecode is not replaced. After the Phase 7.5 Foundry + frontend gate passes, later phases do **not** modify the core unless a concrete launch-blocking bug is reported. New experiments continue to plug in through registries, Painter Pass stamp sources, public views and events.
+Phase 7.5 is the final planned pre-mainnet Paint-source revision. It changes product/protocol naming for the fresh mainnet deployment and adds two deliberately smaller mainnet-only holder bonuses, then re-freezes `contracts/src/R3OSPaint.sol`. Phase 7.6 prunes only the submission/deployment surface around that core. Existing snapshot-28 testnet bytecode is not replaced. Later phases do **not** modify Paint unless a concrete launch-blocking bug is reported.
 
-## Current UI boundary (2026-10-03)
+## Submission boundary (2026-10-04)
 
-The production r3OS interface intentionally does **not** expose every experiment built during development. Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger and ROUTER.EXE are retired UI surfaces. Their contracts and historical data remain documented because deployed state is immutable and a few active features still read specific backend experiments. The retired React programs themselves are removed from the production program registry and bundle; `src/os/retired.ts` remains the shared policy for hiding retired quests, Pass stamps and Operator subsystems.
+Fresh mainnet deploys only contracts used by the current r3OS product. Discontinued experiments are removed from source, deployment scripts, tests, generated ABIs and public-facing technical documentation; Git history is the archive. The existing snapshot-28 testnet remains untouched and can still contain historical registry entries, so `src/os/retired.ts` remains as a compatibility filter when the frontend points at that older deployment.
 
-Two backend dependencies are deliberate: **Explore Monad → Storage race** reads the PAGE.EXE experiment, and **Explore Monad → Liquidity race** reads Router Lab. CARD.DRV also remains an active backend for Monad Card / Block Camera integration. UI retirement is not contract retirement.
+Three backends that once had standalone windows remain intentionally active: **PAGE.EXE** powers Explore Monad → Storage race, **Router Lab** powers Explore Monad → Liquidity race, and **CARD.DRV** powers Monad Card / Block Camera / Pass integration. They are production dependencies, not discontinued apps.
 
 ## Contracts
 
@@ -62,7 +62,7 @@ The partner checks are active only when `block.chainid == 143` and use a 50,000-
 
 ### `R3OSLabs`
 
-The single tradeable ERC-721 collection for token-producing Labs. Flipbook reels, Forks, Sleepwalker dreams and mix CD-Rs mint here; future token Labs join the same contract. Labs are authorized only through active entries in the core experiment registry. Token IDs are global across Labs, royalties are fixed at 5% to the immutable receiver, and the collection owner can only set its marketplace external link. See `docs/specs/LABS_NFT.md`.
+The single tradeable ERC-721 collection for active Lab artifacts. Mix CD-Rs and Block Camera portraits mint here; future token Labs can join the same contract. Labs are authorized only through active entries in the core experiment registry. Token IDs are global across Labs, royalties are fixed at 5% to the immutable receiver, and the collection owner can only set its marketplace external link. See `docs/specs/LABS_NFT.md`.
 
 ### `R3OSPainterPass`
 
@@ -77,16 +77,7 @@ Its generative onchain `r3 pass` image and metadata derive live art/stamps from 
 - Regular: at least 7 active days
 - Holder: currently owns at least one r3tard
 
-The Pass owner can append view-only `IStampSource` contracts for future Lab badges. These sources are presentation-only, are gas-capped when read, and grant no Paint or Pass permissions.
-
-**Visual pins are scarce.** `PassArt.MAX_PINS` is 16 and only pins below it are drawn. The six built-ins take pins 0–5 and stamp source *i* takes pin `6 + i`. The deployment adds seven Lab sources (Flipbook, Weeds, Forks, Brushes, Quests, Sleepwalker, Recycle Bin) and CARD.DRV adds an eighth, so **14 of 16 visual pins are used and 2 remain**. Policy:
-
-- pins 14 and 15 are deliberately **reserved**; no generic experiment gets a visual pin by default;
-- ROUTER and DXDIAG get no pin;
-- `addStampSource` still accepts further sources, but once the visual capacity is used they become **metadata-only** (the stamp appears in the token's attributes, not in the art). Metadata-only sources are allowed when justified;
-- assigning either reserved visual pin requires an explicit, documented design decision.
-
-The Launch Doctor reports the live count (built-ins, external sources, pins used and remaining, metadata-only overflow).
+The Pass owner can append view-only `IStampSource` contracts for future badges. These sources are presentation-only, gas-capped when read, and grant no Paint or Pass permissions. Fresh mainnet starts with two external sources from the core deployment (**Quests** and **Recycle Bin**); CARD.DRV adds **MONAD CARD** later. With six built-ins that uses 9 of 16 visual pins, leaving 7 available. Sources beyond the visual capacity remain metadata-only. Launch Doctor reports the live source count and capacity.
 
 ### Experimental renderers
 
@@ -95,77 +86,10 @@ The Launch Doctor reports the live count (built-ins, external sources, pins used
 - `DF1Renderer`: exact DF1 v1 (mulberry32) rendered fully onchain at 64×64, using the frame's frozen DF1 seed/amount and that season's own outline. Calm frames render canonical 100%; storm frames render at 200%.
 
 
-### `R3OSFlipbook` Lab (contract/history; UI retired)
 
-A separate 32×32 block-rate animation canvas. The first successful Flipbook paint in a new Monad block copies the previous frame and starts a new frame; later paints in that same block edit the shared frame. At Monad's 300 ms block target, chain time itself becomes roughly 3.3 fps stop-motion.
 
-- no owner and no admin functions; a broken Lab is replaced with a new deployment and the old registry entry can be retired
-- 32-frame ring stored in aligned pages, prefilled at deploy so first-use paints update existing slots instead of paying launch-day zero-to-nonzero storage growth
-- one paint per resolved owner per block
-- 64 ink per 200-block window for new wallets; 256 permanently after at least one successful core paint
-- active core session keys can paint the Flipbook and activity is credited to the session owner, but active session keys cannot mint reels
-- reels snapshot 8–32 frames into one immutable FrameStore blob and mint through the shared `R3OSLabs` ERC-721; after the first reel, 32 new frames are required so reel windows do not overlap
-- reel ownership and the fixed 5% royalty live in `R3OSLabs`; Flipbook itself is not an ERC-721
-- reel animation timing follows actual block gaps, clamped to 1–8 ticks, with a four-tick final hold
-- implements `IStampSource`: `FLIPBOOK` is earned after painting 10 distinct Flipbook frames
 
-Flipbook paints in the same block intentionally share the current frame slots, so they collide with one another. Flipbook storage never overlaps the core canvas storage, so Flipbook and canvas paints do not conflict by storage layout. The Lanes engine visualizes that distinction as an estimate; Monad's executor determines the real schedule.
 
-### `R3OSWeeds` Lab (contract/history; UI retired)
-
-A separate adminless Conway's Game of Life experiment over the empty parts of the live canvas. Each of the 16 canvas regions has an independent 64×64 toroidal world stored in its own 128-slot-aligned page. Cells can live only where `regionBlankMask(currentSeason, region)` says the canvas is blank and not covered by that season's outline.
-
-- anyone can `tick(region)` once per region per block
-- anyone can `plant(region, x, y, pattern)` from eight fixed 8×8 Life patterns, subject to a 100-block per-owner cooldown
-- active core session keys resolve to their owner for gardening stats
-- `worldBitmap()` exposes the complete 256×256 one-bit overlay for the site
-- the Lab has **no owner and no admin functions**
-- implements `IStampSource`: `GARDENER` is earned after 5 plants or 25 ticks
-
-Weeds reads the core's current-season soil but never writes the core. Region-world writes are page-local, so different regions are designed to avoid storage conflicts; the per-address gardening statistic is separate account state. A Weeds tick and a canvas paint in the same region may conflict because the tick reads canvas soil that the paint writes.
-
-### `R3OSForks` Lab (contract/history; UI retired)
-
-A separate adminless 64×64 side-canvas system seeded from any saved frame or finale. Forks can themselves be forked, so lineage is recorded onchain without giving the Lab any power over the frozen core.
-
-- creators must have painted the core at least once; active session keys cannot mint fork NFTs
-- every fork owns one 128-slot-aligned page and starts open
-- open forks are public; closed forks are NFT-owner-only; sealed forks are permanently immutable
-- up to 64 submitted pixels per paint and 256 submitted pixels per fork per block
-- active session keys can paint a fork for their resolved owner
-- fork rows are XOR-encoded so blank rows are non-zero storage
-- fork ownership and the fixed 5% royalty live in the shared `R3OSLabs` ERC-721; Forks itself is not an ERC-721
-- implements `IStampSource`: `FORKER` is earned after painting three distinct forks
-
-Fork rendering is fully onchain. Source frames are downsampled through the shared constant-cost `Source64` library, so guest-outline run count does not affect seeding cost. Fork `paint` uses a fixed 250K production gas limit rather than `eth_estimateGas`; runs are sorted by row and the measured worst case after that optimization is about 200K. See `docs/specs/GAS_LIMITS.md`.
-
-### `R3OSSleepwalker` Lab (contract/history; UI retired)
-
-Sleepwalker turns a pending Paint drawing into a 4,096-pixel-max stencil that other players can crank onto the real canvas overnight. It has no admin and no privileged write path. Each painter gets a deterministic EIP-1167 `SleepwalkerKey`; the painter pre-signs 1–4 normal core sessions for that key, and every successful step is an ordinary core `paint` charged to the painter's own budget.
-
-- the owner must already have enough non-Sleepwalker pixels today to satisfy `MIN_PIXELS_FOR_ACTIVE_DAY`; dream paint can never create the active day
-- every human pixel today earns two dream pixels, with a 64-pixel maximum per successful step and at least 100 blocks between successful steps
-- stale stored session nonces are skipped if ordinary Live Mode consumed them
-- permissionless crankers earn the configured MON tip only after a successful core paint
-- `wake()` deletes unused signatures and refunds the remaining deposit; the owner-wallet UI revokes the active core session first
-- completed or pre-wake dreams can mint once through `R3OSLabs`, with onchain stencil art and survival sampled from up to 128 canvas pixels at mint
-- implements `IStampSource`: `DREAMING DAYS N` is earned after the first UTC day with a successful dream paint
-
-No Lab has special powers over the canvas; Sleepwalker only paints through your own signed session, with your own budget. See `docs/specs/SLEEPWALKER.md`.
-
-### `R3OSBrushes` Lab (contract/history; UI retired)
-
-An adminless Block DNA game. Every recent Monad block deterministically defines an 8×8 mirror-symmetric brush from its block hash. Users catch a brush into an eight-slot box, stamp it using ordinary core paint runs, then verify that its filled cells are still present on the current-season canvas.
-
-- catch window: the previous 256 blocks
-- one catch per resolved owner per block; active session keys resolve to their owner
-- boxes use one aligned storage page per owner
-- stamping spends ordinary core paint budget and is subject to DF1/storm corruption
-- verification reads at most four canvas regions through `regionWords` and never writes the core
-- overwriting a box slot clears that slot's current verified bit but lifetime verified count never decreases
-- implements `IStampSource`: `BLOCK DNA` is earned after three successful verifications
-
-Brushes are not NFTs and the contract has no owner or funds. The stamp UI must reject placements whose filled cells overlap the protected season outline: core paint never lands under that outline, so those brush cells could never verify. Phase 5 verifies recent `blockhash(n)` values against Monad RPC block hashes and confirms the effective 256-block catch window on testnet.
 
 ### `R3OSFinaleAuction` Lab
 
@@ -188,7 +112,7 @@ An append-only onboarding quest board. Each quest has one to four gas-capped rea
 - active session keys may claim for their resolved owner
 - conditions copy only one requested return word and are gas-capped
 - quests grant no canvas, NFT, budget, auction, or Lab authority
-- day one deploys 13 quests spanning core painting, storms/live mode, Flipbook, Weeds, Forks, Brushes, auction bidding and 100-frame recycling
+- day one deploys 7 quests spanning core painting, storms/live mode, auction bidding and 100-frame recycling; CARD.DRV adds CARD CARRIER later
 
 ### `R3OSRecycleBin` Lab
 
@@ -235,7 +159,7 @@ The owners **can never**:
 - choose or override the renderer for somebody else's token;
 - change renderer 0 or make another renderer the default;
 - unfreeze the renderer registry or Lab registry;
-- give a Lab experiment or stamp source contract pixel, frame, budget, session, or ownership permissions merely by registering it. No Lab has special powers over the canvas; Sleepwalker only paints through your own signed session, with your own budget;
+- give a Lab experiment or stamp source contract pixel, frame, budget, session, or ownership permissions merely by registering it;
 - trigger, cancel, move, or alter a DF1 storm;
 - change painter statistics directly;
 - burn token #0 or season finales;
@@ -313,7 +237,7 @@ Setting renderer `0` resets to the built-in renderer. The selection persists thr
 
 ## Lab registry and builder API
 
-`addExperiment(address, name, uri)` and `retireExperiment(id)` are registry/metadata operations only. Registry membership grants **zero** permissions over pixels, frames, budgets, seasons, renderers, or ownership. No Lab has special powers over the canvas; Sleepwalker can write pixels only because the painter separately signs a normal core session for its deterministic key, and those writes spend that painter's normal budget.
+`addExperiment(address, name, uri)` and `retireExperiment(id)` are registry/metadata operations only. Registry membership grants **zero** permissions over pixels, frames, budgets, seasons, renderers, or ownership.
 
 Useful read APIs include:
 
@@ -334,7 +258,7 @@ Useful read APIs include:
 
 ### Monad hardware / active UI
 
-The active frontend exposes **Explore Monad**, **System Information** and **Block Camera**. Earlier PAGE.EXE, Kernel Debugger and CARDMEM.EXE windows are retired, but their deployed backends are preserved where an active surface depends on them.
+The active frontend exposes **Explore Monad**, **System Information** and **Block Camera**. PAGE.EXE and CARD.DRV are backend devices used by those surfaces; they no longer need standalone windows.
 
 - Explore Monad's **Storage race** calls the PAGE.EXE experiment with read-only `eth_call`s to demonstrate MIP-8 page warming.
 - **Block Camera** mints through `R3OSLabs` and uses live block/proposer context.
@@ -344,7 +268,7 @@ The shared hardware model remains documented in [`docs/specs/MONAD_HW.md`](specs
 
 ### Monad Card (CARD.DRV)
 
-`R3OSCardMemory` remains registered as `card-drv`. Every Monad Card id addresses one hashed, aligned 4 KiB page; only the card's current `ownerOf(cardId)` may write it. The card contract itself is never modified, wrapped or escrowed. The old CARDMEM.EXE programmer UI is retired.
+`R3OSCardMemory` remains registered as `card-drv`. Every Monad Card id addresses one hashed, aligned 4 KiB page; only the card's current `ownerOf(cardId)` may write it. The card contract itself is never modified, wrapped or escrowed. Current r3OS surfaces consume this driver through System Information, Block Camera, Painter Pass and Quests rather than exposing a separate programmer UI.
 
 CARD.DRV is still active infrastructure: Block Camera can include card context, the Painter Pass can expose the `MONAD CARD` stamp, and the `CARD CARRIER` quest checks ownership. Monad Cards are mainnet-only, so testnet uses `MockMonadCard`; the official chain-143 address is enforced by the driver constructor. See [`docs/specs/MONAD_CARD.md`](specs/MONAD_CARD.md).
 
@@ -360,11 +284,11 @@ My Pass exposes the address's record under the **Operator** tab and System Infor
 
 Burned CDs open in a Windows 98 CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](specs/CDROM.md).
 
-### Router Lab backend (ROUTER.EXE UI retired)
+### Router Lab backend
 
-`R3OSRouterLab` (`router-lab`) is a stateless read-only MRC-17 routing laboratory. One `eth_call` compares up to eight configured adapters against the same block state; every quote executes through an ordinary gas-capped child `CALL` that deliberately reverts so quote-side state cannot persist. The standalone ROUTER.EXE window is retired; **Explore Monad → Liquidity race** is the supported read-only view.
+`R3OSRouterLab` (`router-lab`) is a stateless read-only MRC-17 routing laboratory. One `eth_call` compares up to eight configured adapters against the same block state; every quote executes through an ordinary gas-capped child `CALL` that deliberately reverts so quote-side state cannot persist. **Explore Monad → Liquidity race** is the supported read-only view.
 
-The lab has no owner, storage, custody, fees or persistent execution path. Mainnet venue addresses and runtime-code hashes come from the pinned Monoper deployment manifest; local/testnet uses mock venues. MRC-17 is a draft, and the adapters are third-party integration code under active development. See [`docs/specs/ROUTER_EXE.md`](specs/ROUTER_EXE.md).
+The lab has no owner, storage, custody, fees or persistent execution path. Mainnet venue addresses and runtime-code hashes come from the pinned Monoper deployment manifest; local/testnet uses mock venues. MRC-17 is a draft, and the adapters are third-party integration code under active development. See [`docs/specs/ROUTER_LAB.md`](specs/ROUTER_LAB.md).
 
 ### Launch tooling: Launch Doctor, DXDIAG.EXE, Run…
 
@@ -410,7 +334,7 @@ npm run build
 
 ## Gas benchmark table
 
-Foundry is pinned to **v1.8.3** and the suite runs with Monad rules: `network = "monad"` and `hardfork = "monad:MonadTen"`. MIP-8 page storage has been live since MonadTen on 2026-09-02, and the canvas/Flipbook layouts are deliberately 128-slot aligned so same-page accesses receive Monad's page-warming treatment.
+Foundry is pinned to **v1.8.3** and the suite runs with Monad rules: `network = "monad"` and `hardfork = "monad:MonadTen"`. MIP-8 page storage has been live since MonadTen on 2026-09-02, and the canvas/PAGE.EXE/CARD.DRV layouts are deliberately 128-slot aligned so same-page accesses receive Monad's page-warming treatment.
 
 Monad charges from the submitted **gas limit**, not merely gas used, including reverted transactions. The regression limits below therefore include measured headroom under Monad rules. Testnet still remains the final source for production gas-limit constants. See `docs/specs/GAS_LIMITS.md`.
 
@@ -429,13 +353,6 @@ Monad charges from the submitted **gas limit**, not merely gas used, including r
 | exact DF1 renderer, default / arbitrary stored outline | `< 10M / < 10M` |
 | opted-in timelapse via core `tokenURI` | succeeds under a `30M` call |
 | outline set/append tx | `< 30M / tx` |
-| Flipbook first paint in block, 64 px | `< 175k` |
-| Flipbook later paint in same block, 64 px | `< 175k` |
-| Flipbook worst case, 32 runs / 16 words / 64 px | `< 240k` |
-| Flipbook `recentFrames(32)` | `< 330k` |
-| Flipbook `mintReel`, 32 frames | `< 5M` |
-| Labs `tokenURI`, 32-frame Flipbook reel | `< 11M` |
-| Weeds `tick` / `plant` / `worldBitmap` | `< 600k / < 500k / < 1M` |
 | Fork `forkFrame` / `forkFork` | `< 2.3M / < 1.6M` |
 | Fork paint, 64 px one row / 32 rows | `< 250k / < 250k` |
 | Labs `tokenURI`, Fork / Fork `stamp` | `< 2M / < 25k` |
@@ -445,7 +362,7 @@ Monad charges from the submitted **gas limit**, not merely gas used, including r
 | CD Burner `burnCD`, 12 tracks / Labs `tokenURI` | `< 6M / < 8M` |
 | Recycle Bin `recycle(1)` / `recycle(50)` | logged regression values; production uses exact estimate + 10% |
 
-Production gas limits must be re-measured on Monad testnet. In particular, Flipbook paint uses a fixed 240K limit rather than `eth_estimateGas`, because the transaction can land on either the new-frame copy path or the same-frame edit path depending on block placement.
+Production gas limits for active wallet actions must be re-measured on Monad testnet; `docs/specs/GAS_LIMITS.md` is the canonical policy.
 
 ## Deployment without raw private keys
 
@@ -497,7 +414,7 @@ Before mainnet:
 - verify Monad's EIP-2935 history contract at `0x0000F90827F1C53a10cb7A02335B175320002935` returns the same recent block hashes as RPC and confirm the effective 8,191-block history window under MonadTen;
 - measure auction settlement inside native `blockhash`, through EIP-2935 history, and after the history window where the candle-start fallback is used;
 - verify `block.coinbase` semantics for the validator seal;
-- re-measure the active production gas policies in `docs/specs/GAS_LIMITS.md`; retained retired-contract benchmarks remain historical regression coverage;
+- re-measure the active production gas policies in `docs/specs/GAS_LIMITS.md`;
 - verify the mainnet `ROYALTY_RECEIVER`, `FINAL_OWNER` and `TOKEN_ZERO_RECIPIENT` values before broadcasting, then verify every `pendingOwner` before each Safe `acceptOwnership()`;
 - run the full browser/testnet soak and re-check every registry address before `freezeRenderers()` is used. The experiment registry is intentionally **left unfrozen** at initial launch (see the checklist's freeze policy).
 
@@ -511,14 +428,15 @@ Before mainnet:
 
 ## Hackathon launch state
 
-- **Engineering / contracts:** core and add-on architecture complete; direct UI for superseded experiments retired.
+- **Engineering / contracts:** active contract/deployment surface complete; discontinued experiments removed from the fresh-mainnet submission surface.
 - **Performance:** boot prefetch, shared caches, local burner signing, action-RPC settlement and receipt-first UI are complete and measured in DXDIAG.
 - **Phase 6:** cold-user / judge path plus repository hygiene complete.
 - **Phase 7:** Live Mode hero pass implemented: persistent LIVE state, connect→quick-start handoff, two-browser remote-stroke proof, explorer/X-ray links, DXDIAG remote-event timing and demo choreography.
 - **Phase 7.5:** fresh-mainnet contract/protocol naming and the smaller Skrumpeys / Monad Cards holder tiers; existing testnet bytecode remains untouched.
+- **Phase 7.6:** submission-surface cleanup; fresh mainnet omits discontinued experiments while testnet compatibility readers remain.
 - **Phase 8 (next):** mainnet rehearsal, real community activity, final metrics, demo recording and Metropolis submission.
 
-The product direction is deliberately narrower than the historical experiment set: the shared canvas and continuous onchain interaction are the centerpiece.
+The product is deliberately focused: the shared canvas and continuous onchain interaction are the centerpiece, with only supporting contracts that appear in the current judge path or active OS surfaces.
 
 ### Post-launch ideas (undefined, not scheduled)
 
@@ -545,7 +463,7 @@ npm ci
 npm run check:web
 ```
 
-`npm run repo:doctor` enforces repository hygiene (stale/dead files, duplicate Foundry trees, broken local Markdown links, README placeholders and retired UI reachability). `npm run check:web` runs that doctor, Vitest and the production build. `npm run check` remains the full release gate: repository hygiene, Foundry build/tests, web tests, generated outline/ABI checks and the Vite production build. The frontend imports contract ABIs exclusively from `src/lib/generated/abi.ts`; do not hand-maintain ABI fragments for protocol actions.
+`npm run repo:doctor` enforces repository hygiene (stale/dead files, duplicate Foundry trees, broken local Markdown links, README placeholders and submission-surface boundaries). `npm run check:web` runs that doctor, Vitest and the production build. `npm run check` remains the full release gate: repository hygiene, Foundry build/tests, web tests, generated outline/ABI checks and the Vite production build. The frontend imports contract ABIs exclusively from `src/lib/generated/abi.ts`; do not hand-maintain ABI fragments for protocol actions.
 
 ### RPC endpoints
 
@@ -564,7 +482,7 @@ Demo mode now means either no app RPC URL is configured at all (`VITE_RPC_URL` a
 
 ## Shell layout (2026-10-02 simplification)
 
-The desktop holds only what defines r3OS, in judge-first order: **Paint, Explore Monad, My Frames, My Pass, Block Camera, CD-ROM (D:), Quests** and the **Recycle Bin**. **Auction** joins them only while a finale auction is live onchain. Start has **Programs ▸** (everything a person uses, including Burn a CD and Auction), **Explore Monad**, **System Tools ▸** (Monad X-ray, Network, DXDIAG.EXE, Sounds), Help and Run…. Burn a CD is also a toolbar button in My Frames. The layout lives in `src/os/layout.ts`; retired programs stay retired (`src/os/retired.ts`).
+The desktop holds only what defines r3OS, in judge-first order: **Paint, Explore Monad, My Frames, My Pass, Block Camera, CD-ROM (D:), Quests** and the **Recycle Bin**. **Auction** joins them only while a finale auction is live onchain. Start has **Programs ▸** (everything a person uses, including Burn a CD and Auction), **Explore Monad**, **System Tools ▸** (Monad X-ray, Network, DXDIAG.EXE, Sounds), Help and Run…. Burn a CD is also a toolbar button in My Frames. The layout lives in `src/os/layout.ts`; `src/os/retired.ts` exists only to hide historical entries when connected to the older testnet deployment.
 
 **Explore Monad** (the `monad-hw` program) opens on four one-button experiments; the previous Device Manager view is its **System Information** tab:
 

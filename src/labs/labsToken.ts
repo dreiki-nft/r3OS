@@ -1,9 +1,9 @@
-import type { Address } from 'viem'
+import { parseAbi, type Address } from 'viem'
 import { decodeJsonDataUri } from '../lib/dataUri'
 import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { readHeavy } from '../chain/readMany'
-import { R3OS_FLIPBOOK_ABI, R3OS_LABS_ABI } from '../lib/generated/abi'
+import { R3OS_LABS_ABI } from '../lib/generated/abi'
 
 export type LabsAttributeValue = string | number | boolean
 export interface LabsTokenData {
@@ -20,6 +20,7 @@ const CACHE_TTL_MS = 5 * 60_000
 const cache = new Map<string, CacheEntry>()
 let labsAddressPromise: Promise<Address> | undefined
 let stopMetadataWatch: (() => void) | undefined
+const LABS_LINK_ABI = parseAbi(['function LABS() view returns (address)'])
 
 function attributeMap(raw: unknown): Record<string, LabsAttributeValue> {
   const result: Record<string, LabsAttributeValue> = {}
@@ -43,16 +44,22 @@ export function decodeLabsTokenUri(uri: string): LabsTokenData {
   }
 }
 
-async function labsAddress() {
+export async function resolveLabsAddress() {
   if (labsAddressPromise) return labsAddressPromise
   labsAddressPromise = (async () => {
     if (!publicClient) throw new Error('DEMO_MODE')
-    const flipbook = (await discoverContracts()).labs.flipbook
-    if (!flipbook) throw new Error("this Lab isn't deployed on this network")
-    const result = await readHeavy([{ address: flipbook, abi: R3OS_FLIPBOOK_ABI, functionName: 'LABS' }])
+    const contracts = await discoverContracts()
+    // CD Burner is part of the canonical deployment and exposes the shared Labs address.
+    // Block Camera is the fallback for partial deployments.
+    const source = contracts.labs['cd-burner'] ?? contracts.labs['block-camera']
+    if (!source) throw new Error("Labs isn't deployed on this network")
+    const result = await readHeavy([{ address: source, abi: LABS_LINK_ABI, functionName: 'LABS' }])
     if (result[0]?.status !== 'success') throw result[0]?.error ?? new Error('LABS_UNAVAILABLE')
     return result[0].result as Address
-  })()
+  })().catch((error) => {
+    labsAddressPromise = undefined
+    throw error
+  })
   return labsAddressPromise
 }
 
@@ -78,7 +85,7 @@ export function invalidateLabsToken(id: bigint) {
 
 export async function readLabsToken(id: bigint, version: string | number | bigint = '') {
   if (!publicClient) throw new Error('DEMO_MODE')
-  const labs = await labsAddress()
+  const labs = await resolveLabsAddress()
   ensureMetadataWatch(labs)
   const key = `${id}:${version}`
   const hit = cache.get(key)

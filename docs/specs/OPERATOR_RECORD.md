@@ -26,7 +26,7 @@ Only Paint's `firstPaintBlock` and CARD.DRV's `firstWriteBlock` are exact histor
 
 ## Subsystems
 
-The 16 fixed ids are:
+The 16 fixed v1 ids are listed below. Phase 7.6 does **not** reinterpret them: ids belonging to discontinued experiments remain reserved historical slots, and fresh mainnet passes zero source addresses for those slots. The frontend hides them from the current product surface.
 
 | Id | Subsystem | Live predicate |
 |---:|---|---|
@@ -113,7 +113,7 @@ The MONAD CARD signal is different because CARD.DRV treats that card as the wall
 
 These are observations about the signals, not policy:
 
-- cheap per wallet: Pass, Quests, PAGE.EXE, Kernel Debugger, Block Camera and recording itself;
+- cheap per wallet among active sources: Pass, Quests, PAGE.EXE, Block Camera and recording itself;
 - time-gated and difficult to compress: Paint `activeDays`, observed paint seasons and an old exact first-paint block;
 - external and scarce: MONAD CARD.
 

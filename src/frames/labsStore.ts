@@ -1,9 +1,8 @@
 import { zeroAddress, type Address } from 'viem'
 import { publicClient, wsClient } from '../chain/clients'
-import { discoverContracts } from '../chain/contracts'
 import { readHeavy, readMany } from '../chain/readMany'
-import { R3OS_FLIPBOOK_ABI, R3OS_LABS_ABI } from '../lib/generated/abi'
-import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
+import { R3OS_LABS_ABI } from '../lib/generated/abi'
+import { readLabsToken, resolveLabsAddress, type LabsTokenData } from '../labs/labsToken'
 
 export type LabsOwnedToken = { id: bigint; data?: LabsTokenData }
 
@@ -73,16 +72,7 @@ function ensureLabsTransferWatch(labs: Address) {
 
 export async function labsAddress() {
   if (!labsAddressPromise) {
-    if (!publicClient) throw new Error('DEMO_MODE')
-    labsAddressPromise = (async () => {
-      const flipbook = (await discoverContracts()).labs.flipbook
-      if (!flipbook) throw new Error("this Lab isn't deployed on this network")
-      return (await publicClient.readContract({
-        address: flipbook,
-        abi: R3OS_FLIPBOOK_ABI,
-        functionName: 'LABS',
-      })) as Address
-    })().catch((error) => {
+    labsAddressPromise = resolveLabsAddress().catch((error) => {
       labsAddressPromise = undefined
       throw error
     })
@@ -201,9 +191,6 @@ export async function loadOwnedLabsTokensBySources(
 
 export function labsBucket(data?: LabsTokenData) {
   const type = String(data?.attributes.Type ?? '').toLowerCase()
-  if (type.includes('reel')) return 'Reels'
-  if (type.includes('fork')) return 'Forks'
-  if (type.includes('dream')) return 'Dreams'
   if (type === 'cd' || type.includes('cd')) return 'CDs'
   if (type.includes('portrait')) return 'Portraits'
   return 'All'

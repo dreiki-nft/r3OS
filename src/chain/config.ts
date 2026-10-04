@@ -15,7 +15,7 @@ export interface AppConfig {
   multicall3Address?: Address
   nftApiUrl: string
   ipfsGateway: string
-  labs: Partial<Record<'flipbook' | 'weeds' | 'forks' | 'brushes' | 'finale auction' | 'quests', Address>>
+  labs: Partial<Record<'finale auction' | 'quests', Address>>
   demo: boolean
 }
 
@@ -69,10 +69,6 @@ export const config: Readonly<AppConfig> = Object.freeze({
   nftApiUrl: env('VITE_NFT_API_URL'),
   ipfsGateway: env('VITE_IPFS_GATEWAY') || 'https://ipfs.io/ipfs/',
   labs: {
-    flipbook: address('VITE_FLIPBOOK_ADDRESS'),
-    weeds: address('VITE_WEEDS_ADDRESS'),
-    forks: address('VITE_FORKS_ADDRESS'),
-    brushes: address('VITE_BRUSHES_ADDRESS'),
     'finale auction': address('VITE_AUCTION_ADDRESS'),
     quests: address('VITE_QUESTS_ADDRESS'),
   },
