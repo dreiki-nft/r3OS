@@ -21,12 +21,12 @@ Only Paint's `firstPaintBlock` and CARD.DRV's `firstWriteBlock` are exact histor
 |---|---|---|
 | **A. Stored prospectively** | first-observed block per subsystem; paint seasons observed; first/last record block | Begins when Operator Record exists and somebody calls `record`. |
 | **B. Derived from existing state** | all counters and last-block fields exposed by `facts`; exact first Paint block; exact first CARD.DRV write | Read live from the source contracts. No duplicate counter state is created. |
-| **C. Bounded logs only, not used by this phase** | Block Camera capture count; CD burns; PAGE.EXE write count | These can exist in bounded event history, but Operator Record does not scan logs or pretend to have lifetime coverage. |
+| **C. Bounded logs only, not used by this contract** | Block Camera capture count; CD burns; PAGE.EXE write count | These can exist in bounded event history, but Operator Record does not scan logs or pretend to have lifetime coverage. |
 | **D. Not supported** | first boot; complete historical seasons painted before recording; off-chain activity | The chain does not contain a trustworthy per-address fact for these, so the UI does not invent one. |
 
 ## Subsystems
 
-The 16 fixed v1 ids are listed below. Phase 7.6 does **not** reinterpret them: ids belonging to discontinued experiments remain reserved historical slots, and fresh mainnet passes zero source addresses for those slots. The frontend hides them from the current product surface.
+The 16 fixed v1 ids are listed below. They are immutable protocol history: ids belonging to discontinued experiments remain reserved, and current mainnet deployment passes zero source addresses for those slots. The frontend hides them from the current product surface.
 
 | Id | Subsystem | Live predicate |
 |---:|---|---|

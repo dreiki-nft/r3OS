@@ -8,17 +8,17 @@ r3OS is a Windows 98-style onchain computer whose signature app is a shared 256�
 
 The r3OS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/chain`.
 
-The product/interface name is **r3OS**. The already-deployed snapshot-28 testnet suite keeps its historical `R3tards*` artifact names and `r3tards paint` EIP-712 domain. Phase 7.5 rebrands the fresh mainnet source to `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`; the frontend selects the legacy Paint EIP-712 domain only on chain 10143. The external r3tards NFT collection keeps its real collection name.
+The product/interface name is **r3OS**. The historical testnet deployment keeps its deployed `R3tards*` artifact names and `r3tards paint` EIP-712 domain. Current mainnet source uses `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`; the frontend selects the legacy Paint EIP-712 domain only on chain 10143. The external r3tards NFT collection keeps its real collection name.
 
 Internal deterministic storage/hash derivation salts such as `r3tards.paint.*`, `r3tards.card.drv.v1` and `r3tards.operator.record.v1` are intentionally **not** renamed. They are protocol layout keys rather than public branding, and retaining them preserves the audited derivations while product-facing contract names, token metadata and EIP-712 domains move to r3OS for fresh mainnet deployments.
 
 ## Core freeze
 
-Phase 7.5 is the final planned pre-mainnet Paint-source revision. It changes product/protocol naming for the fresh mainnet deployment and adds two deliberately smaller mainnet-only holder bonuses, then re-freezes `contracts/src/R3OSPaint.sol`. Phase 7.6 prunes only the submission/deployment surface around that core. Existing snapshot-28 testnet bytecode is not replaced. Later phases do **not** modify Paint unless a concrete launch-blocking bug is reported.
+The historical testnet Paint bytecode is not replaced. Current mainnet source uses the r3OS naming scheme and two deliberately smaller mainnet-only holder bonuses while preserving historical deterministic namespaces. `contracts/src/R3OSPaint.sol` remains release-frozen unless a concrete blocking bug is found.
 
-## Submission boundary (2026-10-04)
+## Submission boundary
 
-Fresh mainnet deploys only contracts used by the current r3OS product. Discontinued experiments are removed from source, deployment scripts, tests, generated ABIs and public-facing technical documentation; Git history is the archive. The existing snapshot-28 testnet remains untouched and can still contain historical registry entries, so `src/os/retired.ts` remains as a compatibility filter when the frontend points at that older deployment.
+Mainnet deploys only contracts used by the current r3OS product. Discontinued experiments are absent from source, deployment scripts, tests, generated ABIs and public-facing technical documentation; Git history is the archive. The historical testnet can still contain old registry entries, so `src/os/retired.ts` remains as a compatibility filter when the frontend points at that deployment.
 
 Three backends that once had standalone windows remain intentionally active: **PAGE.EXE** powers Explore Monad → Storage race, **Router Lab** powers Explore Monad → Liquidity race, and **CARD.DRV** powers Monad Card / Block Camera / Pass integration. They are production dependencies, not discontinued apps.
 
@@ -51,9 +51,9 @@ Three backends that once had standalone windows remain intentionally active: **P
 
 ### Holder budget tiers
 
-The planned chain-143 launch values are `BASE_PIXELS_PER_HOUR=512`, `PIXELS_PER_ACTIVE_DAY=32`, `MAX_PIXELS_PER_HOUR=2048`, `MIN_PIXELS_FOR_ACTIVE_DAY=16` and `HOLDER_PIXELS_PER_DAY=512`. The core keeps r3tards as the strongest holder tier: every provided-and-owned r3tard token contributes its own 512 px UTC-day quota, and that quota is stored by token id so transferring the NFT does not reset the token's spend.
+The default chain-143 values are `BASE_PIXELS_PER_HOUR=512`, `PIXELS_PER_ACTIVE_DAY=32`, `MAX_PIXELS_PER_HOUR=2048`, `MIN_PIXELS_FOR_ACTIVE_DAY=16` and `HOLDER_PIXELS_PER_DAY=512`. The core keeps r3tards as the strongest holder tier: every provided-and-owned r3tard token contributes its own 512 px UTC-day quota, and that quota is stored by token id so transferring the NFT does not reset the token's spend.
 
-Phase 7.5 adds two smaller automatic mainnet holder bonuses without changing the existing `paint(bytes,uint256[])` or `budgetOf(address,uint256[])` signatures:
+Mainnet Paint includes two smaller automatic holder bonuses without changing the existing `paint(bytes,uint256[])` or `budgetOf(address,uint256[])` signatures:
 
 - Skrumpeys `0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0`: **+128 px/day per current-holder wallet**;
 - Monad Cards `0x0000CA12D5c07085022eBC74867157449919Fd67`: **+128 px/day per current-holder wallet**.
@@ -124,7 +124,7 @@ The Bin records lifetime counts, last burn block, an onchain stable top 10 and a
 
 An adminless mix CD-R minter. Pick 1–12 distinct frames you currently own, add a 1–24-character Sharpie label, and mint one immutable artifact through `R3OSLabs`. Burning a CD does **not** burn or transfer the source frames; finales are allowed, token #0 and active session keys are not.
 
-Every CD snapshots frame ids, season/storm/finale flags, face/background colours and 32×32 4-bit thumbnails into one `FrameStore` pointer. Its 1000×1000 SVG renders a silver disc, deterministic monoline marker lettering, two-column track list and rim thumbnails entirely from that snapshot, so later sales or burns of source frames cannot change the CD. Common colour traits aggregate all tracks, and the fresh-mainnet immutable name is `r3OS labs cd #N: <label>` (the deployed snapshot-28 testnet metadata keeps its legacy name). See `docs/specs/CD_BURNER.md`.
+Every CD snapshots frame ids, season/storm/finale flags, face/background colours and 32×32 4-bit thumbnails into one `FrameStore` pointer. Its 1000×1000 SVG renders a silver disc, deterministic monoline marker lettering, two-column track list and rim thumbnails entirely from that snapshot, so later sales or burns of source frames cannot change the CD. Common colour traits aggregate all tracks, and the mainnet immutable name is `r3OS labs cd #N: <label>` (the historical testnet metadata keeps its deployed legacy name). See `docs/specs/CD_BURNER.md`.
 
 Renderer 0 is the permanent built-in renderer and always remains available. External renderers are called with a **14,000,000 gas cap**; revert, out-of-gas, or empty return falls back to renderer 0. The timelapse target is `<13M` renderer gas and `<200 KB` tokenURI output so the renderer plus fallback path stays compatible with a default 30M `eth_call` ceiling.
 
@@ -187,7 +187,7 @@ Once a season starts, its outline and guest name are permanent. Frames always re
 
 `startSession(owner, sessionKey, expiryBlock, maxUnits, nonce, deadline, sig)` verifies an EIP-712 owner signature through OpenZeppelin `SignatureChecker`, including ERC-1271 owners. The signature is domain-bound to chain ID and this contract, includes the per-owner nonce, and uses a unix-seconds deadline.
 
-Fresh mainnet/local `R3OSPaint` deployments use EIP-712 domain name `r3OS paint`, version `2`. The existing snapshot-28 testnet deployment remains `r3tards paint`, version `2`; the frontend selects that legacy name only for chain 10143 so Live Mode remains compatible without redeploying testnet.
+Fresh mainnet/local `R3OSPaint` deployments use EIP-712 domain name `r3OS paint`, version `2`. The historical testnet deployment remains `r3tards paint`, version `2`; the frontend selects that legacy name only for chain 10143 so Live Mode remains compatible without redeploying testnet.
 
 A session can only be activated by the **session key itself**: `msg.sender == sessionKey`. This prevents one wallet from registering an unrelated victim address as a burner. A key that has already painted as itself cannot become a session key. An active key cannot be reassigned to another owner.
 
@@ -221,7 +221,7 @@ Outside a storm, the existing regional hand-off-pressure rule determines DF1 AMO
 
 `FrameInfo.proposer` stores `block.coinbase` at frame/finale mint time. Metadata exposes it as the checksummed `Sealed by` address.
 
-**Before mainnet:** verify on Monad testnet that `block.coinbase` is in fact the proposing validator's beneficiary for the block semantics the app wants to describe. If Monad exposes different proposer semantics, treat this trait as beneficiary/coinbase instead of claiming validator identity. Do not paper over the distinction because marketing wanted a prettier noun.
+`block.coinbase` is stored as provenance. The UI describes it as coinbase/beneficiary unless live-chain evidence establishes a more specific proposer identity; it is never treated as cryptographic validator identity.
 
 ## Renderer registry
 
@@ -274,11 +274,11 @@ CARD.DRV is still active infrastructure: Block Camera can include card context, 
 
 ### Operator record and system event
 
-Phase OPERATOR adds two removable, adminless contracts. `R3OSOperatorRecord` (`operator-record`) reads objective per-address facts from the existing Paint/Lab/hardware contracts and stores only the first block at which each subsystem was observed plus a prospective bitmap of paint seasons observed. Existing counters stay in their source contracts; there is no aggregate score or repetition counter.
+The Operator subsystem uses two removable, adminless contracts. `R3OSOperatorRecord` (`operator-record`) reads objective per-address facts from the existing Paint/Lab/hardware contracts and stores only the first block at which each subsystem was observed plus a prospective bitmap of paint seasons observed. Existing counters stay in their source contracts; there is no aggregate score or repetition counter.
 
 `R3OSSystemEvent` (`system-event`) is the permanent DEVICE 07 latch. On Monad mainnet it accepts only the Chainlink MON/USD proxy and can be activated permissionlessly once one fresh round is at or above the deployed milli-USD threshold (`333` by default, or `$0.333`). It has no owner, reset or fallback activation path.
 
-My Pass exposes the address's record under the **Operator** tab and System Information exposes **DEVICE 07 · UNKNOWN DEVICE**. These active screens distinguish live onchain facts, derived values, deployment configuration and unknown data. The phase makes no promise about what, if anything, the record or event will be used for. See [`docs/specs/OPERATOR_RECORD.md`](specs/OPERATOR_RECORD.md) and [`docs/specs/SYSTEM_EVENT.md`](specs/SYSTEM_EVENT.md).
+My Pass exposes the address's record under the **Operator** tab and System Information exposes **DEVICE 07 · UNKNOWN DEVICE**. These active screens distinguish live onchain facts, derived values, deployment configuration and unknown data. The subsystem makes no promise about what, if anything, the record or event will be used for. See [`docs/specs/OPERATOR_RECORD.md`](specs/OPERATOR_RECORD.md) and [`docs/specs/SYSTEM_EVENT.md`](specs/SYSTEM_EVENT.md).
 
 ### CD-ROM (D:)
 
@@ -296,7 +296,6 @@ The lab has no owner, storage, custody, fees or persistent execution path. Mainn
 - **DXDIAG.EXE** (Start → System Tools) shows what this browser is connected to and which r3OS components it can see, reads once on open (Refresh to re-read) and copies a plain-text support report without RPC URLs or wallet data.
 - **Run…** (Start menu) opens allowlisted programs and a few typed routes (`operator`, `frame <id>`, `auction <id>`) through the same release-aware path as every icon. It is not a shell: no URLs, no `javascript:`, no arbitrary hashes.
 
-The canonical launch list is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md).
 
 ## Palette
 
@@ -336,7 +335,7 @@ npm run build
 
 Foundry is pinned to **v1.8.3** and the suite runs with Monad rules: `network = "monad"` and `hardfork = "monad:MonadTen"`. MIP-8 page storage has been live since MonadTen on 2026-09-02, and the canvas/PAGE.EXE/CARD.DRV layouts are deliberately 128-slot aligned so same-page accesses receive Monad's page-warming treatment.
 
-Monad charges from the submitted **gas limit**, not merely gas used, including reverted transactions. The regression limits below therefore include measured headroom under Monad rules. Testnet still remains the final source for production gas-limit constants. See `docs/specs/GAS_LIMITS.md`.
+Monad charges from the submitted **gas limit**, not merely gas used, including reverted transactions. The regression limits below therefore include measured headroom under Monad rules. Live-network measurements remain distinct from local regression limits. See `docs/specs/GAS_LIMITS.md`.
 
 `GasBenchmarks.t.sol` logs fresh, wet and dry paint paths separately. Full-canvas remains observation-only because production region caps intentionally make a single-transaction full-canvas paint impossible.
 
@@ -358,7 +357,7 @@ Monad charges from the submitted **gas limit**, not merely gas used, including r
 | CD Burner `burnCD`, 12 tracks / Labs `tokenURI` | `< 6M / < 8M` |
 | Recycle Bin `recycle(1)` / `recycle(50)` | logged regression values; production uses exact estimate + 10% |
 
-Production gas limits for active wallet actions must be re-measured on Monad testnet; `docs/specs/GAS_LIMITS.md` is the canonical policy.
+`docs/specs/GAS_LIMITS.md` is the canonical policy for production estimation and regression limits.
 
 ## Deployment without raw private keys
 
@@ -401,50 +400,11 @@ After deployment, verify token #0 ownership, immutable royalty receivers and eve
 
 `R3OSLabs` and the Painter Pass expose ERC-7572 `contractURI()` metadata and owner-controlled external links. Labs royalties are fixed at 5% to `ROYALTY_RECEIVER`; the soulbound Pass reports 0%.
 
-## Testnet and mainnet checklist
-
-Step-by-step deploy commands and the testnet Vercel environment are in [`docs/TESTNET_DEPLOY.md`](TESTNET_DEPLOY.md). The single canonical launch list, including freeze policy, Pass capacity and every check that still needs real Monad data, is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md). The items below are the original contract-level reminders it expands:
-
-Before mainnet:
-
-- verify Monad's EIP-2935 history contract at `0x0000F90827F1C53a10cb7A02335B175320002935` returns the same recent block hashes as RPC and confirm the effective 8,191-block history window under MonadTen;
-- measure auction settlement inside native `blockhash`, through EIP-2935 history, and after the history window where the candle-start fallback is used;
-- verify `block.coinbase` semantics for the validator seal;
-- re-measure the active production gas policies in `docs/specs/GAS_LIMITS.md`;
-- verify the mainnet `ROYALTY_RECEIVER`, `FINAL_OWNER` and `TOKEN_ZERO_RECIPIENT` values before broadcasting, then verify every `pendingOwner` before each Safe `acceptOwnership()`;
-- run the full browser/testnet soak and re-check every registry address before `freezeRenderers()` is used. The experiment registry is intentionally **left unfrozen** at initial launch (see the checklist's freeze policy).
-
-### Public-RPC launch checks
-
-- With Paint plus one Lab open, use `rpcStats` over a 10-second idle window and keep HTTP JSON-RPC traffic at **6 calls/s or less**; websocket traffic is excluded.
-- Run with `VITE_LOGS_RANGE=100` and confirm no `eth_getLogs` request spans more than 100 blocks and every Lab still loads.
-- Set `VITE_DEPLOY_BLOCK` to the real deployment block before soak testing; no production path should reconstruct history from genesis.
-- Run `scripts/auction-keeper.sh` during every finale auction so a permissionless settle is submitted as soon as the contract accepts it.
-- On both testnet and mainnet run `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$RPC_URL"` and record whether Monad's history-storage contract is present before relying on the extended auction hash window.
-
-## Hackathon launch state
-
-- **Engineering / contracts:** active contract/deployment surface complete; discontinued experiments removed from the fresh-mainnet submission surface.
-- **Performance:** boot prefetch, shared caches, local burner signing, action-RPC settlement and receipt-first UI are complete and measured in DXDIAG.
-- **Phase 6:** cold-user / judge path plus repository hygiene complete.
-- **Phase 7:** Live Mode hero pass implemented: persistent LIVE state, connect→quick-start handoff, two-browser remote-stroke proof, explorer/X-ray links, DXDIAG remote-event timing and demo choreography.
-- **Phase 7.5:** fresh-mainnet contract/protocol naming and the smaller Skrumpeys / Monad Cards holder tiers; existing testnet bytecode remains untouched.
-- **Phase 7.6:** submission-surface cleanup; fresh mainnet omits discontinued experiments while testnet compatibility readers remain.
-- **Phase 8 (next):** mainnet rehearsal, real community activity, final metrics, demo recording and Metropolis submission.
-
-The product is deliberately focused: the shared canvas and continuous onchain interaction are the centerpiece, with only supporting contracts that appear in the current judge path or active OS surfaces.
-
-### Post-launch ideas (undefined, not scheduled)
-
-- **CARD BUS:** CARD.DRV words W24–W27 stay reserved by spec; nothing reads or writes them yet.
-- **DEVICE 07 next stage:** intentionally unknown.
-- **Block Cinema:** concept only, POST-LAUNCH / UNDEFINED.
-
 ## Frontend: r3OS 98
 
 The current frontend is a complete Windows 98-style desktop shell. `src/os/programs.ts` is the active program boundary; launch-critical modules are prefetched during the real boot sequence and resolved into the registry before the desktop appears.
 
-Copy the supplied asset pack into `public/os/` before running the app. The app references those PNG/WebP/MP3 assets by URL and does not inline them.
+Static UI assets live in `public/os/`. The app references those PNG/WebP/MP3 assets by URL and does not inline them.
 
 Copy `.env.example` to `.env.local`; it contains the current public testnet defaults. `VITE_RPC_URLS` and `VITE_WS_URL` are app read endpoints. `VITE_WALLET_RPC_URL` is the only RPC URL the app will provide to `wallet_addEthereumChain`. Every `VITE_` value is public in the browser bundle.
 
@@ -471,7 +431,7 @@ Interactive Live transactions use a separate action-RPC lane. The browser signs 
 
 `VITE_WALLET_RPC_URL` is separate and is the only endpoint exposed through wallet chain metadata. DXDIAG reports endpoint counts and RPC method counts, never the URLs themselves.
 
-The public testnet values used by the current deployment live in `.env.example`. Mainnet endpoints and log-range assumptions are set during Phase 8 rehearsal from providers verified at that time, rather than being hard-coded into this reference.
+The public testnet values used by the current deployment live in `.env.example`. Mainnet endpoints and log-range assumptions are deployment configuration rather than hard-coded protocol constants.
 
 Demo mode now means either no app RPC URL is configured at all (`VITE_RPC_URL` and `VITE_RPC_URLS` are both empty) or the Paint address is missing.
 

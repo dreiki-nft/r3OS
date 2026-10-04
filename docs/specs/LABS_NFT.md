@@ -2,7 +2,7 @@
 
 `R3OSLabs` is the single tradeable ERC-721 collection for active r3OS Lab artifacts. Fresh mainnet currently uses it for **CD-Rs** and **Block Camera portraits**. Paint frames remain in the separate `R3OSPaint` collection and Painter Pass remains a separate soulbound collection.
 
-Phase 7.6 removes discontinued token-producing experiments from fresh-mainnet source/deployment. Existing snapshot-28 testnet tokens remain whatever their deployed contracts made them; Git history is the source for those retired implementations.
+Discontinued token-producing experiments are omitted from the current mainnet source/deployment graph. Historical testnet tokens remain governed by their deployed contracts; Git history is the archive for retired implementations.
 
 ## Collection authority
 
@@ -66,7 +66,7 @@ Every Labs token begins with common mint/provenance traits:
 | Colours used | source-reported count |
 | Palette | Mono / Few / Rich / Full bucket |
 
-`Sealed by` is provenance only; final product wording must follow the Phase 8 verification of what `block.coinbase` represents on Monad.
+`Sealed by` records the mint block's `block.coinbase` value as provenance only; it is not presented as a cryptographic validator-identity guarantee.
 
 ## CD traits
 

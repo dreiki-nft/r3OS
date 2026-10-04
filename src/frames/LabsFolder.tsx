@@ -1,4 +1,4 @@
-import '../labs/phase3c2a.css'
+import '../labs/labs.css'
 import { screenSafeMessage } from '../chain/errors'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { zeroAddress, type Address } from 'viem'

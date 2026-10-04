@@ -4,9 +4,9 @@ Router Lab is a read-only execution-routing laboratory for r3OS. It demonstrates
 
 ## MRC-17 revision
 
-This phase targets **MRC-17 DRAFT**, Monad MIPs PR #91 at commit `6e4f86333923f0c4ec77bc92b3702f1b21f37446`. The two-function `IPropAMMRouter` ABI is copied locally and pinned in source. The interface remains a draft; a later MRC revision may require replacing the isolated ABI file and adapter metadata.
+This implementation targets **MRC-17 DRAFT**, Monad MIPs PR #91 at commit `6e4f86333923f0c4ec77bc92b3702f1b21f37446`. The two-function `IPropAMMRouter` ABI is copied locally and pinned in source. The interface remains a draft; a later MRC revision may require replacing the isolated ABI file and adapter metadata.
 
-Reference adapter behavior was studied at `haythemsellami/mrc-17-adapters` commit `2f1400d17c262cec6c4860a99916accf7f3044d8`. The deployed adapter list is taken from the Monoper deployment manifest referenced by this phase. The adapters are third-party integration code under active development and are not treated as trusted r3tards contracts.
+Reference adapter behavior was studied at `haythemsellami/mrc-17-adapters` commit `2f1400d17c262cec6c4860a99916accf7f3044d8`. The deployed adapter list is taken from the Monoper deployment manifest referenced by this implementation. The adapters are third-party integration code under active development and are not treated as trusted r3tards contracts.
 
 ## Isolation model
 
@@ -57,7 +57,7 @@ Metric's legacy quote path is the important reference case: its quote mechanism 
 
 ## Validity and expiry
 
-The draft contains no generic quote-expiry field. The reference adapters in this phase return empty `swapData`; for them Router Lab shows `VALIDITY: not exposed (swapData empty)`.
+The draft contains no generic quote-expiry field. The reference adapters in the current implementation return empty `swapData`; for them Router Lab shows `VALIDITY: not exposed (swapData empty)`.
 
 For non-empty `swapData`, the lab reports its length and hash but treats its contents as opaque. The UI shows `VALIDITY: UNKNOWN (opaque swapData, N bytes)`. It does not invent a TTL or decode adapter-specific expiry unless a future standardized field exists.
 
@@ -78,7 +78,7 @@ The frame revert unwinds the WMON deposit, approval, venue call and received out
 
 The frontend first tries a fixed throwaway sender with an `eth_call` balance override. If the RPC does not support state overrides, it may use the connected wallet as the call sender only when that wallet's *read* balance is sufficient. No signature is requested and no transaction is submitted.
 
-This phase supports only wrapped-native input. Simulating arbitrary ERC-20 input would require token-storage overrides whose layout is not generic.
+The current implementation supports only wrapped-native input. Simulating arbitrary ERC-20 input would require token-storage overrides whose layout is not generic.
 
 A same-state preview is not a guarantee for a later block. Hanji's reference adapter is specifically documented as using a quote ladder that is not itself an execution preview, so a quote may still differ from execution behavior.
 

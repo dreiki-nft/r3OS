@@ -12,7 +12,7 @@ contract R3OSOperatorRecord {
     uint32 private constant MAGIC = 0x4f505231; // "OPR1"
     uint256 private constant PAGE_WORDS = 128;
 
-    // v1 protocol ids are immutable history. Phase 7.6 leaves discontinued ids reserved rather than reusing them.
+    // v1 protocol ids are immutable history. Discontinued ids remain reserved rather than being reused.
     // Fresh mainnet passes address(0) for those Sources fields, so their predicates remain unanswered forever.
     uint256 public constant PAINT_ID = 0;
     uint256 public constant FRAMES_ID = 1;

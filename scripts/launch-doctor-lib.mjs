@@ -36,7 +36,7 @@ export const EXPECTED_STAMP_SOURCES = Object.freeze(['quests', 'recycle-bin', 'c
 /** From R3OSPainterPass / PassArt: six built-in pins, then one pin per stamp source, 16 drawn. */
 export const PASS_BUILTIN_PINS = 6
 export const PASS_MAX_PINS = 16
-/** Policy (docs/PRE_MAINNET_CHECKLIST.md): the last two visual pins stay unassigned. */
+/** Release policy: the last two visual pins stay unassigned. */
 export const PASS_RESERVED_PINS = 2
 
 /** Labs bound to their registry id with bindExperimentId(). */
@@ -1381,7 +1381,7 @@ export async function runDoctor({
     'Renderers state',
     rFrozen.ok ? (rFrozen.value ? STATUS.OK : STATUS.WARN) : STATUS.UNKNOWN,
     rFrozen.ok ? (rFrozen.value ? 'FROZEN' : 'NOT FROZEN') : 'unreadable',
-    rFrozen.ok && !rFrozen.value ? 'decision: REVIEW BEFORE MAINNET (freeze only after verification)' : '',
+    rFrozen.ok && !rFrozen.value ? 'decision: REVIEW BEFORE FREEZE' : '',
   )
   report.add('Renderers expected entries', rendererStatus, rendererValue)
   report.add(

@@ -1,12 +1,12 @@
 # Threat model notes
 
-This is the contract-boundary threat model, maintained through Phase LAUNCH. Items that still need real chain data are classified in the **Launch status of open items** section and tracked operationally in [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md). A passing local Monad-mode test is not treated as testnet or mainnet evidence; items that have been exercised on a real network are called out explicitly.
+This is the contract-boundary threat model for the current r3OS release surface. Local Monad-mode tests are not treated as testnet or mainnet evidence; assumptions that depend on live chain behavior are labelled explicitly.
 
-> **Phase 7.6 boundary:** fresh mainnet omits discontinued experiments from source and deployment. The existing snapshot-28 testnet is not mutated; frontend compatibility filters may still hide historical registry/subsystem entries there. This threat model covers the active fresh-mainnet surface plus compatibility assumptions that can still affect the shipped frontend.
+> **Deployment boundary:** current mainnet source omits discontinued experiments from source and deployment. The historical testnet is not mutated; frontend compatibility filters may still hide historical registry/subsystem entries there. This threat model covers the active mainnet surface plus compatibility assumptions that can affect the shipped frontend.
 
 ## Core freeze
 
-The snapshot-28 Paint core received its pre-testnet SEC hardening before the current testnet deployment. Phase 7.5 reopened **fresh-mainnet source only** for product/protocol naming plus two smaller mainnet-only holder bonuses. Phase 7.6 prunes discontinued surrounding contracts without changing Paint semantics. Existing testnet bytecode is untouched and `contracts/src/R3OSPaint.sol` remains frozen unless a concrete launch-blocking bug is found.
+The historical testnet Paint bytecode remains unchanged. Current mainnet source uses the r3OS product/protocol naming and two bounded mainnet-only holder bonuses while preserving historical deterministic namespaces. `contracts/src/R3OSPaint.sol` remains release-frozen unless a concrete blocking bug is found.
 
 ## Administrative authority: `Ownable2Step`
 
@@ -56,9 +56,9 @@ The EIP-712 domain is part of the signed-session security boundary. Existing cha
 
 ## Partner holder bonuses
 
-Phase 7.5 adds fixed mainnet-only holder reads for Skrumpeys (`0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0`) and Monad Cards (`0x0000CA12D5c07085022eBC74867157449919Fd67`). Each currently-held collection adds **128 px per UTC day per wallet**, compared with the stronger r3tards tier of **512 px per UTC day per supplied/owned token** in the launch configuration. The partner constants are part of the mainnet bytecode, not owner-configurable allowlists.
+Current mainnet Paint includes fixed mainnet-only holder reads for Skrumpeys (`0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0`) and Monad Cards (`0x0000CA12D5c07085022eBC74867157449919Fd67`). Each currently-held collection adds **128 px per UTC day per wallet**, compared with the stronger r3tards tier of **512 px per UTC day per supplied/owned token** in the launch configuration. The partner constants are part of the mainnet bytecode, not owner-configurable allowlists.
 
-The partner contracts are external liveness dependencies only for the **optional bonus check**. Each `balanceOf(owner)` probe is a read-only, **50,000-gas-capped `staticcall`** with strict 32-byte return validation; revert, malformed/no-code behaviour or an unavailable collection fails closed to **no bonus**. `_spendUnits` does not probe either collection at all when ordinary hourly + supplied r3tard quota already covers the action, so an external partner failure cannot brick the common Paint path. Launch Doctor verifies the exact chain-143 addresses, code presence and 128 px constants before mainnet.
+The partner contracts are external liveness dependencies only for the **optional bonus check**. Each `balanceOf(owner)` probe is a read-only, **50,000-gas-capped `staticcall`** with strict 32-byte return validation; revert, malformed/no-code behaviour or an unavailable collection fails closed to **no bonus**. `_spendUnits` does not probe either collection at all when ordinary hourly + supplied r3tard quota already covers the action, so an external partner failure cannot brick the common Paint path. Launch Doctor verifies the exact chain-143 addresses, code presence and 128 px constants for a deployment.
 
 The partner quota is intentionally wallet/day-accounted rather than token-id-accounted. This keeps Skrumpeys and non-enumerable Monad Cards automatic and preserves the existing `paint(bytes,uint256[])` ABI, but a transferable partner NFT can make a second wallet eligible later in the same UTC day. This is **not** treated as Sybil resistance. The cap is deliberately only one 128 px bonus per wallet/collection/day; r3tards remains the only per-token holder tier with quota persistence across transfers. Monad Cards are additionally handled as a wallet-holder bonus rather than requiring token-id discovery.
 
@@ -78,7 +78,7 @@ Renderer bugs affect optional metadata presentation, not frame/canvas storage. R
 
 ## Validator seal caveat
 
-Frames record `block.coinbase` as `proposer` and expose it as `Sealed by`. Before mainnet, verify on Monad testnet that `block.coinbase` corresponds to the proposing validator beneficiary in the way the UI intends to describe it. If it does not, the UI/docs must describe the field accurately as coinbase/beneficiary rather than inventing validator identity.
+Frames record `block.coinbase` as `proposer` and expose it as `Sealed by`. The `Sealed by` label assumes `block.coinbase` corresponds to the proposer beneficiary in the intended Monad context. Where that relationship is not established by live-chain evidence, the UI/docs must describe the field as coinbase/beneficiary rather than inventing validator identity.
 
 No owner can modify a stored frame proposer after mint.
 
@@ -116,9 +116,9 @@ Shared `FrameTraits` rebuilds the built-in immutable frame traits for optional r
 
 Future guest outlines are an owner-curated surface. Canvas pixels remain permissionless within budget/heat rules, so offensive user-created frames remain possible. Frontend moderation is UI-only and cannot delete onchain frames.
 
-## Launch status of open items
+## Live-network assumptions
 
-Every item the earlier phases deferred to "Phase 5", classified. **Resolved** means resolved in code or policy, not "observed on Monad".
+These items depend on observed network behavior or external infrastructure and are intentionally distinguished from locally proven code invariants.
 
 | Item | Status |
 |---|---|
@@ -126,20 +126,20 @@ Every item the earlier phases deferred to "Phase 5", classified. **Resolved** me
 | Production gas limits from observed distributions for active wallet actions | **TESTNET REQUIRED** (`docs/specs/GAS_LIMITS.md`) |
 | `block.coinbase` meaning for "Sealed by" | **TESTNET REQUIRED** |
 | EIP-2935 history correctness and 8,191-block window; auction fallback path | **TESTNET REQUIRED** |
-| Public-RPC load: bounded `getLogs`, idle rate, websocket → polling | **RESOLVED** in code (Phase 5) · **TESTNET REQUIRED** for the soak |
+| Public-RPC load: bounded `getLogs`, idle rate, websocket → polling | **CODE-BOUNDED** · live-network soak required |
 | Official Monad Card behaviour | **RESOLVED** on a mainnet fork (2026-10-01: soulbound by `Soulbound()` revert, no ERC-5192 interface) |
-| Real MRC-17 adapters and quote isolation | **RESOLVED** on a mainnet fork (2026-10-01, `RouterLabFork`); re-run before launch: **MAINNET FORK REQUIRED** |
+| Real MRC-17 adapters and quote isolation | **RESOLVED** on a mainnet fork (2026-10-01, `RouterLabFork`); **MAINNET-FORK VERIFIED 2026-10-01** |
 | MON/USD feed freshness and heartbeat | **MAINNET REQUIRED** (oracle check) |
-| Session-key user warnings | **RESOLVED** in UI (Live wizard, Hardware Profiles cancel/revoke) · operational wording **DEFERRED** to the checklist's content/operational section |
-| Offensive canvas content | **DEFERRED** to an operational policy (no onchain censorship mechanism exists or is planned; UI-only hiding cannot delete onchain frames) |
-| Auction keeper and support/recovery process | **DEFERRED** to operational policy (`scripts/auction-keeper.sh` exists; who runs it is an ops decision) |
+| Session-key user warnings | **RESOLVED** in UI (Live wizard, Hardware Profiles cancel/revoke) · warnings are implemented in the Live wizard and Hardware Profiles |
+| Offensive canvas content | **OPERATIONAL POLICY** (no onchain censorship mechanism exists or is planned; UI-only hiding cannot delete onchain frames) |
+| Auction keeper and support/recovery process | **OPERATIONAL POLICY** (`scripts/auction-keeper.sh` exists; who runs it is an ops decision) |
 
 
 ## Monad gas-limit model
 
 The Foundry suite is pinned to v1.8.3 and runs with MonadTen rules (`network = "monad"`). MIP-8 page storage has been live since 2026-09-02, so the 128-slot-aligned layouts are security/economic assumptions we test directly rather than Ethereum-priced approximations.
 
-Monad charges from the submitted gas limit, including reverted transactions. Over-padding therefore burns real MON. Core Paint keeps preflight simulation plus explicit DF1 corruption headroom; other active wallet actions use exact-action estimation plus bounded headroom. The Phase 8 soak must validate every production policy against live-network observations (**TESTNET/MAINNET REHEARSAL REQUIRED**).
+Monad charges from the submitted gas limit, including reverted transactions. Over-padding therefore burns real MON. Core Paint keeps preflight simulation plus explicit DF1 corruption headroom; other active wallet actions use exact-action estimation plus bounded headroom. Production policy is calibrated against live-network observations during release rehearsal; local regression tests do not substitute for RPC/inclusion measurements.
 
 
 
@@ -166,7 +166,7 @@ The active Monad hardware contracts grant no new authority over Paint. `R3OSPage
 
 `R3OSBlockCamera` can mint only through its bound `R3OSLabs` experiment id. Proposer/validator id is **not randomness**: a proposer can influence transaction inclusion, and the portrait uses proposer identity only as art/provenance. Parent hash, epoch and proposer availability are recorded with explicit known/unknown flags so missing device support does not silently become fake zero-valued provenance.
 
-PAGE.EXE benchmark calls and System Information device probes are read-only except for an explicit user page write or Block Camera capture. Phase 8 must verify live device semantics and public-RPC acceptance rather than extrapolating from local Monad mode.
+PAGE.EXE benchmark calls and System Information device probes are read-only except for an explicit user page write or Block Camera capture. Live device semantics and public-RPC acceptance are treated as network observations rather than extrapolated from local Monad mode.
 
 ## Monad Card / CARD.DRV
 

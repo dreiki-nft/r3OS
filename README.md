@@ -28,11 +28,11 @@ r3OS boots into a Windows 98-style desktop wrapped around one shared **256 × 25
 
 Paint is the center of the project: draw locally, commit pixels as a transaction, watch other painters' live onchain strokes appear and reconcile, then save a moment of the shared canvas as an immutable frame NFT. Frames can become mix CDs, finales can enter a candle auction, and Block Camera turns the block itself into an onchain artifact.
 
-There is **no app backend or database**. The frontend is static and reads contracts, logs and block data directly from Monad RPCs.
+Core state and application logic do not depend on an app-owned backend or database. The frontend is static and reads contracts, logs and block data directly from Monad RPCs; optional third-party discovery services may enrich NFT discovery without becoming protocol state.
 
-**Naming:** `r3OS` is the product and interface. The already-deployed snapshot-28 testnet suite keeps its historical `R3tards*` contract names and `r3tards paint` EIP-712 domain. The fresh mainnet source uses `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`. The actual **r3tards** NFT collection keeps its real collection name and remains the primary holder-integration surface.
+**Naming:** `r3OS` is the product and interface. The historical testnet deployment keeps its deployed `R3tards*` contract names and `r3tards paint` EIP-712 domain for compatibility. Current mainnet source uses `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`. The actual **r3tards** NFT collection keeps its real collection name and remains the primary holder-integration surface.
 
-A few internal deterministic storage/hash salts still contain historical `r3tards.*` strings on purpose. They are protocol layout keys, not public branding; Phase 7.5 leaves those derivations unchanged while rebranding product-facing contracts and metadata.
+A few deterministic storage/hash salts still contain historical `r3tards.*` strings on purpose. They are protocol layout keys, not public branding, and remain unchanged to preserve deterministic derivations.
 
 ### Hackathon thesis
 
@@ -51,7 +51,6 @@ A wallet is not required for the first impression.
 5. Open **DXDIAG.EXE → Performance** for local signing, broadcast, receipt, UI-settle and remote websocket-to-canvas measurements. No telemetry is uploaded.
 6. Open **Explore Monad**, then save a frame / burn a CD if you want the wider OS tour.
 
-The exact two-browser recording path is in [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md).
 
 ## What is onchain
 
@@ -128,7 +127,7 @@ A few implementation choices matter to the user experience:
 - historical/heavy art reads are bounded instead of preloading the entire collection;
 - wallet-facing chain metadata uses only `VITE_WALLET_RPC_URL`; internal RPC endpoints are never shown by DXDIAG.
 
-The fresh-mainnet contract surface is intentionally as small as the current r3OS product. Phase 7.6 removes discontinued experiments from source, deployment wiring, generated ABIs and public docs; Git history is the archive. The existing snapshot-28 testnet may still contain historical registry entries, so a small compatibility policy remains to hide them when the frontend points at that deployment.
+The mainnet contract surface is intentionally limited to contracts consumed by the current r3OS product. Discontinued experiments remain available through Git history rather than shipping in source, deployment wiring or generated ABIs. The historical testnet can still contain old registry entries, so a small compatibility policy hides them when the frontend points at that deployment.
 
 ## Current testnet
 
@@ -194,23 +193,21 @@ src/network     Network Neighborhood / block provenance
 src/diagnostics DXDIAG.EXE
 src/chain       RPC clients, batching, wallet, transactions, receipts, logs
 scripts         repo/launch checks and generated-source tooling
-docs            technical reference, deployment and security material
+docs            technical reference, protocol specs and security model
 ```
 
 ## Security
 
-The contracts are **not professionally audited**. The internal AI-assisted review, remaining findings and launch decisions are documented in [`docs/SECURITY_AUDIT_2026-10-02.md`](docs/SECURITY_AUDIT_2026-10-02.md) and [`THREAT_MODEL.md`](THREAT_MODEL.md).
+The contracts are **not professionally audited**. The repository includes a maintained [`THREAT_MODEL.md`](THREAT_MODEL.md), security regression tests, static-analysis policy and explicit trust boundaries for external integrations.
 
 Browser security matters because Live Mode intentionally holds an EOA key locally. The balance is therefore capped at 1 MON; session authorization is scoped and expiring; the app does not expose private keys, RPC URLs or secrets through diagnostics.
 
 ## Status
 
-- Monad testnet engineering build is active.
-- Performance / boot-prefetch work is complete and measured locally in DXDIAG.
-- Cold-user / judge-path and repository-hygiene work is complete.
-- Live Mode hero UI, one-flow wallet handoff, two-browser remote proof, explorer/X-ray proof and demo choreography are implemented and validated on testnet.
-- Phase 7.6 submission-surface cleanup omits discontinued experiments from fresh-mainnet source/deploy/ABI/docs while preserving historical compatibility readers.
-- Next is Phase 8: mainnet rehearsal, real community activity, final metrics, recording and submission.
+- Monad testnet build is active and the full local Solidity/frontend gate is green.
+- Live Mode, two-browser remote propagation, explorer/X-ray proof and local DXDIAG instrumentation are implemented and validated on testnet.
+- The mainnet source/deployment graph contains only contracts consumed by the current product; historical compatibility readers remain isolated to legacy testnet state.
+- Mainnet deployment addresses will replace the testnet table above when the release deployment is finalized.
 
 ## Credits
 

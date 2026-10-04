@@ -1,5 +1,5 @@
 import { helpHash } from '../os/helpTopics'
-import './phase3c2a.css'
+import './labs.css'
 import { openProgram } from '../os/programs'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { formatEther, parseEther, type Address } from 'viem'

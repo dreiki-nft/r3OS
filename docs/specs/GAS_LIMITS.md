@@ -2,7 +2,7 @@
 
 Monad charges from the submitted gas limit, including reverted transactions. r3OS therefore keeps wallet-facing limits tight, preflights known revert paths, and shows the maximum MON cost before signing.
 
-Phase 7.6 removes gas policies for discontinued experiments. This file covers only actions reachable from the fresh-mainnet product.
+This policy covers only actions reachable from the current mainnet product surface.
 
 ## Core paint
 
@@ -14,7 +14,7 @@ headroom = kMax * CORRUPTION_WRITE_GAS
 limit = (estimate + headroom) * 1.10
 ```
 
-Until Phase 8 replaces the local value with real mainnet-rehearsal data:
+The current conservative corruption-write headroom constant is:
 
 ```ts
 const CORRUPTION_WRITE_GAS = 12_000n
@@ -62,12 +62,12 @@ Foundry targets protect the implementation from obvious regressions; they are no
 
 | Action | Local regression / policy | Launch status |
 |---|---|---|
-| Core paint | estimate + DF1 corruption headroom + 10% | Phase 8 measurement required |
-| Frame / Pass / Quest / ordinary writes | exact estimate + 10% | Phase 8 measurement required |
-| Finale Auction | exact estimate + 10%; exercise native history, EIP-2935 and fallback settlement paths | Phase 8 measurement required |
-| Recycle Bin | exact estimate + 10%; measure representative 1–50 frame batches | Phase 8 measurement required |
-| CD Burner | exact estimate + 10%; 12-track Foundry mint/render caps remain in tests | Phase 8 measurement required |
-| Block Camera / PAGE.EXE / CARD.DRV / Operator | exact estimate + 10% for transactions | Phase 8 measurement required |
-| Router Lab | `eth_call` only | confirm public-RPC acceptance |
+| Core paint | estimate + DF1 corruption headroom + 10% | local regression + live calibration |
+| Frame / Pass / Quest / ordinary writes | exact estimate + 10% | local regression + live calibration |
+| Finale Auction | exact estimate + 10%; native history, EIP-2935 and fallback settlement paths covered | local regression + live calibration |
+| Recycle Bin | exact estimate + 10%; representative 1–50 frame batches | local regression + live calibration |
+| CD Burner | exact estimate + 10%; 12-track Foundry mint/render caps remain in tests | local regression + live calibration |
+| Block Camera / PAGE.EXE / CARD.DRV / Operator | exact estimate + 10% for transactions | local regression + live calibration |
+| Router Lab | `eth_call` only | public-RPC compatibility is a runtime observation |
 
-The canonical launch tick-list is section F8 of [`docs/PRE_MAINNET_CHECKLIST.md`](../PRE_MAINNET_CHECKLIST.md). Do not replace missing live data with a neat-looking guess. Computers already produce enough fiction without our assistance.
+Local regression targets and live-network measurements are reported separately; neither is presented as a universal Monad guarantee.

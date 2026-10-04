@@ -71,7 +71,7 @@ export function sourceForDeviceStatus(
   return status === 'absent' ? 'absent' : 'unknown'
 }
 
-const SPEC_DOC = 'PHASE_MONAD_HW_PROMPT.md'
+const SPEC_DOC = 'docs/specs/MONAD_HW.md'
 const SPEC_DATE = '2026-09-30'
 const spec = <T>(value: T): Sourced<T> => ({ value, source: 'spec', doc: SPEC_DOC, date: SPEC_DATE })
 

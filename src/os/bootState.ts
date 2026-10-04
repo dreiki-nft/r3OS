@@ -47,7 +47,7 @@ export function bootMode(
   today = calendarDay(),
 ): BootMode {
   try {
-    // A reload in the same tab skips the cosmetic POST, not the useful warm-up. Phase 5B's invariant is
+    // A reload in the same tab skips the cosmetic POST, not the useful warm-up. The performance invariant is
     // "desktop appears = hot", so every fresh page load keeps at least the short splash in front of prefetch.
     if (session?.getItem(BOOT_SESSION_KEY) === '1') return 'splash'
   } catch {

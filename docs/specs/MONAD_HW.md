@@ -11,14 +11,14 @@ Fresh mainnet keeps two contract-backed hardware experiments:
 
 The standalone PAGE.EXE window was folded into **Explore Monad → Storage race**. Block Camera remains a first-class program. CARD.DRV is specified separately in `MONAD_CARD.md`.
 
-## Monad facts used by this phase
+## Monad facts used by r3OS
 
 - **MIP-8 / MonadTen:** one storage page is 128 consecutive 32-byte slots, or 4,096 bytes. `page = slot >> 7`. The first access to a page is cold; later accesses to the same page are cheaper for the rest of the transaction.
 - **Staking device `0x1000`:** Block Camera uses bounded low-level calls for proposer/epoch information. Missing or reverting device calls are represented as unknown rather than causing the artifact flow to fail.
 - **P256 `0x0100` and EIP-2935 history:** detected by System Information as network capabilities. EIP-2935 is also relevant to the finale auction.
 - **Runtime limit:** launch tooling checks deployed bytecode against Monad's 128 KiB contract-size ceiling.
 
-Exact network behavior and public-RPC support are revalidated during Phase 8; local Monad-mode measurements are evidence, not a mainnet guarantee.
+Exact network behavior and public-RPC support are treated as live observations; local Monad-mode measurements are evidence, not a mainnet guarantee.
 
 ## Shared contract hardware adapter
 
@@ -116,16 +116,6 @@ The live viewfinder is only a preview. The NFT is rebuilt from the inclusion blo
 
 The device bus is a UI representation of measured/probed capabilities. A device is never shown as present merely because the code knows its expected address.
 
-## Phase 8 confirmations
-
-Before mainnet launch:
-
-1. Measure MIP-8 read/write ratios against the deployed PAGE.EXE contract.
-2. Verify staking-device proposer/epoch values and the wording used for proposer identity.
-3. Verify P256 availability and EIP-2935 presence on the target network.
-4. Check runtime bytecode sizes against the 128 KiB limit.
-5. Measure Block Camera capture and full Labs `tokenURI` under real network/RPC conditions.
-6. Confirm PAGE.EXE benchmark calls and Router/Hardware read paths are accepted by the chosen public RPCs.
 
 ## Benchmark pitfalls
 

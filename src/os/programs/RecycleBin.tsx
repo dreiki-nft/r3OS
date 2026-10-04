@@ -1,6 +1,6 @@
 import { helpHash } from '../helpTopics'
 import { screenSafeMessage } from '../../chain/errors'
-import '../../labs/phase3c2c.css'
+import '../../labs/artifacts.css'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import {
   encodeAbiParameters,

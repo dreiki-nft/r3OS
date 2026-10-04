@@ -1,6 +1,6 @@
 # contracts
 
-The Solidity package is the production contract surface for **r3OS**. Phase 7.6 removes experiments that are no longer part of the hackathon product from fresh-mainnet source, deployment wiring, generated ABIs and tests. Git history remains the archive; the existing snapshot-28 testnet deployment is not modified.
+The Solidity package is the production contract surface for **r3OS**. Only contracts consumed by the current product are present in the mainnet source/deployment graph. Retired experiments remain in Git history; the historical testnet deployment is preserved for compatibility testing.
 
 ## Submission boundary
 
@@ -10,7 +10,7 @@ Fresh mainnet deploys only contracts that support the current r3OS experience. P
 
 ## Core freeze
 
-The snapshot-28 testnet core is unchanged. Phase 7.5 reopened fresh-mainnet source for the r3OS naming migration and bounded partner-holder bonuses. Phase 7.6 changes the **deployment surface**, not Paint semantics. `R3OSPaint.sol` remains launch-frozen unless a concrete blocking bug is found.
+The historical testnet core is unchanged. Current mainnet source uses the r3OS naming scheme and bounded partner-holder bonuses without altering historical deterministic namespaces. `R3OSPaint.sol` remains release-frozen unless a concrete blocking bug is found.
 
 ## Production contracts
 
@@ -47,9 +47,9 @@ Compiler: Solidity 0.8.28, optimizer 200, via-IR. Foundry is pinned to v1.8.3 an
 
 ## Mainnet naming and holder budgets
 
-The existing chain-10143 deployment is historical compatibility: its deployed artifacts use `R3tards*` names and Paint's EIP-712 domain is `r3tards paint`, version `2`. Fresh mainnet source uses `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`. Mainnet is a new deployment, so no storage migration or proxy upgrade is involved.
+The existing chain-10143 deployment is historical compatibility: its deployed artifacts use `R3tards*` names and Paint's EIP-712 domain is `r3tards paint`, version `2`. Current mainnet source uses `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`. Mainnet is a new deployment, so no storage migration or proxy upgrade is involved.
 
-Launch budget intent:
+Default mainnet budget configuration:
 
 - base: 512 px/hour, +32 px/hour per active day, capped at 2,048 px/hour;
 - r3tards: +512 px/day **per owned token id**, with spent quota stored by token id;
@@ -112,4 +112,4 @@ Block Camera captures inclusion-block context and creates deterministic Labs por
 
 CARD.DRV binds aligned page storage to official Monad Card ownership. Router Lab executes bounded quote frames only inside an outer reverting simulation, so approvals, funds and venue state cannot survive the call.
 
-Before mainnet, use `docs/PRE_MAINNET_CHECKLIST.md` and Launch Doctor as the source of truth for chain-specific validation and deployment wiring.
+Use Launch Doctor as the read-only verifier for chain-specific deployment wiring, ownership, registry state and integration addresses.

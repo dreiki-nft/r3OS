@@ -1,6 +1,6 @@
 # DF1 view
 
-Phase 3 UI specification for the optional exact DF1 v1 renderer.
+Specification for the optional exact DF1 v1 renderer.
 
 ## Onchain view
 

@@ -1,6 +1,6 @@
 import { helpHash } from '../os/helpTopics'
 import { friendlyError, screenSafeMessage } from '../chain/errors'
-import './phase3c2c.css'
+import './artifacts.css'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { hexToBytes, parseAbi, parseEventLogs, type Address, type Hex, type Log } from 'viem'
 import { publicClient } from '../chain/clients'
@@ -358,7 +358,7 @@ export function CDBurnerProgram() {
       const friendly = friendlyError(error, functionName)
       setMessage(
         hasPhotos && (friendly.name === 'Unknown' || friendly.name === 'ContractRevert')
-          ? `mixed-photo CDs require the snapshot-28 CD Burner on this network · ${friendly.message}`
+          ? `mixed-photo CDs require the legacy testnet CD Burner on this network · ${friendly.message}`
           : friendly.message,
       )
     })

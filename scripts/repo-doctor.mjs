@@ -17,6 +17,11 @@ const forbiddenRootFiles = [
   'README.txt',
   'REVIEW_WITH_CLAUDE.md',
   'ddd',
+  'PHASE_4_NOTES.md',
+  'PHASE_4_1_NOTES.md',
+  'PHASE_4_2_NOTES.md',
+  'PHASE_4_3_NOTES.md',
+  'PHASE_5B_NOTES.md',
 ]
 
 const retiredUiFiles = [
@@ -80,7 +85,6 @@ const requiredSubmissionFiles = [
   'contracts/script/DeployMonadHW.s.sol',
   'contracts/script/DeployOperator.s.sol',
   'contracts/script/DeployRouterLab.s.sol',
-  'docs/PRE_MAINNET_CHECKLIST.md',
   'docs/specs/ROUTER_LAB.md',
   'docs/specs/MONAD_CARD.md',
 ]
@@ -142,6 +146,28 @@ const legacyContractSources = [
   'contracts/src/router/R3tardsRouterLab.sol',
 ]
 
+
+function allFiles(path = '.') {
+  const absolute = resolve(root, path)
+  if (!existsSync(absolute)) return []
+  if (!statSync(absolute).isDirectory()) return [path]
+  const out = []
+  for (const entry of readdirSync(absolute)) {
+    if (['.git', 'node_modules', 'dist', 'out', 'cache'].includes(entry)) continue
+    const child = path === '.' ? entry : `${path}/${entry}`
+    out.push(...allFiles(child))
+  }
+  return out
+}
+
+for (const file of allFiles()) {
+  const base = file.split('/').at(-1) ?? file
+  if (/\.(?:patch|diff)$/i.test(base)) problems.push(`patch artifact in submission tree: ${file}`)
+  if (/(?:^|[_-])PROMPT(?:[_-]|\.)/i.test(base)) problems.push(`prompt artifact in submission tree: ${file}`)
+  if (/^PHASE[_-].*(?:NOTES?|HANDOFF).*\.md$/i.test(base)) problems.push(`phase note in submission tree: ${file}`)
+  if (/^Pasted text.*\.txt$/i.test(base)) problems.push(`chat paste artifact in submission tree: ${file}`)
+}
+
 for (const file of forbiddenRootFiles) {
   if (existsSync(resolve(root, file))) problems.push(`stale root artifact: ${file}`)
 }
@@ -174,7 +200,6 @@ const brandingFiles = [
   'index.html',
   'vite.config.ts',
   'contracts/README.md',
-  'public/os/README.md',
   ...markdownUnder('docs'),
 ]
 for (const file of brandingFiles) {
@@ -200,6 +225,21 @@ for (const [name, value] of [
   }
 }
 if (!/^FINAL_OWNER=/m.test(deployEnv)) problems.push('contracts/.env.example missing FINAL_OWNER')
+
+// Asset inventory is intentionally curated: every declared icon ships in 1x/2x form and no retired/spare masks linger.
+const iconSource = read('src/os/icons.ts')
+const declaredIcons = [...iconSource.matchAll(/^\s*'([^']+)',/gm)].map((match) => match[1])
+const iconDir = resolve(root, 'public/os/icons')
+const iconFiles = readdirSync(iconDir).filter((file) => file.endsWith('.png'))
+for (const name of declaredIcons) {
+  for (const file of [`${name}.png`, `${name}@2x.png`]) {
+    if (!iconFiles.includes(file)) problems.push(`declared icon asset missing: public/os/icons/${file}`)
+  }
+}
+for (const file of iconFiles) {
+  const name = file.replace(/@2x(?=\.png$)/, '').replace(/\.png$/, '')
+  if (!declaredIcons.includes(name)) problems.push(`unregistered icon asset in submission tree: public/os/icons/${file}`)
+}
 
 const abiExporter = read('scripts/export-abi.mjs')
 for (const id of [
@@ -246,7 +286,6 @@ const markdownFiles = [
   'README.md',
   'THREAT_MODEL.md',
   'contracts/README.md',
-  'public/os/README.md',
   ...markdownUnder('docs'),
 ]
 
@@ -301,5 +340,5 @@ if (problems.length) {
   for (const problem of problems) console.error(`- ${problem}`)
   process.exitCode = 1
 } else {
-  console.log('repo doctor: OK — root, docs, links, r3OS branding and submission surface are clean')
+  console.log('repo doctor: OK — source, docs, links, branding and submission surface are clean')
 }

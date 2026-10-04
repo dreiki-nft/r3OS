@@ -1,8 +1,8 @@
 /**
- * Compatibility filters for the historical snapshot-28 testnet deployment.
+ * Compatibility filters for the historical testnet deployment.
  *
- * Phase 7.6 removes discontinued experiments from the fresh-mainnet source/deployment surface, but the existing
- * testnet registry and Operator Record v1 can still expose their historical ids and addresses. Keep those records
+ * The current mainnet source/deployment surface omits discontinued experiments, but the existing testnet registry
+ * and Operator Record v1 can still expose their historical ids and addresses. Keep those records
  * intact and hide them at the product boundary rather than pretending the old chain state disappeared.
  */
 
@@ -23,7 +23,7 @@ export const RETIRED_PROGRAMS: ReadonlySet<string> = new Set([
 
 /**
  * Historical Paint registry names that should not leak back into current Quests/Pass discovery when r3OS is
- * connected to snapshot-28 testnet state. Active backends such as `card-drv` are deliberately not included.
+ * connected to historical testnet state. Active backends such as `card-drv` are deliberately not included.
  */
 export const RETIRED_EXPERIMENTS: ReadonlySet<string> = new Set([
   'flipbook',

@@ -1,6 +1,6 @@
 # Monad Card / CARD.DRV
 
-Phase MONAD CARD plugs the official Monad Card into r3OS as a hardware identity device without modifying the card contract. `R3OSCardMemory` is a separate, ownerless driver: every card id addresses one raw 4 KiB storage page and only the card's current `ownerOf(cardId)` may write it.
+The official Monad Card integrates with r3OS as a hardware identity device without modifying the card contract. `R3OSCardMemory` is a separate, ownerless driver: every card id addresses one raw 4 KiB storage page and only the card's current `ownerOf(cardId)` may write it.
 
 The driver is registered in the Paint experiment registry as `card-drv`. The current submission has no standalone card-programmer window; System Information, Block Camera, Painter Pass and Quests consume the driver state directly. PAGE.EXE remains a separate MIP-8 comparison backend in Explore Monad.
 
@@ -36,7 +36,7 @@ base = uint256(keccak256(abi.encode("r3tards.card.drv.v1", cardId))) & ~uint256(
 page = base >> 7
 ```
 
-Phase 7.5 deliberately keeps the historical `r3tards.card.drv.v1` storage derivation salt on fresh deployments. It is an internal deterministic page-layout key, not product-facing branding; retaining it minimizes protocol/layout delta while the contract and UI are rebranded to r3OS.
+The historical `r3tards.card.drv.v1` storage derivation salt remains unchanged on current deployments. It is an internal deterministic page-layout key, not product-facing branding; retaining it preserves the protocol layout while the contract and UI use r3OS branding.
 
 The card id is a full `uint256`; CARD.DRV does not assume sequential ids or impose an id bound. The base is always 128-word aligned. Distinct ids therefore map to disjoint pages except for a 249-bit aligned-keccak collision.
 
@@ -54,7 +54,7 @@ Bytes are offsets inside the 4 KiB page. Bytes inside each 32-byte word are disp
 | `0x240–0x2BF` | W18–W21 | MESSAGE | 128 printable ASCII bytes, zero-padded |
 | `0x2C0–0x2DF` | W22 | FLAGS | byte 0 boot flags; byte 1 accent+1; remaining bytes user flags |
 | `0x2E0–0x2FF` | W23 | reserved | zero by convention |
-| `0x300–0x37F` | W24–W27 | CARD BUS reserve | zero this phase; draft below |
+| `0x300–0x37F` | W24–W27 | CARD BUS reserve | currently zero; draft below |
 | `0x380–0x3FF` | W28–W31 | reserved | zero by convention |
 | `0x400–0xFFF` | W32–W127 | USER | 3,072 free-form bytes |
 
@@ -158,7 +158,7 @@ MONAD CARD = balanceOf(painter) > 0
 
 Failures return false instead of reverting. The Pass already gas-caps and validates external stamp-source returndata.
 
-`DeployMonadCard.s.sol` appends the `MONAD CARD` stamp source and the `CARD CARRIER` quest. In the canonical Phase 7.6 deployment the two core sources are Quests and Recycle Bin, so MONAD CARD becomes source id 2 and visual pin 8 (`6 + sourceId`).
+`DeployMonadCard.s.sol` appends the `MONAD CARD` stamp source and the `CARD CARRIER` quest. The canonical base deployment has Quests and Recycle Bin as its two external sources, so MONAD CARD becomes source id 2 and visual pin 8 (`6 + sourceId`).
 
 CARD CARRIER has two immutable onchain conditions:
 
@@ -178,7 +178,7 @@ The hardware screen separates chain facts from supplied specifications:
 - soulbound status may fall back to `spec` only for that same official address;
 - mocks without an ERC-5192 result remain `unknown`, never silently promoted to official facts.
 
-## Measurements supplied for this phase
+## Reference measurements
 
 Under `monad:MonadTen` with Foundry 1.8.3:
 
@@ -203,7 +203,7 @@ Zero→zero words inside a written range are nearly free, so a write's cost trac
 
 ## CARD BUS draft, not implemented
 
-W24–W27 are reserved so a later phase can define a card-to-card signal without replacing CARD.DRV.
+W24–W27 are reserved so a future protocol revision can define a card-to-card signal without replacing CARD.DRV.
 
 Draft encoding only:
 
@@ -214,7 +214,7 @@ Draft encoding only:
 | W26 | payload hash |
 | W27 | reserved |
 
-No contract or frontend in this phase interprets or sends CARD BUS messages. These four words must remain described as a draft reserve until a future protocol actually defines their behavior.
+No current contract or frontend interprets or sends CARD BUS messages. These four words must remain described as a draft reserve until a future protocol actually defines their behavior.
 
 ## Mainnet confirmations
 

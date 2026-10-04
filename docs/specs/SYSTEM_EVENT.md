@@ -110,7 +110,7 @@ DEVICE 07 presents four truthful states:
 
 The oracle meeting the condition and the onchain latch are intentionally separate states. The UI only offers ACTIVATE while the feed currently reports the condition and the event has not yet been latched.
 
-After activation, DEVICE 07 still reports `Driver: Not installed` and `Next stage: Unknown`. This phase does not invent a post-activation product.
+After activation, DEVICE 07 still reports `Driver: Not installed` and `Next stage: Unknown`. The current product does not invent a post-activation stage.
 
 ## Future hook
 

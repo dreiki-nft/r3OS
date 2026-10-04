@@ -1,4 +1,4 @@
-import './phase4a.css'
+import './network.css'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
@@ -132,7 +132,7 @@ export function NetworkProgram() {
   const blocksPerSecond = block.blockTimeMs > 0 ? (1000 / block.blockTimeMs).toFixed(2) : '—'
 
   return (
-    <div className="lab-program phase4a-program network-program">
+    <div className="lab-program network-shell network-program">
       <MenuBar
         menus={[
           { label: 'File', items: [{ label: 'Close', action: () => closeWindow('validators') }] },
@@ -288,7 +288,7 @@ export function NetworkProgram() {
         <small>last {recent.length} blocks, coloured by coinbase address</small>
       </fieldset>
 
-      <div className="phase4a-status">
+      <div className="network-status">
         <span>
           {headers.length < PRODUCER_WINDOW
             ? `window fills as blocks arrive (${headers.length.toLocaleString()} / 2,000)`
@@ -299,8 +299,8 @@ export function NetworkProgram() {
       </div>
 
       {properties && active && (
-        <div className="phase4a-modal" role="dialog" aria-label="Block address properties">
-          <div className="phase4a-dialog raised">
+        <div className="network-modal" role="dialog" aria-label="Block address properties">
+          <div className="network-dialog raised">
             <b>Block address properties</b>
             <div>
               <span>address</span>

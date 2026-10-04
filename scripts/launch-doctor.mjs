@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// r3OS Launch Doctor: read-only deployment verification. See docs/PRE_MAINNET_CHECKLIST.md.
+// r3OS Launch Doctor: read-only deployment verification. See contracts/README.md and docs/TECHNICAL.md.
 // Never signs, never sends a transaction, never touches a wallet, never prints the RPC URL.
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'

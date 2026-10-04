@@ -182,7 +182,7 @@ export function confirmLiveSessionStarted(owner: Address, message: StartSessionM
 }
 
 export function paintEip712Name(chainId: number) {
-  // Snapshot-28 testnet is already deployed with the legacy domain. Mainnet/local
+  // The historical testnet deployment uses the legacy domain. Mainnet/local
   // deployments from the r3OS source use the rebranded domain.
   return chainId === 10_143 ? 'r3tards paint' : 'r3OS paint'
 }

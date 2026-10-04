@@ -1,4 +1,4 @@
-.phase4a-program {
+.network-shell {
   height: 100%;
   min-height: 0;
   display: flex;
@@ -9,18 +9,18 @@
   font-size: 12px;
 }
 
-.phase4a-program > .menu-bar {
+.network-shell > .menu-bar {
   margin: 0 -6px;
 }
 
-.phase4a-status {
+.network-status {
   display: flex;
   gap: 2px;
   margin-top: auto;
   font-size: 11px;
 }
 
-.phase4a-status > span {
+.network-status > span {
   min-width: 0;
   padding: 4px 8px;
   background: var(--face);
@@ -34,16 +34,16 @@
   text-overflow: ellipsis;
 }
 
-.phase4a-status > span:first-child {
+.network-status > span:first-child {
   flex: 1;
 }
 
-.phase4a-status > span:not(:first-child) {
+.network-status > span:not(:first-child) {
   width: 130px;
   flex: 0 0 auto;
 }
 
-.phase4a-message {
+.network-message {
   padding: 5px 8px;
   border: 1px solid var(--danger);
   color: #ff8f8f;
@@ -52,7 +52,7 @@
 
 .network-program small,
 .network-sidebar span,
-.phase4a-dialog p {
+.network-dialog p {
   color: var(--muted);
 }
 
@@ -288,7 +288,7 @@
   min-width: 2px;
 }
 
-.phase4a-modal {
+.network-modal {
   position: absolute;
   inset: 0;
   z-index: 100;
@@ -297,7 +297,7 @@
   background: rgba(0, 0, 0, 0.42);
 }
 
-.phase4a-dialog {
+.network-dialog {
   width: min(620px, calc(100% - 32px));
   padding: 16px;
   background: var(--face);
@@ -307,26 +307,26 @@
   gap: 12px;
 }
 
-.phase4a-dialog > b {
+.network-dialog > b {
   font-size: 14px;
 }
 
-.phase4a-dialog > div {
+.network-dialog > div {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
   gap: 6px 10px;
 }
 
-.phase4a-dialog code {
+.network-dialog code {
   overflow-wrap: anywhere;
   font-family: inherit;
 }
 
-.phase4a-dialog a {
+.network-dialog a {
   color: #5feddf;
 }
 
-.phase4a-dialog .r3-button {
+.network-dialog .r3-button {
   align-self: flex-end;
   min-width: 80px;
 }

@@ -111,7 +111,7 @@ CD artifacts are non-burnable through `R3OSLabs.burn`. Source Paint frames and B
 Regression targets:
 
 - 12-track legacy `burnCD`: at or below 3.5M gas (measured 3.1M);
-- `burnMixedCD`: measure on the snapshot-28 testnet deployment before mainnet; do not inherit the legacy gas number;
+- `burnMixedCD`: uses the standard exact-action estimate + 10% policy; it does not inherit the legacy `burnCD` fixed regression number;
 - 12-track Labs `tokenURI`: at or below 9M gas (measured 8.3M; the raster renders one half of the point-symmetric disc and mirrors the other).
 
 The frontend uses the standard non-paint transaction path: estimate, add 10%, show max cost, then send the quoted gas and fee fields.

@@ -1739,7 +1739,7 @@ button:disabled {
   cursor: wait;
 }
 
-/* Phase 3b: live mode */
+/* Live Mode */
 .live-wizard {
   height: 100%;
   display: flex;
@@ -1999,7 +1999,7 @@ button:disabled {
   font-size: 11px;
 }
 
-/* Phase 3b: Monad X-ray */
+/* Monad X-ray */
 .xray-program {
   height: 100%;
   overflow: auto;
@@ -2188,7 +2188,7 @@ button:disabled {
   background: rgba(0, 0, 0, 0.35);
 }
 
-/* Phase 3c-1: Labs */
+/* Labs */
 .lab-program {
   height: 100%;
   min-height: 0;

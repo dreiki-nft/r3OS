@@ -1,6 +1,6 @@
 # Finale Candle Auction
 
-Phase 3 UI specification for `R3OSFinaleAuction`.
+Contract and UI specification for `R3OSFinaleAuction`.
 
 ## What this is
 

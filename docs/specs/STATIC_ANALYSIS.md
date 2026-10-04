@@ -1,6 +1,6 @@
 # Static analysis (forge-lint) review
 
-`forge build` runs forge-lint on `src/`. Before launch every current-source finding is reviewed. The build is
+`forge build` runs forge-lint on `src/`. Every current-source finding is reviewed. The build is
 now silent: compiler warnings were fixed, by-design categories are excluded in `contracts/foundry.toml`, and the
 security-relevant categories stay **on**, silenced only at the reviewed lines with
 `// forge-lint: disable-next-line(...)` or a `disable-start` / `disable-end` range. A new instance of those
@@ -18,7 +18,7 @@ lint output.
 | `arbitrary-send-eth`                  | RouterLab `simulateNativeIn` | Value is sent only inside an execution-preview frame that always reverts, so no value or approval can survive. |
 | `msg-value-loop`                      | RouterLab `simulateNativeIn`                                                                                                | Each venue frame reverts, so `msg.value` is reused per frame on purpose and the whole call reverts.                                                                                                                                                                                                    |
 | `return-bomb`                         | tokenURI renderer / lab / stamp-source reads, OperatorRecord reads, MonadHW precompile reads, RouterLab adapter/token reads | Gas-capped staticcalls. Return size is bounded by the callee's gas cap; covered by `testReadFailuresAreConditionFailuresAndReturnBombIsBounded` and `test_FailingAndGasHungryLabsStillReturnValidJson`. Targets are owner-registered, fixed precompiles, or used only in always-reverting simulations. |
-| `missing-zero-check`                  | BlockCamera `cardMemory`, RouterLab                                                                                         | `CARD_MEMORY` is optional by design (see PRE_MAINNET_CHECKLIST F1); RouterLab inputs are simulation-only.                                                                                                                                                                                              |
+| `missing-zero-check`                  | BlockCamera `cardMemory`, RouterLab                                                                                         | `CARD_MEMORY` is optional by design; RouterLab inputs are simulation-only.                                                                                                                                                                                              |
 
 ## Excluded categories (by design here)
 
@@ -32,4 +32,4 @@ next to it in `foundry.toml`.
 
 ## Compiler warnings fixed
 
-Current production source builds warning-free under the pinned Foundry/Solc configuration. Test-only `MockMonadCard` keeps its soulbound behavior in `_update`, and tests use the reviewed Foundry cheatcode patterns required by the suite. Phase 7.6 deleted warning notes that referred only to discontinued contracts.
+Current production source builds warning-free under the pinned Foundry/Solc configuration. Test-only `MockMonadCard` keeps its soulbound behavior in `_update`, and tests use the reviewed Foundry cheatcode patterns required by the suite.
