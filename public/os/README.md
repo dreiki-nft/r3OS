@@ -7,7 +7,7 @@ os/
   icons/       60 pixel icons, white on transparent, 36 px (name.png) and 72 px (name@2x.png)
   sfx/         12 sound effects, mp3, loudness-matched (about -24 dB mean, -1.5 dB peak)
   wallpaper/   wallpaper-dark.webp  (emo wallpaper with the purple background swapped for charcoal)
-  badges/      12 quest badges, q00 … q11 (see Quest badges)
+  badges/      13 quest badges, q00 … q12 (see Quest badges)
   brand/       logo.png (Start button, Pass monitor for non-holders)
                pfp-main.webp (Painter Pass "Manufactured and supported by")
                assistant.webp (the r3tard assistant, bottom-right)
@@ -72,11 +72,11 @@ Colour mapping (all from the r3tards 16-colour palette):
 | r3tards Paint | `paint` | `#F7931A` orange |
 | My Pass / System Properties | `computer` | `#FFFFFF` |
 | My Frames | `gallery` | `#EE93E3` pink |
-| Flipbook | `film` | `#5FEDDF` teal |
-| Weeds | `sprout` | `#07992F` green |
-| Forks | `tree` | `#9F70DA` lavender |
-| Block DNA | `dna` | `#C864AA` orchid |
-| Lanes | `chip` | `#D47827` copper |
+| Block Camera | `target` | `#FEC343` gold |
+| Explore Monad | `lightning` | `#FEC343` gold |
+| Burn a CD | `music` | `#EE93E3` pink |
+| Monad X-ray | `eye` | `#5FEDDF` teal |
+| DXDIAG | `zoom` | `#F2EFE9` |
 | Finale Auction | `gavel` | `#FFFFFF` |
 | Quests | `trophy` | `#FEC343` gold |
 | Validators | `globe` | `#5FEDDF` teal |
@@ -87,7 +87,6 @@ Colour mapping (all from the r3tards 16-colour palette):
 | CD-ROM (D:), disc inserted | `disc` | `#C9C9C9` silver |
 | Imaging (track viewer) | `gallery` | `#EE93E3` pink |
 | Tools: pencil, brush, fill, picker, eraser, zoom | `pencil` `brush` `bucket` `picker` `eraser` `zoom` | `#F2EFE9` |
-| Tool: Block DNA stamp | `dna` | `#C864AA` |
 | Tray: sound | `speaker` | `#F2EFE9` |
 | Tray: next storm, storm screen | `lightning` | `#FEC343` |
 | Tray: connected | `antenna` | `#F2EFE9` |
@@ -97,6 +96,8 @@ Colour mapping (all from the r3tards 16-colour palette):
 | Dialogs: error, revert | `error` | `#C52020` |
 | Busy cursor | `hourglass` | `#F2EFE9` |
 | Spare, for later | `crown` `floppy` `frog` `gift` `star` `lock` `briefcase` `eye` `skull` `bomb` `dice` `bell` `flash` `calendar` `target` `rocket` `chat` `mail` `toggle` `cursor` `home` `medal` `heart` `umbrella` `meteor` `moon` `layers` `wand` `clock` `question-filled` | pick from the palette |
+
+The icon directory also retains masks used by historical/retired experiments. Those files are assets only; the production program registry is the source of truth for which windows are launchable.
 
 ## Quest badges (`badges/`)
 
@@ -118,7 +119,7 @@ One 60 × 60 pixel badge per day-one quest, octagon pin in a palette colour with
 | 11 | `q11_paddle_up.png` | gavel | `#FFFFFF` |
 | 12 | `q12_recycler.png` | trash | `#694B87` |
 
-Quests added later (ids 12+) fall back to a generic trophy badge until art exists for them.
+Quests added later (ids 13+) fall back to a generic trophy badge until art exists for them.
 
 ## Sound map
 
@@ -129,8 +130,8 @@ Quests added later (ids 12+) fall back to a generic trophy badge until art exist
 | `select.mp3` | selecting a tool, colour, desktop icon, tab, list row; menu clicks |
 | `confirm.mp3` | the wallet signed; OK buttons |
 | `cancel.mp3` | close boxes, Cancel, dismissing a balloon |
-| `success-light.mp3` | paint landed, brush caught, weeds tick |
-| `success-heavy.mp3` | frame or reel minted, stamp earned, quest complete, auction won, brush verified |
+| `success-light.mp3` | paint landed and other lightweight successful actions |
+| `success-heavy.mp3` | frame/CD minted, stamp earned, quest complete, auction won |
 | `error.mp3` | a revert, or an action that needs something first (out of budget, verify before catch) |
 | `storm.mp3` | once when a DF1 storm starts; never loops |
 | `df1.mp3` | DF1 glitched pixels you painted |

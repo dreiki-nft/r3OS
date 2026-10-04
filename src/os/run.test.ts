@@ -101,7 +101,7 @@ describe('Run… and retired programs', () => {
   it('openProgram refuses retired programs, even with reveal-all on', () => {
     __setReleaseSnapshotForTests({ status: 'ready', config: { programs: {} }, revealAll: true })
     for (const id of RETIRED_PROGRAMS) {
-      expect(programById(id), id).toBeTruthy()
+      expect(programById(id), id).toBeUndefined()
       expect(openProgram(id, false), id).toBe(false)
     }
   })

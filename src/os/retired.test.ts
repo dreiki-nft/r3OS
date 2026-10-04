@@ -5,8 +5,8 @@ import { RETIRED_EXPERIMENTS, RETIRED_PROGRAMS, questIsRetired, retiredAddresses
 const snapshot = { status: 'ready', config: { programs: {} }, revealAll: true } as const
 
 describe('retired programs', () => {
-  it('every retired id is a real program, and none is visible even with reveal-all on', () => {
-    for (const id of RETIRED_PROGRAMS) expect(programById(id), id).toBeTruthy()
+  it('keeps retired UI code out of the program registry entirely', () => {
+    for (const id of RETIRED_PROGRAMS) expect(programById(id), id).toBeUndefined()
     const visible = visiblePrograms(snapshot as never).map((program) => program.id)
     for (const id of RETIRED_PROGRAMS) expect(visible, id).not.toContain(id)
   })

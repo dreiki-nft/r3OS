@@ -91,8 +91,8 @@ describe('desktop / icon menu models', () => {
   })
 
   it('icon menu is Open only, routed to that program', () => {
-    expect(iconMenuItems('forks')).toEqual([
-      { kind: 'item', id: 'open', label: 'Open', action: { type: 'open', program: 'forks' }, default: true },
+    expect(iconMenuItems('paint')).toEqual([
+      { kind: 'item', id: 'open', label: 'Open', action: { type: 'open', program: 'paint' }, default: true },
     ])
   })
 

@@ -1,160 +1,188 @@
 <p align="center">
-  <img src="public/og.jpg" alt="r3tardOS 98: a Windows 98 desktop with a shared pixel canvas" width="720">
+  <img src="public/og.jpg" alt="r3tardOS 98: a Windows 98 desktop around a shared onchain pixel canvas" width="720">
 </p>
 
 <h1 align="center">r3tardOS</h1>
 
 <p align="center">
-  <b>A Windows 98 computer that lives on Monad, where a whole community paints one canvas together.</b><br>
-  Every stroke is a Monad transaction. No server anywhere.
+  <b>A shared onchain computer for the r3tards community, disguised as Windows 98.</b><br>
+  One 256 × 256 canvas. Every committed stroke is a Monad transaction.
 </p>
 
 <p align="center">
-  <a href="LIVE_APP_URL"><b>Live app</b></a> ·
-  <a href="DEMO_VIDEO_URL"><b>Demo video (3 min)</b></a> ·
-  <a href="#run-it-locally"><b>Run it locally</b></a> ·
-  <a href="docs/TECHNICAL.md"><b>Technical reference</b></a>
+  <a href="#judge-path"><b>60-second path</b></a> ·
+  <a href="#run-it-locally"><b>Run locally</b></a> ·
+  <a href="docs/TECHNICAL.md"><b>Technical reference</b></a> ·
+  <a href="THREAT_MODEL.md"><b>Threat model</b></a>
 </p>
 
 <p align="center">
-  Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> (Buenos Aires)
+  Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b>
 </p>
 
 ---
 
-## What it is
+## What this is
 
-r3tardOS boots like a 1998 PC and opens on one shared **256 × 256, 16-colour canvas** that the r3tards community paints together onchain. You draw with Win98 tools, press Paint, and the status bar says *"painted in block #N · receipt in 0.6 s"*.
+r3tardOS boots into a Windows 98-style desktop wrapped around one shared **256 × 256, 16-colour canvas on Monad**. Anyone can watch the canvas and explore the system without a wallet. Connect only when you want to write onchain.
 
-You're never painting alone. A "painting now" panel shows who else is here, and other people's strokes flash on your canvas as they land. If you're in another program when someone paints, a **"You've Got Paint"** balloon tells you, and *Open Paint* outlines exactly where.
+Paint is the center of the project: draw locally, commit pixels as a transaction, watch other painters' confirmed strokes appear, then save a moment of the shared canvas as an immutable frame NFT. Frames can become mix CDs, finales can enter a candle auction, and Block Camera turns the block itself into an onchain artifact.
 
-You can keep a piece of it, too:
-- save the canvas as a **frame NFT**;
-- burn up to 12 frames onto a **mix CD**;
-- play it back in the **CD-ROM drive** as `TRACK01.BMP`, straight from the contract.
+There is **no app backend or database**. The frontend is static and reads contracts, logs and block data directly from Monad RPCs.
 
-At the end of each season, the community's canvas becomes a finale NFT sold in a snipe-proof **candle auction**.
+### Hackathon thesis
 
-No backend, no token, no points. The canvas, the art, the badges and the auction all live in and are rendered by smart contracts. The site is a static page that reads the chain.
+> **Monad is fast enough that fully onchain creative interaction can feel continuous instead of transaction-by-transaction.**
 
-## Try it in 60 seconds
+Live Mode is the clearest demonstration. The owner authorizes a browser-held paint session key once; after that, strokes are signed locally and broadcast without a wallet popup per stroke. Confirmed receipt events update the UI immediately, then canonical chain reconciliation follows in the background.
 
-1. Open the **[live app](LIVE_APP_URL)**. The BIOS screen prints the real chain, the latest block and the block time measured in your browser.
-2. Click **Paint together**. Watch the canvas and the *painting now* panel; strokes by others flash as they land.
-3. Connect any browser wallet with a little MON. Draw, press **Paint**, and see which block it landed in.
-4. Turn on **Live mode** (File › Live mode (no wallet popups)…). After two wallet prompts, you paint with no popups for about 2 hours.
-5. **File › Save frame…**, then in **My Frames** press **Burn CD** and play it in **CD-ROM (D:)**.
+## Judge path
 
-No wallet? You can still draw, watch the canvas live, browse frames and CDs, and explore the desktop.
+A wallet is not required for the first impression.
 
-## Features
+1. Let the boot screen finish. It is doing real work: network discovery, canvas state, program code and shared caches are warmed before the desktop appears.
+2. Open **Paint**. Watch the live shared canvas, recent painters and incoming confirmed strokes.
+3. Open **Explore Monad**. Run the block-speed and storage-page experiments and inspect System Information.
+4. Connect a wallet when you want to write. Paint a few pixels normally, then enable **Live Mode** and compare the interaction.
+5. Save a frame, open **My Frames**, burn a mix CD and insert it into **CD-ROM (D:)**.
+6. Open **DXDIAG.EXE** for local boot, RPC and interaction timings. No telemetry is uploaded.
 
-| | |
+## What is onchain
+
+| Surface | What it proves |
 | --- | --- |
-| **Paint together** | One shared canvas. Hourly pixel budgets grow with every day you paint. Blank or still-wet pixels are cheap, painting over dry art costs double, and busy 16 × 16 tiles heat up and refuse paint for a while, so nobody can wipe it. |
-| **Live presence** | "Painting now" (wallets in the last few minutes), this season's paints and frames, and the latest strokes (click to jump). Others' strokes flash on your canvas. You've Got Paint balloons and a painter count in the tray. All read from the contract's own events. |
-| **Live mode** | EIP-712 session key held in the browser. It can only paint and claim quests, expires in ~2 hours, holds at most 10 MON, and leftovers can be swept back. |
-| **Frames → CD → CD-ROM** | Frames store their pixels onchain and record the validator that sealed the block. Burn 1–12 frames onto a CD NFT with an onchain disc and track list; the CD-ROM drive plays it back. Unwanted frames go to the Recycle Bin. |
-| **Seasons and finale** | 30-day seasons, each with an optional character outline that can't be painted over. The final canvas becomes a finale NFT, sold in a candle auction: ~a day of bidding, and the real end is a random block in the last hour, picked after bidding closes. Anyone can settle. |
-| **My Pass** | Free, soulbound, one per wallet. Its onchain picture fills with stamps for what you've done. |
-| **Quests** | 8 goals checked against the contracts. Badges grant nothing: no token, no points, no farming. |
-| **Block Camera** | A photo booth that mints a small onchain portrait of the block your transaction lands in (validator, epoch, parent hash). |
-| **The 1998 layer** | BIOS boot with live chain data, Display Properties with the live canvas as your wallpaper, a canvas screensaver, Save to Floppy (a real 4-bit `.BMP` built from contract bytes), and "Listen", which turns each new block into a note. |
-| **Explore Monad** | A side window: watch blocks arrive, measured in your browser, plus a few chain experiments. |
+| **Paint** | One shared 256 × 256 canvas with pixel budgets, seasons, protected outlines and deterministic DF1 glitches. |
+| **Live Mode** | Browser-local session signing makes repeated onchain creative actions feel continuous. The burner is capped at **1 MON** and can be ended/swept. |
+| **Frames** | Immutable snapshots of the canvas, including season/block context and the recorded `block.coinbase` provenance address. |
+| **CD Burner + CD-ROM** | 1–12 owned frames become one immutable Labs CD NFT, then play back as picture tracks from contract data. Source frames are not burned. |
+| **Painter Pass** | Free soulbound onchain identity that records participation through stamps. |
+| **Quests** | Contract-checked achievements. No token, points economy or offchain scoring service. |
+| **Finale Auction** | Season finales use a candle auction whose hidden end is resolved after bidding closes. |
+| **Block Camera** | Mints a portrait from the block the capture transaction lands in. |
+| **Explore Monad** | Live block timing, MIP-8 storage-page experiments, chain/device information and read-only routing research. |
+| **DXDIAG.EXE** | Local-only proof of boot readiness, program responsiveness, RPC method counts and transaction timings. |
 
 ## Why Monad
 
-The one thing the product needs is speed. With 12-second blocks a shared canvas feels turn-based; with Monad's sub-second blocks it feels like a room full of people.
+The canvas does not need a blockchain merely to store pixels. It needs one where those writes can become an interaction loop.
 
-| What you see | What it relies on |
-| --- | --- |
-| Strokes land in about a second; other people's strokes appear as they land | ~0.4 s blocks. This is the load-bearing reason for Monad. |
-| Live mode: sign once, then paint continuously | Per-stroke transactions cheap enough to send from a paint-only session key |
-| Block Camera portraits; frames record their validator | Proposer and epoch from Monad's staking precompile |
-| Many painters at once without fighting over the same state | The canvas is stored as 16 independent 64 × 64 regions, so paints in different areas touch different storage and suit Monad's parallel execution |
+- **Fast blocks:** remote confirmed paint can propagate while people are still drawing, rather than turning the canvas into a turn-based app.
+- **Many independent writes:** the canvas is split into 16 regions so unrelated paints do not all fight over one storage location.
+- **MIP-8 page storage:** the project has explicit experiments showing the effect of warming a 4 KiB storage page.
+- **Block / staking context:** saved frames retain `block.coinbase` provenance; Block Camera also reads proposer/epoch data from Monad hardware interfaces when available.
+- **Monad gas accounting:** transaction gas limits are deliberately tight because Monad charges against the submitted limit.
 
-Engineering details we use but don't claim as reasons: the 128 KB contract-size limit (the core is ~50 KB), gas charged on the limit (the app sets tight limits), and EIP-2935 block-hash history (the auction's random end).
+The app keeps an ordinary read lane separate from its low-latency action lane. Live Mode signs one raw transaction locally and can send that same serialized transaction to multiple action RPCs; the fastest acceptance wins. It is redundancy for one transaction, not multiple blockchain transactions.
 
-## How it works
+## Architecture
 
 ```mermaid
 flowchart LR
-  B["Browser<br/>static React app"] -- "eth_call / logs / WebSocket" --> R["Monad RPC"]
-  B -- "wallet or Live-mode session key" --> R
-  R --> P["R3tardsPaint (core)<br/>canvas · budgets · seasons<br/>frames · finales · session keys"]
-  P --- L["Labs<br/>CDs · camera portraits"]
-  P --- X["Pass · Quests · Recycle Bin<br/>CD Burner · Finale Auction"]
-  P --- H["Monad experiments<br/>Block Camera · PAGE.EXE · CARD.DRV · Router lab"]
+  UI["Static React / Win98 shell"] --> READ["rate-limited read RPC pool"]
+  UI --> WS["WebSocket block + event stream"]
+  UI --> WALLET["connected wallet"]
+  UI --> LIVE["browser-held Live session key"]
+  READ --> PAINT["R3tardsPaint"]
+  WS --> PAINT
+  WALLET --> PAINT
+  LIVE --> PAINT
+  PAINT --> LABS["Labs / add-on contracts"]
+  LABS --> NFT["Frames · CDs · Block portraits · Pass"]
 ```
 
-- **Everything visual is generated onchain** as SVG with embedded BMP pixels: frames, CD discs, the Pass, camera portraits.
-- **The frontend is static** (React 19, Vite, viem). It is public-RPC safe: rate-limited, no wide log scans, and the presence panel does one small bounded look-back on load before following live events.
-- **The core is frozen.** New features plug in through the Labs, renderer and stamp-source registries, without touching the canvas contract.
+A few implementation choices matter to the user experience:
 
-## Contracts
+- boot prefetch shares promises/caches with the programs that later consume them;
+- launch-critical program chunks are resolved before the desktop appears;
+- confirmed receipt logs are applied immediately instead of waiting for a lagging RPC index;
+- background reconciliation still restores canonical chain state;
+- historical/heavy art reads are bounded instead of preloading the entire collection;
+- wallet-facing chain metadata uses only `VITE_WALLET_RPC_URL`; internal RPC endpoints are never shown by DXDIAG.
 
-| Contract | What it does | Monad testnet |
-| --- | --- | --- |
-| `R3tardsPaint` | Core: canvas, budgets, seasons, frames, finales, session keys | `0xC9300a14EcdB1296ade8795073Ab97A813ae8cB4` |
-| `R3tardsLabs` | CDs and camera portraits (ERC-721) | see deploy log |
-| `R3tardsPainterPass` | Soulbound Pass with onchain stamps | see deploy log |
-| `R3tardsQuests` | Quest checks against the contracts | see deploy log |
-| `R3tardsFinaleAuction` | Candle auction for season finales | see deploy log |
-| `R3tardsCDBurner` / `R3tardsRecycleBin` | Burn frames onto CDs / burn frames forever | see deploy log |
-| `R3tardsBlockCamera` | Block portraits from Monad block and staking data | see deploy log |
+The currently active UI is intentionally smaller than the set of contracts deployed during development. Retired experiments remain documented where they matter to immutable history or active backend dependencies, but their direct UI programs are removed from the production program registry and bundle.
 
-Mainnet addresses: MAINNET_ADDRESSES (added at launch). Source: [`contracts/src`](contracts/src).
+## Current testnet
 
-## Security
+| | |
+| --- | --- |
+| Chain | Monad Testnet (`10143`) |
+| Paint | [`0x032D5e1591DA2919A4aa5D24Ee9278bFE5F1CdA1`](https://testnet.monadvision.com/address/0x032D5e1591DA2919A4aa5D24Ee9278bFE5F1CdA1) |
+| r3tards mock | [`0x6F375D9DA0053A6fA80EC8bb09798B72468FD120`](https://testnet.monadvision.com/address/0x6F375D9DA0053A6fA80EC8bb09798B72468FD120) |
+| Painter Pass | [`0x9C2d367A0B7BaFC8d4fAaa4920D9543b42ae218a`](https://testnet.monadvision.com/address/0x9C2d367A0B7BaFC8d4fAaa4920D9543b42ae218a) |
+| Core deploy block | `67823235` |
+| Mainnet | **Not deployed yet** |
 
-- **Not professionally audited.** An internal review (AI-assisted) found no Critical, High or Medium issues in the contracts; Low findings are documented with a decision for each in [`docs/SECURITY_AUDIT_2026-10-02.md`](docs/SECURITY_AUDIT_2026-10-02.md).
-- The site sends a strict Content Security Policy (no inline scripts, no framing), which protects the browser-held Live-mode key.
-- Session keys can only paint and claim quests; they can't move funds or mint.
-- Owner powers and hard limits: [`THREAT_MODEL.md`](THREAT_MODEL.md).
-- Finale auction proceeds go to the project Safe; the r3tards community decides how they are spent.
+Add-on addresses are discovered from the Paint registry at runtime. Mainnet will be the first deployment of the current Paint configuration.
 
 ## Run it locally
 
-Requirements: Node 22, [Foundry](https://getfoundry.sh).
+Requirements: **Node 22**. Foundry is only required for Solidity build/tests.
 
 ```bash
 npm ci
-cp .env.example .env.local   # set VITE_CHAIN_ID, VITE_RPC_URL(S) and VITE_PAINT_ADDRESS
-npm run dev                  # http://localhost:5173
+cp .env.example .env.local
+npm run dev
 ```
 
-Full check (contracts, web tests, generated files, build):
+`.env.example` already contains the current **public Monad testnet** configuration, so a reviewer can boot the app without hunting for addresses or private credentials.
+
+Frontend gate:
+
+```bash
+npm run check:web
+```
+
+Full repository gate:
 
 ```bash
 npm run check
 ```
 
-That runs 325 Foundry tests (under Monad's 128 KB contract limit) and 475 frontend tests, regenerates the outline and ABI, and builds the site. Deployment without raw private keys, testnet and mainnet steps: [`docs/TECHNICAL.md`](docs/TECHNICAL.md), [`docs/TESTNET_DEPLOY.md`](docs/TESTNET_DEPLOY.md), [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md).
+Useful individual commands:
 
-### Repository layout
+```bash
+npm run repo:doctor   # stale root files, README placeholders, retired UI reachability
+npm run test:web      # Vitest
+npm run build         # TypeScript + Vite production build
+npm run generated:check # generated outline + ABI must match source
+RPC_URL="$MONAD_TESTNET_RPC_URL" npm run -s launch:doctor -- --paint <address> --expected-chain 10143
+```
 
+## Repository map
+
+```text
+contracts/src   Solidity contracts and libraries
+contracts/test  Foundry tests
+src/os          boot, desktop shell, program registry, windows, taskbar, Help
+src/paint       shared canvas and local drawing
+src/live        burner/session state, signing and Live Mode queues
+src/frames      Frames and Labs folder
+src/pass        Painter Pass and hardware profiles
+src/cdrom       CD-ROM playback
+src/labs        active Lab-facing programs
+src/monadhw     Explore Monad and Block Camera
+src/network     Network Neighborhood / block provenance
+src/diagnostics DXDIAG.EXE
+src/chain       RPC clients, batching, wallet, transactions, receipts, logs
+scripts         repo/launch checks and generated-source tooling
+docs            technical reference, deployment and security material
 ```
-contracts/src     Solidity: core canvas, Labs, Pass, Quests, auction, Monad experiments
-contracts/test    Foundry tests
-src/os            the Win98 shell: windows, desktop, Start menu, boot, tray, wallpaper, screensaver
-src/paint         Paint, canvas store, live presence
-src/frames        My Frames, CD burning
-src/cdrom         CD-ROM (D:)
-src/monadhw       Explore Monad, Block Camera
-src/chain         RPC clients, wallet, transactions, logs
-scripts           ABI/outline export, Launch Doctor, contract-size check
-docs              technical reference, security review, deploy guides
-```
+
+## Security
+
+The contracts are **not professionally audited**. The internal AI-assisted review, remaining findings and launch decisions are documented in [`docs/SECURITY_AUDIT_2026-10-02.md`](docs/SECURITY_AUDIT_2026-10-02.md) and [`THREAT_MODEL.md`](THREAT_MODEL.md).
+
+Browser security matters because Live Mode intentionally holds an EOA key locally. The balance is therefore capped at 1 MON; session authorization is scoped and expiring; the app does not expose private keys, RPC URLs or secrets through diagnostics.
 
 ## Status
 
-- **Live on Monad testnet** since October 1, 2026.
-- **Mainnet:** not deployed yet.
-- **Community: r3tards, skrumpeys and monad cards holders
-- **Known limits:** painting needs a wallet and a little MON (no email login or sponsored gas yet). The desktop is best on a computer; phones work with full-screen windows.
+- Monad testnet engineering build is active.
+- Performance / boot-prefetch work is complete and measured locally in DXDIAG.
+- Cold-user / judge-path and repository-hygiene work is complete in this tree.
+- Next is the Live Mode hero pass, followed by mainnet rehearsal, community activity, demo recording and submission.
 
 ## Credits
 
-Built solo by **dreiki**, using Claude and ChatGPT as coding assistants. Art, palette and the r3tards characters by dreiki.
+Built solo by **dreiki**, with Claude and ChatGPT used as coding assistants. Art, palette and r3tards characters by dreiki.
 
 *just a bunch of r3tards on the monad blockchain.*

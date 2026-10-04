@@ -7,6 +7,7 @@ import {
   shouldShowFirstRun,
   type FirstRunChoice,
 } from './firstRunState'
+import { helpHash } from './helpTopics'
 import { openProgram } from './programs'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
@@ -31,7 +32,8 @@ export function FirstRun() {
     rememberFirstRun(storage(), dontShow)
     setShow(false)
     playSound('select')
-    if (choice) openProgram(choice)
+    if (choice === 'help') openProgram('help', true, helpHash('getting-started'))
+    else if (choice) openProgram(choice)
   }
 
   useEffect(() => {
@@ -62,8 +64,8 @@ export function FirstRun() {
           </button>
         </header>
         <div className="first-run-body">
-          <h2>Welcome to r3tardOS</h2>
-          <p>A shared computer that lives on Monad. Everyone paints one canvas, and it all stays onchain.</p>
+          <h2>Welcome to r3tardOS 98</h2>
+          <p>One shared computer on Monad. Watch it live first; connect only when you want to write onchain.</p>
           <div className="first-run-choices">
             {FIRST_RUN_CHOICES.map((choice, index) => (
               <button
@@ -73,7 +75,7 @@ export function FirstRun() {
                 onClick={() => close(choice.id)}
               >
                 <Icon
-                  name={choice.id === 'paint' ? 'paint' : choice.id === 'pass' ? 'computer' : 'lightning'}
+                  name={choice.id === 'paint' ? 'paint' : choice.id === 'help' ? 'help' : 'lightning'}
                   size={24}
                   colour={choice.id === 'monad-hw' ? '#5FEDDF' : undefined}
                 />

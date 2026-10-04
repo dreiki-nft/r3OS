@@ -10,12 +10,12 @@ export interface StorageLike {
   setItem(key: string, value: string): void
 }
 
-export type FirstRunChoice = 'paint' | 'monad-hw' | 'pass'
+export type FirstRunChoice = 'paint' | 'monad-hw' | 'help'
 
 export const FIRST_RUN_CHOICES: readonly { id: FirstRunChoice; label: string; hint: string }[] = [
-  { id: 'paint', label: 'Paint together', hint: 'one shared canvas, saved onchain' },
-  { id: 'monad-hw', label: 'Explore Monad', hint: 'press buttons, watch the chain' },
-  { id: 'pass', label: 'View my Pass', hint: 'your identity in r3tardOS' },
+  { id: 'paint', label: 'Paint together', hint: 'watch the live canvas; no wallet needed' },
+  { id: 'monad-hw', label: 'See Monad live', hint: 'blocks, storage pages, onchain hardware' },
+  { id: 'help', label: '60-second tour', hint: 'what to click and why Monad matters' },
 ]
 
 /** Show on a clean first visit to the bare desktop; a shared deep link (#/paint, #/frames?…) goes straight in. */

@@ -51,13 +51,13 @@ describe('first-run welcome', () => {
     expect(shouldShowFirstRun(undefined, '')).toBe(true)
   })
 
-  it('routes its three buttons to real, non-wallet programs', () => {
-    expect(FIRST_RUN_CHOICES.map((choice) => choice.id)).toEqual(['paint', 'monad-hw', 'pass'])
+  it('routes its three buttons to useful, wallet-optional first actions', () => {
+    expect(FIRST_RUN_CHOICES.map((choice) => choice.id)).toEqual(['paint', 'monad-hw', 'help'])
     for (const choice of FIRST_RUN_CHOICES) expect(programById(choice.id), choice.id).toBeTruthy()
     expect(FIRST_RUN_CHOICES.map((choice) => choice.label)).toEqual([
       'Paint together',
-      'Explore Monad',
-      'View my Pass',
+      'See Monad live',
+      '60-second tour',
     ])
   })
 

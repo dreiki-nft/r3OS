@@ -24,3 +24,16 @@ keystores/
 *password*.txt
 *.pem
 launch-doctor-*.json
+
+# Local patch/review handoffs never belong in the judge-facing repository.
+/*.zip
+/*.patch
+/PATCH.diff
+/PATCH_NOTES.txt
+/APPLY.txt
+/APPLY_PHASE6_CLEANUP.sh
+/DELETIONS.txt
+/README.txt
+/REVIEW_WITH_CLAUDE.md
+/CLAUDE_*_REVIEW.md
+/ddd

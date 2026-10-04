@@ -1423,15 +1423,14 @@ export function parseArgs(argv, env = {}) {
 
 export const HELP = `r3tards launch doctor: read-only deployment verification
 
-usage:
-  node scripts/launch-doctor.mjs \\
-    --rpc <url> \\
-    --paint <address> \\
-    [--expected-owner <address>] \\
-    [--expected-chain <chainId>] \\
+usage (preferred: keep key-bearing RPC URLs out of argv):
+  RPC_URL="$MONAD_RPC_URL" node scripts/launch-doctor.mjs \
+    --paint <address> \
+    [--expected-owner <address>] \
+    [--expected-chain <chainId>] \
     [--json]
 
-env fallbacks: RPC_URL, PAINT_ADDRESS, EXPECTED_OWNER, EXPECTED_CHAIN_ID
+--rpc <public-url> is also supported. env fallbacks: RPC_URL, PAINT_ADDRESS, EXPECTED_OWNER, EXPECTED_CHAIN_ID
 
 --expected-chain is the chain you INTEND to inspect (143 mainnet, 10143 testnet). a different
 actual chain is a FAIL; omitting it is a WARN. mainnet-only rules always follow the actual chain.

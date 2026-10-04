@@ -6,21 +6,21 @@
 
 /** Desktop icons, in order. Auction joins them only while an auction is running (see `desktopProgramIds`). */
 export const DESKTOP_PROGRAMS = [
-  'pass',
-  'frames',
   'paint',
+  'monad-hw',
+  'frames',
+  'pass',
   'block-camera',
   'cdrom',
-  'monad-hw',
   'quests',
   'bin',
 ] as const
 
 /** Start › Programs: everything a person uses, desktop or not. */
 export const START_PROGRAMS = [
-  'pass',
-  'frames',
   'paint',
+  'frames',
+  'pass',
   'block-camera',
   'cdrom',
   'quests',

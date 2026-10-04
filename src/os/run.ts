@@ -4,40 +4,22 @@
  * Opening always goes through `openProgram`, so release gating applies exactly as it does everywhere else.
  */
 
-import { isRetiredProgram } from './retired'
-
 export type RunTarget = { program: string; hash?: string }
 export type RunParse = { ok: true; target: RunTarget } | { ok: false; error: string }
 
-/** command (or alias) → program id. Every value is a real id in src/os/programs.ts. Retired programs are
- * filtered out below, so their names behave like any unknown command. */
-const ALL_RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
+/** command (or alias) → active program id. Retired UI programs are absent from this allowlist entirely. */
+export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   paint: 'paint',
   pass: 'pass',
   frames: 'frames',
-  flipbook: 'flipbook',
-  weeds: 'weeds',
-  forks: 'forks',
-  brushes: 'brushes',
-  dna: 'brushes',
   auction: 'auction',
   quests: 'quests',
-  sleepwalker: 'sleepwalker',
   cd: 'cd',
   cdrom: 'cdrom',
-  lanes: 'lanes',
   validators: 'validators',
   network: 'validators',
-  defrag: 'defrag',
-  page: 'page-exe',
-  'page-exe': 'page-exe',
-  cardmem: 'card-mem',
-  'card-mem': 'card-mem',
   camera: 'block-camera',
   'block-camera': 'block-camera',
-  kernel: 'kernel-debugger',
-  'kernel-debugger': 'kernel-debugger',
-  router: 'router',
   explore: 'monad-hw',
   monad: 'monad-hw',
   hardware: 'monad-hw',
@@ -48,10 +30,6 @@ const ALL_RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   bin: 'bin',
   dxdiag: 'dxdiag',
 })
-
-export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze(
-  Object.fromEntries(Object.entries(ALL_RUN_COMMANDS).filter(([, program]) => !isRetiredProgram(program))),
-)
 
 const UINT256_MAX = (1n << 256n) - 1n
 const MAX_INPUT = 90 // "card " + the 78 digits of uint256 max fits

@@ -14,6 +14,12 @@ The r3tardOS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/cha
 
 `contracts/src/R3tardsPaint.sol` is frozen as of the verified 2b-fix2 build. New experiments plug in through the Lab registry, renderer registry, Painter Pass stamp sources, public views and events. Later phases do **not** modify the core unless a concrete core bug is reported. This keeps the day-1 canvas contract immutable while Labs remain disposable and replaceable.
 
+## Current UI boundary (2026-10-03)
+
+The production r3tardOS interface intentionally does **not** expose every experiment built during development. Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger and ROUTER.EXE are retired UI surfaces. Their contracts and historical data remain documented because deployed state is immutable and a few active features still read specific backend experiments. The retired React programs themselves are removed from the production program registry and bundle; `src/os/retired.ts` remains the shared policy for hiding retired quests, Pass stamps and Operator subsystems.
+
+Two backend dependencies are deliberate: **Explore Monad → Storage race** reads the PAGE.EXE experiment, and **Explore Monad → Liquidity race** reads Router Lab. CARD.DRV also remains an active backend for Monad Card / Block Camera integration. UI retirement is not contract retirement.
+
 ## Contracts
 
 ### `R3tardsPaint`
@@ -30,7 +36,7 @@ The r3tardOS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/cha
 - hand-off-pressure DF1 corruption plus deterministic DF1 storms
 - exact-replay `Painted` events
 - immutable background-only frame blobs, recomposited with each frame season's own outline
-- validator seal: every frame/finale records `block.coinbase` as `proposer`
+- block provenance: every frame/finale records `block.coinbase` as `proposer`; the UI does not claim this is a verified validator identity
 - season finales routed to whoever owns token #0 when the finale is minted
 - built-in onchain BMP → SVG → JSON renderer
 - append-only optional renderer registry with holder opt-in and fallback
@@ -43,7 +49,7 @@ The r3tardOS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/cha
 
 ### `R3tardsLabs`
 
-The single tradeable ERC-721 collection for token-producing Labs. Flipbook reels, Forks, Sleepwalker dreams and mix CD-Rs mint here; future token Labs join the same contract. Labs are authorized only through active entries in the frozen core registry. Token IDs are global across Labs, royalties are fixed at 5% to the immutable receiver, and the collection owner can only set its marketplace external link. See `docs/specs/LABS_NFT.md`.
+The single tradeable ERC-721 collection for token-producing Labs. Flipbook reels, Forks, Sleepwalker dreams and mix CD-Rs mint here; future token Labs join the same contract. Labs are authorized only through active entries in the core experiment registry. Token IDs are global across Labs, royalties are fixed at 5% to the immutable receiver, and the collection owner can only set its marketplace external link. See `docs/specs/LABS_NFT.md`.
 
 ### `R3tardsPainterPass`
 
@@ -76,7 +82,7 @@ The Launch Doctor reports the live count (built-ins, external sources, pins used
 - `DF1Renderer`: exact DF1 v1 (mulberry32) rendered fully onchain at 64×64, using the frame's frozen DF1 seed/amount and that season's own outline. Calm frames render canonical 100%; storm frames render at 200%.
 
 
-### `R3tardsFlipbook` Lab
+### `R3tardsFlipbook` Lab (contract/history; UI retired)
 
 A separate 32×32 block-rate animation canvas. The first successful Flipbook paint in a new Monad block copies the previous frame and starts a new frame; later paints in that same block edit the shared frame. At Monad's 300 ms block target, chain time itself becomes roughly 3.3 fps stop-motion.
 
@@ -92,7 +98,7 @@ A separate 32×32 block-rate animation canvas. The first successful Flipbook pai
 
 Flipbook paints in the same block intentionally share the current frame slots, so they collide with one another. Flipbook storage never overlaps the core canvas storage, so Flipbook and canvas paints do not conflict by storage layout. The Lanes engine visualizes that distinction as an estimate; Monad's executor determines the real schedule.
 
-### `R3tardsWeeds` Lab
+### `R3tardsWeeds` Lab (contract/history; UI retired)
 
 A separate adminless Conway's Game of Life experiment over the empty parts of the live canvas. Each of the 16 canvas regions has an independent 64×64 toroidal world stored in its own 128-slot-aligned page. Cells can live only where `regionBlankMask(currentSeason, region)` says the canvas is blank and not covered by that season's outline.
 
@@ -105,7 +111,7 @@ A separate adminless Conway's Game of Life experiment over the empty parts of th
 
 Weeds reads the core's current-season soil but never writes the core. Region-world writes are page-local, so different regions are designed to avoid storage conflicts; the per-address gardening statistic is separate account state. A Weeds tick and a canvas paint in the same region may conflict because the tick reads canvas soil that the paint writes.
 
-### `R3tardsForks` Lab
+### `R3tardsForks` Lab (contract/history; UI retired)
 
 A separate adminless 64×64 side-canvas system seeded from any saved frame or finale. Forks can themselves be forked, so lineage is recorded onchain without giving the Lab any power over the frozen core.
 
@@ -120,7 +126,7 @@ A separate adminless 64×64 side-canvas system seeded from any saved frame or fi
 
 Fork rendering is fully onchain. Source frames are downsampled through the shared constant-cost `Source64` library, so guest-outline run count does not affect seeding cost. Fork `paint` uses a fixed 250K production gas limit rather than `eth_estimateGas`; runs are sorted by row and the measured worst case after that optimization is about 200K. See `docs/specs/GAS_LIMITS.md`.
 
-### `R3tardsSleepwalker` Lab
+### `R3tardsSleepwalker` Lab (contract/history; UI retired)
 
 Sleepwalker turns a pending Paint drawing into a 4,096-pixel-max stencil that other players can crank onto the real canvas overnight. It has no admin and no privileged write path. Each painter gets a deterministic EIP-1167 `SleepwalkerKey`; the painter pre-signs 1–4 normal core sessions for that key, and every successful step is an ordinary core `paint` charged to the painter's own budget.
 
@@ -134,7 +140,7 @@ Sleepwalker turns a pending Paint drawing into a 4,096-pixel-max stencil that ot
 
 No Lab has special powers over the canvas; Sleepwalker only paints through your own signed session, with your own budget. See `docs/specs/SLEEPWALKER.md`.
 
-### `R3tardsBrushes` Lab
+### `R3tardsBrushes` Lab (contract/history; UI retired)
 
 An adminless Block DNA game. Every recent Monad block deterministically defines an 8×8 mirror-symmetric brush from its block hash. Users catch a brush into an eight-slot box, stamp it using ordinary core paint runs, then verify that its filled cells are still present on the current-season canvas.
 
@@ -311,17 +317,21 @@ Useful read APIs include:
 
 **Discovery scale.** `src/chain/contracts.ts` reads `experimentCount()` and then every `experimentInfo(i)` once per session and caches the result. At today's 16–17 entries that is cheap. If the registry ever grows significantly, discovery may need pagination, batching or an index in a future phase; nothing needs to change now.
 
-### Monad hardware experiments
+### Monad hardware / active UI
 
-Phase MONAD-HW adds three removable contracts and four r3tardOS programs without changing the existing core: `PAGE.EXE` (`page-exe`), `Block Camera` (`block-camera`), `Kernel Debugger` (`kernel-debugger`) and the read-only `Monad Hardware` Device Manager. Block Camera mints through the existing `R3tardsLabs`; PAGE.EXE and Kernel Debugger are standalone registry-discovered experiments.
+The active frontend exposes **Explore Monad**, **System Information** and **Block Camera**. Earlier PAGE.EXE, Kernel Debugger and CARDMEM.EXE windows are retired, but their deployed backends are preserved where an active surface depends on them.
 
-The shared hardware model is documented in [`docs/specs/MONAD_HW.md`](docs/specs/MONAD_HW.md). The UI distinguishes measured/onchain values from protocol specs and never marks a device present unless it has actually been probed.
+- Explore Monad's **Storage race** calls the PAGE.EXE experiment with read-only `eth_call`s to demonstrate MIP-8 page warming.
+- **Block Camera** mints through `R3tardsLabs` and uses live block/proposer context.
+- **System Information** reports measured, onchain, configured and unknown device state without pretending a missing probe succeeded.
+
+The shared hardware model remains documented in [`docs/specs/MONAD_HW.md`](specs/MONAD_HW.md).
 
 ### Monad Card (CARD.DRV)
 
-Phase MONAD CARD adds `R3tardsCardMemory`, registered as `card-drv`, and the `CARDMEM.EXE` EEPROM programmer. Every Monad Card id addresses one hashed, aligned 4 KiB page; only the card's current `ownerOf(cardId)` may write it. The card contract itself is never modified, wrapped or escrowed.
+`R3tardsCardMemory` remains registered as `card-drv`. Every Monad Card id addresses one hashed, aligned 4 KiB page; only the card's current `ownerOf(cardId)` may write it. The card contract itself is never modified, wrapped or escrowed. The old CARDMEM.EXE programmer UI is retired.
 
-The same page is visible to PAGE.EXE, Kernel Debugger, Block Camera and Monad Hardware. The driver is also appended as the `MONAD CARD` Painter Pass stamp source and supplies the two-condition `CARD CARRIER` quest. Monad Cards are mainnet-only, so local/testnet deployments use `MockMonadCard`; the official chain-143 address is enforced by the driver constructor. See [`docs/specs/MONAD_CARD.md`](docs/specs/MONAD_CARD.md).
+CARD.DRV is still active infrastructure: Block Camera can include card context, the Painter Pass can expose the `MONAD CARD` stamp, and the `CARD CARRIER` quest checks ownership. Monad Cards are mainnet-only, so testnet uses `MockMonadCard`; the official chain-143 address is enforced by the driver constructor. See [`docs/specs/MONAD_CARD.md`](specs/MONAD_CARD.md).
 
 ### Operator record and system event
 
@@ -329,25 +339,25 @@ Phase OPERATOR adds two removable, adminless contracts. `R3tardsOperatorRecord` 
 
 `R3tardsSystemEvent` (`system-event`) is the permanent DEVICE 07 latch. On Monad mainnet it accepts only the Chainlink MON/USD proxy and can be activated permissionlessly once one fresh round is at or above the deployed milli-USD threshold (`333` by default, or `$0.333`). It has no owner, reset or fallback activation path.
 
-My Pass exposes the address's record under the **Operator** tab. Monad Hardware exposes **DEVICE 07 · UNKNOWN DEVICE**, and Kernel Debugger adds `event` and `operator [address]`. These screens distinguish live onchain facts, derived values, deployment configuration and unknown data. The phase makes no promise about what, if anything, the record or event will be used for. See [`docs/specs/OPERATOR_RECORD.md`](docs/specs/OPERATOR_RECORD.md) and [`docs/specs/SYSTEM_EVENT.md`](docs/specs/SYSTEM_EVENT.md).
+My Pass exposes the address's record under the **Operator** tab and System Information exposes **DEVICE 07 · UNKNOWN DEVICE**. These active screens distinguish live onchain facts, derived values, deployment configuration and unknown data. The phase makes no promise about what, if anything, the record or event will be used for. See [`docs/specs/OPERATOR_RECORD.md`](specs/OPERATOR_RECORD.md) and [`docs/specs/SYSTEM_EVENT.md`](specs/SYSTEM_EVENT.md).
 
 ### CD-ROM (D:)
 
-Burned CDs open in a Windows 98 CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](docs/specs/CDROM.md).
+Burned CDs open in a Windows 98 CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](specs/CDROM.md).
 
-### ROUTER.EXE
+### Router Lab backend (ROUTER.EXE UI retired)
 
-Phase ROUTER adds `R3tardsRouterLab` (`router-lab`), a stateless read-only MRC-17 routing laboratory. One `eth_call` compares up to eight configured adapters against the same block state; every quote executes through an ordinary gas-capped child `CALL` that deliberately reverts so quote-side state cannot persist. ROUTER.EXE reports raw output, gas, bounded revert diagnostics, opaque quote-data metadata and an optional STATICCALL probe, then labels only the **HIGHEST QUOTED OUTPUT**.
+`R3tardsRouterLab` (`router-lab`) is a stateless read-only MRC-17 routing laboratory. One `eth_call` compares up to eight configured adapters against the same block state; every quote executes through an ordinary gas-capped child `CALL` that deliberately reverts so quote-side state cannot persist. The standalone ROUTER.EXE window is retired; **Explore Monad → Liquidity race** is the supported read-only view.
 
-The lab has no owner, storage, custody, fees or persistent execution path. Its WMON-only QUOTE SCOPE can preview an immediate adapter execution using temporary `eth_call` value, but the deposit, approval, adapter call and output all live inside frames that always revert. Mainnet venue addresses and runtime-code hashes come from the pinned Monoper deployment manifest; local/testnet uses mock venues. MRC-17 is a draft, and the adapters are third-party integration code under active development. See [`docs/specs/ROUTER_EXE.md`](docs/specs/ROUTER_EXE.md).
+The lab has no owner, storage, custody, fees or persistent execution path. Mainnet venue addresses and runtime-code hashes come from the pinned Monoper deployment manifest; local/testnet uses mock venues. MRC-17 is a draft, and the adapters are third-party integration code under active development. See [`docs/specs/ROUTER_EXE.md`](specs/ROUTER_EXE.md).
 
 ### Launch tooling: Launch Doctor, DXDIAG.EXE, Run…
 
-- **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x…> [--expected-owner <0x…>] [--expected-chain <id>] [--json]`) is a read-only Node CLI for the deployer. It verifies ownership and pending owners, immutable wiring, the experiment and renderer registries, Pass pin capacity, CARD.DRV, Block Camera links, every Operator Record source pointer, the System Event feed, ROUTER adapter code hashes on mainnet, the release schedule and freeze readiness. Every check is `OK`, `WARN`, `FAIL` or `UNKNOWN`; the exit code is 1 only when something `FAIL`s. It never signs, never sends a transaction and never prints the RPC URL.
+- **Launch Doctor** (`RPC_URL="$MONAD_RPC_URL" npm run -s launch:doctor -- --paint <0x…> [--expected-owner <0x…>] [--expected-chain <id>] [--json]`) is a read-only Node CLI for the deployer. It verifies ownership and pending owners, immutable wiring, the experiment and renderer registries, Pass pin capacity, CARD.DRV, Block Camera links, every Operator Record source pointer, the System Event feed, ROUTER adapter code hashes on mainnet, the release schedule and freeze readiness. Every check is `OK`, `WARN`, `FAIL` or `UNKNOWN`; the exit code is 1 only when something `FAIL`s. It never signs, never sends a transaction and never prints the RPC URL.
 - **DXDIAG.EXE** (Start → System Tools) shows what this browser is connected to and which r3tardOS components it can see, reads once on open (Refresh to re-read) and copies a plain-text support report without RPC URLs or wallet data.
-- **Run…** (Start menu) opens allowlisted programs and a few typed routes (`operator`, `card <id>`, `frame <id>`, `auction <id>`) through the same release-aware path as every icon. It is not a shell: no URLs, no `javascript:`, no arbitrary hashes.
+- **Run…** (Start menu) opens allowlisted programs and a few typed routes (`operator`, `frame <id>`, `auction <id>`) through the same release-aware path as every icon. It is not a shell: no URLs, no `javascript:`, no arbitrary hashes.
 
-The canonical launch list is [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md).
+The canonical launch list is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md).
 
 ## Palette
 
@@ -373,12 +383,11 @@ The canonical launch list is [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_
 ## Build and tests
 
 ```bash
-npm install
+npm ci
 npm run contracts:build
 npm run contracts:test
 npm run test:web
-npm run outline:export
-npm run abi:export
+npm run generated:check
 npm run build
 ```
 
@@ -466,14 +475,14 @@ After deployment, verify token #0 ownership, immutable royalty receivers and eve
 
 ## Testnet and mainnet checklist
 
-Step-by-step deploy commands and the testnet Vercel environment are in [`docs/TESTNET_DEPLOY.md`](docs/TESTNET_DEPLOY.md). The single canonical launch list, including freeze policy, Pass capacity and every check that still needs real Monad data, is [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md). The items below are the original contract-level reminders it expands:
+Step-by-step deploy commands and the testnet Vercel environment are in [`docs/TESTNET_DEPLOY.md`](TESTNET_DEPLOY.md). The single canonical launch list, including freeze policy, Pass capacity and every check that still needs real Monad data, is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md). The items below are the original contract-level reminders it expands:
 
 Before mainnet:
 
 - verify Monad's EIP-2935 history contract at `0x0000F90827F1C53a10cb7A02335B175320002935` returns the same recent block hashes as RPC and confirm the effective 8,191-block history window under MonadTen;
 - measure auction settlement inside native `blockhash`, through EIP-2935 history, and after the history window where the candle-start fallback is used;
 - verify `block.coinbase` semantics for the validator seal;
-- re-measure all gas policies in `docs/specs/GAS_LIMITS.md`, including Sleepwalker painted/skipped/completing steps;
+- re-measure the active production gas policies in `docs/specs/GAS_LIMITS.md`; retained retired-contract benchmarks remain historical regression coverage;
 - verify the mainnet `ROYALTY_RECEIVER`, `FINAL_OWNER` and `TOKEN_ZERO_RECIPIENT` values before broadcasting, then verify every `pendingOwner` before each Safe `acceptOwnership()`;
 - run the full browser/testnet soak and re-check every registry address before `freezeRenderers()` is used. The experiment registry is intentionally **left unfrozen** at initial launch (see the checklist's freeze policy).
 
@@ -485,19 +494,15 @@ Before mainnet:
 - Run `scripts/auction-keeper.sh` during every finale auction so a permissionless settle is submitted as soon as the contract accepts it.
 - On both testnet and mainnet run `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$RPC_URL"` and record whether Monad's history-storage contract is present before relying on the extended auction hash window.
 
-## Roadmap
+## Hackathon launch state
 
-- **2c:** Flipbook + Lanes engine ✅
-- **2d:** exact onchain DF1 renderer + Weeds Lab ✅
-- **2e:** 2d fixes + Forks + Block DNA Brushes ✅
-- **2f:** 2e fixes + finale candle auction + quests ✅
-- **Bin/CD contracts:** Recycle Bin + mix CD-R artifacts
-- **3:** frontend
-- **4:** Monad showcase: Lanes, Network Neighborhood, heartbeat and Disk Defragmenter
-- **5:** docs + testnet soak
-- **day 1:** launch the verified canvas, Labs and showcase together
+- **Engineering / contracts:** core and add-on architecture complete; direct UI for superseded experiments retired.
+- **Performance:** boot prefetch, shared caches, local burner signing, action-RPC settlement and receipt-first UI are complete and measured in DXDIAG.
+- **Phase 6:** cold-user / judge path plus repository hygiene complete.
+- **Phase 7 (next):** Live Mode hero pass: unmistakable LIVE state, two-browser collaborative demo, remote propagation proof, explorer/DXDIAG proof and demo choreography.
+- **Phase 8:** mainnet rehearsal, real community activity, final metrics, demo recording and Metropolis submission.
 
-Everything in the original "later UI work" list has shipped (heartbeat, validator map, storm UX, quest board, candle auction, Flipbook editor/player, Lab-aware Lanes, Weeds, Forks, Block DNA, Sleepwalker). After this phase comes **testnet → soak → mainnet pre-flight → launch**, not another feature phase.
+The product direction is deliberately narrower than the historical experiment set: the shared canvas and continuous onchain interaction are the centerpiece.
 
 ### Post-launch ideas (undefined, not scheduled)
 
@@ -507,53 +512,43 @@ Everything in the original "later UI work" list has shipped (heartbeat, validato
 
 ## Frontend: r3tardOS 98
 
-Phase 3a replaces the old single Paint page with a small desktop shell. The Paint program, Painter Pass/System Properties, Sounds and Help are live in this slice; later Labs plug into the same program registry.
+The current frontend is a complete Windows 98-style desktop shell. `src/os/programs.ts` is the active program boundary; launch-critical modules are prefetched during the real boot sequence and resolved into the registry before the desktop appears.
 
 Copy the supplied asset pack into `public/os/` before running the app. The app references those PNG/WebP/MP3 assets by URL and does not inline them.
 
-Copy `.env.example` to `.env.local`. `VITE_RPC_URL` and `VITE_WS_URL` are **app-only** endpoints. `VITE_WALLET_RPC_URL` must be a public Monad RPC and is the only RPC URL the app will ever provide to `wallet_addEthereumChain`. Every `VITE_` value is public in the browser bundle.
+Copy `.env.example` to `.env.local`; it contains the current public testnet defaults. `VITE_RPC_URLS` and `VITE_WS_URL` are app read endpoints. `VITE_WALLET_RPC_URL` is the only RPC URL the app will provide to `wallet_addEthereumChain`. Every `VITE_` value is public in the browser bundle.
 
 `VITE_MULTICALL3_ADDRESS` is optional. On Monad mainnet (143) and testnet (10143) it defaults to the canonical Multicall3 address `0xcA11bde05977b3631167028862bE2a173976CA11`. The app checks that address for deployed code once before using it; if Multicall3 is missing or unavailable, Lab reads fall back to parallel `eth_call` reads with the same per-call failure semantics.
 
 `VITE_REVEAL_ALL=true` bypasses `public/releases.json` and reveals every program. Dev mode does the same automatically for local/testnet work. Production otherwise fetches `public/releases.json` once at boot with `no-cache`; program ids missing from the file are available immediately, while listed ids stay hidden until their UTC timestamp.
 
-If either `VITE_RPC_URL` or the Paint contract address is missing, the desktop runs in demo mode with a local blank canvas and all writes explain how to enable onchain mode.
+If no app RPC is configured (`VITE_RPC_URL` and `VITE_RPC_URLS` are both empty) or the Paint address is missing, the desktop runs in demo mode with a local blank canvas and writes explain how to enable onchain mode.
 
 ```bash
-npm install
-npm run test:web
-npm run build
+npm ci
+npm run check:web
 ```
 
-`npm run check` remains the full release gate: Foundry build/tests, web tests, generated outline/ABI checks and the Vite production build. The frontend imports contract ABIs exclusively from `src/lib/generated/abi.ts`; do not hand-maintain ABI fragments for protocol actions.
+`npm run repo:doctor` enforces repository hygiene (stale/dead files, duplicate Foundry trees, broken local Markdown links, README placeholders and retired UI reachability). `npm run check:web` runs that doctor, Vitest and the production build. `npm run check` remains the full release gate: repository hygiene, Foundry build/tests, web tests, generated outline/ABI checks and the Vite production build. The frontend imports contract ABIs exclusively from `src/lib/generated/abi.ts`; do not hand-maintain ABI fragments for protocol actions.
 
 ### RPC endpoints
 
-Phase 5 uses an ordered public-RPC pool instead of assuming one archival endpoint can serve every read. `VITE_RPC_URL` is retained only as a backwards-compatible primary URL; when it is set it is placed first, followed by the comma-separated `VITE_RPC_URLS` entries. Empty values are dropped and duplicates are removed.
+The frontend uses an ordered public read pool instead of assuming one endpoint can serve every workload. `VITE_RPC_URL` is retained only as a backwards-compatible primary; `VITE_RPC_URLS` is the normal comma-separated pool. Empty values are dropped and duplicates removed.
 
-| RPC | `eth_getLogs` range | Rate | `eth_call` gas cap |
-|---|---:|---:|---:|
-| `rpc.monad.xyz` (QuickNode) | 100 blocks | 25 rps | 200M |
-| `rpc1.monad.xyz` (Alchemy) | 1,000 blocks / 10,000 logs | 15 rps | 200M |
-| `rpc3.monad.xyz` (Ankr) | 1,000 blocks | 300 per 10 s | 1B |
-| `rpc-mainnet.monadinfra.com` | 100 blocks | provider-defined | 200M |
+`VITE_RPC_RPS` is a **per-endpoint** request budget with a FIFO limiter. `VITE_RPC_BATCH_SIZE` controls JSON-RPC batching. Historical logs are clamped to `VITE_DEPLOY_BLOCK` and `VITE_LOGS_RANGE`; the app never intentionally reconstructs history from genesis or issues unbounded art/metadata `Promise.all` work.
 
-Recommended testnet setup: put the Monad testnet public RPCs in `VITE_RPC_URLS` and keep `VITE_LOGS_RANGE=100`.
+Interactive Live transactions use a separate action-RPC lane. The browser signs one raw transaction locally and may broadcast that same serialized transaction to multiple action endpoints; the fastest acceptance wins. General boot/background reads stay on the normal rate-limited pool.
 
-Recommended mainnet setup: put `rpc1.monad.xyz` and/or `rpc3.monad.xyz` first, keep `rpc.monad.xyz` as a fallback, and use `VITE_LOGS_RANGE=1000` only when every configured primary supports it. A 100-block fallback still works because range-limit errors shrink the session-wide log chunk size automatically.
+`VITE_WALLET_RPC_URL` is separate and is the only endpoint exposed through wallet chain metadata. DXDIAG reports endpoint counts and RPC method counts, never the URLs themselves.
 
-`VITE_RPC_RPS` is a per-endpoint request budget. Each endpoint has its own FIFO limiter before viem retry/fallback handling. `VITE_RPC_BATCH_SIZE` defaults to 10; set it to `0` to disable JSON-RPC batching. Heavy art and metadata reads are never placed in multicalls or unbounded `Promise.all` lists.
-
-Set `VITE_DEPLOY_BLOCK` to the deployment block before testnet/mainnet soak. Every historical log query is clamped to that floor and chunked through `src/chain/logs.ts`; the frontend must never perform an unbounded log scan from block 0.
-
-`VITE_WALLET_RPC_URL` remains separate and is still the only endpoint exposed through wallet chain metadata. None of the app fallback RPCs are sent to the wallet.
+The public testnet values used by the current deployment live in `.env.example`. Mainnet endpoints and log-range assumptions are set during Phase 8 rehearsal from providers verified at that time, rather than being hard-coded into this reference.
 
 Demo mode now means either no app RPC URL is configured at all (`VITE_RPC_URL` and `VITE_RPC_URLS` are both empty) or the Paint address is missing.
 
 
 ## Shell layout (2026-10-02 simplification)
 
-The desktop holds only what defines r3tardOS: **Paint, Explore Monad, My Pass, My Frames, Quests, Block Camera, CD-ROM (D:)** and the **Recycle Bin**. **Auction** joins them only while a finale auction is live onchain. Start has **Programs ▸** (everything a person uses, including Burn a CD and Auction), **Explore Monad**, **System Tools ▸** (Monad X-ray, Validators, DXDIAG.EXE, Sounds), Help and Run…. Burn a CD is also a toolbar button in My Frames. The layout lives in `src/os/layout.ts`; retired programs stay retired (`src/os/retired.ts`).
+The desktop holds only what defines r3tardOS, in judge-first order: **Paint, Explore Monad, My Frames, My Pass, Block Camera, CD-ROM (D:), Quests** and the **Recycle Bin**. **Auction** joins them only while a finale auction is live onchain. Start has **Programs ▸** (everything a person uses, including Burn a CD and Auction), **Explore Monad**, **System Tools ▸** (Monad X-ray, Network, DXDIAG.EXE, Sounds), Help and Run…. Burn a CD is also a toolbar button in My Frames. The layout lives in `src/os/layout.ts`; retired programs stay retired (`src/os/retired.ts`).
 
 **Explore Monad** (the `monad-hw` program) opens on four one-button experiments; the previous Device Manager view is its **System Information** tab:
 
@@ -562,4 +557,4 @@ The desktop holds only what defines r3tardOS: **Paint, Explore Monad, My Pass, M
 - **Block camera** shows the live block number and producer from the block stream and opens Block Camera (which owns the expensive viewfinder).
 - **Liquidity race** (mainnet) runs one ROUTER-LAB `compare` `eth_call` over the MRC-17 adapters in the venue manifest for 1 WMON → USDC and ranks the **highest quoted output**; no approval, swap or transaction. Off mainnet it shows "MAINNET DEMO" (a dev build can run it against the test venues, labelled as such).
 
-Each new tab powers on like a 1998 PC (`src/os/BootScreen.tsx`): a BIOS screen that prints the real chain, latest block and measured block clock (pausing until they arrive, capped), then the r3tardOS 98 splash, then the desktop; any key or click skips it, DEL opens DXDIAG ("SETUP"), and reduced-motion users get a short static splash. A first visit to the bare desktop then shows one small welcome dialog (Paint together · Explore Monad · View my Pass), stored in `r3os.firstRun.done`.
+Each page load powers on like a 1998 PC (`src/os/BootScreen.tsx`) while real critical prefetch runs underneath. Cosmetic POST can be skipped, but a key/click cannot bypass critical readiness; the desktop appears when critical work settles or the absolute boot cap fires, with optional work continuing in the background. A first visit then offers three wallet-optional entries: **Paint together · See Monad live · 60-second tour**, stored in `r3os.firstRun.done`. If the visitor connects later, the account-specific prefetch pass runs at that point.

@@ -1,10 +1,12 @@
 # Threat model notes
 
-This is the contract-boundary threat model, maintained through Phase LAUNCH. Items that need real chain data are classified in the **Launch status of open items** section and tracked operationally in [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md). Nothing below has been proven on Monad testnet or mainnet merely because it passes on a local Monad-mode chain.
+This is the contract-boundary threat model, maintained through Phase LAUNCH. Items that still need real chain data are classified in the **Launch status of open items** section and tracked operationally in [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md). A passing local Monad-mode test is not treated as testnet or mainnet evidence; items that have been exercised on a real network are called out explicitly.
+
+> **Frontend retirement note:** this document intentionally covers deployed and retained contracts even when their dedicated r3tardOS window is retired. A retired UI does not erase an onchain attack surface, recovery path or historical invariant. The current active interface boundary is listed in `README.md` and `docs/TECHNICAL.md`.
 
 ## Core freeze
 
-`contracts/src/R3tardsPaint.sol` received its final pre-testnet SEC hardening before deployment: outline-density limits, experiment-registry freeze, session nonce cancellation, finale grace-period authorization and fail-safe renderer calls. Nothing is deployed yet. After day-1 deployment the core is frozen; later Labs integrate only through registries, view APIs, stamp sources and events already exposed by that contract.
+`contracts/src/R3tardsPaint.sol` received its final pre-testnet SEC hardening before deployment: outline-density limits, experiment-registry controls, session nonce cancellation, finale grace-period authorization and fail-safe renderer calls. The current configuration is deployed on Monad Testnet; mainnet is not deployed yet. The Paint core is frozen for product work, so later Labs integrate only through registries, view APIs, stamp sources and events already exposed by that contract.
 
 ## Administrative authority: `Ownable2Step`
 
@@ -200,7 +202,7 @@ The Monad hardware suite is removable and grants no new authority over the Paint
 
 `R3tardsKernelDebugger` has no admin. It may retain only `credits[msg.sender]`, which that same sender can withdraw. Its optional state step is an external self-call so a failure is isolated from the primary frame. A graceful reserve-dip path must successfully refund before it can continue; a rejecting refund receiver therefore reverts the whole run rather than pretending the unwind succeeded.
 
-The Kernel **process key is a hot localStorage key**, in the same risk class as the Paint burner but in a separate namespace: `r3os.kernel.key.<chainId>.<owner>`. Browser compromise or malicious same-origin script can steal it. It must be funded only with the tiny amount needed for the experiment, kept below 10 MON, and swept back after use. It has no Paint session authority.
+The retired Kernel Debugger UI used a **process key stored in localStorage**, in the same risk class as the Paint burner but in a separate namespace: `r3os.kernel.key.<chainId>.<owner>`. Browser compromise or malicious same-origin script can steal it. If that historical experiment is exercised directly, the key must be funded only with the tiny amount needed for the reserve experiment, kept below 10 MON, and swept back after use. The current production UI does not create or fund this key. It has no Paint session authority.
 
 The naive burst is intentionally expected to revert when Monad enforces an uncorrected reserve dip. Because a reverted transaction has no surviving `ProcessReport`, the frontend may say only that the receipt is *consistent with* the reserve rule; it must label that statement as inference and must not fabricate a measured reserve result.
 

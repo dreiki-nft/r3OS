@@ -1,0 +1,10 @@
+# Keep the repository byte-stable across Windows/Git Bash and Linux CI.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.mp3 binary
+*.woff binary
+*.woff2 binary

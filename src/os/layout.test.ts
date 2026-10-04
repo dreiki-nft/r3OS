@@ -14,12 +14,12 @@ const visible = (id: string) => {
 describe('desktop', () => {
   it('shows a small set of primary programs, in order', () => {
     expect(desktopProgramIds(visible, false)).toEqual([
-      'pass',
-      'frames',
       'paint',
+      'monad-hw',
+      'frames',
+      'pass',
       'block-camera',
       'cdrom',
-      'monad-hw',
       'quests',
       'bin',
     ])

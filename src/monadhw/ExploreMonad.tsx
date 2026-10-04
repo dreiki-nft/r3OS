@@ -108,7 +108,7 @@ function BlockSpeed() {
         <Button disabled={offline || muted} title={muted ? 'unmute sounds in the tray first' : 'play one deterministic note for each new block'} onClick={toggleBlockPlayer}>
           {listening ? '■ Stop listening' : '♪ Listen'}
         </Button>
-        <Button onClick={() => openProgram('validators')}>Who makes them?</Button>
+        <Button onClick={() => openProgram('validators')}>Who seals frames?</Button>
       </div>
       <p className="explore-why">each new block plays one note: its hash picks the note, its producer picks the instrument, and how full it is sets the volume.</p>
       <Details>

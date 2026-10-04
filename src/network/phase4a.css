@@ -50,121 +50,10 @@
   background: #170b0b;
 }
 
-/* Lanes */
-.lanes-counters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.lanes-counters > div {
-  padding: 8px 12px;
-  background: var(--field);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.lanes-counters small,
-.lanes-legend,
-.lanes-detail small,
 .network-program small,
 .network-sidebar span,
 .phase4a-dialog p {
   color: var(--muted);
-}
-
-.lanes-counters b {
-  font-size: 20px;
-}
-
-.lanes-legend {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  font-size: 11px;
-  flex-wrap: wrap;
-}
-
-.lanes-legend span {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.lanes-legend i {
-  width: 12px;
-  height: 12px;
-  display: inline-block;
-  box-sizing: border-box;
-}
-
-.lanes-legend i.conflict {
-  background: rgba(95, 237, 223, 0.35);
-  border: 2px solid #fec343;
-}
-
-.lanes-grid-wrap {
-  padding: 8px;
-  background: var(--field);
-  display: flex;
-  min-height: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-.lane-labels {
-  width: 70px;
-  flex: 0 0 70px;
-}
-
-.lane-labels span {
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 8px;
-  box-sizing: border-box;
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.lane-labels span:nth-last-child(-n + 3) {
-  color: #d6d2cb;
-}
-
-.lanes-grid {
-  width: 1100px;
-  height: 380px;
-  flex: 0 0 1100px;
-}
-
-.lanes-detail {
-  max-height: 150px;
-  overflow: auto;
-  padding: 16px 10px 8px;
-}
-
-.lanes-detail-head,
-.lanes-detail-row {
-  display: grid;
-  grid-template-columns: 90px 110px 130px minmax(110px, 1fr) 58px 48px 68px;
-  gap: 8px;
-  align-items: center;
-}
-
-.lanes-detail-head {
-  color: var(--muted);
-  padding-bottom: 3px;
-  border-bottom: 1px solid var(--bevel-dark);
-}
-
-.lanes-detail-row {
-  min-height: 22px;
-}
-
-.lanes-detail-row code {
-  font-family: inherit;
 }
 
 /* Network Neighborhood */
@@ -449,10 +338,6 @@
 }
 
 @media (max-width: 760px) {
-  .lanes-counters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .network-main {
     flex-direction: column;
   }

@@ -10,8 +10,8 @@ import {
 
 const config: ReleaseConfig = {
   programs: {
-    forks: '2026-11-08T18:00:00Z',
-    brushes: '2026-11-15T18:00:00Z',
+    auction: '2026-11-08T18:00:00Z',
+    quests: '2026-11-15T18:00:00Z',
   },
 }
 
@@ -28,11 +28,11 @@ describe('release schedule', () => {
 
   it('maps listed future/past, unlisted and reveal-all visibility', () => {
     const before = Date.parse('2026-11-01T00:00:00Z')
-    const afterForks = Date.parse('2026-11-10T00:00:00Z')
-    expect(programVisibleAt(config, 'forks', before)).toBe(false)
-    expect(programVisibleAt(config, 'forks', afterForks)).toBe(true)
+    const afterAuction = Date.parse('2026-11-10T00:00:00Z')
+    expect(programVisibleAt(config, 'auction', before)).toBe(false)
+    expect(programVisibleAt(config, 'auction', afterAuction)).toBe(true)
     expect(programVisibleAt(config, 'paint', before)).toBe(true)
-    expect(programVisibleAt(config, 'brushes', before, true)).toBe(true)
+    expect(programVisibleAt(config, 'quests', before, true)).toBe(true)
   })
 
   it('fails closed when the schedule fetch fails', async () => {
@@ -40,12 +40,12 @@ describe('release schedule', () => {
       throw new Error('offline')
     }) as unknown as typeof fetch
     await expect(fetchReleaseConfig(fetcher)).rejects.toThrow('offline')
-    expect(programVisibleAt(config, 'forks', Date.parse('2027-01-01T00:00:00Z'), false, 'failed')).toBe(false)
+    expect(programVisibleAt(config, 'auction', Date.parse('2027-01-01T00:00:00Z'), false, 'failed')).toBe(false)
   })
 
   it('announces an installed program only once', () => {
     const storage = fakeStorage()
-    expect(consumeInstallAnnouncement('forks', storage)).toBe(true)
-    expect(consumeInstallAnnouncement('forks', storage)).toBe(false)
+    expect(consumeInstallAnnouncement('auction', storage)).toBe(true)
+    expect(consumeInstallAnnouncement('auction', storage)).toBe(false)
   })
 })

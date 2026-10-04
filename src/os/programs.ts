@@ -57,47 +57,20 @@ const LiveWizard = lazy(() => import('../live/LiveWizard').then((module) => ({ d
 const XRayProgram = lazy(() =>
   import('../xray/XRayProgram').then((module) => ({ default: module.XRayProgram })),
 )
-const FlipbookProgram = lazy(() =>
-  import('../labs/FlipbookProgram').then((module) => ({ default: module.FlipbookProgram })),
-)
-const WeedsProgram = lazy(() =>
-  import('../labs/WeedsProgram').then((module) => ({ default: module.WeedsProgram })),
-)
-const ForksProgram = lazy(() =>
-  import('../labs/ForksProgram').then((module) => ({ default: module.ForksProgram })),
-)
 const QuestsProgram = lazy(() =>
   import('../labs/QuestsProgram').then((module) => ({ default: module.QuestsProgram })),
-)
-const BlockDNAProgram = lazy(() =>
-  import('../labs/BlockDNAProgram').then((module) => ({ default: module.BlockDNAProgram })),
 )
 const AuctionProgram = lazy(() =>
   import('../labs/AuctionProgram').then((module) => ({ default: module.AuctionProgram })),
 )
-const SleepwalkerProgram = lazy(() =>
-  import('../labs/SleepwalkerProgram').then((module) => ({ default: module.SleepwalkerProgram })),
-)
 const CDBurnerProgram = lazy(() =>
   import('../labs/CDBurnerProgram').then((module) => ({ default: module.CDBurnerProgram })),
-)
-const LanesProgram = lazy(() =>
-  import('../lanes/LanesProgram').then((module) => ({ default: module.LanesProgram })),
 )
 const NetworkProgram = lazy(() =>
   import('../network/NetworkProgram').then((module) => ({ default: module.NetworkProgram })),
 )
-const DefragProgram = lazy(() =>
-  import('../defrag/DefragProgram').then((module) => ({ default: module.DefragProgram })),
-)
-const PageExeProgram = lazy(() =>
-  import('../monadhw/PageExeProgram').then((module) => ({ default: module.PageExeProgram })),
-)
 const BlockCameraProgram = lazy(() =>
   import('../monadhw/BlockCameraProgram').then((module) => ({ default: module.BlockCameraProgram })),
-)
-const KernelDebuggerProgram = lazy(() =>
-  import('../monadhw/KernelDebuggerProgram').then((module) => ({ default: module.KernelDebuggerProgram })),
 )
 const MonadHardwareProgram = lazy(() =>
   import('../monadhw/MonadHardwareProgram').then((module) => ({ default: module.MonadHardwareProgram })),
@@ -107,12 +80,6 @@ const CdromProgram = lazy(() =>
 )
 const ImagingProgram = lazy(() =>
   import('../cdrom/ImagingProgram').then((module) => ({ default: module.ImagingProgram })),
-)
-const CardMemProgram = lazy(() =>
-  import('../monadhw/CardMemProgram').then((module) => ({ default: module.CardMemProgram })),
-)
-const RouterProgram = lazy(() =>
-  import('../router/RouterProgram').then((module) => ({ default: module.RouterProgram })),
 )
 
 export const programs: ProgramDef[] = [
@@ -150,61 +117,6 @@ export const programs: ProgramDef[] = [
     hash: '#/frames',
   },
   {
-    id: 'flipbook',
-    title: 'Flipbook',
-    icon: 'film',
-    colour: '#5FEDDF',
-    component: FlipbookProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/flipbook',
-  },
-  {
-    id: 'weeds',
-    title: 'Weeds',
-    icon: 'sprout',
-    colour: '#07992F',
-    component: WeedsProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/weeds',
-  },
-  {
-    id: 'forks',
-    title: 'Forks',
-    icon: 'tree',
-    colour: '#9F70DA',
-    component: ForksProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/forks',
-  },
-  {
-    id: 'brushes',
-    title: 'Block DNA',
-    icon: 'dna',
-    colour: '#C864AA',
-    component: BlockDNAProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/brushes',
-  },
-  {
-    id: 'sleepwalker',
-    title: 'Sleepwalker',
-    icon: 'moon',
-    colour: '#9F70DA',
-    component: SleepwalkerProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/sleepwalker',
-  },
-  {
     id: 'cd',
     title: 'Burn a CD',
     icon: 'music',
@@ -225,17 +137,6 @@ export const programs: ProgramDef[] = [
     minSize: { width: 620, height: 420 },
     singleInstance: true,
     hash: '#/cdrom',
-  },
-  {
-    id: 'lanes',
-    title: 'Lanes',
-    icon: 'chip',
-    colour: '#D47827',
-    component: LanesProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/lanes',
   },
   {
     id: 'auction',
@@ -261,7 +162,7 @@ export const programs: ProgramDef[] = [
   },
   {
     id: 'validators',
-    title: 'Validators',
+    title: 'Network',
     icon: 'globe',
     colour: '#5FEDDF',
     component: NetworkProgram,
@@ -269,39 +170,6 @@ export const programs: ProgramDef[] = [
     minSize: { width: 760, height: 520 },
     singleInstance: true,
     hash: '#/validators',
-  },
-  {
-    id: 'defrag',
-    title: 'Disk Defragmenter',
-    icon: 'layers',
-    colour: '#9F70DA',
-    component: DefragProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/defrag',
-  },
-  {
-    id: 'page-exe',
-    title: 'PAGE.EXE',
-    icon: 'floppy',
-    colour: '#5FEDDF',
-    component: PageExeProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/page-exe',
-  },
-  {
-    id: 'card-mem',
-    title: 'CARDMEM.EXE',
-    icon: 'chip',
-    colour: '#5FEDDF',
-    component: CardMemProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/card-mem',
   },
   {
     id: 'block-camera',
@@ -313,28 +181,6 @@ export const programs: ProgramDef[] = [
     minSize: { width: 700, height: 520 },
     singleInstance: true,
     hash: '#/block-camera',
-  },
-  {
-    id: 'kernel-debugger',
-    title: 'Kernel Debugger',
-    icon: 'bomb',
-    colour: '#C52020',
-    component: KernelDebuggerProgram,
-    defaultSize: { width: 920, height: 700 },
-    minSize: { width: 680, height: 520 },
-    singleInstance: true,
-    hash: '#/kernel-debugger',
-  },
-  {
-    id: 'router',
-    title: 'ROUTER.EXE',
-    icon: 'antenna',
-    colour: '#5FEDDF',
-    component: RouterProgram,
-    defaultSize: { width: 1200, height: 744 },
-    minSize: { width: 760, height: 520 },
-    singleInstance: true,
-    hash: '#/router',
   },
   {
     id: 'monad-hw',

@@ -10,8 +10,8 @@ const pages: Record<HelpSlug, ReactNode> = {
   welcome: (
     <>
       <p>
-        r3tardOS is a Windows 98 style desktop that lives on Monad. every program is a contract on the chain:
-        nothing you do here is stored on a server.
+        r3tardOS is a Windows 98 style desktop for a shared onchain world on Monad. the app is static: it reads
+        contracts and chain events directly, with no app backend or database.
       </p>
       <p>
         the heart of it is <b>Paint</b>: one shared 256 × 256 canvas with 16 colours that everyone paints
@@ -24,11 +24,16 @@ const pages: Record<HelpSlug, ReactNode> = {
   'getting-started': (
     <ol>
       <li>
-        <b>connect a wallet</b> (Start menu or the button in Paint). you need a little MON for gas.
+        <b>open Paint first</b>. no wallet is needed to watch the live canvas, inspect recent strokes or draw
+        locally.
       </li>
       <li>
-        <b>paint</b>: pick a colour, draw on the canvas, press <b>Paint</b>. your pixels land in about a
-        second.
+        <b>connect when you want to commit</b>. pick a colour, draw, then press <b>Paint</b>. your pixels are a
+        normal Monad transaction.
+      </li>
+      <li>
+        <b>try Live Mode</b> when you want the Monad demo. authorize and fund the capped browser session once;
+        after that, confirmed strokes land without a wallet popup per stroke. Live Mode has no Undo.
       </li>
       <li>
         <b>save a frame</b>: in Paint, File › Save frame…. it becomes an NFT in <b>My Frames</b>.
@@ -37,8 +42,8 @@ const pages: Record<HelpSlug, ReactNode> = {
         <b>claim your Pass</b> in <b>My Pass</b>. it collects stamps for what you do.
       </li>
       <li>
-        then try <b>Explore Monad</b>, <b>Quests</b> and <b>Block Camera</b>. to burn frames onto a CD, use
-        Burn CD in <b>My Frames</b>.
+        then open <b>Explore Monad</b> to watch blocks and storage-page experiments live. <b>Quests</b>,
+        <b>Block Camera</b> and the CD drive are there when you want to go deeper.
       </li>
       <li style={{ listStyle: 'none', marginLeft: -18 }}>
         <Button onClick={() => window.dispatchEvent(new Event(SHOW_WELCOME_EVENT))}>
@@ -71,7 +76,7 @@ const pages: Record<HelpSlug, ReactNode> = {
     <>
       <p>
         a frame is a snapshot of the canvas that you save as an NFT after you paint. it remembers the season,
-        the block it was saved in and which validator made that block (“sealed by”). frames never change.
+        the block it was saved in and that block's <code>coinbase</code> / fee-recipient address (“sealed by”). frames never change.
       </p>
       <p>
         My Frames shows yours (Mine), everyone's (All frames), season finales and anything you hid. the Labs
@@ -123,9 +128,9 @@ const pages: Record<HelpSlug, ReactNode> = {
         auction.
       </p>
       <p>
-        bidding runs for about a day (288,000 blocks). the real end is picked at random from the last hour,
-        using a block hash after bidding closes, so sniping at the last second doesn't work: bids after the
-        hidden end don't count and are refunded.
+        bidding runs for about a day (288,000 blocks). after bidding closes, the closing block hash selects one
+        point inside the last-hour candle window. it is a public onchain candle mechanism, not cryptographic
+        randomness. bids after the selected end don't count and are refunded.
       </p>
       <p>
         each bid must beat the top bid by at least 5%. bids are held until the auction is settled; anyone can
@@ -157,10 +162,10 @@ const pages: Record<HelpSlug, ReactNode> = {
   validators: (
     <>
       <p>
-        the validators that produce Monad blocks, as this app sees them. a new block arrives about every 0.3
-        seconds, and the heartbeat beats once per block.
+        the block-sealing addresses seen in saved frames. the heartbeat follows the live block stream and beats once
+        per block; the window shows the cadence this browser is actually measuring.
       </p>
-      <p>every frame you save records which validator made its block.</p>
+      <p>frames store <code>block.coinbase</code>. until Monad documents its identity semantics for this use, r3tardOS treats it as a fee-recipient / sealer address rather than claiming a verified validator identity.</p>
     </>
   ),
   'block-camera': (
@@ -177,7 +182,7 @@ const pages: Record<HelpSlug, ReactNode> = {
       <p>small experiments you can run with one button, each showing something Monad does differently:</p>
       <ul>
         <li>
-          <b>Block speed</b>: watch new blocks arrive, about every 0.3 seconds.
+          <b>Block speed</b>: watch new blocks arrive and see the cadence this browser measures live.
         </li>
         <li>
           <b>Storage race</b>: read the same amount of data from one storage page and from many. Monad warms a

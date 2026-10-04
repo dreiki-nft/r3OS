@@ -89,9 +89,9 @@ FOUNDRY_PROFILE=deploy forge script script/DeployMonadHW.s.sol:DeployMonadHW \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
-Save the three hardware addresses and experiment ids. Browser-check PAGE.EXE, CARDMEM.EXE, Block Camera, Kernel Debugger and Monad Hardware. Program the mock card once, confirm the same page appears in PAGE.EXE and Kernel Debugger, and capture a card-enabled Block Camera shot both with and without the optional canvas hash.
+Save the three hardware addresses and experiment ids. Browser-check the active surfaces: **Explore Monad**, **System Information** and **Block Camera**. The PAGE.EXE backend is verified through Explore Monad → Storage race; CARD.DRV is verified through System Information / Block Camera. The direct PAGE.EXE, CARDMEM.EXE and Kernel Debugger windows are retired.
 
-In Kernel Debugger, also fund the process key with 0.05 MON and run SINGLE, BURST GRACEFUL and BURST NAIVE. Paste back the actual receipts/statuses; the local Monad anvil exposes the reserve probe but did not enforce the end-of-transaction revert.
+For MIP-4 reserve behaviour, use the retained Kernel contract tests/direct smoke path to run SINGLE, BURST GRACEFUL and BURST NAIVE and save the actual receipts/statuses. This is a contract verification step, not a reason to restore the retired Kernel Debugger UI. The local Monad anvil exposes the probe but did not enforce the end-of-transaction revert.
 
 ### 3d. Operator record and system event
 
@@ -124,9 +124,9 @@ cast send $MON_USD_FEED "setAnswer(int256)" 33300000 \
 # r3tardOS: DEVICE 07 must show CONDITION MET before activation.
 ```
 
-Use DEVICE 07's `ACTIVATE` button, or send `activate()` permissionlessly from a test account. After the receipt, Monad Hardware, the Operator tab and Kernel Debugger `event` command must all show the same permanent activation block. Reload the app and verify the state remains activated.
+Use the active System Information DEVICE 07 action, or send `activate()` permissionlessly from a test account. After the receipt, System Information and the My Pass Operator tab must show the same permanent activation block. Reload the app and verify the state remains activated.
 
-For Operator Record, use several real test actions, open **My Pass → Operator**, press `RECORD`, then confirm a second `RECORD` changes only `lastRecordBlock` and emits no `OperatorRecorded` event when no new subsystem or season was added. Kernel Debugger `operator <address>` must show the same OPR1 header as `eth_getStorageAt` for W0.
+For Operator Record, use several real test actions, open **My Pass → Operator**, press `RECORD`, then confirm a second `RECORD` changes only `lastRecordBlock` and emits no `OperatorRecorded` event when no new subsystem or season was added. Compare the displayed OPR1 header with a direct `eth_getStorageAt` read for W0.
 ### 3e. Router lab
 
 Deploy the read-only router lab after Operator. Off mainnet the script deploys its own mock wrapped-native token, mock USD token, diagnostic venue set and `router-mock-venues` directory by default:
@@ -137,11 +137,11 @@ FOUNDRY_PROFILE=deploy forge script script/DeployRouterLab.s.sol:DeployRouterLab
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
-Save the `R3tardsRouterLab` address and experiment id. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe. On mainnet, run the same script without mock venues; ROUTER.EXE uses its pinned mainnet adapter manifest and verifies runtime-code hashes through RPC reads.
+Save the `R3tardsRouterLab` address and experiment id. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe. On mainnet, run the same script without mock venues; Explore Monad's Liquidity race uses the pinned mainnet adapter manifest and Router Lab verifies runtime-code hashes through RPC reads.
 
-Browser-check ROUTER.EXE on testnet with the mock directory. One RUN must show each mock's exact status while the gas-burning venue does not hide later rows. Enable the STATICCALL probe and confirm the stateful mock reports `STATIC FAILED` while its normal quote remains `OK`. QUOTE SCOPE must show the under-delivering mock's quoted/delivered delta and leave no persistent balances or approvals. Kernel Debugger `venues`, `route` and `quote` must use the same directory. Monad Hardware must show the MRC-17 DRAFT router row and the transaction-forwarding research section.
+Contract-check Router Lab on testnet with the mock directory: `compare` must preserve each mock's exact status and a gas-burning venue must not hide later rows. The old ROUTER.EXE and Kernel Debugger command UIs remain retired. Browser-check **Explore Monad → Liquidity race** as the supported surface and confirm System Information reports the routing backend as expected.
 
-ROUTER.EXE should produce zero idle polling with Auto disabled. A normal RUN is one block-number read plus one lab `eth_call`; the optional Monoper and QUOTE SCOPE checks are separate calls. Token metadata and adapter code are session-cached.
+Explore Monad Liquidity race must produce zero idle Router Lab polling. A user-triggered comparison is one pinned Router Lab `eth_call` plus only the metadata/code reads needed by the configured venue cache.
 
 
 ## 4. Chain checks (paste the output to Claude)
@@ -177,13 +177,13 @@ VITE_REVEAL_ALL=true
 VITE_BUILD_ID=<public build label, e.g. snapshot-24>
 ```
 
-`VITE_REVEAL_ALL=true` matters on testnet: without it, the production build follows `public/releases.json` and hides Forks and Block DNA until their November dates, so testers could never reach them. Leave it unset on mainnet.
+`VITE_REVEAL_ALL=true` is useful on testnet for release-gated **active** programs. Retired programs are absent from the production registry regardless of reveal-all. Leave reveal-all unset on mainnet.
 
 Leave the other `VITE_*_ADDRESS` overrides blank: the app finds every Lab through the core registry. Multicall3 defaults to the canonical address on 10143.
 
 ## 6. Soak checklist
 
-- Paint, Flipbook (240K fixed), fork paint (250K fixed) and Sleepwalker steps (1M fixed) all confirm. Any out-of-gas revert: send Claude the tx hash.
+- Paint and every active transaction path must confirm under the production gas policy. Retained retired-contract gas regressions (Flipbook 240K, fork paint 250K, Sleepwalker 1M) remain contract compatibility checks, not active UI paths. Any out-of-gas revert: keep the tx hash with the test record.
 - Sleep a dream overnight with a tip; crank from a second wallet in Night Shift; mint it in the morning.
 - About 4 hours after the deploy, season 1 ends: mint its finale from My Frames (you hold #0), list it in the Auction, and have testers bid.
 - Run `scripts/auction-keeper.sh` for that auction (`KEEPER_ACCOUNT` = a keystore name). Bidding lasts 288,000 blocks: about 23 hours at the 0.29 s block time measured on testnet (2026-10-01), about 32 hours at 0.4 s.

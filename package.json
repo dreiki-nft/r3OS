@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "repo:doctor": "node scripts/repo-doctor.mjs",
+    "check:web": "npm run repo:doctor && npm run test:web && npm run build",
     "contracts:build": "forge build --root contracts && node scripts/check-contract-sizes.mjs",
     "contracts:test": "forge test --root contracts",
     "outline:export": "node scripts/export-outline.mjs",
     "abi:export": "node scripts/export-abi.mjs",
-    "check": "npm run contracts:build && npm run contracts:test && npm run test:web && npm run outline:export && npm run abi:export && npm run build",
-    "test:web": "vitest run",
+    "generated:check": "npm run outline:export && npm run abi:export && git diff --exit-code -- src/lib/generated/outline.ts src/lib/generated/abi.ts",
+    "check": "npm run repo:doctor && npm run contracts:build && npm run contracts:test && npm run test:web && npm run generated:check && npm run build",
+    "test:web": "vitest run --maxWorkers=8",
     "launch:doctor": "node scripts/launch-doctor.mjs"
   },
   "dependencies": {

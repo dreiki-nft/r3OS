@@ -40,9 +40,9 @@ function storeHidden(hidden: boolean) {
 }
 
 /**
- * First-visit checklist: connect → paint → save a frame → claim the Pass. Each step ticks itself off from the
- * chain. It sits under every window (never blocks work), can be closed, and Help › getting started reopens it.
- * Chain reads only run while it is visible and unfinished.
+ * Persistent getting-started card. Guests are pointed at read-only Paint first; after a wallet connects, the
+ * chain-backed checklist becomes connect → paint → save a frame → claim the Pass. It sits under every window,
+ * can be closed, and Help › getting started reopens it. Chain reads only run while it is visible and useful.
  */
 export function Welcome() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
@@ -114,6 +114,32 @@ export function Welcome() {
     else openProgram('paint')
   }
 
+  if (!account) {
+    return (
+      <aside className="welcome raised" aria-label="Try r3tardOS">
+        <header>
+          <b>try r3tardOS</b>
+          <button className="welcome-close" aria-label="Close getting started" onClick={close}>
+            ×
+          </button>
+        </header>
+        <p className="welcome-guest-copy">
+          Watch the shared canvas first. Connect a wallet only when you want to write onchain.
+        </p>
+        <div className="welcome-actions">
+          <Button primary onClick={() => openProgram('paint')}>
+            Open Paint
+          </Button>
+          <Button onClick={() => setChoosing(true)}>Connect wallet</Button>
+          <Button onClick={() => openProgram('help', true, helpHash('getting-started'))}>
+            60-second tour
+          </Button>
+        </div>
+        {choosing && <WalletChooser onClose={() => setChoosing(false)} />}
+      </aside>
+    )
+  }
+
   const done = steps.filter((step) => step.done).length
   return (
     <aside className="welcome raised" aria-label="Getting started">
@@ -152,7 +178,7 @@ export function Welcome() {
           <Button onClick={close}>Done</Button>
         </div>
       )}
-      {choosing && !account && <WalletChooser onClose={() => setChoosing(false)} />}
+      {choosing && <WalletChooser onClose={() => setChoosing(false)} />}
     </aside>
   )
 }

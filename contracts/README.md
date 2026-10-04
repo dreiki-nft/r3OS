@@ -2,13 +2,19 @@
 
 The contract package contains the frozen canvas/frame core plus day-1 Lab contracts and renderers.
 
+## Frontend boundary
+
+The deployed/tested contract set is intentionally broader than the current r3tardOS interface. Direct UI for Flipbook, Weeds, Forks, Block DNA / Brushes, Sleepwalker, Lanes, Disk Defrag, PAGE.EXE, CARDMEM.EXE, Kernel Debugger and ROUTER.EXE is retired. Their contracts, ABIs, tests and historical readers remain where they preserve immutable history, deployed compatibility, recovery paths or active backend features. The active judge-facing UI boundary is documented in the root `README.md` and `docs/TECHNICAL.md`.
+
+Do not delete or retire deployed contracts merely to mirror frontend cleanup.
+
 ## Core freeze
 
 `src/R3tardsPaint.sol` is frozen at the verified 2b-fix2 core. New features use its registries, views and events. Do not change the core in later phases unless a concrete core bug is reported.
 
 ## Contracts
 
-- `R3tardsPaint.sol` — canvas, seasons, budgets, frames, storms, validator seals, session keys, renderer registry, Lab registry, quest stats, region read API
+- `R3tardsPaint.sol` — canvas, seasons, budgets, frames, storms, block-coinbase provenance, session keys, renderer registry, Lab registry, quest stats, region read API
 - `R3tardsPainterPass.sol` — ERC-5192-style soulbound painter credential with live stamps
 - `R3tardsLabs.sol` — shared ERC-721 + ERC-2981 collection for Reel, Fork, Dream and CD Lab tokens
 - `renderers/DiffRenderer.sol` — per-season frame diff
@@ -36,7 +42,7 @@ The contract package contains the frozen canvas/frame core plus day-1 Lab contra
 ## Build
 
 ```bash
-npm install
+npm ci
 forge build --root contracts
 node scripts/check-contract-sizes.mjs
 forge test --root contracts -vv

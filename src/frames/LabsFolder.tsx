@@ -6,7 +6,6 @@ import { wsClient } from '../chain/clients'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3TARDS_LABS_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
-import { isRetiredProgram } from '../os/retired'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -23,12 +22,7 @@ import {
 export type LabsFilter = 'All' | 'Reels' | 'Forks' | 'Dreams' | 'CDs' | 'Portraits'
 
 function labFor(data?: LabsTokenData) {
-  const type = labsBucket(data)
-  if (type === 'Reels') return 'flipbook'
-  if (type === 'Forks') return 'forks'
-  if (type === 'Dreams') return 'sleepwalker'
-  if (type === 'CDs') return 'cd'
-  return undefined
+  return labsBucket(data) === 'CDs' ? 'cd' : undefined
 }
 
 export function LabsFolder({ onExit }: { onExit: () => void }) {
@@ -94,11 +88,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
   )
   const chosen = tokens.find((token) => token.id === selected)
   const targetLab = labFor(chosen?.data)
-  const hasWindow =
-    targetLab === 'flipbook' || targetLab === 'forks' || targetLab === 'sleepwalker' || targetLab === 'cd'
-  const available = Boolean(
-    targetLab && hasWindow && !isRetiredProgram(targetLab) && isProgramAvailable(targetLab, releases),
-  )
+  const available = Boolean(targetLab === 'cd' && isProgramAvailable('cd', releases))
 
   return (
     <div className="labs-folder-view">
@@ -164,21 +154,12 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
             title={
               available
                 ? 'open this token in its Lab'
-                : targetLab && hasWindow && !isProgramAvailable(targetLab, releases)
+                : targetLab && !isProgramAvailable(targetLab, releases)
                   ? 'not installed yet'
-                  : 'this Lab window is not available'
+                  : 'this historical Lab has no active r3tardOS window'
             }
             onClick={() => {
-              if (!targetLab) return
-              if (targetLab === 'sleepwalker') {
-                openProgram('sleepwalker', true, `#/sleepwalker?tab=morning&token=${chosen.id}`)
-                return
-              }
-              if (targetLab === 'cd') {
-                openProgram('cd', true, `#/cd?token=${chosen.id}`)
-                return
-              }
-              openProgram(targetLab)
+              if (targetLab === 'cd') openProgram('cd', true, `#/cd?token=${chosen.id}`)
             }}
           >
             Open in its Lab

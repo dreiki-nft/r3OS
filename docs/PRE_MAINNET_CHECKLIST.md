@@ -2,14 +2,14 @@
 
 The single canonical launch list. Other docs link here instead of repeating it. Order after this phase: **TESTNET → SOAK → MAINNET PRE-FLIGHT → LAUNCH**.
 
-Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x…> --expected-owner <0x…> --expected-chain <id> [--json]`) checks deployment wiring read-only; **DXDIAG.EXE** reports what a browser can see; the two mainnet fork tests check real third-party contracts. None of them turns code presence into proof of chain behaviour; the TESTNET items below need real Monad data.
+Tools: the **Launch Doctor** (`RPC_URL="$MONAD_RPC_URL" npm run -s launch:doctor -- --paint <0x…> --expected-owner <0x…> --expected-chain <id> [--json]`) checks deployment wiring read-only; **DXDIAG.EXE** reports what a browser can see; the two mainnet fork tests check real third-party contracts. None of them turns code presence into proof of chain behaviour; the TESTNET items below need real Monad data.
 
 ## F0. Architecture decisions (already made; changing one needs a documented decision)
 
 - Operator Record v1 is fixed at 16 domains. Future history uses companion / versioned records, never v1's unused words.
 - The final two Painter Pass visual pins (14, 15) are reserved. No new stamp source for ROUTER or DXDIAG.
 - The experiment registry is intentionally **not frozen** at initial launch (discovery headroom).
-- CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. ROUTER.EXE stays diagnostic.
+- CARD BUS (CARD.DRV W24–W27) stays reserved. DEVICE 07's next stage stays unknown. Router Lab remains read-only research behind Explore Monad; the ROUTER.EXE window stays retired.
 
 - **Retired from the interface (2026-10-01):** Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger, ROUTER.EXE (`src/os/retired.ts`). Their contracts **will stay deployed and registered unchanged on mainnet**; this is a UI retirement only. Do not call `retireExperiment` before the hackathon. The app hides their direct programs and the retired quests, Pass stamps and Operator subsystems. CARD.DRV stays deployed (MONAD CARD stamp, CARD CARRIER quest, Block Camera).
 - **Security audit 2026-10-02** ([`SECURITY_AUDIT_2026-10-02.md`](SECURITY_AUDIT_2026-10-02.md)): before mainnet, (1) `cast code 0x0000F90827F1C53a10cb7A02335B175320002935 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty (EIP-2935 history, auction settle window); (2) the mainnet r3tards collection is a plain non-upgradeable, non-pausable ERC-721 (frame/finale mint calls its `balanceOf`); (3) keep the UI-retired Labs deployed/registered unchanged for launch; (4) explicitly set `MON_FEED_MAX_AGE` to the observed feed heartbeat + buffer; (5) the Vercel CSP is live (`curl -sI <site> | grep -i content-security-policy`).
@@ -67,24 +67,24 @@ Tools: the **Launch Doctor** (`npm run launch:doctor -- --rpc <url> --paint <0x�
 - [ ] `block.coinbase` meaning for frame "Sealed by".
 - [ ] EIP-2935 behaviour and the 8,191-block window; contract `blockhash(n)` vs RPC hashes.
 - [ ] Auction settle via native hash, via EIP-2935, and the candle-start fallback.
-- [ ] MIP-4 reserve enforcement: Kernel Debugger SINGLE, BURST GRACEFUL, BURST NAIVE (paste receipts).
+- [ ] MIP-4 reserve enforcement for the retained Kernel experiment: run the Foundry/direct-contract SINGLE, BURST GRACEFUL and BURST NAIVE smoke tests and save receipts. The retired Kernel Debugger UI is not part of this check.
 - [ ] Production-like gas and every fixed gas limit (F8).
 - [ ] Websocket failure falls back to polling; public RPC throttling; long soak.
 
 ## F8. Gas (TESTNET REQUIRED unless marked)
 
 - [ ] Core paint (preflight + DF1 headroom).
-- [ ] Flipbook paint (fixed 240K).
-- [ ] Fork paint (fixed 250K).
-- [ ] Sleepwalker step (fixed 1M; worst path session start + 64 px + completion + refund).
+- [ ] Retained Flipbook contract paint (fixed 240K; historical/compatibility regression, UI retired).
+- [ ] Retained Fork contract paint (fixed 250K; historical/compatibility regression, UI retired).
+- [ ] Retained Sleepwalker contract step (fixed 1M; historical/compatibility regression, UI retired).
 - [ ] Auction list / bid / settle / withdrawals.
 - [ ] CARD.DRV write, Block Camera capture, Operator RECORD.
-- [ ] ROUTER.EXE RUN `eth_call` accepted by the production RPCs (about 5.9M gas for 5 venues at defaults).
+- [ ] Explore Monad Liquidity race / Router Lab `compare` `eth_call` accepted by the production RPCs (about 5.9M gas for 5 venues at defaults).
 - Details and current numbers: `docs/specs/GAS_LIMITS.md`. Do not write a final number without real data.
 
 ## F9. Mainnet fork (MAINNET FORK REQUIRED)
 
-Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo root, and save the output:
+Run from `contracts/` with Foundry ≥ 1.8.3 after `npm ci` in the repo root, and save the output:
 
 - [ ] `MONAD_MAINNET_RPC=… CARD_ID=<id> forge test --match-contract MonadCardFork -vv` (2026-10-01: passed with card #307; transfers revert `Soulbound()`).
 - [ ] `MONAD_MAINNET_RPC=… forge test --match-contract RouterLabFork -vv` (2026-10-01: passed; all 5 WMON/USDC code hashes matched).
@@ -116,7 +116,7 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm install` in the repo roo
 ## F14. Browser / device
 
 - [ ] Desktop and narrow/mobile layout; reload; deep links (`#/…`). While disconnected, open a real `#/cdrom?cd=<id>` and confirm the public community CD plays read-only with no wallet.
-- [ ] Start → Run… commands; retired programs (`flipbook`, `router`, `kernel`, `card 1`, …) say "cannot find" and their deep links open nothing.
+- [ ] Start → Run… commands; retired programs (`flipbook`, `router`, `kernel`, `page`, …) say "cannot find" and their deep links open nothing.
 - [ ] DXDIAG.EXE report copies cleanly (no RPC URL, no wallet) and shows the deployed `VITE_BUILD_ID` (public; set it per deploy, e.g. the snapshot or commit you deployed).
 - [ ] Program release gating with reveal-all off.
 

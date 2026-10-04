@@ -13,7 +13,7 @@ export const HELP_TOPICS = [
   { slug: 'auction', title: 'Auction', group: 'programs', program: 'auction' },
   { slug: 'quests', title: 'Quests', group: 'programs', program: 'quests' },
   { slug: 'bin', title: 'Recycle Bin', group: 'programs', program: 'bin' },
-  { slug: 'validators', title: 'Validators', group: 'programs', program: 'validators' },
+  { slug: 'validators', title: 'Network Neighborhood', group: 'programs', program: 'validators' },
   { slug: 'block-camera', title: 'Block Camera', group: 'monad', program: 'block-camera' },
   { slug: 'monad-hw', title: 'Explore Monad', group: 'monad', program: 'monad-hw' },
   { slug: 'xray', title: 'Monad X-ray', group: 'monad', program: 'xray' },

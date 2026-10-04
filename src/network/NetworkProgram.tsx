@@ -26,8 +26,8 @@ import {
 } from './network'
 
 const RULES = [
-  "each block header carries its producer's address (the coinbase). we count them over the last 2,000 blocks (~10 min).",
-  'saved frames record the producer of the block they were saved in. that is the frames count.',
+  "each block header exposes a coinbase address. we count those addresses over the last 2,000 blocks (~10 min).",
+  'saved frames record block.coinbase at mint. that is the frames count.',
   "addresses only, no names. until monad documents how it fills the coinbase, treat it as the block's fee recipient, not a verified validator identity.",
 ] as const
 
@@ -142,7 +142,7 @@ export function NetworkProgram() {
               {
                 label: 'Properties',
                 disabled: !active,
-                disabledReason: 'select a validator first',
+                disabledReason: 'select an address first',
                 action: () => setProperties(true),
               },
             ],
@@ -154,7 +154,7 @@ export function NetworkProgram() {
               { label: 'List', action: () => setView('list') },
             ],
           },
-          { label: 'Help', items: [{ label: 'About block producers', action: () => undefined }] },
+          { label: 'Help', items: [{ label: 'About block addresses', action: () => undefined }] },
         ]}
       />
 
@@ -174,7 +174,7 @@ export function NetworkProgram() {
         </button>
         <button
           disabled={!active}
-          title={!active ? 'select a validator first' : 'validator properties'}
+          title={!active ? 'select an address first' : 'address properties'}
           onClick={() => setProperties(true)}
         >
           <Icon name="info" size={24} />
@@ -190,8 +190,8 @@ export function NetworkProgram() {
       </div>
 
       <IntroBar
-        lead="the validators producing Monad blocks, as seen by this app. every frame you save records which one made its block."
-        monad="a new block every ~0.3 s from a rotating validator set. the heartbeat below beats once per block, ~200 BPM."
+        lead="the block-sealing addresses seen in saved frames. every frame records block.coinbase; r3tardOS does not claim that address is a verified validator identity."
+        monad="Monad blocks arrive fast; this heartbeat follows the measured live block stream. frame coinbase addresses are shown as provenance, not validator identity."
         rules={RULES}
       />
 
@@ -201,7 +201,7 @@ export function NetworkProgram() {
             <Icon name="globe" size={36} colour="#5FEDDF" />
             <div>
               <b>Network Neighborhood</b>
-              <span>block producers seen by this app</span>
+              <span>coinbase addresses seen by this app</span>
             </div>
           </div>
           {active ? (
@@ -229,7 +229,7 @@ export function NetworkProgram() {
             </>
           ) : (
             <span className="muted">
-              {loading ? 'finding block producers…' : 'no block producers seen yet'}
+              {loading ? 'finding block addresses…' : 'no block addresses seen yet'}
             </span>
           )}
         </aside>
@@ -280,28 +280,28 @@ export function NetworkProgram() {
             <circle cx="717" cy="30" r="4" fill="#c52020" className="heartbeat-blink" />
           )}
         </svg>
-        <div className="producer-ticks" aria-label="producers of the last 60 blocks">
+        <div className="producer-ticks" aria-label="coinbase addresses of the last 60 blocks">
           {recent.map((header) => (
             <i key={header.number.toString()} style={{ background: producerColour(header.miner) }} />
           ))}
         </div>
-        <small>last {recent.length} blocks, coloured by producer</small>
+        <small>last {recent.length} blocks, coloured by coinbase address</small>
       </fieldset>
 
       <div className="phase4a-status">
         <span>
           {headers.length < PRODUCER_WINDOW
             ? `window fills as blocks arrive (${headers.length.toLocaleString()} / 2,000)`
-            : `${stats.length} block producers in the last 2,000 blocks (~10 min)`}
+            : `${stats.length} coinbase addresses in the last 2,000 blocks (~10 min)`}
         </span>
         <span>{blocksPerSecond} blocks/s</span>
         <span>#{block.block.toString()}</span>
       </div>
 
       {properties && active && (
-        <div className="phase4a-modal" role="dialog" aria-label="Producer properties">
+        <div className="phase4a-modal" role="dialog" aria-label="Block address properties">
           <div className="phase4a-dialog raised">
-            <b>Block producer properties</b>
+            <b>Block address properties</b>
             <div>
               <span>address</span>
               <code>{active.address}</code>
