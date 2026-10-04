@@ -42,7 +42,7 @@ export function cachedBurnerBalance(owner: Address, maxAgeMs = 60_000) {
 }
 
 /**
- * Seed the hot-path balance cache from a balance transition we already know was confirmed.
+ * Seed the hot-path balance cache from a balance transition whose receipt this browser already observed.
  * This avoids immediately asking a different RPC endpoint for state that may lag the receipt by a block.
  */
 export function setCachedBurnerBalance(owner: Address, balance: bigint) {

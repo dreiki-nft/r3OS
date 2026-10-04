@@ -1,10 +1,34 @@
-import { describe, expect, it } from 'vitest'
-import { decodeMonadNotification } from './monadLogs'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Address } from 'viem'
+
+const mocks = vi.hoisted(() => ({ subscribe: vi.fn() }))
+
+vi.mock('./clients', () => ({
+  wsClient: { transport: { subscribe: mocks.subscribe } },
+}))
+
+import {
+  __resetMonadTraceFeedForTests,
+  decodeMonadNotification,
+  getMonadTraceFeedSnapshot,
+  restartMonadTraceFeed,
+  startMonadTraceFeed,
+} from './monadLogs'
 
 const hash = `0x${'22'.repeat(32)}`
 const blockId = `0x${'ab'.repeat(32)}`
+const paint = '0x032D5e1591DA2919A4aa5D24Ee9278bFE5F1CdA1' as Address
 
 describe('monadLogs decoder', () => {
+  beforeEach(() => {
+    __resetMonadTraceFeedForTests()
+    mocks.subscribe.mockReset()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('unwraps Proposed, Voted and Finalized notifications', () => {
     expect(
       decodeMonadNotification({
@@ -34,4 +58,50 @@ describe('monadLogs decoder', () => {
       transactionHash: hash,
     })
   })
+
+  it('reconnects a live commit-state feed after a transient websocket drop', async () => {
+    vi.useFakeTimers()
+    const stops = [vi.fn(), vi.fn()]
+    let firstError: ((error: Error) => void) | undefined
+    mocks.subscribe
+      .mockImplementationOnce(async (args: { onError: (error: Error) => void }) => {
+        firstError = args.onError
+        return { unsubscribe: stops[0] }
+      })
+      .mockImplementationOnce(async () => ({ unsubscribe: stops[1] }))
+
+    await startMonadTraceFeed([paint])
+    expect(getMonadTraceFeedSnapshot().mode).toBe('live')
+
+    firstError?.(new Error('socket dropped'))
+    expect(getMonadTraceFeedSnapshot().mode).toBe('unavailable')
+    expect(stops[0]).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(1_500)
+    await Promise.resolve()
+    expect(mocks.subscribe).toHaveBeenCalledTimes(2)
+    expect(getMonadTraceFeedSnapshot().mode).toBe('live')
+  })
+
+  it('allows an explicit retry after the feed is unavailable', async () => {
+    const firstStop = vi.fn()
+    const secondStop = vi.fn()
+    let fail: ((error: Error) => void) | undefined
+    mocks.subscribe
+      .mockImplementationOnce(async (args: { onError: (error: Error) => void }) => {
+        fail = args.onError
+        return { unsubscribe: firstStop }
+      })
+      .mockImplementationOnce(async () => ({ unsubscribe: secondStop }))
+
+    await startMonadTraceFeed([paint])
+    fail?.(new Error('unsupported for this connection'))
+    expect(getMonadTraceFeedSnapshot().mode).toBe('unavailable')
+
+    await restartMonadTraceFeed([paint])
+    expect(firstStop).toHaveBeenCalled()
+    expect(mocks.subscribe).toHaveBeenCalledTimes(2)
+    expect(getMonadTraceFeedSnapshot().mode).toBe('live')
+  })
+
 })

@@ -494,7 +494,7 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                         commit on pointer-up.
                       </p>
                       <p className="dialog-warning">
-                        No Undo in Live Mode. Confirmed strokes are permanent onchain history.
+                        No Undo in Live Mode. Sent strokes are reconciled from onchain history.
                       </p>
                       <pre className="live-summary sunken">{`burner ${short(burnerAddress)} · ${Number(
                         formatEther(balance),
@@ -507,8 +507,8 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                   ) : (
                     <>
                       <p>
-                        Live mode is on. Paint away. Confirmed strokes are onchain immediately and cannot be
-                        undone.
+                        Live mode is on. Paint away. Strokes are sent onchain immediately; commitment state is shown
+                        separately in X-ray.
                       </p>
                       <p>
                         <Button

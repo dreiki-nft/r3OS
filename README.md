@@ -26,7 +26,7 @@
 
 r3tardOS boots into a Windows 98-style desktop wrapped around one shared **256 × 256, 16-colour canvas on Monad**. Anyone can watch the canvas and explore the system without a wallet. Connect only when you want to write onchain.
 
-Paint is the center of the project: draw locally, commit pixels as a transaction, watch other painters' confirmed strokes appear, then save a moment of the shared canvas as an immutable frame NFT. Frames can become mix CDs, finales can enter a candle auction, and Block Camera turns the block itself into an onchain artifact.
+Paint is the center of the project: draw locally, commit pixels as a transaction, watch other painters' live onchain strokes appear and reconcile, then save a moment of the shared canvas as an immutable frame NFT. Frames can become mix CDs, finales can enter a candle auction, and Block Camera turns the block itself into an onchain artifact.
 
 There is **no app backend or database**. The frontend is static and reads contracts, logs and block data directly from Monad RPCs.
 
@@ -34,18 +34,20 @@ There is **no app backend or database**. The frontend is static and reads contra
 
 > **Monad is fast enough that fully onchain creative interaction can feel continuous instead of transaction-by-transaction.**
 
-Live Mode is the clearest demonstration. The owner authorizes a browser-held paint session key once; after that, strokes are signed locally and broadcast without a wallet popup per stroke. Confirmed receipt events update the UI immediately, then canonical chain reconciliation follows in the background.
+Live Mode is the clearest demonstration. The owner authorizes a browser-held paint session key once; after that, strokes are signed locally and broadcast without a wallet popup per stroke. Receipt logs update the UI immediately after inclusion, then canonical chain reconciliation follows in the background. On Monad, a receipt or standard WebSocket log may still describe a proposed block; X-ray shows commitment-state progression separately when the RPC exposes it.
 
 ## Judge path
 
 A wallet is not required for the first impression.
 
 1. Let the boot screen finish. It is doing real work: network discovery, canvas state, program code and shared caches are warmed before the desktop appears.
-2. Open **Paint**. Watch the live shared canvas, recent painters and incoming confirmed strokes.
-3. Open **Explore Monad**. Run the block-speed and storage-page experiments and inspect System Information.
-4. Connect a wallet when you want to write. Paint a few pixels normally, then enable **Live Mode** and compare the interaction.
-5. Save a frame, open **My Frames**, burn a mix CD and insert it into **CD-ROM (D:)**.
-6. Open **DXDIAG.EXE** for local boot, RPC and interaction timings. No telemetry is uploaded.
+2. Open **Paint**. The Live strip shows the shared canvas, recent activity and whether live strokes are arriving over the websocket path.
+3. Connect only when you want to write, then press **Start Live Mode**. After the one-time session setup, draw again: each stroke is locally signed and sent without another wallet popup.
+4. Watch the proof in the same Paint window: your block/receipt, remote strokes from other browsers, **X-ray**, and direct explorer links.
+5. Open **DXDIAG.EXE → Performance** for local signing, broadcast, receipt, UI-settle and remote websocket-to-canvas measurements. No telemetry is uploaded.
+6. Open **Explore Monad**, then save a frame / burn a CD if you want the wider OS tour.
+
+The exact two-browser recording path is in [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.md).
 
 ## What is onchain
 
@@ -66,13 +68,23 @@ A wallet is not required for the first impression.
 
 The canvas does not need a blockchain merely to store pixels. It needs one where those writes can become an interaction loop.
 
-- **Fast blocks:** remote confirmed paint can propagate while people are still drawing, rather than turning the canvas into a turn-based app.
+- **Fast blocks:** proposed/live paint events can propagate while people are still drawing, rather than turning the canvas into a turn-based app; canonical reconciliation corrects speculative state if needed.
 - **Many independent writes:** the canvas is split into 16 regions so unrelated paints do not all fight over one storage location.
 - **MIP-8 page storage:** the project has explicit experiments showing the effect of warming a 4 KiB storage page.
 - **Block / staking context:** saved frames retain `block.coinbase` provenance; Block Camera also reads proposer/epoch data from Monad hardware interfaces when available.
 - **Monad gas accounting:** transaction gas limits are deliberately tight because Monad charges against the submitted limit.
 
 The app keeps an ordinary read lane separate from its low-latency action lane. Live Mode signs one raw transaction locally and can send that same serialized transaction to multiple action RPCs; the fastest acceptance wins. It is redundancy for one transaction, not multiple blockchain transactions.
+
+### Live proof surface
+
+The demo deliberately separates what the browser actually measured instead of collapsing everything into one magical "finality" number:
+
+- **Paint** shows receipt inclusion, block, direct explorer link and fresh live strokes from another wallet/browser.
+- **Monad X-ray** shows the transaction hash, receipt inclusion, signer path, gas and Monad `Proposed` / `Voted` / `Finalized` states from a shared boot-time `monadLogs` feed when the RPC exposes it. A receipt is not silently renamed `Finalized`.
+- **DXDIAG** keeps local signing, broadcast, receipt, receipt-to-UI settle, websocket-event-to-store and store-to-render timings. Nothing is uploaded.
+
+That distinction matters to the thesis: the claim is that the **onchain interaction loop feels continuous**, and the repository exposes the measurements used to support it.
 
 ## Architecture
 
@@ -94,7 +106,7 @@ A few implementation choices matter to the user experience:
 
 - boot prefetch shares promises/caches with the programs that later consume them;
 - launch-critical program chunks are resolved before the desktop appears;
-- confirmed receipt logs are applied immediately instead of waiting for a lagging RPC index;
+- receipt logs are applied immediately after inclusion instead of waiting for a lagging RPC index;
 - background reconciliation still restores canonical chain state;
 - historical/heavy art reads are bounded instead of preloading the entire collection;
 - wallet-facing chain metadata uses only `VITE_WALLET_RPC_URL`; internal RPC endpoints are never shown by DXDIAG.
@@ -141,7 +153,7 @@ npm run check
 Useful individual commands:
 
 ```bash
-npm run repo:doctor   # stale root files, README placeholders, retired UI reachability
+npm run repo:doctor   # stale files, broken local docs links, README placeholders, retired UI reachability
 npm run test:web      # Vitest
 npm run build         # TypeScript + Vite production build
 npm run generated:check # generated outline + ABI must match source
@@ -178,8 +190,9 @@ Browser security matters because Live Mode intentionally holds an EOA key locall
 
 - Monad testnet engineering build is active.
 - Performance / boot-prefetch work is complete and measured locally in DXDIAG.
-- Cold-user / judge-path and repository-hygiene work is complete in this tree.
-- Next is the Live Mode hero pass, followed by mainnet rehearsal, community activity, demo recording and submission.
+- Cold-user / judge-path and repository-hygiene work is complete.
+- Live Mode hero UI, one-flow wallet handoff, two-browser remote proof, explorer/X-ray proof and demo choreography are implemented; final two-browser rehearsal is still required before recording.
+- Next is mainnet rehearsal, real community activity, final metrics, recording and submission.
 
 ## Credits
 

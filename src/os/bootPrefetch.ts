@@ -3,6 +3,7 @@ import { getActionRpcSnapshot, probeActionRpcs } from '../chain/actionRpc'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { discoverContracts, readCoreConstants, readCoreStatus } from '../chain/contracts'
 import { readPainterProfile } from '../chain/painterProfile'
+import { startMonadTraceFeed } from '../chain/monadLogs'
 import { recordPerf } from '../chain/perf'
 import { prewarmActionFees } from '../chain/tx'
 import { getWalletSnapshot, restoreWallet, subscribeWallet } from '../chain/wallet'
@@ -406,6 +407,10 @@ export function startBootPrefetch() {
     const contracts = runTask('contracts', 'boot-chain-contracts', () =>
       readLimit(async () => {
         const value = await discoverContracts()
+        const traceAddresses = [value.paint, value.pass, ...Object.values(value.labs)].filter(
+          (address): address is Address => Boolean(address),
+        )
+        void startMonadTraceFeed(traceAddresses)
         await Promise.all([readCoreConstants(), readCoreStatus().catch(() => undefined)])
         patchTask('contracts', {
           detail: `${Object.values(value.labs).filter(Boolean).length} drivers`,

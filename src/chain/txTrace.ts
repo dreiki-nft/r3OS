@@ -13,6 +13,7 @@ export interface TxTrace {
   t: {
     signed?: number
     sent: number
+    receipt?: number
     proposed?: number
     voted?: number
     finalized?: number
@@ -31,6 +32,7 @@ type TraceSnapshot = {
 
 const listeners = new Set<Listener>()
 const pendingCommits = new Map<Hex, { state: CommitState; blockNumber?: bigint; at: number }[]>()
+const MAX_PENDING_COMMIT_HASHES = 256
 let snapshot: TraceSnapshot = { version: 0, traces: [] }
 
 function emit(traces: readonly TxTrace[]) {
@@ -79,6 +81,11 @@ export function markTraceCommit(hash: Hex, state: CommitState, blockNumber?: big
     const pending = pendingCommits.get(hash) ?? []
     pending.push({ state, blockNumber, at })
     pendingCommits.set(hash, pending.slice(-4))
+    while (pendingCommits.size > MAX_PENDING_COMMIT_HASHES) {
+      const oldest = pendingCommits.keys().next().value as Hex | undefined
+      if (!oldest) break
+      pendingCommits.delete(oldest)
+    }
     return
   }
   updateTxTrace(hash, (trace) => {
@@ -95,10 +102,6 @@ export function markTraceCommit(hash: Hex, state: CommitState, blockNumber?: big
   })
 }
 
-export function markTraceProposedFromPlainLog(hash: Hex, blockNumber: bigint, at = stamp()) {
-  markTraceCommit(hash, 'Proposed', blockNumber, at)
-}
-
 export function markTraceReceipt(
   hash: Hex,
   receipt: { blockNumber: bigint; gasUsed: bigint; effectiveGasPrice: bigint },
@@ -109,7 +112,9 @@ export function markTraceReceipt(
     blockNumber: receipt.blockNumber,
     gasUsed: receipt.gasUsed,
     effectiveGasPrice: receipt.effectiveGasPrice,
-    t: { ...trace.t, finalized: trace.t.finalized ?? at },
+    // A transaction receipt proves inclusion to this client. It is not silently relabelled as Monad
+    // `Finalized`; that stage is filled only by an actual monadLogs Finalized notification.
+    t: { ...trace.t, receipt: trace.t.receipt ?? at },
   }))
 }
 

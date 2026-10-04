@@ -345,7 +345,7 @@ export function BlockCameraProgram() {
         setDeveloping(false)
       } else {
         setShutter(false)
-        setMessage('capture confirmed')
+        setMessage('capture receipt included')
       }
       await loadRoll()
     } catch (error) {

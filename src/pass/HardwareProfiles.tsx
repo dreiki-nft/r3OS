@@ -186,7 +186,7 @@ export function HardwareProfiles() {
       confirmBurnerBalance(owner, nextBalance)
       setTopUp(false)
       // Funding is already proven by the receipt. Event-driven refreshes will reconcile later; do not
-      // immediately replace this confirmed balance with a potentially lagging public-RPC read.
+      // immediately replace this receipt-observed balance with a potentially lagging public-RPC read.
     } catch (caught) {
       setError(screenSafeMessage(caught))
     }

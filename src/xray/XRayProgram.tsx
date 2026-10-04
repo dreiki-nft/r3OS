@@ -1,10 +1,17 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { formatEther, type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
+import { config } from '../chain/config'
 import { discoverContracts } from '../chain/contracts'
-import { subscribeMonadLogs } from '../chain/monadLogs'
+import {
+  getMonadTraceFeedSnapshot,
+  restartMonadTraceFeed,
+  startMonadTraceFeed,
+  subscribeMonadTraceFeed,
+} from '../chain/monadLogs'
 import { getTxTraceSnapshot, subscribeTxTrace, type TxTrace } from '../chain/txTrace'
 import { getActivityFeedSnapshot, subscribeActivityFeed, type CanvasActivity } from '../paint/canvasStore'
+import { Button } from '../os/ui/Button'
 import { IntroBar } from '../os/ui/IntroBar'
 import { overlapSummary, regionsFromMask, regionsFromRuns } from './regions'
 
@@ -67,32 +74,23 @@ export function XRayProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const traces = useSyncExternalStore(subscribeTxTrace, getTxTraceSnapshot)
   const activity = useSyncExternalStore(subscribeActivityFeed, getActivityFeedSnapshot)
-  const [commitMode, setCommitMode] = useState<'monadLogs' | 'fallback'>('fallback')
+  const commitFeed = useSyncExternalStore(
+    subscribeMonadTraceFeed,
+    getMonadTraceFeedSnapshot,
+  )
   const trace = traces.traces[0]
 
   useEffect(() => {
-    let stop: (() => void) | undefined
-    let cancelled = false
+    if (commitFeed.mode !== 'idle') return
     void discoverContracts()
       .then((contracts) => {
-        const addresses = [contracts.paint, ...Object.values(contracts.labs)].filter(
+        const addresses = [contracts.paint, contracts.pass, ...Object.values(contracts.labs)].filter(
           (address): address is Address => Boolean(address),
         )
-        return subscribeMonadLogs(addresses)
+        return startMonadTraceFeed(addresses)
       })
-      .then((unsubscribe) => {
-        if (cancelled) unsubscribe()
-        else {
-          stop = unsubscribe
-          setCommitMode('monadLogs')
-        }
-      })
-      .catch(() => setCommitMode('fallback'))
-    return () => {
-      cancelled = true
-      stop?.()
-    }
-  }, [])
+      .catch(() => undefined)
+  }, [commitFeed.mode])
 
   const bars = useMemo(() => transactionsPerBlock(activity.items, block.block), [activity, block.block])
   const maxBar = Math.max(1, ...bars)
@@ -116,11 +114,11 @@ export function XRayProgram() {
   return (
     <div className="xray-program">
       <IntroBar
-        lead="your last tx, from click to finalized, live."
+        lead="your last tx, from click through receipt and Monad commit states, live."
         monad="watch the block path, fee cap and region overlap as this app sees them."
         rules={[
           'signed → sent: your wallet signs and the app hands the tx to the RPC.',
-          'proposed → voted → finalized: the block advances through Monad commit states.',
+          'proposed → voted → finalized: shown only when the RPC exposes Monad commit-state notifications.',
           'gas: Monad charges the gas limit, not gas used, so every action gets a tight limit.',
           'regions: the canvas has 16 region-local storage areas that can execute in parallel.',
         ]}
@@ -148,9 +146,49 @@ export function XRayProgram() {
 
       <section className="xray-section">
         <h3>Your last transaction · {trace?.action ?? 'none yet'}</h3>
-        {trace ? <TxTimeline trace={trace} /> : <p>send something and it shows up here.</p>}
+        {trace ? (
+          <>
+            <TxTimeline trace={trace} />
+            <div className="xray-proof-row">
+              <code title={trace.hash}>{`${trace.hash.slice(0, 10)}…${trace.hash.slice(-8)}`}</code>
+              <span>{trace.blockNumber == null ? 'waiting for block' : `block #${trace.blockNumber.toString()}`}</span>
+              <span>
+                {trace.t.receipt == null
+                  ? 'receipt pending'
+                  : `receipt ${Math.round(elapsed(trace, trace.t.receipt) ?? 0)} ms`}
+              </span>
+              <span>{trace.signer === 'burner' ? 'browser session key' : 'wallet'}</span>
+              {config.explorerUrl && (
+                <a href={`${config.explorerUrl}/tx/${trace.hash}`} target="_blank" rel="noreferrer">
+                  Open in explorer
+                </a>
+              )}
+            </div>
+          </>
+        ) : (
+          <p>send something and it shows up here.</p>
+        )}
         <small>
-          commit source: {commitMode === 'monadLogs' ? 'monadLogs' : 'plain logs + receipt fallback'}
+          commit-state feed: {commitFeed.mode === 'live' ? 'monadLogs live' : commitFeed.mode === 'connecting' ? 'connecting…' : 'unavailable on this RPC'} · receipt inclusion is tracked separately
+          {commitFeed.mode === 'unavailable' && (
+            <>
+              {' · '}
+              <Button
+                onClick={() => {
+                  void discoverContracts()
+                    .then((contracts) => {
+                      const addresses = [contracts.paint, contracts.pass, ...Object.values(contracts.labs)].filter(
+                        (address): address is Address => Boolean(address),
+                      )
+                      return restartMonadTraceFeed(addresses)
+                    })
+                    .catch(() => undefined)
+                }}
+              >
+                Retry feed
+              </Button>
+            </>
+          )}
         </small>
       </section>
 

@@ -12,6 +12,7 @@ export type PerfKind =
   | 'program-open'
   | 'program-ready'
   | 'ui-settle'
+  | 'remote-paint'
 
 export interface PerfSample {
   id: number

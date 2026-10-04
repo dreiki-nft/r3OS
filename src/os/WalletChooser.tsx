@@ -1,4 +1,6 @@
-import { useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
+import type { Address } from 'viem'
+import { friendlyError } from '../chain/errors'
 import {
   connectWallet,
   getWalletSnapshot,
@@ -9,23 +11,45 @@ import {
 import { playSound } from './sound'
 import { Button } from './ui/Button'
 
-export function WalletChooser({ onClose }: { onClose: () => void }) {
+export function WalletChooser({
+  onClose,
+  onConnected,
+}: {
+  onClose: () => void
+  onConnected?: (account: Address) => void
+}) {
   useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const choices = walletChoices()
+  const [connecting, setConnecting] = useState<string>()
+  const [message, setMessage] = useState('')
+
+  const choose = async (choice: ReturnType<typeof walletChoices>[number]) => {
+    setConnecting(choice.info.uuid)
+    setMessage('')
+    try {
+      const next = await connectWallet(choice)
+      playSound('system-initiate')
+      if (next.account) onConnected?.(next.account)
+      onClose()
+    } catch (error) {
+      const friendly = friendlyError(error)
+      playSound(friendly.rejected ? 'cancel' : 'error')
+      setMessage(friendly.message)
+    } finally {
+      setConnecting(undefined)
+    }
+  }
+
   return (
     <div className="wallet-chooser sunken" role="group" aria-label="Choose a wallet">
       {choices.length ? (
         choices.map((choice) => (
           <Button
             key={choice.info.uuid}
-            onClick={() =>
-              void connectWallet(choice).then(() => {
-                playSound('system-initiate')
-                onClose()
-              })
-            }
+            disabled={Boolean(connecting)}
+            onClick={() => void choose(choice)}
           >
-            {choice.info.name}
+            {connecting === choice.info.uuid ? `Connecting ${choice.info.name}…` : choice.info.name}
           </Button>
         ))
       ) : (
@@ -37,6 +61,7 @@ export function WalletChooser({ onClose }: { onClose: () => void }) {
           </a>
         </>
       )}
+      {message && <p className="wallet-chooser-error" role="alert">{message}</p>}
     </div>
   )
 }

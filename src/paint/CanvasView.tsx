@@ -20,6 +20,9 @@ interface CanvasViewProps {
   pings?: readonly Ping[]
   /** scroll so this box is in view when its id changes */
   focus?: { id: number; box: Box }
+  /** live remote event whose pixels should be visible after this draw effect completes */
+  renderProbe?: { key: string; observedAt: number }
+  onRenderProbe?: (key: string, latencyMs: number) => void
   onDown: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
   onMove: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
   onUp: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
@@ -40,6 +43,8 @@ export function CanvasView({
   selection,
   pings,
   focus,
+  renderProbe,
+  onRenderProbe,
   onDown,
   onMove,
   onUp,
@@ -47,6 +52,7 @@ export function CanvasView({
 }: CanvasViewProps) {
   const ref = useRef<HTMLCanvasElement>(null)
   const well = useRef<HTMLDivElement>(null)
+  const renderedProbe = useRef<string | undefined>(undefined)
 
   useEffect(() => {
     const host = well.current
@@ -141,6 +147,12 @@ export function CanvasView({
         context.stroke()
       }
     }
+
+    if (renderProbe && renderProbe.key !== renderedProbe.current) {
+      renderedProbe.current = renderProbe.key
+      const renderedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+      onRenderProbe?.(renderProbe.key, Math.max(0, renderedAt - renderProbe.observedAt))
+    }
   }, [
     pixels,
     outline,
@@ -154,6 +166,9 @@ export function CanvasView({
     maxHeat,
     selection,
     pings,
+    renderProbe?.key,
+    renderProbe?.observedAt,
+    onRenderProbe,
   ])
 
   const point = (event: PointerEvent<HTMLCanvasElement>): Point => {

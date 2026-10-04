@@ -328,7 +328,7 @@ export function DxDiagProgram() {
                 ))
               ) : (
                 <p className="dxdiag-note">
-                  no measurements yet. Open programs, request quotes, and send testnet actions; timings appear here immediately.
+                  no measurements yet. Open programs, request quotes, and send onchain actions; timings appear here immediately.
                 </p>
               )}
               <p className="dxdiag-note">

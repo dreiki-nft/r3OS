@@ -35,7 +35,7 @@ describe('transaction trace', () => {
     })
   })
 
-  it('allows a skipped Voted state and finalizes from the receipt fallback', () => {
+  it('records receipt inclusion without pretending it is a Finalized signal', () => {
     recordTxTrace({
       hash,
       action: 'save frame',
@@ -49,7 +49,8 @@ describe('transaction trace', () => {
     markTraceReceipt(hash, { blockNumber: 10n, gasUsed: 80n, effectiveGasPrice: 2n }, 6)
     const trace = getTxTraceSnapshot().traces[0]
     expect(trace.t.voted).toBeUndefined()
-    expect(trace.t.finalized).toBe(6)
+    expect(trace.t.receipt).toBe(6)
+    expect(trace.t.finalized).toBeUndefined()
     expect(trace.gasUsed).toBe(80n)
   })
 

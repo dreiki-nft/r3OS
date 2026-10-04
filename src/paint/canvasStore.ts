@@ -1,5 +1,5 @@
 import { hexToBytes, type Hex, type Log } from 'viem'
-import { markTraceProposedFromPlainLog } from '../chain/txTrace'
+import { startPerf } from '../chain/perf'
 import { publicClient, wsClient } from '../chain/clients'
 import { readMany } from '../chain/readMany'
 import { config } from '../chain/config'
@@ -22,6 +22,8 @@ export interface CanvasSnapshot {
   backgroundColor: number
   snapshotBlock: bigint
   status: 'demo' | 'live' | 'polling' | 'offline'
+  /** newest websocket-delivered paint that this canvas snapshot contains */
+  renderProbe?: { key: string; observedAt: number; owner: string }
 }
 
 export interface TileCacheEntry {
@@ -248,7 +250,6 @@ function coreLogKey(log: Pick<CoreLog, 'transactionHash' | 'logIndex'>) {
 function rememberLog(log: CoreLog) {
   const key = coreLogKey(log)
   if (key) appliedLogKeys.set(key, log.blockNumber)
-  if (log.transactionHash) markTraceProposedFromPlainLog(log.transactionHash, log.blockNumber)
 }
 
 export function logSetsDiffer(applied: Iterable<string>, canonical: Iterable<string>) {
@@ -291,7 +292,7 @@ async function seedCanonicalOverlap(latest: bigint) {
 
 async function applyDeliveredLogs(
   logs: readonly CoreLog[],
-  options: { advanceSnapshot?: boolean } = {},
+  options: { advanceSnapshot?: boolean; observedAt?: number; source?: 'websocket' } = {},
 ) {
   if (!logs.length) return false
   const advanceSnapshot = options.advanceSnapshot ?? true
@@ -324,6 +325,12 @@ async function applyDeliveredLogs(
       }
       const owner = String(args.owner ?? '')
       const sender = String(args.sender ?? '')
+      if (options.source === 'websocket' && options.observedAt != null && key) {
+        snapshot = {
+          ...snapshot,
+          renderProbe: { key, observedAt: options.observedAt, owner: owner.toLowerCase() },
+        }
+      }
       emitActivity({
         ...common,
         owner,
@@ -497,9 +504,20 @@ export function catchUp(targetBlock?: bigint) {
 }
 
 async function onSubscriptionLogs(logs: readonly unknown[]) {
+  const observedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
   const typed = logs as CoreLog[]
-  const needsReload = await applyDeliveredLogs(typed)
-  if (needsReload) await loadCanvas()
+  const freshPaint = typed.some((log) => {
+    const key = coreLogKey(log)
+    if (key && appliedLogKeys.has(key)) return false
+    return decodeCoreLog(log)?.eventName === 'Painted'
+  })
+  const stopRemote = freshPaint ? startPerf('remote-paint', 'websocket event → canvas store') : undefined
+  try {
+    const needsReload = await applyDeliveredLogs(typed, { observedAt, source: 'websocket' })
+    if (needsReload) await loadCanvas()
+  } finally {
+    stopRemote?.()
+  }
 }
 
 export async function reconcileSpeculativeNow() {
@@ -609,7 +627,7 @@ export async function settleInFlight(sent: ReadonlyMap<number, number>, receiptB
 }
 
 /**
- * Fast path for our own confirmed transaction. The receipt already contains the exact Painted log,
+ * Fast path for our own included transaction. The receipt already contains the exact Painted log,
  * including DF1 corruptions, so apply it immediately instead of waiting for another getLogs round trip.
  * We deliberately do not advance snapshotBlock here: another painter can share the same block, and the
  * normal websocket/catch-up path still needs to see those sibling logs. Duplicate receipt/subscription
@@ -662,7 +680,7 @@ export function settleInFlightFromReceipt(
 }
 
 /**
- * Apply confirmed Paint-contract receipt logs immediately, even for writes that do not include a Painted event
+ * Apply Paint-contract receipt logs immediately after inclusion, even for writes that do not include a Painted event
  * (for example mintFrame, face/background changes, transfers and renderer changes). This keeps dependent UI
  * stores in sync with the receipt instead of waiting for a websocket or a possibly lagging read RPC.
  */

@@ -417,6 +417,22 @@ button:disabled {
   font-weight: 700;
 }
 
+.tray .tray-live {
+  padding: 0 6px;
+  border: 1px solid #26783b;
+  background: #102817;
+  color: #dffff0;
+}
+
+.tray-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2cff5b;
+  box-shadow: 0 0 5px #2cff5b;
+  animation: live-pulse 1.15s steps(2, end) infinite;
+}
+
 .tray .storming {
   color: var(--warn);
   animation: blink 0.75s steps(1) infinite;
@@ -947,8 +963,121 @@ button:disabled {
 .paint-program {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr auto 23px;
+  grid-template-rows: auto auto 1fr auto 23px;
   background: var(--face);
+}
+
+.paint-live-hero {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: minmax(250px, 1.1fr) minmax(240px, 1fr) 132px;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 7px;
+  border-top: 1px solid var(--bevel-light);
+  border-bottom: 1px solid #111;
+  background: var(--face-2);
+}
+
+.paint-live-hero.active {
+  background: #102817;
+  box-shadow: inset 0 0 0 1px #26783b;
+}
+
+.paint-live-hero.active .paint-live-state > div > b {
+  color: #2cff5b;
+}
+
+.paint-live-hero.starting {
+  background: #2b2815;
+}
+
+.paint-live-state {
+  min-width: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.paint-live-state > div,
+.paint-live-proof {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.paint-live-state b,
+.paint-live-proof b {
+  letter-spacing: 0.04em;
+}
+
+.paint-live-state small,
+.paint-live-proof span,
+.paint-live-proof a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paint-live-beacon {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #6b6b6b;
+  box-shadow: 0 0 0 1px #000;
+}
+
+.paint-live-hero.active .paint-live-beacon {
+  background: #2cff5b;
+  box-shadow: 0 0 0 1px #000, 0 0 7px #2cff5b;
+  animation: live-pulse 1.15s steps(2, end) infinite;
+}
+
+.paint-live-hero.starting .paint-live-beacon {
+  background: #ffe55a;
+}
+
+@keyframes live-pulse {
+  50% { opacity: 0.45; }
+}
+
+.paint-live-proof {
+  padding-left: 10px;
+  border-left: 1px solid #555;
+}
+
+.paint-live-hero.active .paint-live-proof {
+  border-left-color: #26783b;
+}
+
+.paint-proof-line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.paint-proof-line.remote b {
+  color: #5feddf;
+}
+
+.paint-proof-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paint-live-hero-button {
+  width: 132px;
+  min-height: 32px;
+}
+
+.paint-live-hero-button.active {
+  font-weight: 700;
+  outline: 1px solid #2cff5b;
+  outline-offset: -3px;
 }
 
 .paint-main {
@@ -1164,12 +1293,6 @@ button:disabled {
 
 .paint-action-buttons .r3-button {
   flex: 1 1 0;
-}
-
-.paint-live-button.active {
-  font-weight: 700;
-  outline: 1px solid var(--accent);
-  outline-offset: -3px;
 }
 
 .paint-status {
@@ -1508,6 +1631,12 @@ button:disabled {
   color: var(--text);
   background: var(--face);
   text-decoration: none;
+}
+
+.wallet-chooser-error {
+  margin: 2px 0 0;
+  color: #FEC343;
+  line-height: 1.3;
 }
 
 .background-picker {
@@ -1959,6 +2088,20 @@ button:disabled {
 
 .xray-section h3 {
   margin: 0 0 6px;
+}
+
+.xray-proof-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  margin: 4px 0 6px;
+  padding: 5px 7px;
+  background: var(--field);
+}
+
+.xray-proof-row code {
+  color: var(--accent);
 }
 
 .xray-timeline {
@@ -3278,7 +3421,9 @@ button:disabled {
 
 @media (prefers-reduced-motion: reduce) {
   .assistant.dozing .assistant-pic,
-  .assistant.hopping .assistant-pic {
+  .assistant.hopping .assistant-pic,
+  .paint-live-hero.active .paint-live-beacon,
+  .tray-live-dot {
     animation: none !important;
     transform: none !important;
   }
@@ -3367,5 +3512,19 @@ button:disabled {
 
   .boot-prefetch-row small {
     display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .paint-live-hero {
+    grid-template-columns: 1fr auto;
+  }
+
+  .paint-live-proof {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding: 4px 0 0;
+    border-left: 0;
+    border-top: 1px solid #555;
   }
 }

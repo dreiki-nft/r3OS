@@ -150,7 +150,7 @@ export function refreshLiveStatus(owner = snapshot.owner, forceProfile = false) 
   return run
 }
 
-/** Update the visible burner balance from a transition whose receipt already confirmed. */
+/** Update the visible burner balance from a transition whose receipt this browser already observed. */
 export function confirmBurnerBalance(owner: Address, balance: bigint) {
   if (!sameOwner(owner, snapshot.owner)) return
   emit({ balance })
@@ -159,7 +159,7 @@ export function confirmBurnerBalance(owner: Address, balance: bigint) {
 /**
  * Commit a session we just saw succeed in a transaction receipt. The receipt is stronger evidence than an
  * immediate follow-up read from another public RPC, which may briefly lag the accepted block. We still
- * refresh from chain afterward, but Live Mode should become active from the confirmed receipt immediately.
+ * refresh from chain afterward, but Live Mode should become active from the observed receipt immediately.
  */
 export function confirmLiveSessionStarted(owner: Address, message: StartSessionMessage) {
   ensureStarted()

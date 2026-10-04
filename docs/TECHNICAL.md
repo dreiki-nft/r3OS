@@ -499,8 +499,8 @@ Before mainnet:
 - **Engineering / contracts:** core and add-on architecture complete; direct UI for superseded experiments retired.
 - **Performance:** boot prefetch, shared caches, local burner signing, action-RPC settlement and receipt-first UI are complete and measured in DXDIAG.
 - **Phase 6:** cold-user / judge path plus repository hygiene complete.
-- **Phase 7 (next):** Live Mode hero pass: unmistakable LIVE state, two-browser collaborative demo, remote propagation proof, explorer/DXDIAG proof and demo choreography.
-- **Phase 8:** mainnet rehearsal, real community activity, final metrics, demo recording and Metropolis submission.
+- **Phase 7:** Live Mode hero pass implemented: persistent LIVE state, connect→quick-start handoff, two-browser remote-stroke proof, explorer/X-ray links, DXDIAG remote-event timing and demo choreography.
+- **Phase 8 (next):** mainnet rehearsal, real community activity, final metrics, demo recording and Metropolis submission.
 
 The product direction is deliberately narrower than the historical experiment set: the shared canvas and continuous onchain interaction are the centerpiece.
 

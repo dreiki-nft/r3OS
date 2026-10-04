@@ -198,14 +198,14 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
     return {
       name: 'ActionBalanceSyncTimeout',
       message:
-        'the funding transaction confirmed, but the action RPCs have not caught up to the burner balance yet. wait a moment before retrying Live Mode.',
+        'the funding receipt arrived, but the action RPCs have not caught up to the burner balance yet. wait a moment before retrying Live Mode.',
     }
   }
   if (message === 'ACTION_FUNDING_SETTLEMENT_TIMEOUT') {
     return {
       name: 'ActionFundingSettlementTimeout',
       message:
-        'the burner funding confirmed, but the action RPCs are still catching up. r3tardOS stopped before starting the session; wait a moment and try Live Mode again.',
+        'the burner funding receipt arrived, but the action RPCs are still catching up. r3tardOS stopped before starting the session; wait a moment and try Live Mode again.',
     }
   }
   if (message === 'ACTION_RECEIPT_TIMEOUT') {

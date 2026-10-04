@@ -726,7 +726,7 @@ export function CDBurnerProgram() {
             <small>
               {txState === 'signing'
                 ? 'waiting for your wallet signature'
-                : 'transaction sent · waiting for confirmation'}
+                : 'transaction sent · waiting for receipt'}
             </small>
           </div>
         </div>

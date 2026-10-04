@@ -33,7 +33,7 @@ const pages: Record<HelpSlug, ReactNode> = {
       </li>
       <li>
         <b>try Live Mode</b> when you want the Monad demo. authorize and fund the capped browser session once;
-        after that, confirmed strokes land without a wallet popup per stroke. Live Mode has no Undo.
+        after that, strokes are sent without a wallet popup per stroke. Live Mode has no Undo.
       </li>
       <li>
         <b>save a frame</b>: in Paint, File › Save frame…. it becomes an NFT in <b>My Frames</b>.
@@ -205,8 +205,9 @@ const pages: Record<HelpSlug, ReactNode> = {
   ),
   xray: (
     <p>
-      follows your last transaction from the click to final: which block it landed in, the gas limit you paid
-      for versus the gas it used, and which parts of the canvas it touched.
+      follows your last transaction from click to receipt, plus Monad Proposed / Voted / Finalized signals when
+      the connected RPC exposes them: which block it landed in, the gas limit you paid for versus the gas it
+      used, and which parts of the canvas it touched.
     </p>
   ),
   dxdiag: (
@@ -242,13 +243,19 @@ const pages: Record<HelpSlug, ReactNode> = {
   'live-mode': (
     <>
       <p>
-        stop confirming every stroke. Live mode makes a burner key in this browser that can only paint (and
-        claim quests), for a limited time and a limited number of pixels.
+        stop confirming every stroke. Live Mode authorizes a capped browser key for paint-only actions, for a
+        limited time and a limited number of units. strokes still go through the Paint contract; live WebSocket updates can be speculative until the block advances through Monad commitment states.
       </p>
       <p>
-        <b>quick start</b> (Paint › File › Live mode…): your wallet asks twice, once to sign the session and
-        once to send the burner a little MON for gas. after that, paints land with no popups for about 2
-        hours. if the burner still has MON from last time, it's only one prompt.
+        press <b>Start Live Mode</b> in Paint. if you are disconnected, choose the wallet there and quick start
+        continues automatically. the wallet signs the session once and, when needed, sends the burner a little
+        MON for gas. after that, strokes need no wallet popup. if the burner still has enough MON, setup is one
+        wallet prompt.
+      </p>
+      <p>
+        Live Mode has <b>no Undo</b>: once a stroke is sent, the app does not keep a local undo history for it. the green LIVE strip and taskbar
+        badge stay visible while the session is active, and Paint shows your receipt/block inclusion proof plus fresh
+        strokes arriving from other browsers.
       </p>
       <p>
         the burner can't mint frames, claim the Pass, recycle or move your tokens. end the session, and get

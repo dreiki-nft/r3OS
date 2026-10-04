@@ -99,11 +99,16 @@ export function Tray() {
             body:
               `${chainName} · chain ${wallet.chainId ?? '—'}\n${wallet.account ?? 'not connected'}\n` +
               `${formattedBalance()}\nRPC ${block.mode}`,
-            href: wallet.balance === 0n ? 'https://docs.monad.xyz' : undefined,
+            href:
+              wallet.balance === 0n
+                ? wallet.chainId === 10143
+                  ? 'https://faucet.monad.xyz'
+                  : 'https://docs.monad.xyz'
+                : undefined,
             hrefLabel:
               wallet.balance === 0n
                 ? wallet.chainId === 10143
-                  ? 'testnet faucet / Monad docs'
+                  ? 'Monad testnet faucet'
                   : 'Monad docs'
                 : undefined,
           })
@@ -113,6 +118,7 @@ export function Tray() {
       </button>
       {activeLive && live.session && live.burner && (
         <button
+          className="tray-live"
           aria-label="Live mode status"
           onClick={() => {
             if (liveOpen) {
@@ -134,7 +140,9 @@ export function Tray() {
             })
           }}
         >
-          <Icon name="key" size={20} colour="#5FEDDF" />
+          <span className="tray-live-dot" aria-hidden="true" />
+          <b>LIVE</b>
+          <Icon name="key" size={16} colour="#5FEDDF" />
         </button>
       )}
       {unreadPaint.length > 0 && (
