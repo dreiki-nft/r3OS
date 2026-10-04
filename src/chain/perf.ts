@@ -14,6 +14,13 @@ export type PerfKind =
   | 'ui-settle'
   | 'paint-stream'
   | 'remote-paint'
+  | 'input-preview'
+  | 'paint-edit'
+  | 'canvas-raster'
+  | 'canvas-overlay'
+  | 'event-decode'
+  | 'event-apply'
+  | 'main-thread'
 
 export interface PerfSample {
   id: number
@@ -47,6 +54,8 @@ let snapshot: PerfSnapshot = { version: 0, samples: [] }
 const listeners = new Set<Listener>()
 const pendingProgramOpen = new Map<string, number>()
 const pendingProgramReady = new Map<string, number>()
+const sampledCounters = new Map<string, number>()
+let browserPerfObserver: PerformanceObserver | undefined
 
 function now() {
   return typeof performance === 'undefined' ? Date.now() : performance.now()
@@ -67,6 +76,18 @@ export function recordPerf(kind: PerfKind, label: string, ms: number) {
     at: Date.now(),
   }
   emit([...snapshot.samples.slice(-(MAX_SAMPLES - 1)), sample])
+}
+
+export function recordPerfSampled(kind: PerfKind, label: string, ms: number, every = 8) {
+  if (!Number.isFinite(ms) || ms < 0) return
+  if (every <= 1) {
+    recordPerf(kind, label, ms)
+    return
+  }
+  const key = `${kind}:${label}`
+  const count = (sampledCounters.get(key) ?? 0) + 1
+  sampledCounters.set(key, count)
+  if (count === 1 || count % every === 0) recordPerf(kind, label, ms)
 }
 
 export function startPerf(kind: PerfKind, label: string) {
@@ -99,6 +120,19 @@ export function markProgramDataReady(id: string) {
   recordPerf('program-ready', id, now() - started)
 }
 
+export function startBrowserPerfObserver() {
+  if (browserPerfObserver || typeof PerformanceObserver === 'undefined') return
+  if (!PerformanceObserver.supportedEntryTypes?.includes('longtask')) return
+  try {
+    browserPerfObserver = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) recordPerf('main-thread', 'long task', entry.duration)
+    })
+    browserPerfObserver.observe({ type: 'longtask', buffered: true })
+  } catch {
+    browserPerfObserver = undefined
+  }
+}
+
 export function getPerfSnapshot() {
   return snapshot
 }
@@ -111,6 +145,7 @@ export function subscribePerf(listener: Listener) {
 export function clearPerf() {
   pendingProgramOpen.clear()
   pendingProgramReady.clear()
+  sampledCounters.clear()
   emit([])
 }
 
@@ -161,8 +196,11 @@ export function formatPerfReport(input: PerfSnapshot = snapshot) {
 
 export function __resetPerfForTests() {
   nextId = 1
+  browserPerfObserver?.disconnect()
+  browserPerfObserver = undefined
   pendingProgramOpen.clear()
   pendingProgramReady.clear()
+  sampledCounters.clear()
   snapshot = { version: 0, samples: [] }
   listeners.clear()
 }

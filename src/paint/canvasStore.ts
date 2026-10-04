@@ -1,5 +1,5 @@
 import { hexToBytes, type Hex, type Log } from 'viem'
-import { startPerf } from '../chain/perf'
+import { recordPerf, recordPerfSampled } from '../chain/perf'
 import { publicClient, wsClient } from '../chain/clients'
 import { readMany } from '../chain/readMany'
 import { config } from '../chain/config'
@@ -292,16 +292,24 @@ async function seedCanonicalOverlap(latest: bigint) {
 
 async function applyDeliveredLogs(
   logs: readonly CoreLog[],
-  options: { advanceSnapshot?: boolean; observedAt?: number; source?: 'websocket' } = {},
+  options: { advanceSnapshot?: boolean; observedAt?: number; source?: 'websocket'; onPaint?: () => void } = {},
 ) {
   if (!logs.length) return false
   const advanceSnapshot = options.advanceSnapshot ?? true
   let needsReload = false
+  let canvasChanged = false
+  let decodedPaints = 0
+  let decodeMs = 0
+  let applyMs = 0
+  const profileWebsocket = options.source === 'websocket'
+  const perfNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
   for (const log of sortLogs(logs)) {
     const key = coreLogKey(log)
     if (key && appliedLogKeys.has(key)) continue
     rememberLog(log)
+    const decodeStarted = profileWebsocket ? perfNow() : 0
     const decoded = decodeCoreLog(log)
+    if (profileWebsocket) decodeMs += perfNow() - decodeStarted
     if (!decoded) continue
     const eventName = decoded.eventName
     const args = decoded.args as Record<string, unknown>
@@ -313,6 +321,9 @@ async function applyDeliveredLogs(
     }
     if (outlineChange(eventName)) needsReload = true
     if (eventName === 'Painted') {
+      decodedPaints++
+      options.onPaint?.()
+      const applyStarted = profileWebsocket ? perfNow() : 0
       const season = BigInt(args.season as bigint)
       if (season !== snapshot.season) {
         needsReload = true
@@ -321,6 +332,7 @@ async function applyDeliveredLogs(
         const corruptions = hexToBytes(args.corruptions as Hex)
         const background = applyPainted(snapshot.background, snapshot.outline, runsBytes, corruptions)
         snapshot = { ...snapshot, background, working: preservePending(background) }
+        canvasChanged = true
         markTilesStale(tilesTouchedByPainted(runsBytes, corruptions))
       }
       const owner = String(args.owner ?? '')
@@ -330,7 +342,9 @@ async function applyDeliveredLogs(
           ...snapshot,
           renderProbe: { key, observedAt: options.observedAt, owner: owner.toLowerCase() },
         }
+        canvasChanged = true
       }
+      if (profileWebsocket) applyMs += perfNow() - applyStarted
       emitActivity({
         ...common,
         owner,
@@ -340,9 +354,11 @@ async function applyDeliveredLogs(
       })
     } else if (eventName === 'FaceChanged') {
       snapshot = { ...snapshot, face: Number(args.color) }
+      canvasChanged = true
       emitActivity({ ...common, owner: String(args.owner ?? '') })
     } else if (eventName === 'BackgroundChanged') {
       snapshot = { ...snapshot, backgroundColor: Number(args.color) }
+      canvasChanged = true
       emitActivity({ ...common, owner: String(args.owner ?? '') })
     } else if (eventName === 'FrameMinted') {
       emitActivity({
@@ -383,9 +399,14 @@ async function applyDeliveredLogs(
     }
     if (advanceSnapshot && log.blockNumber > snapshot.snapshotBlock) {
       snapshot = { ...snapshot, snapshotBlock: log.blockNumber }
+      canvasChanged = true
     }
   }
-  emitCanvas()
+  if (profileWebsocket && decodedPaints > 0) {
+    recordPerfSampled('event-decode', 'websocket Paint log decode', decodeMs, 4)
+    recordPerfSampled('event-apply', 'Paint replay → canvas store', applyMs, 4)
+  }
+  if (canvasChanged) emitCanvas()
   return needsReload
 }
 
@@ -506,18 +527,19 @@ export function catchUp(targetBlock?: bigint) {
 async function onSubscriptionLogs(logs: readonly unknown[]) {
   const observedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
   const typed = logs as CoreLog[]
-  const freshPaint = typed.some((log) => {
-    const key = coreLogKey(log)
-    if (key && appliedLogKeys.has(key)) return false
-    return decodeCoreLog(log)?.eventName === 'Painted'
+  let freshPaint = false
+  const needsReload = await applyDeliveredLogs(typed, {
+    observedAt,
+    source: 'websocket',
+    onPaint: () => {
+      freshPaint = true
+    },
   })
-  const stopRemote = freshPaint ? startPerf('paint-stream', 'websocket Paint event → canvas store') : undefined
-  try {
-    const needsReload = await applyDeliveredLogs(typed, { observedAt, source: 'websocket' })
-    if (needsReload) await loadCanvas()
-  } finally {
-    stopRemote?.()
+  if (freshPaint) {
+    const storedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
+    recordPerf('paint-stream', 'websocket Paint event → canvas store', Math.max(0, storedAt - observedAt))
   }
+  if (needsReload) await loadCanvas()
 }
 
 export async function reconcileSpeculativeNow() {

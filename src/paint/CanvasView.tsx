@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent } from 'react'
+import { recordPerfSampled } from '../chain/perf'
 import { PALETTE } from '../lib/palette'
 import type { Point } from '../lib/paintEngine'
 import type { TilePreviewState } from './cost'
@@ -22,6 +23,8 @@ interface CanvasViewProps {
   focus?: { id: number; box: Box }
   /** live remote event whose pixels should be visible after this draw effect completes */
   renderProbe?: { key: string; observedAt: number }
+  /** which pointer transition is expected to mutate pixels, for local input → rendered-canvas timing */
+  previewInputMode?: 'down' | 'stroke' | 'up'
   onRenderProbe?: (key: string, latencyMs: number) => void
   onDown: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
   onMove: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
@@ -44,6 +47,7 @@ export function CanvasView({
   pings,
   focus,
   renderProbe,
+  previewInputMode,
   onRenderProbe,
   onDown,
   onMove,
@@ -53,6 +57,8 @@ export function CanvasView({
   const ref = useRef<HTMLCanvasElement>(null)
   const well = useRef<HTMLDivElement>(null)
   const renderedProbe = useRef<string | undefined>(undefined)
+  const pendingPaintInputAt = useRef<number | undefined>(undefined)
+  const perfNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
 
   useEffect(() => {
     const host = well.current
@@ -69,6 +75,7 @@ export function CanvasView({
     const context = canvas.getContext('2d')
     if (!context) return
 
+    const rasterStarted = perfNow()
     const image = context.createImageData(256, 256)
     for (let index = 0; index < pixels.length; index++) {
       const paletteIndex = outline[index] ? face : pixels[index] === 0 ? background : pixels[index]
@@ -105,7 +112,15 @@ export function CanvasView({
       }
     }
     context.putImageData(image, 0, 0)
+    const rasterEnded = perfNow()
+    recordPerfSampled(
+      'canvas-raster',
+      showHeat ? '256×256 raster + heat' : '256×256 raster',
+      rasterEnded - rasterStarted,
+      8,
+    )
 
+    const overlayStarted = rasterEnded
     if (selection) {
       context.save()
       context.setLineDash([2, 2])
@@ -148,9 +163,19 @@ export function CanvasView({
       }
     }
 
+    const renderedAt = perfNow()
+    if (selection || pings?.length || (grid && zoom >= 4)) {
+      recordPerfSampled('canvas-overlay', 'selection/pings/grid', renderedAt - overlayStarted, 8)
+    }
+
+    const inputAt = pendingPaintInputAt.current
+    if (inputAt != null) {
+      pendingPaintInputAt.current = undefined
+      recordPerfSampled('input-preview', 'pointer event → rendered canvas', Math.max(0, renderedAt - inputAt), 4)
+    }
+
     if (renderProbe && renderProbe.key !== renderedProbe.current) {
       renderedProbe.current = renderProbe.key
-      const renderedAt = typeof performance === 'undefined' ? Date.now() : performance.now()
       onRenderProbe?.(renderProbe.key, Math.max(0, renderedAt - renderProbe.observedAt))
     }
   }, [
@@ -179,7 +204,14 @@ export function CanvasView({
     }
   }
 
-  const finish = (event: PointerEvent<HTMLCanvasElement>) => onUp(point(event), event)
+  const markPaintInput = () => {
+    pendingPaintInputAt.current ??= perfNow()
+  }
+
+  const finish = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (previewInputMode === 'up') markPaintInput()
+    onUp(point(event), event)
+  }
 
   return (
     <div
@@ -196,11 +228,13 @@ export function CanvasView({
         style={{ width: 256 * zoom, height: 256 * zoom }}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
+          if (previewInputMode === 'down' || previewInputMode === 'stroke') markPaintInput()
           onDown(point(event), event)
         }}
         onPointerMove={(event) => {
           const next = point(event)
           onHover(next)
+          if (event.buttons && previewInputMode === 'stroke') markPaintInput()
           onMove(next, event)
         }}
         onPointerUp={finish}

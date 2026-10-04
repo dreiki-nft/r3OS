@@ -18,7 +18,7 @@ import { config } from '../chain/config'
 import { demoConstants, discoverContracts, readCoreConstants } from '../chain/contracts'
 import { friendlyError } from '../chain/errors'
 import { parseManualIds, resolveHolderIds } from '../chain/holders'
-import { markProgramDataReady, recordPerf, startPerf } from '../chain/perf'
+import { markProgramDataReady, recordPerf, recordPerfSampled, startPerf } from '../chain/perf'
 import { quoteAction, sendAction, type ActionOptions, type ActionQuote } from '../chain/tx'
 import {
   connectWallet,
@@ -222,6 +222,15 @@ export function PaintProgram() {
       ),
     [canvas.background, canvas.working, canvas.outline, tileStates, constants.MAX_TILE_HEAT],
   )
+  const previewInputMode =
+    tool === 'fill'
+      ? 'down'
+      : tool === 'pencil' || tool === 'brush' || tool === 'eraser'
+        ? 'stroke'
+        : tool === 'line' || tool === 'rect' || tool === 'ellipse'
+          ? 'up'
+          : undefined
+
   const reason = cost.overheatTiles.length
     ? overheatReason(cost.overheat, constants, block.blockTimeMs)
     : cost.units > budget.total
@@ -591,6 +600,7 @@ export function PaintProgram() {
   }
 
   const startStroke = (point: Point) => {
+    const editStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
     pushUndo()
     const next = canvas.working.slice()
     drawStrokeSegment(next, point, point, tool as 'pencil' | 'brush' | 'eraser', colour, size)
@@ -599,10 +609,13 @@ export function PaintProgram() {
     strokeBuffer.current = next
     recordPendingTiles([tileFor(point)])
     scheduleWorking(next)
+    const editEnded = typeof performance === 'undefined' ? Date.now() : performance.now()
+    recordPerfSampled('paint-edit', 'stroke mutation + protection', editEnded - editStarted, 8)
   }
 
   const continueStroke = (point: Point) => {
     if (!strokeLast.current || !strokeBuffer.current) return
+    const editStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
     const before = strokeBuffer.current.slice()
     drawStrokeSegment(
       strokeBuffer.current,
@@ -616,6 +629,8 @@ export function PaintProgram() {
     recordPendingTiles(tilesFromDiff(before, strokeBuffer.current))
     strokeLast.current = point
     scheduleWorking(strokeBuffer.current)
+    const editEnded = typeof performance === 'undefined' ? Date.now() : performance.now()
+    recordPerfSampled('paint-edit', 'stroke mutation + protection', editEnded - editStarted, 8)
   }
 
   const endStroke = () => {
@@ -1218,6 +1233,7 @@ export function PaintProgram() {
           pings={presence.pings}
           focus={presence.focus}
           renderProbe={remoteRenderProbe}
+          previewInputMode={previewInputMode}
           onRenderProbe={recordRemoteRender}
           onDown={onDown}
           onMove={onMove}

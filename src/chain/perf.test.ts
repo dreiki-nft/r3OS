@@ -8,6 +8,7 @@ import {
   markProgramMounted,
   markProgramOpen,
   recordPerf,
+  recordPerfSampled,
   summarizePerf,
 } from './perf'
 
@@ -29,6 +30,17 @@ describe('performance measurements', () => {
       max: 100,
     })
     expect(rows.find((row) => row.key === 'quote:mintFrame')?.p50).toBe(7)
+  })
+
+
+
+  it('samples hot-path measurements without flooding the local timing store', () => {
+    for (const ms of [1, 2, 3, 4, 5, 6, 7, 8, 9]) recordPerfSampled('canvas-raster', 'paint', ms, 4)
+    expect(getPerfSnapshot().samples.map((sample) => sample.ms)).toEqual([1, 4, 8])
+
+    clearPerf()
+    recordPerfSampled('canvas-raster', 'paint', 10, 4)
+    expect(getPerfSnapshot().samples.map((sample) => sample.ms)).toEqual([10])
   })
 
   it('measures first program open to mounted and ignores unmatched mounts', () => {
