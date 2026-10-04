@@ -57,6 +57,7 @@ import { useWindowActive } from '../os/Window'
 import { closeWindow } from '../os/windows'
 import { regionsFromRunList } from '../xray/regions'
 import { BudgetMeter, type BudgetState } from './BudgetMeter'
+import { spendObservedBudget } from './budget'
 import { CanvasView } from './CanvasView'
 import {
   agoLabel,
@@ -189,6 +190,7 @@ export function PaintProgram() {
   const strokeQueueRef = useRef<ReturnType<typeof createStrokeQueue> | undefined>(undefined)
   const liveQuoteRef = useRef<{ hex: string; quote: Promise<ActionQuote> } | undefined>(undefined)
   const paintQuoteHexRef = useRef<string | undefined>(undefined)
+  const budgetReconcileTimer = useRef<number | undefined>(undefined)
   if (!strokeQueueRef.current) {
     strokeQueueRef.current = createStrokeQueue(() => paintChunksRef.current(false))
   }
@@ -197,6 +199,10 @@ export function PaintProgram() {
   const redoStackRef = useRef<Uint8Array[]>([])
   const holderKey = useMemo(() => holderIds.map(String).join(','), [holderIds])
   const stableHolderIds = useMemo(() => holderKey.split(',').filter(Boolean).map(BigInt), [holderKey])
+  const budgetKey = wallet.account ? `${wallet.account.toLowerCase()}:${holderKey}` : ''
+  const budgetKeyRef = useRef(budgetKey)
+  const budgetRefreshInFlight = useRef<{ key: string; promise: Promise<void> } | undefined>(undefined)
+  budgetKeyRef.current = budgetKey
   const patch = useMemo(
     () => encodeChangedRuns(canvas.background, canvas.working),
     [canvas.background, canvas.working],
@@ -379,29 +385,49 @@ export function PaintProgram() {
     void refreshHolderIds()
   }, [refreshHolderIds])
 
-  const refreshBudget = useCallback(async () => {
-    if (!wallet.account || !publicClient || !config.paintAddress) return
-    try {
-      const values = (await publicClient.readContract({
-        address: config.paintAddress,
-        abi: R3OS_PAINT_ABI,
-        functionName: 'budgetOf',
-        args: [wallet.account, stableHolderIds],
-      })) as readonly bigint[]
-      setBudget({
-        hourly: Number(values[0]),
-        holder: Number(values[1]),
-        total: Number(values[2]),
-        hourlyLimit: Number(values[3]),
-        activeDays: Number(values[4]),
-      })
-    } catch {
-      // Stale ids are corrected by the next holder refresh.
-    }
+  const refreshBudget = useCallback(() => {
+    if (!wallet.account || !publicClient || !config.paintAddress) return Promise.resolve()
+    const requestKey = `${wallet.account.toLowerCase()}:${holderKey}`
+    if (budgetRefreshInFlight.current?.key === requestKey) return budgetRefreshInFlight.current.promise
+
+    const owner = wallet.account
+    const holderIds = stableHolderIds
+    const pending = (async () => {
+      try {
+        const values = (await publicClient.readContract({
+          address: config.paintAddress!,
+          abi: R3OS_PAINT_ABI,
+          functionName: 'budgetOf',
+          args: [owner, holderIds],
+        })) as readonly bigint[]
+        if (budgetKeyRef.current !== requestKey) return
+        setBudget({
+          hourly: Number(values[0]),
+          holder: Number(values[1]),
+          total: Number(values[2]),
+          hourlyLimit: Number(values[3]),
+          activeDays: Number(values[4]),
+        })
+      } catch {
+        // Stale ids are corrected by the next holder refresh.
+      }
+    })().finally(() => {
+      if (budgetRefreshInFlight.current?.promise === pending) budgetRefreshInFlight.current = undefined
+    })
+    budgetRefreshInFlight.current = { key: requestKey, promise: pending }
+    return pending
   }, [wallet.account, holderKey])
 
   useEffect(() => {
     void refreshBudget()
+  }, [refreshBudget])
+
+  const scheduleBudgetReconcile = useCallback(() => {
+    if (budgetReconcileTimer.current != null) window.clearTimeout(budgetReconcileTimer.current)
+    budgetReconcileTimer.current = window.setTimeout(() => {
+      budgetReconcileTimer.current = undefined
+      void refreshBudget()
+    }, 1_200)
   }, [refreshBudget])
 
   useEffect(
@@ -409,11 +435,22 @@ export function PaintProgram() {
       subscribeCanvasActivity((activity) => {
         if (!wallet.account) return
         const account = wallet.account.toLowerCase()
-        if (activity.owner?.toLowerCase() === account || activity.minter?.toLowerCase() === account) {
-          void refreshBudget()
+        if (activity.eventName === 'Painted' && activity.owner?.toLowerCase() === account) {
+          const units = activity.units
+          if (units != null) setBudget((current) => spendObservedBudget(current, units))
+          // The event already tells us exactly how many units the contract spent. Mirror it locally so a
+          // rapid Live burst does not issue budgetOf after every stroke; one delayed read repairs any drift.
+          scheduleBudgetReconcile()
         }
       }),
-    [wallet.account, refreshBudget],
+    [wallet.account, scheduleBudgetReconcile],
+  )
+
+  useEffect(
+    () => () => {
+      if (budgetReconcileTimer.current != null) window.clearTimeout(budgetReconcileTimer.current)
+    },
+    [],
   )
 
   useEffect(() => {
@@ -867,7 +904,6 @@ export function PaintProgram() {
           await settleInFlightFromReceipt(inFlight, result.receipt.logs, result.blockNumber)
           stopSettle()
           if (liveQuoteRef.current?.hex === patch.hex) liveQuoteRef.current = undefined
-          void refreshBudget()
           let corruptions = new Uint8Array()
           let frameId: bigint | undefined
           for (const log of result.receipt.logs) {

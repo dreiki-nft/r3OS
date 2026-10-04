@@ -21,12 +21,12 @@ describe('boot prefetch state', () => {
     const input = snap([
       task('programs', true, 'done'),
       task('rpc', true, 'error'),
-      task('account', true, 'skipped'),
+      task('account', false, 'running'),
       task('art', false, 'running'),
     ])
     expect(bootPrefetchReady(input)).toBe(true)
     expect(bootPrefetchComplete(input)).toBe(false)
-    expect(bootPrefetchProgress(input)).toEqual({ done: 3, total: 3 })
+    expect(bootPrefetchProgress(input)).toEqual({ done: 2, total: 2 })
   })
 
   it('keeps the desktop gated while a critical task is still running', () => {
@@ -38,7 +38,7 @@ describe('boot prefetch state', () => {
   it('shows critical rows plus any background work that is actively running', () => {
     const input = snap([
       task('programs', true, 'done'),
-      task('account', true, 'running'),
+      task('account', false, 'running'),
       task('art', false, 'pending'),
       task('other', false, 'running'),
     ])

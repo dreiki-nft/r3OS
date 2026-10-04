@@ -48,7 +48,7 @@ const TASKS: readonly Omit<BootPrefetchTask, 'state'>[] = [
   { id: 'rpc', label: 'Action RPC ranking', critical: true },
   { id: 'fees', label: 'Transaction fees', critical: true },
   { id: 'wallet', label: 'Wallet restore', critical: true },
-  { id: 'account', label: 'Account data', critical: true },
+  { id: 'account', label: 'Account data', critical: false },
   { id: 'art', label: 'Recent frame art', critical: false },
   { id: 'media', label: 'Recent Labs media', critical: false },
   { id: 'diagnostics', label: 'System diagnostics', critical: false },
@@ -455,7 +455,10 @@ export function startBootPrefetch() {
       if (sameAccount(pendingAccount, owner)) pendingAccount = undefined
     })
 
-    const critical = [programs, wallet, network, contracts, canvas, frames, chainReady, rpc, fees, account]
+    // Account discovery can be much slower than the shared system state and is not required to render
+    // or use the desktop. Release the boot gate as soon as the core is hot; wallet-specific frames, pass,
+    // quests and Labs ownership continue in the background instead of making boot depend on provider timing.
+    const critical = [programs, wallet, network, contracts, canvas, frames, chainReady, rpc, fees]
     await Promise.allSettled(critical)
     const criticalMs = now() - bootStarted
     recordPerf('boot-prefetch', 'boot-critical', criticalMs)
@@ -465,22 +468,22 @@ export function startBootPrefetch() {
     pendingAccount = undefined
     if (queuedOwner && sameAccount(getWalletSnapshot().account, queuedOwner)) schedulePostConnectWarm(queuedOwner)
 
-    // Optional work never competes with critical startup. Hand it to the browser's idle lane after
-    // readiness; if the desktop already appeared because of the cap, this remains bounded background work.
-    if (!optionalOwner) {
-      skipTask('art', 'no account data')
-      skipTask('media', 'no account data')
-    }
-    const owner = optionalOwner
-    const framesToWarm = optionalFrames
-    void waitForIdle()
-      .then(() =>
-        Promise.allSettled([
-          warmDiagnostics(),
-          ...(owner ? [warmRecentFrameArt(framesToWarm), warmRecentMedia(owner)] : []),
-        ]),
-      )
-      .then(() => emit(snapshot.tasks, { finishedAt: Date.now() }))
+    // Optional work never competes with critical startup. Account warming was already launched above, but
+    // it no longer owns the splash screen. Once it settles, recent account media can use the idle lane.
+    void Promise.allSettled([account]).then(async () => {
+      const owner = optionalOwner
+      const framesToWarm = optionalFrames
+      if (!owner) {
+        skipTask('art', 'no account data')
+        skipTask('media', 'no account data')
+      }
+      await waitForIdle()
+      await Promise.allSettled([
+        warmDiagnostics(),
+        ...(owner ? [warmRecentFrameArt(framesToWarm), warmRecentMedia(owner)] : []),
+      ])
+      emit(snapshot.tasks, { finishedAt: Date.now() })
+    })
   })()
 
   return started
