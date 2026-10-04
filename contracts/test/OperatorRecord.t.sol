@@ -2,15 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {Test, Vm} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
-import {R3tardsPageExe} from "../src/monadhw/R3tardsPageExe.sol";
-import {R3tardsBlockCamera} from "../src/monadhw/R3tardsBlockCamera.sol";
-import {R3tardsKernelDebugger} from "../src/monadhw/R3tardsKernelDebugger.sol";
-import {R3tardsCardMemory} from "../src/monadcard/R3tardsCardMemory.sol";
-import {R3tardsOperatorRecord} from "../src/operator/R3tardsOperatorRecord.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
+import {R3OSPageExe} from "../src/monadhw/R3OSPageExe.sol";
+import {R3OSBlockCamera} from "../src/monadhw/R3OSBlockCamera.sol";
+import {R3OSKernelDebugger} from "../src/monadhw/R3OSKernelDebugger.sol";
+import {R3OSCardMemory} from "../src/monadcard/R3OSCardMemory.sol";
+import {R3OSOperatorRecord} from "../src/operator/R3OSOperatorRecord.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 import {MockMonadCard} from "./MockMonadCard.sol";
 
@@ -31,11 +31,11 @@ contract OperatorGasBurningSource {
 }
 
 contract OperatorWallet {
-    function paintOne(R3tardsPaint paint) external {
+    function paintOne(R3OSPaint paint) external {
         paint.paint(hex"08080804", new uint256[](0));
     }
 
-    function writeCard(R3tardsCardMemory cardMemory, uint256 cardId) external {
+    function writeCard(R3OSCardMemory cardMemory, uint256 cardId) external {
         bytes32[] memory words = new bytes32[](1);
         words[0] = bytes32("wallet");
         cardMemory.write(cardId, 1, words);
@@ -51,16 +51,16 @@ contract OperatorRecordTest is Test {
     address sessionKey;
 
     MockR3tards r3tards;
-    R3tardsPaint paint;
-    R3tardsLabs labs;
-    R3tardsPainterPass pass;
-    R3tardsQuests quests;
-    R3tardsPageExe page;
-    R3tardsBlockCamera camera;
-    R3tardsKernelDebugger kernel;
+    R3OSPaint paint;
+    R3OSLabs labs;
+    R3OSPainterPass pass;
+    R3OSQuests quests;
+    R3OSPageExe page;
+    R3OSBlockCamera camera;
+    R3OSKernelDebugger kernel;
     MockMonadCard monadCard;
-    R3tardsCardMemory cardMemory;
-    R3tardsOperatorRecord record;
+    R3OSCardMemory cardMemory;
+    R3OSOperatorRecord record;
 
     OperatorEmptySource flipbook;
     OperatorEmptySource weeds;
@@ -80,17 +80,17 @@ contract OperatorRecordTest is Test {
         vm.deal(bob, 100 ether);
 
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(block.timestamp), alice, royalty, 512, 0, 512, 16, 256
         );
-        labs = new R3tardsLabs(address(paint), royalty);
-        pass = new R3tardsPainterPass(address(paint));
-        quests = new R3tardsQuests(address(paint), uint64(block.timestamp), address(this));
-        page = new R3tardsPageExe();
+        labs = new R3OSLabs(address(paint), royalty);
+        pass = new R3OSPainterPass(address(paint));
+        quests = new R3OSQuests(address(paint), uint64(block.timestamp), address(this));
+        page = new R3OSPageExe();
         monadCard = new MockMonadCard();
-        cardMemory = new R3tardsCardMemory(address(monadCard));
-        camera = new R3tardsBlockCamera(address(paint), address(labs), address(cardMemory));
-        kernel = new R3tardsKernelDebugger();
+        cardMemory = new R3OSCardMemory(address(monadCard));
+        camera = new R3OSBlockCamera(address(paint), address(labs), address(cardMemory));
+        kernel = new R3OSKernelDebugger();
 
         flipbook = new OperatorEmptySource();
         weeds = new OperatorEmptySource();
@@ -128,8 +128,8 @@ contract OperatorRecordTest is Test {
         address auction_,
         address sleepwalker_,
         address recycleBin_
-    ) internal returns (R3tardsOperatorRecord out) {
-        R3tardsOperatorRecord.Sources memory sources = R3tardsOperatorRecord.Sources({
+    ) internal returns (R3OSOperatorRecord out) {
+        R3OSOperatorRecord.Sources memory sources = R3OSOperatorRecord.Sources({
             paint: address(paint),
             pass: address(pass),
             quests: address(quests),
@@ -145,7 +145,7 @@ contract OperatorRecordTest is Test {
             pageExe: address(page),
             cardMemory: address(cardMemory)
         });
-        out = new R3tardsOperatorRecord(sources);
+        out = new R3OSOperatorRecord(sources);
     }
 
     function testEveryUsedPredicateFlipsAtSpecifiedWord() public {
@@ -272,7 +272,7 @@ contract OperatorRecordTest is Test {
         record.record(alice);
         uint48 observedByStranger = record.firstObservedBlock(alice, 0);
 
-        R3tardsOperatorRecord second = _deployRecord(
+        R3OSOperatorRecord second = _deployRecord(
             address(flipbook),
             address(weeds),
             address(forks),
@@ -289,10 +289,10 @@ contract OperatorRecordTest is Test {
     function testBadSourcesNeverRevertFactsOrRecord() public {
         OperatorRevertingSource reverting = new OperatorRevertingSource();
         OperatorGasBurningSource burning = new OperatorGasBurningSource();
-        R3tardsOperatorRecord guarded =
+        R3OSOperatorRecord guarded =
             _deployRecord(address(burning), address(reverting), address(0), address(brushes), address(0), address(0), address(0));
 
-        R3tardsOperatorRecord.Facts memory f = guarded.facts(alice);
+        R3OSOperatorRecord.Facts memory f = guarded.facts(alice);
         assertFalse(_bit(f.answeredMask, 4));
         assertFalse(_bit(f.answeredMask, 5));
         assertFalse(_bit(f.answeredMask, 6));
@@ -456,7 +456,7 @@ contract OperatorRecordTest is Test {
         record.recordMany(ok);
 
         address[] memory tooMany = new address[](33);
-        vm.expectRevert(R3tardsOperatorRecord.TooMany.selector);
+        vm.expectRevert(R3OSOperatorRecord.TooMany.selector);
         record.recordMany(tooMany);
     }
 
@@ -574,7 +574,7 @@ contract OperatorRecordTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 verifyingContract

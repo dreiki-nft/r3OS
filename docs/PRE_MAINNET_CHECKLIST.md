@@ -18,6 +18,7 @@ Tools: the **Launch Doctor** (`RPC_URL="$MONAD_RPC_URL" npm run -s launch:doctor
 ## F1. Deployment
 
 - [ ] **Pixel budget immutables:** `BASE_PIXELS_PER_HOUR=512`, `PIXELS_PER_ACTIVE_DAY=32`, `MAX_PIXELS_PER_HOUR=2048`, `MIN_PIXELS_FOR_ACTIVE_DAY=16`, `HOLDER_PIXELS_PER_DAY=512`. Verify the exact env before `Deploy.s.sol`; these cannot be changed after deploy.
+- [ ] **Phase 7.5 partner bonuses:** source constants are Skrumpeys `0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0` +128 px/day and Monad Cards `0x0000CA12D5c07085022eBC74867157449919Fd67` +128 px/day, mainnet-only and once per current-holder wallet. Launch Doctor must report both `OK`.
 - [ ] Suite: `Deploy.s.sol` (Paint, Labs, Pass, renderers, nine Labs, quests).
 - [ ] CARD.DRV: `DeployMonadCard.s.sol` (official card `0x0000CA12D5c07085022eBC74867157449919Fd67` on 143; `MockMonadCard` on testnet).
 - [ ] Monad Hardware: `DeployMonadHW.s.sol` **with** `CARD_MEMORY_ADDRESS` (it is optional in the script; a missing value leaves Block Camera without CARD.DRV).
@@ -36,6 +37,8 @@ Tools: the **Launch Doctor** (`RPC_URL="$MONAD_RPC_URL" npm run -s launch:doctor
 ## F3. Immutables
 
 - [ ] Paint `R3TARDS`, `painterPass`, `ROYALTY_RECEIVER` / `ROYALTY_BPS` (5%), token #0 owner.
+- [ ] Fresh mainnet Paint is the Phase 7.5 `R3OSPaint` build: ERC-721 `r3OS paint` / `R3OSPAINT`, EIP-712 domain `r3OS paint` version `2`. Do **not** use the snapshot-28 testnet domain (`r3tards paint`) for chain 143.
+- [ ] Mainnet `SKRUMPEYS` / `MONAD_CARDS` constants match the two intended collections, both addresses have code, and both bonus constants equal `128`.
 - [ ] Labs `CORE`, `ROYALTY_RECEIVER` / `ROYALTY_BPS`; Pass `PAINT`; Quests `PAINT`.
 - [ ] CARD.DRV `MONAD_CARD` is the official card on 143 (Launch Doctor FAILs otherwise).
 - [ ] Block Camera `PAINT`, `LABS`, `CARD_MEMORY` match the live suite.
@@ -88,6 +91,8 @@ Run from `contracts/` with Foundry ≥ 1.8.3 after `npm ci` in the repo root, an
 
 - [ ] `MONAD_MAINNET_RPC=… CARD_ID=<id> forge test --match-contract MonadCardFork -vv` (2026-10-01: passed with card #307; transfers revert `Soulbound()`).
 - [ ] `MONAD_MAINNET_RPC=… forge test --match-contract RouterLabFork -vv` (2026-10-01: passed; all 5 WMON/USDC code hashes matched).
+- [ ] `cast code 0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty, and a known holder's `balanceOf(address)` succeeds.
+- [ ] `cast code 0x0000CA12D5c07085022eBC74867157449919Fd67 --rpc-url "$MONAD_MAINNET_RPC"` is non-empty, and a known holder's `balanceOf(address)` succeeds.
 
 ## F10. Oracle (MAINNET REQUIRED)
 

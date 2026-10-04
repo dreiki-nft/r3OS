@@ -4,7 +4,7 @@ import { publicClient } from '../chain/clients'
 import { config, deploymentScope } from '../chain/config'
 import { readMany, type ReadManyResult } from '../chain/readMany'
 import { idbGet, idbSet } from '../lib/idb'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { getActivityFeedSnapshot, subscribeCanvasActivity, type CanvasActivity } from '../paint/canvasStore'
 
 export interface FrameInfo {
@@ -365,14 +365,14 @@ export async function refreshFrameIndex(force = false) {
     const currentSeason = Number(
       await client.readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'currentSeason',
       }),
     )
     const values = (await readMany(
       Array.from({ length: currentSeason + 1 }, (_, season) => ({
         address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'seasonInfo',
         args: [BigInt(season)],
       })),
@@ -411,7 +411,7 @@ async function readFrameInfoFromChain(tokenId: number) {
     try {
       const raw = await publicClient.readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'frameInfo',
         args: [BigInt(tokenId)],
       })
@@ -463,7 +463,7 @@ export async function getFrameInfoBatch(tokenIds: readonly number[]) {
     const values = (await readMany(
       missing.map((tokenId) => ({
         address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'frameInfo',
         args: [BigInt(tokenId)],
       })),
@@ -492,7 +492,7 @@ export async function seasonTokenIds(season: SeasonSummary) {
   const regular = await readMany(
     Array.from({ length: season.regularFrames }, (_, index) => ({
       address: config.paintAddress!,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'seasonFrameToken',
       args: [BigInt(season.season), index + 1],
     })),
@@ -532,7 +532,7 @@ export async function scanOwners(account: Address, total = snapshot.total) {
       const zero = await client
         .readContract({
           address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'ownerOf',
           args: [0n],
         })
@@ -544,7 +544,7 @@ export async function scanOwners(account: Address, total = snapshot.total) {
       const results = (await readMany(
         ids.map((tokenId) => ({
           address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'ownerOf',
           args: [BigInt(tokenId)],
         })),

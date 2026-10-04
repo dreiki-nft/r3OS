@@ -2,19 +2,19 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
 import {ILabTokenSource} from "../src/interfaces/ILabTokenSource.sol";
 import {LabTraits} from "../src/lib/LabTraits.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract MockLabTokenSource is ILabTokenSource {
-    R3tardsLabs public immutable LABS;
+    R3OSLabs public immutable LABS;
     uint256 public experimentId;
     uint8 public mode;
     bool public burnable;
 
-    constructor(R3tardsLabs labs) {
+    constructor(R3OSLabs labs) {
         LABS = labs;
     }
 
@@ -70,8 +70,8 @@ contract LabTraitsHarness {
 }
 
 contract LabsNFTTest is Test {
-    R3tardsPaint paint;
-    R3tardsLabs labs;
+    R3OSPaint paint;
+    R3OSLabs labs;
     MockR3tards r3tards;
     MockLabTokenSource sourceA;
     MockLabTokenSource sourceB;
@@ -86,10 +86,10 @@ contract LabsNFTTest is Test {
     function setUp() public {
         vm.roll(1_000);
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), address(this), royalty, 512, 0, 512, 16, 256
         );
-        labs = new R3tardsLabs(address(paint), royalty);
+        labs = new R3OSLabs(address(paint), royalty);
         sourceA = new MockLabTokenSource(labs);
         sourceB = new MockLabTokenSource(labs);
         experimentA = paint.addExperiment(address(sourceA), "sleepwalker", "");
@@ -100,8 +100,8 @@ contract LabsNFTTest is Test {
     }
 
     function testCollectionIdentityRoyaltyAndOwnerScope() public {
-        assertEq(labs.name(), "r3tards labs");
-        assertEq(labs.symbol(), "R3LABS");
+        assertEq(labs.name(), "r3OS labs");
+        assertEq(labs.symbol(), "R3OSLABS");
         assertEq(labs.owner(), address(this));
         assertEq(labs.ROYALTY_RECEIVER(), royalty);
         assertTrue(labs.supportsInterface(0x49064906));
@@ -150,7 +150,7 @@ contract LabsNFTTest is Test {
         unregistered.mintTo(alice);
 
         paint.retireExperiment(experimentA);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsLabs.RetiredExperiment.selector, experimentA));
+        vm.expectRevert(abi.encodeWithSelector(R3OSLabs.RetiredExperiment.selector, experimentA));
         sourceA.mintTo(alice);
 
         bytes memory json = _json(labs.tokenURI(first));
@@ -163,7 +163,7 @@ contract LabsNFTTest is Test {
         uint256 id = sourceA.mintTo(alice);
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsLabs.NotTokenOwner.selector, id));
+        vm.expectRevert(abi.encodeWithSelector(R3OSLabs.NotTokenOwner.selector, id));
         labs.burn(id);
 
         vm.prank(alice);
@@ -177,7 +177,7 @@ contract LabsNFTTest is Test {
         vm.coinbase(address(0xC01B453));
         uint256 mintBlock = vm.getBlockNumber();
         uint256 id = sourceA.mintTo(alice);
-        R3tardsLabs.MintData memory mintData = labs.mintData(id);
+        R3OSLabs.MintData memory mintData = labs.mintData(id);
         assertEq(mintData.lab, address(sourceA));
         assertEq(mintData.experimentId, experimentA);
         assertEq(mintData.blockNumber, mintBlock);
@@ -190,7 +190,7 @@ contract LabsNFTTest is Test {
 
         bytes memory json = _json(labs.tokenURI(id));
         vm.parseJson(string(json));
-        assertEq(vm.parseJsonString(string(json), ".name"), "r3tards labs dream #1");
+        assertEq(vm.parseJsonString(string(json), ".name"), "r3OS labs dream #1");
         assertEq(vm.parseJsonString(string(json), ".external_url"), "https://r3tards.example/#/labs?token=1");
         assertEq(vm.parseJsonString(string(json), ".attributes[0].value"), "Dream");
         assertEq(vm.parseJsonString(string(json), ".attributes[1].value"), "Sleepwalker");
@@ -202,7 +202,7 @@ contract LabsNFTTest is Test {
 
         bytes memory collection = _json(labs.contractURI());
         vm.parseJson(string(collection));
-        assertEq(vm.parseJsonString(string(collection), ".name"), "r3tards labs");
+        assertEq(vm.parseJsonString(string(collection), ".name"), "r3OS labs");
         assertEq(vm.parseJsonUint(string(collection), ".seller_fee_basis_points"), 500);
         assertEq(vm.parseJsonString(string(collection), ".external_link"), "https://r3tards.example/");
         assertEq(

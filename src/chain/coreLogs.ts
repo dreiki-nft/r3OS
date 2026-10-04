@@ -1,5 +1,5 @@
 import { decodeEventLog, type Hex } from 'viem'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 
 export interface CoreLogLike {
   data: Hex
@@ -8,7 +8,7 @@ export interface CoreLogLike {
 
 export function decodeCoreEventLog(log: CoreLogLike) {
   return decodeEventLog({
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     data: log.data,
     topics: log.topics as [signature: Hex, ...args: Hex[]],
   })

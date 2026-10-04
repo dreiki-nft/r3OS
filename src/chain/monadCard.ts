@@ -15,7 +15,7 @@ import { config } from './config'
 import { readMany } from './readMany'
 import { useRefreshTick } from './refreshTick'
 import { getWalletSnapshot, subscribeWallet } from './wallet'
-import { R3TARDS_CARD_MEMORY_ABI } from '../lib/generated/abi'
+import { R3OS_CARD_MEMORY_ABI } from '../lib/generated/abi'
 import { labAddress, sameAddress } from '../labs/labCommon'
 import type { HardwareSource } from './monadHardware'
 
@@ -86,6 +86,8 @@ const EMPTY: MonadCardSnapshot = {
 
 const PAGE_MASK = ((1n << 256n) - 1n) ^ 127n
 const PAGE_PARAMS = parseAbiParameters('string,uint256')
+// Historical protocol salt. This derives the Monad Card MIP-8 page and must not
+// change when the product brand changes.
 const CARD_NAMESPACE = 'r3tards.card.drv.v1'
 const ERC5192 = '0xb45a3c0e' as Hex
 
@@ -99,8 +101,8 @@ async function readDriverStatic(driverAddress: Address) {
   if (!cached) {
     cached = readMany(
       [
-        { address: driverAddress, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'MONAD_CARD' },
-        { address: driverAddress, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'FORMAT_VERSION' },
+        { address: driverAddress, abi: R3OS_CARD_MEMORY_ABI, functionName: 'MONAD_CARD' },
+        { address: driverAddress, abi: R3OS_CARD_MEMORY_ABI, functionName: 'FORMAT_VERSION' },
       ],
       { allowFailure: true },
     )
@@ -414,7 +416,7 @@ export async function readMonadCard(account?: Address): Promise<MonadCardSnapsho
     cardAddress = staticDriver.cardAddress
     driverVersion = staticDriver.driverVersion
     const rows = await readMany(
-      [{ address: driverAddress, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'cardOf', args: [account] }],
+      [{ address: driverAddress, abi: R3OS_CARD_MEMORY_ABI, functionName: 'cardOf', args: [account] }],
       { allowFailure: true },
     ).catch(() => [])
     const indexRow = rows[0] as any
@@ -464,7 +466,7 @@ export async function readMonadCard(account?: Address): Promise<MonadCardSnapsho
   let cardInfo: CardInfo | undefined
   if (driverAddress && cardId != null) {
     const rows = await readMany(
-      [{ address: driverAddress, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'cardInfo', args: [cardId] }],
+      [{ address: driverAddress, abi: R3OS_CARD_MEMORY_ABI, functionName: 'cardInfo', args: [cardId] }],
       { allowFailure: true },
     ).catch(() => [])
     const row = rows[0] as any

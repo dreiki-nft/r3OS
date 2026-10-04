@@ -26,7 +26,7 @@ function writeUint(out: Uint8Array, offset: number, length: number, value: bigin
   }
 }
 
-/** Mirrors R3tardsCDBurner.burnCD's snapshot layout. */
+/** Mirrors R3OSCDBurner.burnCD's snapshot layout. */
 function buildSnapshot(
   label: string,
   tracks: { id: number; season: number; flags?: number; pair?: number }[],
@@ -172,7 +172,7 @@ describe('Explorer formatting', () => {
       photos: new Map(),
     }
     const text = cdInfoText(cd, new Map([[15, { recycled: true }]]))
-    expect(text).toContain('r3tards labs cd #5')
+    expect(text).toContain('r3OS labs cd #5')
     expect(text).toContain('label ......... my mix')
     expect(text).toContain('seasons ....... 1–2')
     expect(text).toContain('TRACK01.BMP  frame #12  season 1')

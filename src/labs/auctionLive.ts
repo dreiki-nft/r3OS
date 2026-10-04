@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { publicClient } from '../chain/clients'
 import { useRefreshTick } from '../chain/refreshTick'
-import { R3TARDS_FINALE_AUCTION_ABI } from '../lib/generated/abi'
+import { R3OS_FINALE_AUCTION_ABI } from '../lib/generated/abi'
 import { labAddress } from './labCommon'
 
 /** True only while the newest finale auction is live onchain (state 1). Unknown or offline counts as false. */
@@ -24,14 +24,14 @@ export function useAuctionLive() {
       const address = await labAddress('finale auction')
       const count = (await client.readContract({
         address,
-        abi: R3TARDS_FINALE_AUCTION_ABI,
+        abi: R3OS_FINALE_AUCTION_ABI,
         functionName: 'auctionCount',
       })) as bigint
       let state: number | undefined
       if (count > 0n) {
         const info = (await client.readContract({
           address,
-          abi: R3TARDS_FINALE_AUCTION_ABI,
+          abi: R3OS_FINALE_AUCTION_ABI,
           functionName: 'auctionInfo',
           args: [count],
         })) as { state?: number | bigint }

@@ -27,7 +27,7 @@ import {
   switchToMonad,
   walletOnCorrectChain,
 } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import {
   formatBurnerBalance,
   formatLiveTime,
@@ -375,7 +375,7 @@ export function PaintProgram() {
     try {
       const values = (await publicClient.readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'budgetOf',
         args: [wallet.account, stableHolderIds],
       })) as readonly bigint[]
@@ -446,7 +446,7 @@ export function PaintProgram() {
           : quoteAction({
               kind: 'corePaint',
               address: config.paintAddress!,
-              abi: R3TARDS_PAINT_ABI,
+              abi: R3OS_PAINT_ABI,
               functionName: 'paint',
               args: [patch.hex, stableHolderIds],
               account: wallet.account!,
@@ -531,7 +531,7 @@ export function PaintProgram() {
       void lazyQuote(quoteKey('mintFrame'), {
         kind: 'estimate',
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'mintFrame',
         account: wallet.account,
       })
@@ -539,7 +539,7 @@ export function PaintProgram() {
         void lazyQuote(quoteKey('paintAndMintFrame', patch.hex), {
           kind: 'paintAndMintFrame',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'paintAndMintFrame',
           args: [patch.hex, stableHolderIds],
           account: wallet.account,
@@ -552,7 +552,7 @@ export function PaintProgram() {
         void lazyQuote(quoteKey('setFace', '1'), {
           kind: 'estimate',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'setFace',
           args: [1, stableHolderIds],
           account: wallet.account,
@@ -561,7 +561,7 @@ export function PaintProgram() {
         void lazyQuote(quoteKey('setFace', '7'), {
           kind: 'estimate',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'setFace',
           args: [7, stableHolderIds],
           account: wallet.account,
@@ -574,7 +574,7 @@ export function PaintProgram() {
     void lazyQuote(quoteKey('setBackground', String(backgroundCandidate)), {
       kind: 'estimate',
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'setBackground',
       args: [backgroundCandidate, stableHolderIds],
       account: wallet.account,
@@ -639,7 +639,7 @@ export function PaintProgram() {
         const quotePromise = quoteAction({
           kind: 'corePaint',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'paint',
           args: [nextPatch.hex, stableHolderIds],
           account: wallet.account,
@@ -762,7 +762,7 @@ export function PaintProgram() {
             quoteAction({
               kind: 'corePaint',
               address: config.paintAddress,
-              abi: R3TARDS_PAINT_ABI,
+              abi: R3OS_PAINT_ABI,
               functionName: 'paint',
               args: [patch.hex, stableHolderIds],
               account: wallet.account,
@@ -811,7 +811,7 @@ export function PaintProgram() {
         const options: ActionOptions = {
           kind: andFrame ? 'paintAndMintFrame' : 'corePaint',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: andFrame ? 'paintAndMintFrame' : 'paint',
           args: [hex, stableHolderIds],
           account: wallet.account,
@@ -829,7 +829,7 @@ export function PaintProgram() {
               : await quoteAction({
                   kind: 'corePaint',
                   address: config.paintAddress,
-                  abi: R3TARDS_PAINT_ABI,
+                  abi: R3OS_PAINT_ABI,
                   functionName: 'paint',
                   args: [hex, stableHolderIds],
                   account: wallet.account,
@@ -948,7 +948,7 @@ export function PaintProgram() {
       const result = await sendAction({
         kind: 'estimate',
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName,
         args,
         account: wallet.account,
@@ -1436,7 +1436,7 @@ export function PaintProgram() {
         <div className="modal-shade">
           <div className="message-box window">
             <b>Holder quota</b>
-            <p>Enter r3tard token ids if automatic discovery is unavailable.</p>
+            <p>Enter r3tard token ids if automatic discovery is unavailable. Mainnet Skrumpeys and Monad Cards are detected automatically.</p>
             <input
               value={manualIds}
               onChange={(event) => setManualIds(event.target.value)}

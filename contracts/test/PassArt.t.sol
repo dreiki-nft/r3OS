@@ -2,9 +2,9 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {IR3tardsPaintData} from "../src/interfaces/IR3tardsPaintData.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {IR3OSPaintData} from "../src/interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "../src/interfaces/IStampSource.sol";
 import {PassArt} from "../src/lib/PassArt.sol";
 import {MockR3tards} from "./MockR3tards.sol";
@@ -31,8 +31,8 @@ contract PassArtEarnedStamp is IStampSource {
 
 contract PassArtTest is Test {
     PassArtHarness harness;
-    R3tardsPaint paint;
-    R3tardsPainterPass pass;
+    R3OSPaint paint;
+    R3OSPainterPass pass;
     MockR3tards r3tards;
     address alice = address(0xA11CE);
     uint256 passId;
@@ -41,10 +41,10 @@ contract PassArtTest is Test {
         harness = new PassArtHarness();
         vm.roll(1_000);
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
-        pass = new R3tardsPainterPass(address(paint));
+        pass = new R3OSPainterPass(address(paint));
 
         vm.prank(alice);
         paint.paint(hex"00000304", new uint256[](0));
@@ -139,7 +139,7 @@ contract PassArtTest is Test {
 
         vm.mockCall(
             address(paint),
-            abi.encodeWithSelector(IR3tardsPaintData.painterStats.selector, alice),
+            abi.encodeWithSelector(IR3OSPaintData.painterStats.selector, alice),
             abi.encode(
                 uint32(34),
                 uint32(0),
@@ -155,7 +155,7 @@ contract PassArtTest is Test {
         );
         vm.mockCall(
             address(paint),
-            abi.encodeWithSelector(IR3tardsPaintData.daysPainted.selector, alice),
+            abi.encodeWithSelector(IR3OSPaintData.daysPainted.selector, alice),
             abi.encode(uint32(34))
         );
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {Base64} from "solady/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IFrameRenderer} from "../interfaces/IFrameRenderer.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {FrameTraits} from "../lib/FrameTraits.sol";
 
 /// @notice Finale-only animated renderer. Samples at most four frames, downsamples each to 128x128,
@@ -19,8 +19,8 @@ contract SeasonTimelapseRenderer is IFrameRenderer {
         0x1111111111111111111111111111111111111111111111111111111111111111;
 
     function tokenURI(address paint, uint256 tokenId) external view returns (string memory) {
-        IR3tardsPaintData core = IR3tardsPaintData(paint);
-        IR3tardsPaintData.FrameInfoData memory finale = core.frameInfo(tokenId);
+        IR3OSPaintData core = IR3OSPaintData(paint);
+        IR3OSPaintData.FrameInfoData memory finale = core.frameInfo(tokenId);
         if (!finale.finale) revert("timelapse: finale only");
 
         (,,,, uint64 regularFrames,,,) = core.seasonInfo(finale.season);
@@ -36,7 +36,7 @@ contract SeasonTimelapseRenderer is IFrameRenderer {
             uint256 frameId = visualIndex == regularFrames
                 ? tokenId
                 : core.seasonFrameToken(finale.season, uint48(visualIndex + 1));
-            IR3tardsPaintData.FrameInfoData memory info = core.frameInfo(frameId);
+            IR3OSPaintData.FrameInfoData memory info = core.frameInfo(frameId);
             bytes memory pixels = core.frameData128(frameId);
             _stampOutline(pixels, outlineMask, info.faceColor);
             bytes memory bmp = _buildBMP128(pixels, info.backgroundColor, colors);
@@ -46,7 +46,7 @@ contract SeasonTimelapseRenderer is IFrameRenderer {
 
         bytes memory svg = _buildSvg(images, imagesLength);
         bytes memory json = abi.encodePacked(
-            '{"name":"r3tards paint season ', (uint256(finale.season) + 1).toString(),
+            '{"name":"r3OS paint season ', (uint256(finale.season) + 1).toString(),
             ' timelapse","description":"sampled frames from this season, rendered with that season own outline.",',
             '"image":"data:image/svg+xml;base64,', Base64.encode(svg), '\",\"attributes\":[',
             FrameTraits.attributes(core, tokenId), ']}'

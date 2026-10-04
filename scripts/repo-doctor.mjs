@@ -7,6 +7,7 @@ const problems = []
 const forbiddenRootFiles = [
   'APPLY_PHASE6_CLEANUP.sh',
   'APPLY_R3OS_REBRAND.sh',
+  'APPLY_PHASE7_5_CONTRACT_REBRAND.sh',
   'APPLY.txt',
   'CLAUDE_SNAPSHOT_28_REVIEW.md',
   'DELETIONS.txt',
@@ -63,6 +64,30 @@ const deadFiles = [
   'src/os/programs/Placeholder.tsx',
 ]
 
+const legacyContractSources = [
+  'contracts/src/R3tardsPaint.sol',
+  'contracts/src/R3tardsPainterPass.sol',
+  'contracts/src/R3tardsLabs.sol',
+  'contracts/src/interfaces/IR3tardsPaintData.sol',
+  'contracts/src/interfaces/IR3tardsSleepwalkerCore.sol',
+  'contracts/src/labs/R3tardsBrushes.sol',
+  'contracts/src/labs/R3tardsCDBurner.sol',
+  'contracts/src/labs/R3tardsFinaleAuction.sol',
+  'contracts/src/labs/R3tardsFlipbook.sol',
+  'contracts/src/labs/R3tardsForks.sol',
+  'contracts/src/labs/R3tardsQuests.sol',
+  'contracts/src/labs/R3tardsRecycleBin.sol',
+  'contracts/src/labs/R3tardsSleepwalker.sol',
+  'contracts/src/labs/R3tardsWeeds.sol',
+  'contracts/src/monadcard/R3tardsCardMemory.sol',
+  'contracts/src/monadhw/R3tardsBlockCamera.sol',
+  'contracts/src/monadhw/R3tardsKernelDebugger.sol',
+  'contracts/src/monadhw/R3tardsPageExe.sol',
+  'contracts/src/operator/R3tardsOperatorRecord.sol',
+  'contracts/src/operator/R3tardsSystemEvent.sol',
+  'contracts/src/router/R3tardsRouterLab.sol',
+]
+
 for (const file of forbiddenRootFiles) {
   if (existsSync(resolve(root, file))) problems.push(`stale root artifact: ${file}`)
 }
@@ -71,6 +96,9 @@ for (const file of retiredUiFiles) {
 }
 for (const file of deadFiles) {
   if (existsSync(resolve(root, file))) problems.push(`dead frontend source still present: ${file}`)
+}
+for (const file of legacyContractSources) {
+  if (existsSync(resolve(root, file))) problems.push(`legacy pre-mainnet contract source still present: ${file}`)
 }
 if (existsSync(resolve(root, 'contracts/contracts'))) {
   problems.push('duplicate stale Foundry tree: contracts/contracts')

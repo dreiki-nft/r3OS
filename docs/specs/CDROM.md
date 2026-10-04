@@ -4,7 +4,7 @@ A Windows 98 CD-ROM drive for the CDs made in **Burn a CD**. It reads chain data
 
 ## What a CD holds
 
-`R3tardsCDBurner` stores an immutable SSTORE2-style `FrameStore` snapshot at `snapshotPointer(tokenId)`. The drive accepts legacy v2 frame-only discs and v3 mixed discs:
+`R3OSCDBurner` stores an immutable SSTORE2-style `FrameStore` snapshot at `snapshotPointer(tokenId)`. The drive accepts legacy v2 frame-only discs and v3 mixed discs:
 
 | Bytes | Field |
 |---|---|

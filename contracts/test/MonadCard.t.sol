@@ -2,12 +2,12 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
-import {R3tardsBlockCamera} from "../src/monadhw/R3tardsBlockCamera.sol";
-import {R3tardsCardMemory} from "../src/monadcard/R3tardsCardMemory.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
+import {R3OSBlockCamera} from "../src/monadhw/R3OSBlockCamera.sol";
+import {R3OSCardMemory} from "../src/monadcard/R3OSCardMemory.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 import {MockMonadCard} from "./MockMonadCard.sol";
 
@@ -37,7 +37,7 @@ contract MutableCard {
 }
 
 contract CardWallet {
-    function write(R3tardsCardMemory memory_, uint256 id, uint256 offset, bytes32[] calldata words) external {
+    function write(R3OSCardMemory memory_, uint256 id, uint256 offset, bytes32[] calldata words) external {
         memory_.write(id, offset, words);
     }
 }
@@ -92,12 +92,12 @@ contract MonadCardTest is Test {
     address royalty = makeAddr("royalty");
 
     MockMonadCard card;
-    R3tardsCardMemory memory_;
+    R3OSCardMemory memory_;
 
     function setUp() public {
         vm.roll(20_000);
         card = new MockMonadCard();
-        memory_ = new R3tardsCardMemory(address(card));
+        memory_ = new R3OSCardMemory(address(card));
         card.mintTo(alice, 1);
     }
 
@@ -112,17 +112,17 @@ contract MonadCardTest is Test {
         assertEq(memory_.readPage(1)[1], bytes32("hello"));
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.NotCardOwner.selector, 1, alice));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.NotCardOwner.selector, 1, alice));
         memory_.write(1, 1, _one(bytes32("no")));
     }
 
     function testMissingCardHandlesRevertAndZeroOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.CardNotFound.selector, 999));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.CardNotFound.selector, 999));
         memory_.write(999, 1, _one(bytes32(uint256(1))));
 
         ZeroOwnerCard zero = new ZeroOwnerCard();
-        R3tardsCardMemory zeroMemory = new R3tardsCardMemory(address(zero));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.CardNotFound.selector, 999));
+        R3OSCardMemory zeroMemory = new R3OSCardMemory(address(zero));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.CardNotFound.selector, 999));
         zeroMemory.write(999, 1, _one(bytes32(uint256(1))));
     }
 
@@ -137,32 +137,32 @@ contract MonadCardTest is Test {
         MutableCard flexible = new MutableCard();
         flexible.setOwner(9, alice);
         flexible.approveForTest(9, bob);
-        R3tardsCardMemory driver = new R3tardsCardMemory(address(flexible));
+        R3OSCardMemory driver = new R3OSCardMemory(address(flexible));
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.NotCardOwner.selector, 9, alice));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.NotCardOwner.selector, 9, alice));
         driver.write(9, 1, _one(bytes32(uint256(1))));
 
         address sessionKey = makeAddr("paint session key");
         vm.prank(sessionKey);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.NotCardOwner.selector, 9, alice));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.NotCardOwner.selector, 9, alice));
         driver.write(9, 1, _one(bytes32(uint256(2))));
     }
 
     function testRangesAndMaximalWrite() public {
         vm.startPrank(alice);
-        vm.expectRevert(R3tardsCardMemory.HeaderReadOnly.selector);
+        vm.expectRevert(R3OSCardMemory.HeaderReadOnly.selector);
         memory_.write(1, 0, _one(bytes32(uint256(1))));
 
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.BadRange.selector, 128, 1));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.BadRange.selector, 128, 1));
         memory_.write(1, 128, _one(bytes32(uint256(1))));
 
         bytes32[] memory empty = new bytes32[](0);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.BadRange.selector, 1, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.BadRange.selector, 1, 0));
         memory_.write(1, 1, empty);
 
         bytes32[] memory two = new bytes32[](2);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.BadRange.selector, 127, 2));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.BadRange.selector, 127, 2));
         memory_.write(1, 127, two);
 
         bytes32[] memory maximal = new bytes32[](127);
@@ -177,7 +177,7 @@ contract MonadCardTest is Test {
         bytes32[] memory words = new bytes32[](length > 129 ? 129 : length);
         vm.prank(alice);
         if (offset == 0 && words.length > 0) {
-            vm.expectRevert(R3tardsCardMemory.HeaderReadOnly.selector);
+            vm.expectRevert(R3OSCardMemory.HeaderReadOnly.selector);
         } else {
             vm.expectRevert();
         }
@@ -223,7 +223,7 @@ contract MonadCardTest is Test {
         vm.roll(21_001);
         vm.prank(alice);
         memory_.write(1, 1, _one(bytes32(uint256(1))));
-        R3tardsCardMemory.CardInfo memory first = memory_.cardInfo(1);
+        R3OSCardMemory.CardInfo memory first = memory_.cardInfo(1);
         assertTrue(first.formatted);
         assertEq(first.version, 1);
         assertEq(first.writes, 1);
@@ -233,7 +233,7 @@ contract MonadCardTest is Test {
         vm.roll(21_009);
         vm.prank(alice);
         memory_.write(1, 2, _one(bytes32(uint256(2))));
-        R3tardsCardMemory.CardInfo memory second = memory_.cardInfo(1);
+        R3OSCardMemory.CardInfo memory second = memory_.cardInfo(1);
         assertEq(second.writes, 2);
         assertEq(second.firstWriteBlock, 21_001);
         assertEq(second.lastWriteBlock, 21_009);
@@ -280,7 +280,7 @@ contract MonadCardTest is Test {
             assertEq(uint8(uint256(page[lastWords[i]])), uint8(0xB0 + i));
         }
 
-        R3tardsCardMemory.CardInfo memory info = memory_.cardInfo(1);
+        R3OSCardMemory.CardInfo memory info = memory_.cardInfo(1);
         assertTrue(info.formatted);
         assertEq(info.version, 1);
         assertEq(info.writes, expectedWrites);
@@ -298,7 +298,7 @@ contract MonadCardTest is Test {
         MutableCard flexible = new MutableCard();
         flexible.setOwner(1, alice);
         flexible.setOwner(type(uint256).max, alice);
-        R3tardsCardMemory driver = new R3tardsCardMemory(address(flexible));
+        R3OSCardMemory driver = new R3OSCardMemory(address(flexible));
 
         vm.prank(alice);
         driver.write(1, 1, _one(bytes32(uint256(1))));
@@ -340,7 +340,7 @@ contract MonadCardTest is Test {
         assertFalse(earned);
 
         RevertingCard broken = new RevertingCard();
-        R3tardsCardMemory brokenMemory = new R3tardsCardMemory(address(broken));
+        R3OSCardMemory brokenMemory = new R3OSCardMemory(address(broken));
         (, earned) = brokenMemory.stamp(alice);
         assertFalse(earned);
     }
@@ -348,7 +348,7 @@ contract MonadCardTest is Test {
     function testPainterPassDecodesCardStampAtSixPlusSourceId() public {
         PaintStatsMock stats = new PaintStatsMock();
         stats.setStats(alice, 1, 1);
-        R3tardsPainterPass pass = new R3tardsPainterPass(address(stats));
+        R3OSPainterPass pass = new R3OSPainterPass(address(stats));
         uint256 sourceId = pass.addStampSource(address(memory_));
         assertEq(6 + sourceId, 6);
         vm.prank(alice);
@@ -358,12 +358,12 @@ contract MonadCardTest is Test {
 
     function testCardCarrierQuestRequiresCardAnd143Pixels() public {
         PaintStatsMock stats = new PaintStatsMock();
-        R3tardsQuests quests = new R3tardsQuests(address(stats), uint64(block.timestamp), address(this));
-        R3tardsQuests.Condition[] memory conditions = new R3tardsQuests.Condition[](2);
-        conditions[0] = R3tardsQuests.Condition(
+        R3OSQuests quests = new R3OSQuests(address(stats), uint64(block.timestamp), address(this));
+        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](2);
+        conditions[0] = R3OSQuests.Condition(
             address(card), bytes4(keccak256("balanceOf(address)")), 0, 0, 1
         );
-        conditions[1] = R3tardsQuests.Condition(
+        conditions[1] = R3OSQuests.Condition(
             address(stats), bytes4(keccak256("painterStats(address)")), 2, 0, 143
         );
         uint256 id = quests.addQuest("CARD CARRIER", 0, 0, conditions);
@@ -385,16 +385,16 @@ contract MonadCardTest is Test {
     }
 
     function _cameraFixture() private returns (
-        R3tardsPaint paint,
-        R3tardsLabs labs,
-        R3tardsBlockCamera camera
+        R3OSPaint paint,
+        R3OSLabs labs,
+        R3OSBlockCamera camera
     ) {
         MockR3tards r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(block.timestamp), alice, royalty, 512, 0, 512, 16, 256
         );
-        labs = new R3tardsLabs(address(paint), royalty);
-        camera = new R3tardsBlockCamera(address(paint), address(labs), address(memory_));
+        labs = new R3OSLabs(address(paint), royalty);
+        camera = new R3OSBlockCamera(address(paint), address(labs), address(memory_));
         vm.prank(alice);
         uint256 experimentId = paint.addExperiment(address(camera), "block-camera", "");
         camera.bindExperimentId(experimentId);
@@ -411,14 +411,14 @@ contract MonadCardTest is Test {
     }
 
     function testBlockCameraCardCaptureOwnerHashesAndAttributes() public {
-        (R3tardsPaint paint, R3tardsLabs labs, R3tardsBlockCamera camera) = _cameraFixture();
+        (R3OSPaint paint, R3OSLabs labs, R3OSBlockCamera camera) = _cameraFixture();
         card.mintTo(bob, 88);
         vm.prank(bob);
         memory_.write(88, 1, _one(bytes32("camera")));
 
         vm.prank(bob);
         uint256 plainId = camera.captureCard(88, false);
-        (bool present, R3tardsBlockCamera.CardShot memory plain) = camera.cardShot(plainId);
+        (bool present, R3OSBlockCamera.CardShot memory plain) = camera.cardShot(plainId);
         assertTrue(present);
         assertEq(plain.cardPageHash, memory_.pageHash(88));
         assertFalse(plain.hasCanvas);
@@ -428,7 +428,7 @@ contract MonadCardTest is Test {
         bytes32 expectedCanvas = keccak256(paint.getCanvas(paint.currentSeason()));
         vm.prank(bob);
         uint256 canvasId = camera.captureCard(88, true);
-        (, R3tardsBlockCamera.CardShot memory withCanvas) = camera.cardShot(canvasId);
+        (, R3OSBlockCamera.CardShot memory withCanvas) = camera.cardShot(canvasId);
         assertTrue(withCanvas.hasCanvas);
         assertEq(withCanvas.canvasHash, expectedCanvas);
         assertEq(labs.ownerOf(canvasId), bob);
@@ -452,29 +452,29 @@ contract MonadCardTest is Test {
     }
 
     function testBlockCameraCardOwnerAndDisabledChecks() public {
-        (, R3tardsLabs labs, R3tardsBlockCamera camera) = _cameraFixture();
+        (, R3OSLabs labs, R3OSBlockCamera camera) = _cameraFixture();
         card.mintTo(bob, 99);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBlockCamera.NotCardOwner.selector, 99, bob));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBlockCamera.NotCardOwner.selector, 99, bob));
         camera.captureCard(99, false);
 
         MockR3tards r3tards = new MockR3tards();
-        R3tardsPaint paint2 = new R3tardsPaint(
+        R3OSPaint paint2 = new R3OSPaint(
             address(r3tards), uint64(block.timestamp), alice, royalty, 512, 0, 512, 16, 256
         );
-        R3tardsLabs labs2 = new R3tardsLabs(address(paint2), royalty);
-        R3tardsBlockCamera disabled = new R3tardsBlockCamera(address(paint2), address(labs2), address(0));
+        R3OSLabs labs2 = new R3OSLabs(address(paint2), royalty);
+        R3OSBlockCamera disabled = new R3OSBlockCamera(address(paint2), address(labs2), address(0));
         vm.prank(alice);
         uint256 experimentId = paint2.addExperiment(address(disabled), "block-camera", "");
         disabled.bindExperimentId(experimentId);
         vm.prank(bob);
-        vm.expectRevert(R3tardsBlockCamera.CardCaptureDisabled.selector);
+        vm.expectRevert(R3OSBlockCamera.CardCaptureDisabled.selector);
         disabled.captureCard(99, false);
         labs;
     }
 
     function testPlainCaptureStillHasNoCardShot() public {
-        (, R3tardsLabs labs, R3tardsBlockCamera camera) = _cameraFixture();
+        (, R3OSLabs labs, R3OSBlockCamera camera) = _cameraFixture();
         vm.prank(bob);
         uint256 beforeGas = gasleft();
         uint256 tokenId = camera.capture();
@@ -486,7 +486,7 @@ contract MonadCardTest is Test {
     }
 
     function testCaptureCardGasLoggedBothWays() public {
-        (, , R3tardsBlockCamera camera) = _cameraFixture();
+        (, , R3OSBlockCamera camera) = _cameraFixture();
         card.mintTo(bob, 111);
         vm.prank(bob);
         uint256 before = gasleft();
@@ -504,13 +504,13 @@ contract MonadCardTest is Test {
     }
 
     function testConstructorRejectsEOAAndWrongMainnetCard() public {
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.NotAContract.selector, alice));
-        new R3tardsCardMemory(alice);
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.NotAContract.selector, alice));
+        new R3OSCardMemory(alice);
 
         MutableCard local = new MutableCard();
         vm.chainId(143);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.WrongMainnetCard.selector, address(local)));
-        new R3tardsCardMemory(address(local));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.WrongMainnetCard.selector, address(local)));
+        new R3OSCardMemory(address(local));
     }
 
     function _contains(string memory haystack, string memory needle) private pure returns (bool) {

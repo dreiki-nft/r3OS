@@ -10,7 +10,7 @@ import { sendActions, walletCanBatch } from '../chain/batch'
 import { quoteAction } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { discoverContracts } from '../chain/contracts'
-import { R3TARDS_QUESTS_ABI } from '../lib/generated/abi'
+import { R3OS_QUESTS_ABI } from '../lib/generated/abi'
 import { getLiveSnapshot, liveActive, subscribeLive } from '../live/liveStore'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
@@ -205,7 +205,7 @@ export function QuestsProgram() {
     if (!wsClient || !address) return
     return wsClient.watchContractEvent({
       address,
-      abi: R3TARDS_QUESTS_ABI,
+      abi: R3OS_QUESTS_ABI,
       onLogs: (eventLogs) => {
         if (eventLogs.some((log) => log.eventName === 'QuestAdded')) void loadDefs(true)
         void refresh(true)
@@ -223,7 +223,7 @@ export function QuestsProgram() {
         quote: await quoteAction({
           kind: 'estimate',
           address: questsAddress,
-          abi: R3TARDS_QUESTS_ABI,
+          abi: R3OS_QUESTS_ABI,
           functionName: 'claim',
           args: [BigInt(id)],
           account,
@@ -266,7 +266,7 @@ export function QuestsProgram() {
         quoted.map((item) => ({
           kind: 'estimate' as const,
           address,
-          abi: R3TARDS_QUESTS_ABI,
+          abi: R3OS_QUESTS_ABI,
           functionName: 'claim',
           args: [BigInt(item.id)],
           account: wallet.account!,

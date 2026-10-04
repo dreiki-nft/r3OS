@@ -1,7 +1,7 @@
 // GENERATED FILE. DO NOT EDIT.
 // Sources: contracts/out Foundry artifacts
 
-export const R3TARDS_PAINT_ABI = [
+export const R3OS_PAINT_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -328,6 +328,32 @@ export const R3TARDS_PAINT_ABI = [
   },
   {
     "type": "function",
+    "name": "MONAD_CARDS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MONAD_CARD_PIXELS_PER_DAY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "OUTLINE_BASE_SLOT",
     "inputs": [],
     "outputs": [
@@ -465,6 +491,32 @@ export const R3TARDS_PAINT_ABI = [
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SKRUMPEYS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SKRUMPEYS_PIXELS_PER_DAY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
@@ -964,7 +1016,7 @@ export const R3TARDS_PAINT_ABI = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct R3tardsPaint.ExperimentData",
+        "internalType": "struct R3OSPaint.ExperimentData",
         "components": [
           {
             "name": "experiment",
@@ -1094,7 +1146,7 @@ export const R3TARDS_PAINT_ABI = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct R3tardsPaint.FrameInfoData",
+        "internalType": "struct R3OSPaint.FrameInfoData",
         "components": [
           {
             "name": "minter",
@@ -1680,6 +1732,40 @@ export const R3TARDS_PAINT_ABI = [
       }
     ],
     "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "partnerBudgetOf",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "skrumpeyHolder",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "skrumpeyAvailable",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "monadCardHolder",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "monadCardAvailable",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -3912,7 +3998,7 @@ export const R3TARDS_PAINT_ABI = [
   }
 ] as const
 
-export const R3TARDS_PAINTER_PASS_ABI = [
+export const R3OS_PAINTER_PASS_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -3932,7 +4018,7 @@ export const R3TARDS_PAINTER_PASS_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -4824,7 +4910,7 @@ export const R3TARDS_PAINTER_PASS_ABI = [
   }
 ] as const
 
-export const R3TARDS_LABS_ABI = [
+export const R3OS_LABS_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -4849,7 +4935,7 @@ export const R3TARDS_LABS_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -5113,7 +5199,7 @@ export const R3TARDS_LABS_ABI = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct R3tardsLabs.MintData",
+        "internalType": "struct R3OSLabs.MintData",
         "components": [
           {
             "name": "lab",
@@ -5909,7 +5995,7 @@ export const R3TARDS_LABS_ABI = [
   }
 ] as const
 
-export const R3TARDS_FLIPBOOK_ABI = [
+export const R3OS_FLIPBOOK_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -6014,7 +6100,7 @@ export const R3TARDS_FLIPBOOK_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract R3tardsLabs"
+        "internalType": "contract R3OSLabs"
       }
     ],
     "stateMutability": "view"
@@ -6131,7 +6217,7 @@ export const R3TARDS_FLIPBOOK_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -7026,7 +7112,7 @@ export const DF1_RENDERER_ABI = [
   }
 ] as const
 
-export const R3TARDS_WEEDS_ABI = [
+export const R3OS_WEEDS_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -7064,7 +7150,7 @@ export const R3TARDS_WEEDS_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -7420,7 +7506,7 @@ export const R3TARDS_WEEDS_ABI = [
   }
 ] as const
 
-export const R3TARDS_FORKS_ABI = [
+export const R3OS_FORKS_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -7489,7 +7575,7 @@ export const R3TARDS_FORKS_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract R3tardsLabs"
+        "internalType": "contract R3OSLabs"
       }
     ],
     "stateMutability": "view"
@@ -7541,7 +7627,7 @@ export const R3TARDS_FORKS_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -7694,7 +7780,7 @@ export const R3TARDS_FORKS_ABI = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct R3tardsForks.ForkInfo",
+        "internalType": "struct R3OSForks.ForkInfo",
         "components": [
           {
             "name": "sourceFrameId",
@@ -8196,7 +8282,7 @@ export const R3TARDS_FORKS_ABI = [
   }
 ] as const
 
-export const R3TARDS_BRUSHES_ABI = [
+export const R3OS_BRUSHES_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -8260,7 +8346,7 @@ export const R3TARDS_BRUSHES_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -8679,7 +8765,7 @@ export const R3TARDS_BRUSHES_ABI = [
   }
 ] as const
 
-export const R3TARDS_FINALE_AUCTION_ABI = [
+export const R3OS_FINALE_AUCTION_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -8790,7 +8876,7 @@ export const R3TARDS_FINALE_AUCTION_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -8835,7 +8921,7 @@ export const R3TARDS_FINALE_AUCTION_ABI = [
       {
         "name": "info",
         "type": "tuple",
-        "internalType": "struct R3tardsFinaleAuction.AuctionInfo",
+        "internalType": "struct R3OSFinaleAuction.AuctionInfo",
         "components": [
           {
             "name": "seller",
@@ -9488,7 +9574,7 @@ export const R3TARDS_FINALE_AUCTION_ABI = [
   }
 ] as const
 
-export const R3TARDS_QUESTS_ABI = [
+export const R3OS_QUESTS_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -9570,7 +9656,7 @@ export const R3TARDS_QUESTS_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -9604,7 +9690,7 @@ export const R3TARDS_QUESTS_ABI = [
       {
         "name": "conditions",
         "type": "tuple[]",
-        "internalType": "struct R3tardsQuests.Condition[]",
+        "internalType": "struct R3OSQuests.Condition[]",
         "components": [
           {
             "name": "target",
@@ -9810,7 +9896,7 @@ export const R3TARDS_QUESTS_ABI = [
       {
         "name": "conditions",
         "type": "tuple[]",
-        "internalType": "struct R3tardsQuests.Condition[]",
+        "internalType": "struct R3OSQuests.Condition[]",
         "components": [
           {
             "name": "target",
@@ -10110,7 +10196,7 @@ export const R3TARDS_QUESTS_ABI = [
   }
 ] as const
 
-export const R3TARDS_SLEEPWALKER_ABI = [
+export const R3OS_SLEEPWALKER_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -10166,7 +10252,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract R3tardsLabs"
+        "internalType": "contract R3OSLabs"
       }
     ],
     "stateMutability": "view"
@@ -10231,7 +10317,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsSleepwalkerCore"
+        "internalType": "contract IR3OSSleepwalkerCore"
       }
     ],
     "stateMutability": "view"
@@ -10383,7 +10469,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct R3tardsSleepwalker.DreamTokenData",
+        "internalType": "struct R3OSSleepwalker.DreamTokenData",
         "components": [
           {
             "name": "stencilPointer",
@@ -10589,7 +10675,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
       {
         "name": "sessions",
         "type": "tuple[]",
-        "internalType": "struct R3tardsSleepwalker.StartSessionAuthorization[]",
+        "internalType": "struct R3OSSleepwalker.StartSessionAuthorization[]",
         "components": [
           {
             "name": "expiryBlock",
@@ -10639,7 +10725,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
       {
         "name": "sessions",
         "type": "tuple[]",
-        "internalType": "struct R3tardsSleepwalker.StartSessionAuthorization[]",
+        "internalType": "struct R3OSSleepwalker.StartSessionAuthorization[]",
         "components": [
           {
             "name": "expiryBlock",
@@ -10715,7 +10801,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
       {
         "name": "code",
         "type": "uint8",
-        "internalType": "enum R3tardsSleepwalker.StepCode"
+        "internalType": "enum R3OSSleepwalker.StepCode"
       },
       {
         "name": "reason",
@@ -11040,7 +11126,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
         "name": "code",
         "type": "uint8",
         "indexed": false,
-        "internalType": "enum R3tardsSleepwalker.StepCode"
+        "internalType": "enum R3OSSleepwalker.StepCode"
       },
       {
         "name": "reason",
@@ -11237,7 +11323,7 @@ export const R3TARDS_SLEEPWALKER_ABI = [
   }
 ] as const
 
-export const R3TARDS_RECYCLE_BIN_ABI = [
+export const R3OS_RECYCLE_BIN_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -11257,7 +11343,7 @@ export const R3TARDS_RECYCLE_BIN_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsRecycleCore"
+        "internalType": "contract IR3OSRecycleCore"
       }
     ],
     "stateMutability": "view"
@@ -11596,7 +11682,7 @@ export const R3TARDS_RECYCLE_BIN_ABI = [
   }
 ] as const
 
-export const R3TARDS_CD_BURNER_ABI = [
+export const R3OS_CD_BURNER_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -11621,7 +11707,7 @@ export const R3TARDS_CD_BURNER_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract R3tardsLabs"
+        "internalType": "contract R3OSLabs"
       }
     ],
     "stateMutability": "view"
@@ -11660,7 +11746,7 @@ export const R3TARDS_CD_BURNER_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsCDBurnerCore"
+        "internalType": "contract IR3OSCDBurnerCore"
       }
     ],
     "stateMutability": "view"
@@ -12080,7 +12166,7 @@ export const R3TARDS_CD_BURNER_ABI = [
   }
 ] as const
 
-export const R3TARDS_PAGE_EXE_ABI = [
+export const R3OS_PAGE_EXE_ABI = [
   {
     "type": "function",
     "name": "BENCH_BASE",
@@ -12387,7 +12473,7 @@ export const R3TARDS_PAGE_EXE_ABI = [
   }
 ] as const
 
-export const R3TARDS_BLOCK_CAMERA_ABI = [
+export const R3OS_BLOCK_CAMERA_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -12430,7 +12516,7 @@ export const R3TARDS_BLOCK_CAMERA_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract R3tardsLabs"
+        "internalType": "contract R3OSLabs"
       }
     ],
     "stateMutability": "view"
@@ -12443,7 +12529,7 @@ export const R3TARDS_BLOCK_CAMERA_ABI = [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IR3tardsPaintData"
+        "internalType": "contract IR3OSPaintData"
       }
     ],
     "stateMutability": "view"
@@ -12536,7 +12622,7 @@ export const R3TARDS_BLOCK_CAMERA_ABI = [
       {
         "name": "value",
         "type": "tuple",
-        "internalType": "struct R3tardsBlockCamera.CardShot",
+        "internalType": "struct R3OSBlockCamera.CardShot",
         "components": [
           {
             "name": "cardId",
@@ -12751,7 +12837,7 @@ export const R3TARDS_BLOCK_CAMERA_ABI = [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct R3tardsBlockCamera.Shot",
+        "internalType": "struct R3OSBlockCamera.Shot",
         "components": [
           {
             "name": "blockNumber",
@@ -12990,7 +13076,7 @@ export const R3TARDS_BLOCK_CAMERA_ABI = [
   }
 ] as const
 
-export const R3TARDS_KERNEL_DEBUGGER_ABI = [
+export const R3OS_KERNEL_DEBUGGER_ABI = [
   {
     "type": "function",
     "name": "credits",
@@ -13254,7 +13340,7 @@ export const R3TARDS_KERNEL_DEBUGGER_ABI = [
   }
 ] as const
 
-export const R3TARDS_CARD_MEMORY_ABI = [
+export const R3OS_CARD_MEMORY_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -13462,7 +13548,7 @@ export const R3TARDS_CARD_MEMORY_ABI = [
       {
         "name": "info",
         "type": "tuple",
-        "internalType": "struct R3tardsCardMemory.CardInfo",
+        "internalType": "struct R3OSCardMemory.CardInfo",
         "components": [
           {
             "name": "owner",
@@ -13852,14 +13938,14 @@ export const R3TARDS_CARD_MEMORY_ABI = [
   }
 ] as const
 
-export const R3TARDS_OPERATOR_RECORD_ABI = [
+export const R3OS_OPERATOR_RECORD_ABI = [
   {
     "type": "constructor",
     "inputs": [
       {
         "name": "sources",
         "type": "tuple",
-        "internalType": "struct R3tardsOperatorRecord.Sources",
+        "internalType": "struct R3OSOperatorRecord.Sources",
         "components": [
           {
             "name": "paint",
@@ -14405,7 +14491,7 @@ export const R3TARDS_OPERATOR_RECORD_ABI = [
       {
         "name": "f",
         "type": "tuple",
-        "internalType": "struct R3tardsOperatorRecord.Facts",
+        "internalType": "struct R3OSOperatorRecord.Facts",
         "components": [
           {
             "name": "activeDays",
@@ -14909,7 +14995,7 @@ export const R3TARDS_OPERATOR_RECORD_ABI = [
   }
 ] as const
 
-export const R3TARDS_SYSTEM_EVENT_ABI = [
+export const R3OS_SYSTEM_EVENT_ABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -15270,7 +15356,7 @@ export const R3TARDS_SYSTEM_EVENT_ABI = [
   }
 ] as const
 
-export const R3TARDS_ROUTER_LAB_ABI = [
+export const R3OS_ROUTER_LAB_ABI = [
   {
     "type": "function",
     "name": "FRAME_OVERHEAD",
@@ -15384,7 +15470,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
       {
         "name": "venues",
         "type": "tuple[]",
-        "internalType": "struct R3tardsRouterLab.Venue[]",
+        "internalType": "struct R3OSRouterLab.Venue[]",
         "components": [
           {
             "name": "adapter",
@@ -15413,7 +15499,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
       {
         "name": "out",
         "type": "tuple",
-        "internalType": "struct R3tardsRouterLab.Comparison",
+        "internalType": "struct R3OSRouterLab.Comparison",
         "components": [
           {
             "name": "blockNumber",
@@ -15453,7 +15539,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
           {
             "name": "reports",
             "type": "tuple[]",
-            "internalType": "struct R3tardsRouterLab.QuoteReport[]",
+            "internalType": "struct R3OSRouterLab.QuoteReport[]",
             "components": [
               {
                 "name": "adapter",
@@ -15463,7 +15549,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
               {
                 "name": "status",
                 "type": "uint8",
-                "internalType": "enum R3tardsRouterLab.Status"
+                "internalType": "enum R3OSRouterLab.Status"
               },
               {
                 "name": "amountOut",
@@ -15503,7 +15589,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
               {
                 "name": "staticProbe",
                 "type": "uint8",
-                "internalType": "enum R3tardsRouterLab.StaticProbe"
+                "internalType": "enum R3OSRouterLab.StaticProbe"
               },
               {
                 "name": "staticGasUsed",
@@ -15633,7 +15719,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
       {
         "name": "venues",
         "type": "tuple[]",
-        "internalType": "struct R3tardsRouterLab.Venue[]",
+        "internalType": "struct R3OSRouterLab.Venue[]",
         "components": [
           {
             "name": "adapter",
@@ -15767,7 +15853,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
       {
         "name": "report",
         "type": "tuple",
-        "internalType": "struct R3tardsRouterLab.SimReport",
+        "internalType": "struct R3OSRouterLab.SimReport",
         "components": [
           {
             "name": "adapter",
@@ -15777,7 +15863,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
           {
             "name": "quoteStatus",
             "type": "uint8",
-            "internalType": "enum R3tardsRouterLab.Status"
+            "internalType": "enum R3OSRouterLab.Status"
           },
           {
             "name": "quoted",
@@ -15820,7 +15906,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
       {
         "name": "status",
         "type": "uint8",
-        "internalType": "enum R3tardsRouterLab.Status"
+        "internalType": "enum R3OSRouterLab.Status"
       },
       {
         "name": "gasUsed",
@@ -15856,7 +15942,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
       {
         "name": "reports",
         "type": "tuple[]",
-        "internalType": "struct R3tardsRouterLab.SimReport[]",
+        "internalType": "struct R3OSRouterLab.SimReport[]",
         "components": [
           {
             "name": "adapter",
@@ -15866,7 +15952,7 @@ export const R3TARDS_ROUTER_LAB_ABI = [
           {
             "name": "quoteStatus",
             "type": "uint8",
-            "internalType": "enum R3tardsRouterLab.Status"
+            "internalType": "enum R3OSRouterLab.Status"
           },
           {
             "name": "quoted",

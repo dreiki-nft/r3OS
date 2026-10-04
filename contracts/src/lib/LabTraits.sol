@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @notice Shared string buckets used by r3tards labs marketplace metadata.
+/// @notice Shared string buckets used by r3OS labs marketplace metadata.
 library LabTraits {
     function palette(uint256 colours) internal pure returns (string memory) {
         if (colours <= 2) return "Mono";

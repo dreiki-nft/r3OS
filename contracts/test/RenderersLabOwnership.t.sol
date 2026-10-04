@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {DiffRenderer} from "../src/renderers/DiffRenderer.sol";
 import {SeasonTimelapseRenderer} from "../src/renderers/SeasonTimelapseRenderer.sol";
 import {IFrameRenderer} from "../src/interfaces/IFrameRenderer.sol";
@@ -20,7 +20,7 @@ contract GasBombRenderer is IFrameRenderer {
 }
 
 contract RenderersLabOwnershipTest is Test {
-    R3tardsPaint paint;
+    R3OSPaint paint;
     MockR3tards r;
     address owner = address(0xA11CE);
     address bob = address(0xB0B);
@@ -28,7 +28,7 @@ contract RenderersLabOwnershipTest is Test {
     function setUp() public {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         r = new MockR3tards();
-        paint = new R3tardsPaint(address(r), uint64(vm.getBlockTimestamp()), owner, owner, 512, 0, 512, 16, 256);
+        paint = new R3OSPaint(address(r), uint64(vm.getBlockTimestamp()), owner, owner, 512, 0, 512, 16, 256);
     }
 
     function testOwnable2Step() public {
@@ -48,7 +48,7 @@ contract RenderersLabOwnershipTest is Test {
         vm.prank(owner);
         paint.transferFrom(owner, bob, 0);
         vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.NotTokenHolder.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.NotTokenHolder.selector, 0));
         paint.setTokenRenderer(0, id);
         vm.prank(bob);
         paint.setTokenRenderer(0, id);
@@ -68,7 +68,7 @@ contract RenderersLabOwnershipTest is Test {
         vm.prank(owner);
         paint.freezeRenderers();
         vm.prank(owner);
-        vm.expectRevert(R3tardsPaint.RendererFrozen.selector);
+        vm.expectRevert(R3OSPaint.RendererFrozen.selector);
         paint.addRenderer(address(bad), "again");
     }
 
@@ -111,7 +111,7 @@ contract RenderersLabOwnershipTest is Test {
         vm.prank(owner);
         paint.setTokenRenderer(finale, timeId);
         (bool ok, bytes memory raw) = address(paint).staticcall{gas: 30_000_000}(
-            abi.encodeWithSelector(R3tardsPaint.tokenURI.selector, finale)
+            abi.encodeWithSelector(R3OSPaint.tokenURI.selector, finale)
         );
         assertTrue(ok, "tokenURI exceeded 30M or reverted");
         string memory routed = abi.decode(raw, (string));
@@ -121,7 +121,7 @@ contract RenderersLabOwnershipTest is Test {
     function testLabRegistryGrantsNothing() public {
         vm.prank(owner);
         uint256 id = paint.addExperiment(bob, "weird lab", "ipfs://example");
-        R3tardsPaint.ExperimentData memory data = paint.experimentInfo(id);
+        R3OSPaint.ExperimentData memory data = paint.experimentInfo(id);
         assertEq(data.experiment, bob);
         vm.prank(bob);
         vm.expectRevert();

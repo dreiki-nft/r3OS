@@ -21,7 +21,7 @@ import { useRefreshTick } from '../chain/refreshTick'
 import { config } from '../chain/config'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
 import { playSound } from '../os/sound'
 import { imageActions, type ImageResource } from '../os/imageResources'
@@ -99,7 +99,7 @@ async function readOwner(tokenId: number) {
   try {
     return (await publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'ownerOf',
       args: [BigInt(tokenId)],
     })) as Address
@@ -280,15 +280,15 @@ export function FramesProgram() {
       }
       const owner = (await client.readContract({
         address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'ownerOf',
         args: [0n],
       })) as Address
       const calls: any[] = [
-        { address: config.paintAddress!, abi: R3TARDS_PAINT_ABI, functionName: 'getApproved', args: [0n] },
+        { address: config.paintAddress!, abi: R3OS_PAINT_ABI, functionName: 'getApproved', args: [0n] },
         ...seasons.map((season) => ({
           address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'seasonInfo',
           args: [BigInt(season)],
         })),
@@ -296,7 +296,7 @@ export function FramesProgram() {
       if (wallet.account)
         calls.push({
           address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'isApprovedForAll',
           args: [owner, wallet.account],
         })
@@ -329,7 +329,7 @@ export function FramesProgram() {
           quote = await quoteAction({
             kind: 'estimate',
             address: config.paintAddress!,
-            abi: R3TARDS_PAINT_ABI,
+            abi: R3OS_PAINT_ABI,
             functionName: 'mintSeasonFinale',
             args: [BigInt(season)],
             account: wallet.account,
@@ -538,7 +538,7 @@ export function FramesProgram() {
     void quoteAction({
       kind: 'estimate',
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'burn',
       args: [BigInt(selected)],
       account: wallet.account,
@@ -625,7 +625,7 @@ export function FramesProgram() {
       await sendAction({
         kind: 'estimate',
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'burn',
         args: [BigInt(selected)],
         account: wallet.account,
@@ -774,7 +774,7 @@ export function FramesProgram() {
       await sendAction({
         kind: 'estimate',
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'mintSeasonFinale',
         args: [BigInt(row.season)],
         account: wallet.account,

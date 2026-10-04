@@ -2,25 +2,25 @@
 pragma solidity ^0.8.28;
 
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {R3tardsLabs} from "../R3tardsLabs.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {R3OSLabs} from "../R3OSLabs.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {ILabTokenSource} from "../interfaces/ILabTokenSource.sol";
 import {ILabTokenNameSource} from "../interfaces/ILabTokenNameSource.sol";
 import {CDArt} from "../lib/CDArt.sol";
 import {FrameStore} from "../lib/FrameStore.sol";
 import {LabTraits} from "../lib/LabTraits.sol";
 
-interface IR3tardsCDBurnerCore is IR3tardsPaintData {
+interface IR3OSCDBurnerCore is IR3OSPaintData {
     function ownerOf(uint256 tokenId) external view returns (address);
 }
 
-interface IR3tardsBlockCameraCD {
+interface IR3OSBlockCameraCD {
     function cdTrackData(uint256 tokenId) external view returns (uint32 season, uint48 blockNumber, uint256 colourCounts);
 }
 
 /// @notice Snapshots 1-12 owned Paint frames and/or Block Camera photos into one immutable onchain mix CD-R.
 /// @dev Burning a CD means minting the mix; source NFTs are never transferred or burned by this contract.
-contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
+contract R3OSCDBurner is ILabTokenSource, ILabTokenNameSource {
     using Strings for uint256;
 
     uint256 public constant MAX_TRACKS = 12;
@@ -44,8 +44,8 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
     uint16 private constant DISC_COLOUR_MASK = 0x7f70;
     bytes32 private constant BLOCK_CAMERA_NAME_HASH = keccak256("block-camera");
 
-    IR3tardsCDBurnerCore public immutable PAINT;
-    R3tardsLabs public immutable LABS;
+    IR3OSCDBurnerCore public immutable PAINT;
+    R3OSLabs public immutable LABS;
     uint256 public experimentId = type(uint256).max;
     mapping(uint256 => address) public snapshotPointer;
 
@@ -83,13 +83,13 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
 
     constructor(address paintCore, address labs) {
         if (paintCore == address(0) || labs == address(0)) revert ZeroAddress();
-        PAINT = IR3tardsCDBurnerCore(paintCore);
-        LABS = R3tardsLabs(labs);
+        PAINT = IR3OSCDBurnerCore(paintCore);
+        LABS = R3OSLabs(labs);
     }
 
     function bindExperimentId(uint256 id) external {
         if (experimentId != type(uint256).max) revert ExperimentAlreadyBound();
-        IR3tardsPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
+        IR3OSPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
         if (info_.experiment != address(this) || info_.retired) revert InvalidExperiment(id);
         experimentId = id;
     }
@@ -207,7 +207,7 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
 
     function labTokenName(uint256 tokenId) external view returns (string memory) {
         bytes memory snapshot = _snapshot(tokenId);
-        return string.concat("r3tards labs cd #", tokenId.toString(), ": ", _label(snapshot));
+        return string.concat("r3OS labs cd #", tokenId.toString(), ": ", _label(snapshot));
     }
 
     function labToken(uint256 tokenId) external view returns (
@@ -232,10 +232,10 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
 
         kind = "CD";
         description = photoTracks == 0
-            ? "a mix CD-R burned from r3tards paint frames. the frames themselves were not harmed."
+            ? "a mix CD-R burned from r3OS paint frames. the frames themselves were not harmed."
             : frameTracks == 0
                 ? "a mix CD-R burned from Block Camera photos. the source NFTs were not harmed."
-                : "a mix CD-R burned from r3tards paint frames and Block Camera photos. the source NFTs were not harmed.";
+                : "a mix CD-R burned from r3OS paint frames and Block Camera photos. the source NFTs were not harmed.";
         imageSvg = CDArt.svg(tokenId, _artIds(snapshot), bytes(_label(snapshot)), discMask);
         attributes = string(
             abi.encodePacked(
@@ -293,7 +293,7 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         private
         view
     {
-        IR3tardsPaintData.FrameInfoData memory info = PAINT.frameInfo(frameId);
+        IR3OSPaintData.FrameInfoData memory info = PAINT.frameInfo(frameId);
         uint256 record = FRAMESTORE_DATA_OFFSET + TRACKS_OFFSET + trackIndex * TRACK_SIZE;
         _writeUint256(init, record, frameId);
         _writeUint32(init, record + 32, info.season);
@@ -330,7 +330,7 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         if (owner != msg.sender) revert NotLabsOwner(tokenId, owner);
         address source = LABS.sourceOf(tokenId);
         uint256 sourceExperiment = LABS.experimentOf(tokenId);
-        IR3tardsPaintData.ExperimentData memory info_ = PAINT.experimentInfo(sourceExperiment);
+        IR3OSPaintData.ExperimentData memory info_ = PAINT.experimentInfo(sourceExperiment);
         if (info_.experiment != source || keccak256(bytes(info_.name)) != BLOCK_CAMERA_NAME_HASH) {
             revert NotBlockCameraToken(tokenId);
         }
@@ -338,7 +338,7 @@ contract R3tardsCDBurner is ILabTokenSource, ILabTokenNameSource {
         uint32 season;
         uint48 blockNumber;
         uint256 counts;
-        try IR3tardsBlockCameraCD(source).cdTrackData(tokenId) returns (
+        try IR3OSBlockCameraCD(source).cdTrackData(tokenId) returns (
             uint32 season_, uint48 blockNumber_, uint256 colourCounts_
         ) {
             season = season_;

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {console} from "forge-std/console.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract CollabSeasonsTest is Test {
-    R3tardsPaint p;
+    R3OSPaint p;
     MockR3tards r;
     address alice = address(0xA11CE);
     address bob = address(0xB0B);
@@ -20,7 +20,7 @@ contract CollabSeasonsTest is Test {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         r = new MockR3tards();
         start = uint64(vm.getBlockTimestamp());
-        p = new R3tardsPaint(address(r), start, alice, alice, 50_000, 0, 50_000, 16, 256);
+        p = new R3OSPaint(address(r), start, alice, alice, 50_000, 0, 50_000, 16, 256);
     }
 
     function testDefaultOutlineUsedWhenUnset() public view {
@@ -86,7 +86,7 @@ contract CollabSeasonsTest is Test {
 
     function testCannotSetAppendOrClearCurrentPastOrStartedSeason() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SeasonOutlineLocked.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.SeasonOutlineLocked.selector, 0));
         p.setSeasonOutline(0, hex"000003", "nope");
 
         vm.prank(alice);
@@ -95,19 +95,19 @@ contract CollabSeasonsTest is Test {
         vm.warp(uint256(start) + p.SEASON_LENGTH());
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SeasonOutlineLocked.selector, 1));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.SeasonOutlineLocked.selector, 1));
         p.setSeasonOutline(1, hex"000407", "late");
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SeasonOutlineLocked.selector, 1));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.SeasonOutlineLocked.selector, 1));
         p.appendSeasonOutline(1, hex"000407");
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SeasonOutlineLocked.selector, 1));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.SeasonOutlineLocked.selector, 1));
         p.clearSeasonOutline(1);
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SeasonOutlineLocked.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.SeasonOutlineLocked.selector, 0));
         p.setSeasonOutline(0, hex"000003", "past");
     }
 
@@ -226,23 +226,23 @@ contract CollabSeasonsTest is Test {
 
     function testOutlineRunValidation() public {
         vm.prank(alice);
-        vm.expectRevert(R3tardsPaint.InvalidOutlineRunsLength.selector);
+        vm.expectRevert(R3OSPaint.InvalidOutlineRunsLength.selector);
         p.setSeasonOutline(1, hex"0000", "bad");
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.InvalidOutlineRun.selector, 0, 0, 8, 7));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.InvalidOutlineRun.selector, 0, 0, 8, 7));
         p.setSeasonOutline(1, hex"000807", "bad");
     }
 
     function testGuestValidation() public {
         string memory longName = "123456789012345678901234567890123";
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.GuestNameTooLong.selector, 33));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.GuestNameTooLong.selector, 33));
         p.setSeasonOutline(1, hex"000000", longName);
 
         bytes memory bad = hex"676f6f640a626164"; // good\nbad
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.InvalidGuestCharacter.selector, 4, uint8(0x0a)));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.InvalidGuestCharacter.selector, 4, uint8(0x0a)));
         p.setSeasonOutline(1, hex"000000", string(bad));
     }
 

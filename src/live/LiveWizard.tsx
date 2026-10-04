@@ -7,7 +7,7 @@ import { config } from '../chain/config'
 import { friendlyError } from '../chain/errors'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { closeWindow } from '../os/windows'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
@@ -98,7 +98,7 @@ export function LiveWizard() {
     void quoteAction({
       kind: 'corePaint',
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'paint',
       args: [sample.hex, []],
       account: wallet.account,
@@ -115,7 +115,7 @@ export function LiveWizard() {
     void quoteAction({
       kind: 'estimate',
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'startSession',
       args: [
         wallet.account,
@@ -192,7 +192,7 @@ export function LiveWizard() {
     try {
       const nonce = (await publicClient.readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'sessionNonces',
         args: [wallet.account],
       })) as bigint
@@ -271,7 +271,7 @@ export function LiveWizard() {
       await sendAction({
         kind: 'estimate',
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'startSession',
         args: [
           wallet.account,

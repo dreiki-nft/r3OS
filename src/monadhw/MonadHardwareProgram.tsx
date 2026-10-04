@@ -13,7 +13,7 @@ import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { HardwareBus, type HardwareDevice } from '../os/ui/HardwareBus'
-import { R3TARDS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
+import { R3OS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
 import { DEVICE07_COPY } from '../operator/copy'
 import { IntroBar } from '../os/ui/IntroBar'
 import { Tabs } from '../os/ui/Tabs'
@@ -153,7 +153,7 @@ function SystemInformation() {
     void quoteAction({
       kind: 'estimate',
       address: eventAddress,
-      abi: R3TARDS_SYSTEM_EVENT_ABI,
+      abi: R3OS_SYSTEM_EVENT_ABI,
       functionName: 'activate',
       account,
       action: DEVICE07_COPY.activateAction,
@@ -173,7 +173,7 @@ function SystemInformation() {
       await sendAction({
         kind: 'estimate',
         address: systemEvent.address,
-        abi: R3TARDS_SYSTEM_EVENT_ABI,
+        abi: R3OS_SYSTEM_EVENT_ABI,
         functionName: 'activate',
         account: wallet.account,
         quote: activationQuote,

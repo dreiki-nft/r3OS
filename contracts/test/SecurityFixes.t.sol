@@ -2,9 +2,9 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
 import {IFrameRenderer} from "../src/interfaces/IFrameRenderer.sol";
 import {IStampSource} from "../src/interfaces/IStampSource.sol";
 import {ILabTokenSource} from "../src/interfaces/ILabTokenSource.sol";
@@ -36,7 +36,7 @@ contract GarbageStamp is IStampSource {
 }
 
 contract GarbageLab is ILabTokenSource, ILabTokenNameSource {
-    function mintInto(R3tardsLabs labs, address to, uint256 experimentId) external returns (uint256) {
+    function mintInto(R3OSLabs labs, address to, uint256 experimentId) external returns (uint256) {
         return labs.mint(to, experimentId);
     }
 
@@ -64,7 +64,7 @@ contract GarbageLab is ILabTokenSource, ILabTokenNameSource {
 }
 
 contract SecurityFixesTest is Test {
-    R3tardsPaint paint;
+    R3OSPaint paint;
     MockR3tards r3tards;
 
     uint256 alicePk = 0xA11CE;
@@ -77,7 +77,7 @@ contract SecurityFixesTest is Test {
         alice = vm.addr(alicePk);
         seasonStart = uint64(vm.getBlockTimestamp());
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(address(r3tards), seasonStart, alice, alice, 512, 0, 512, 16, 256);
+        paint = new R3OSPaint(address(r3tards), seasonStart, alice, alice, 512, 0, 512, 16, 256);
     }
 
     function testSec_OutlineCapProtectsSetAndAppendAndGenesisFits() public {
@@ -88,7 +88,7 @@ contract SecurityFixesTest is Test {
         vm.prank(alice);
         vm.expectRevert(
             abi.encodeWithSelector(
-                R3tardsPaint.OutlinePixelLimitExceeded.selector,
+                R3OSPaint.OutlinePixelLimitExceeded.selector,
                 uint256(65 * 256),
                 maxPx
             )
@@ -102,7 +102,7 @@ contract SecurityFixesTest is Test {
         vm.prank(alice);
         vm.expectRevert(
             abi.encodeWithSelector(
-                R3tardsPaint.OutlinePixelLimitExceeded.selector,
+                R3OSPaint.OutlinePixelLimitExceeded.selector,
                 maxPx + 1,
                 maxPx
             )
@@ -112,7 +112,7 @@ contract SecurityFixesTest is Test {
 
     function testSec_RenounceOwnershipIsDisabled() public {
         vm.prank(alice);
-        vm.expectRevert(R3tardsPaint.OwnershipRenounceDisabled.selector);
+        vm.expectRevert(R3OSPaint.OwnershipRenounceDisabled.selector);
         paint.renounceOwnership();
         assertEq(paint.owner(), alice);
     }
@@ -121,7 +121,7 @@ contract SecurityFixesTest is Test {
         vm.startPrank(alice);
         uint256 experimentId = paint.addExperiment(address(0x1234), "lab", "");
         paint.freezeExperiments();
-        vm.expectRevert(R3tardsPaint.ExperimentRegistryFrozen.selector);
+        vm.expectRevert(R3OSPaint.ExperimentRegistryFrozen.selector);
         paint.addExperiment(address(0x5678), "late", "");
         paint.retireExperiment(experimentId);
         vm.stopPrank();
@@ -141,7 +141,7 @@ contract SecurityFixesTest is Test {
         assertEq(paint.sessionNonces(alice), 1);
 
         vm.prank(sessionKey);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.InvalidSessionNonce.selector, 1, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.InvalidSessionNonce.selector, 1, 0));
         paint.startSession(alice, sessionKey, expiry, 128, 0, deadline, sig);
     }
 
@@ -151,7 +151,7 @@ contract SecurityFixesTest is Test {
         vm.warp(paint.seasonEndTime(0));
 
         vm.prank(bob);
-        vm.expectRevert(R3tardsPaint.NotAuthorized.selector);
+        vm.expectRevert(R3OSPaint.NotAuthorized.selector);
         paint.mintSeasonFinale(0);
 
         vm.prank(alice);
@@ -160,7 +160,7 @@ contract SecurityFixesTest is Test {
         uint256 approvedFinale = paint.mintSeasonFinale(0);
         assertEq(paint.ownerOf(approvedFinale), alice);
 
-        R3tardsPaint openPaint = new R3tardsPaint(
+        R3OSPaint openPaint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
         vm.prank(alice);
@@ -173,7 +173,7 @@ contract SecurityFixesTest is Test {
 
     function testSec_RendererRejectsEOAAndGarbageFallsBack() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.RendererHasNoCode.selector, bob));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.RendererHasNoCode.selector, bob));
         paint.addRenderer(bob, "eoa");
 
         GarbageRenderer garbage = new GarbageRenderer();
@@ -186,7 +186,7 @@ contract SecurityFixesTest is Test {
     }
 
     function testSec_PassBadStampCannotBrickAndOwnerCanDisableSource() public {
-        R3tardsPainterPass pass = new R3tardsPainterPass(address(paint));
+        R3OSPainterPass pass = new R3OSPainterPass(address(paint));
         GoodStamp good = new GoodStamp();
         GarbageStamp garbage = new GarbageStamp();
         uint256 goodId = pass.addStampSource(address(good));
@@ -207,15 +207,15 @@ contract SecurityFixesTest is Test {
     }
 
     function testSec_LabsMalformedTokenMetadataFallsBackSafely() public {
-        R3tardsLabs labs = new R3tardsLabs(address(paint), alice);
+        R3OSLabs labs = new R3OSLabs(address(paint), alice);
         GarbageLab garbage = new GarbageLab();
         vm.prank(alice);
         uint256 experimentId = paint.addExperiment(address(garbage), "sleepwalker", "");
         uint256 tokenId = garbage.mintInto(labs, alice, experimentId);
 
         bytes memory json = _decodeDataUri(labs.tokenURI(tokenId));
-        assertTrue(_contains(json, bytes('"name":"r3tards labs dream #1"')));
-        assertTrue(_contains(json, bytes('"description":"an onchain r3tards labs artifact on monad."')));
+        assertTrue(_contains(json, bytes('"name":"r3OS labs dream #1"')));
+        assertTrue(_contains(json, bytes('"description":"an onchain r3OS labs artifact on monad."')));
     }
 
     function _sessionSignature(
@@ -231,7 +231,7 @@ contract SecurityFixesTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 address(paint)

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsOperatorRecord} from "../src/operator/R3tardsOperatorRecord.sol";
-import {R3tardsSystemEvent, IAggregatorV3} from "../src/operator/R3tardsSystemEvent.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSOperatorRecord} from "../src/operator/R3OSOperatorRecord.sol";
+import {R3OSSystemEvent, IAggregatorV3} from "../src/operator/R3OSSystemEvent.sol";
 
 /// @notice Add-on deployment for the operator record and permanent system-event latch.
 contract DeployOperator is Script {
@@ -24,7 +24,7 @@ contract DeployOperator is Script {
     }
 
     function run() external {
-        R3tardsPaint paint = R3tardsPaint(vm.envAddress("PAINT_ADDRESS"));
+        R3OSPaint paint = R3OSPaint(vm.envAddress("PAINT_ADDRESS"));
         address feed = vm.envAddress("MON_USD_FEED");
         uint256 thresholdMilliUsd = vm.envOr("MON_PRICE_TRIGGER_MILLI_USD", uint256(333));
         // Mainnet must choose this explicitly after checking the live feed heartbeat; never inherit the
@@ -37,7 +37,7 @@ contract DeployOperator is Script {
         _logResolved(paint, resolved);
         _checkFeed(feed);
 
-        R3tardsOperatorRecord.Sources memory sources = R3tardsOperatorRecord.Sources({
+        R3OSOperatorRecord.Sources memory sources = R3OSOperatorRecord.Sources({
             paint: address(paint),
             pass: paint.painterPass(),
             quests: resolved.quests,
@@ -55,17 +55,17 @@ contract DeployOperator is Script {
         });
 
         vm.startBroadcast();
-        R3tardsOperatorRecord record = new R3tardsOperatorRecord(sources);
-        R3tardsSystemEvent systemEvent = new R3tardsSystemEvent(feed, thresholdMilliUsd, maxAge);
+        R3OSOperatorRecord record = new R3OSOperatorRecord(sources);
+        R3OSSystemEvent systemEvent = new R3OSSystemEvent(feed, thresholdMilliUsd, maxAge);
         (, address broadcaster,) = vm.readCallers();
 
         uint256 recordId = paint.experimentCount();
         uint256 eventId = recordId + 1;
 
         bytes memory recordCall =
-            abi.encodeCall(R3tardsPaint.addExperiment, (address(record), "operator-record", ""));
+            abi.encodeCall(R3OSPaint.addExperiment, (address(record), "operator-record", ""));
         bytes memory eventCall =
-            abi.encodeCall(R3tardsPaint.addExperiment, (address(systemEvent), "system-event", ""));
+            abi.encodeCall(R3OSPaint.addExperiment, (address(systemEvent), "system-event", ""));
 
         if (paint.owner() == broadcaster) {
             recordId = paint.addExperiment(address(record), "operator-record", "");
@@ -78,8 +78,8 @@ contract DeployOperator is Script {
         }
         vm.stopBroadcast();
 
-        console.log("R3tardsOperatorRecord", address(record));
-        console.log("R3tardsSystemEvent", address(systemEvent));
+        console.log("R3OSOperatorRecord", address(record));
+        console.log("R3OSSystemEvent", address(systemEvent));
         console.log("operator-record experiment id", recordId);
         console.log("system-event experiment id", eventId);
         console.log("MON / USD feed", feed);
@@ -87,10 +87,10 @@ contract DeployOperator is Script {
         console.log("feed max age seconds", maxAge);
     }
 
-    function _resolve(R3tardsPaint paint) private view returns (Resolved memory out) {
+    function _resolve(R3OSPaint paint) private view returns (Resolved memory out) {
         uint256 count = paint.experimentCount();
         for (uint256 i; i < count; ++i) {
-            R3tardsPaint.ExperimentData memory info = paint.experimentInfo(i);
+            R3OSPaint.ExperimentData memory info = paint.experimentInfo(i);
             if (info.retired || info.experiment == address(0)) continue;
             bytes32 name = keccak256(bytes(info.name));
             if (name == keccak256("quests")) out.quests = info.experiment;
@@ -127,7 +127,7 @@ contract DeployOperator is Script {
         }
     }
 
-    function _logResolved(R3tardsPaint paint, Resolved memory r) private view {
+    function _logResolved(R3OSPaint paint, Resolved memory r) private view {
         console.log("Paint", address(paint));
         console.log("Painter Pass", paint.painterPass());
         _logSource("quests", r.quests);

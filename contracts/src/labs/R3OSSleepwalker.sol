@@ -5,8 +5,8 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {DynamicBufferLib} from "solady/utils/DynamicBufferLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {R3tardsLabs} from "../R3tardsLabs.sol";
-import {IR3tardsSleepwalkerCore} from "../interfaces/IR3tardsSleepwalkerCore.sol";
+import {R3OSLabs} from "../R3OSLabs.sol";
+import {IR3OSSleepwalkerCore} from "../interfaces/IR3OSSleepwalkerCore.sol";
 import {ILabTokenSource} from "../interfaces/ILabTokenSource.sol";
 import {IStampSource} from "../interfaces/IStampSource.sol";
 import {FrameStore} from "../lib/FrameStore.sol";
@@ -14,7 +14,7 @@ import {LabTraits} from "../lib/LabTraits.sol";
 import {SleepwalkerKey} from "./SleepwalkerKey.sol";
 
 /// @notice A stencil that paints through the owner's own pre-signed core sessions while other players crank it.
-contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
+contract R3OSSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
     using DynamicBufferLib for DynamicBufferLib.DynamicBuffer;
     using Strings for uint256;
 
@@ -27,8 +27,8 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
     uint256 private constant REFUND_GAS_LIMIT = 30_000;
     bytes4 private constant NO_CHANGE_SELECTOR = bytes4(keccak256("NoChange()"));
 
-    IR3tardsSleepwalkerCore public immutable PAINT;
-    R3tardsLabs public immutable LABS;
+    IR3OSSleepwalkerCore public immutable PAINT;
+    R3OSLabs public immutable LABS;
     address public immutable KEY_IMPLEMENTATION;
     uint256 public experimentId = type(uint256).max;
 
@@ -165,14 +165,14 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
         if (paintCore == address(0) || labs == address(0) || keyImplementation == address(0)) {
             revert ZeroAddress();
         }
-        PAINT = IR3tardsSleepwalkerCore(paintCore);
-        LABS = R3tardsLabs(labs);
+        PAINT = IR3OSSleepwalkerCore(paintCore);
+        LABS = R3OSLabs(labs);
         KEY_IMPLEMENTATION = keyImplementation;
     }
 
     function bindExperimentId(uint256 id) external {
         if (experimentId != type(uint256).max) revert ExperimentAlreadyBound();
-        IR3tardsSleepwalkerCore.ExperimentData memory info_ = PAINT.experimentInfo(id);
+        IR3OSSleepwalkerCore.ExperimentData memory info_ = PAINT.experimentInfo(id);
         (address experiment, bool retired) = (info_.experiment, info_.retired);
         if (experiment != address(this) || retired) revert InvalidExperiment(id);
         experimentId = id;
@@ -510,7 +510,7 @@ contract R3tardsSleepwalker is ReentrancyGuard, ILabTokenSource, IStampSource {
 
         bytes memory stencil = FrameStore.read(data.stencilPointer);
         kind = "Dream";
-        description = "a Sleepwalker stencil painted onto the shared r3tards canvas through its owner's signed sessions.";
+        description = "a Sleepwalker stencil painted onto the shared r3OS canvas through its owner's signed sessions.";
         imageSvg = _dreamSvg(stencil, data.totalStencilPixels, data.sampleCount, data.mismatchMask);
         attributes = string(
             abi.encodePacked(

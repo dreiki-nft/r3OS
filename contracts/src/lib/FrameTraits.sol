@@ -3,17 +3,17 @@ pragma solidity ^0.8.28;
 
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {LibString} from "solady/utils/LibString.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 
 /// @notice Shared marketplace traits for opt-in frame renderers.
 /// @dev Returns the comma-separated JSON attribute objects without the surrounding array brackets.
 library FrameTraits {
     using Strings for uint256;
 
-    function attributes(IR3tardsPaintData core, uint256 tokenId) internal view returns (string memory) {
+    function attributes(IR3OSPaintData core, uint256 tokenId) internal view returns (string memory) {
         if (tokenId == 0) return _liveAttributes(core);
 
-        IR3tardsPaintData.FrameInfoData memory f = core.frameInfo(tokenId);
+        IR3OSPaintData.FrameInfoData memory f = core.frameInfo(tokenId);
         return string(
             abi.encodePacked(
                 '{"trait_type":"Season","value":', (uint256(f.season) + 1).toString(),
@@ -33,7 +33,7 @@ library FrameTraits {
         );
     }
 
-    function _liveAttributes(IR3tardsPaintData core) private view returns (string memory) {
+    function _liveAttributes(IR3OSPaintData core) private view returns (string memory) {
         uint256 season = core.currentSeason();
         return string(
             abi.encodePacked(
@@ -46,7 +46,7 @@ library FrameTraits {
         );
     }
 
-    function _character(IR3tardsPaintData core, uint256 season) private view returns (string memory) {
+    function _character(IR3OSPaintData core, uint256 season) private view returns (string memory) {
         string memory guest = core.seasonGuest(season);
         if (bytes(guest).length != 0) {
             return string.concat(',{"trait_type":"Guest","value":"', _jsonEscape(guest), '"}');

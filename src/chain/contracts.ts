@@ -2,7 +2,7 @@ import { type Address, zeroAddress } from 'viem'
 import { publicClient } from './clients'
 import { config } from './config'
 import { readMany } from './readMany'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 
 export interface ContractAddresses {
   paint?: Address
@@ -58,9 +58,9 @@ async function readRegistry(): Promise<ContractAddresses> {
   const paint = config.paintAddress
   const [pass, r3tards, count] = (await readMany(
     [
-      { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'painterPass' },
-      { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'R3TARDS' },
-      { address: paint, abi: R3TARDS_PAINT_ABI, functionName: 'experimentCount' },
+      { address: paint, abi: R3OS_PAINT_ABI, functionName: 'painterPass' },
+      { address: paint, abi: R3OS_PAINT_ABI, functionName: 'R3TARDS' },
+      { address: paint, abi: R3OS_PAINT_ABI, functionName: 'experimentCount' },
     ],
     { allowFailure: false },
   )) as [Address, Address, bigint]
@@ -69,7 +69,7 @@ async function readRegistry(): Promise<ContractAddresses> {
   const infos = (await readMany(
     Array.from({ length: Number(count) }, (_, index) => ({
       address: paint,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'experimentInfo',
       args: [BigInt(index)],
     })),
@@ -123,7 +123,7 @@ export function readCoreConstants() {
     const values = (await readMany(
       names.map((name) => ({
         address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: name,
       })),
       { allowFailure: false },
@@ -151,8 +151,8 @@ export function readCoreStatus(force = false): Promise<CoreStatus> {
 
   const pending = readMany(
     [
-      { address: config.paintAddress, abi: R3TARDS_PAINT_ABI, functionName: 'renderersFrozen' },
-      { address: config.paintAddress, abi: R3TARDS_PAINT_ABI, functionName: 'experimentsFrozen' },
+      { address: config.paintAddress, abi: R3OS_PAINT_ABI, functionName: 'renderersFrozen' },
+      { address: config.paintAddress, abi: R3OS_PAINT_ABI, functionName: 'experimentsFrozen' },
     ],
     { allowFailure: false },
   )

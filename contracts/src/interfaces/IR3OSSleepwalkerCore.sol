@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IR3tardsPaintData} from "./IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "./IR3OSPaintData.sol";
 
 /// @notice The frozen Paint entry points Sleepwalker needs in addition to the shared read interface.
-interface IR3tardsSleepwalkerCore is IR3tardsPaintData {
+interface IR3OSSleepwalkerCore is IR3OSPaintData {
     function MAX_SESSION_BLOCKS() external view returns (uint256);
     function MIN_PIXELS_FOR_ACTIVE_DAY() external view returns (uint32);
     function sessionNonces(address owner) external view returns (uint256);

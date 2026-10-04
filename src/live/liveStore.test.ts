@@ -9,6 +9,7 @@ import {
 } from 'viem'
 import {
   burnerTopUpValue,
+  paintEip712Name,
   MAX_BURNER_FUND,
   START_SESSION_TYPES,
   START_SESSION_TYPE_STRING,
@@ -50,6 +51,12 @@ describe('live session typed data', () => {
     expect(hashStruct({ data: message, primaryType: 'StartSession', types: START_SESSION_TYPES })).toBe(
       manual,
     )
+  })
+
+  it('keeps the deployed testnet EIP-712 domain but uses r3OS for mainnet', () => {
+    expect(paintEip712Name(10_143)).toBe('r3tards paint')
+    expect(paintEip712Name(143)).toBe('r3OS paint')
+    expect(paintEip712Name(31_337)).toBe('r3OS paint')
   })
 
   it('sweeps only the balance left after a 21k gas transfer', () => {

@@ -1,4 +1,4 @@
-// r3tards labs CD-R art v2: reference implementation.
+// r3OS labs CD-R art v2: reference implementation.
 // The Solidity port (contracts/src/lib/CDArt.sol) must produce byte-identical SVG for the same inputs.
 // Non-negative integer maths only (every division is floor division of non-negative numbers) + keccak256.
 // Run: node scripts/cd-art-reference.mjs   (prints the HSV table, hue order and golden hashes)

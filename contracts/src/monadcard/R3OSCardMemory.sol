@@ -10,7 +10,7 @@ interface IMonadCard721 {
 
 /// @notice CARD.DRV: one raw MIP-8-sized 4 KiB EEPROM page per Monad Card id.
 /// @dev No admin, upgrade, payable, approval or signature path. Writes are authorized only by ownerOf(cardId).
-contract R3tardsCardMemory is IStampSource {
+contract R3OSCardMemory is IStampSource {
     address public constant OFFICIAL_MONAD_CARD = 0x0000CA12D5c07085022eBC74867157449919Fd67;
 
     uint256 public constant PAGE_WORDS = 128;

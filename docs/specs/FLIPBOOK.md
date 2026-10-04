@@ -4,15 +4,15 @@ The Flipbook is a 32×32 block-rate animation canvas. The first successful Flipb
 
 ## NFT plumbing
 
-Flipbook is **not** an ERC-721. Reels mint through the shared `R3tardsLabs` collection and all reel data remains keyed by that global Labs token ID.
+Flipbook is **not** an ERC-721. Reels mint through the shared `R3OSLabs` collection and all reel data remains keyed by that global Labs token ID.
 
-Deployment is: deploy Flipbook with `R3tardsLabs`, register Flipbook in the core Lab registry, then call the permissionless one-time `bindExperimentId(id)`. Binding only accepts an active registry entry whose experiment address is this Flipbook contract.
+Deployment is: deploy Flipbook with `R3OSLabs`, register Flipbook in the core Lab registry, then call the permissionless one-time `bindExperimentId(id)`. Binding only accepts an active registry entry whose experiment address is this Flipbook contract.
 
-`mintReel()` snapshots the immutable reel to `FrameStore`, asks `R3tardsLabs` to mint, then records the returned global token ID. Active session keys can paint but cannot mint reels. Reels remain non-burnable.
+`mintReel()` snapshots the immutable reel to `FrameStore`, asks `R3OSLabs` to mint, then records the returned global token ID. Active session keys can paint but cannot mint reels. Reels remain non-burnable.
 
-The legacy `balanceOf(address)` view now proxies `R3tardsLabs.balanceOfExperiment(experimentId, owner)` so the REEL MAKER quest keeps its original meaning without making Flipbook an NFT contract.
+The legacy `balanceOf(address)` view now proxies `R3OSLabs.balanceOfExperiment(experimentId, owner)` so the REEL MAKER quest keeps its original meaning without making Flipbook an NFT contract.
 
-`labToken(id)` supplies the animated onchain SVG and Reel-specific marketplace traits to `R3tardsLabs`. See `LABS_NFT.md` for the common schema and buckets. Exact reel-wide distinct `Painters` / `Crowd` are intentionally omitted because immutable reel snapshots do not contain painter identities.
+`labToken(id)` supplies the animated onchain SVG and Reel-specific marketplace traits to `R3OSLabs`. See `LABS_NFT.md` for the common schema and buckets. Exact reel-wide distinct `Painters` / `Crowd` are intentionally omitted because immutable reel snapshots do not contain painter identities.
 
 ## Editor
 

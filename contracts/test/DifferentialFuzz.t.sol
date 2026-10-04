@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract DifferentialFuzzTest is Test {
-    R3tardsPaint p;
+    R3OSPaint p;
     MockR3tards r;
     address alice = address(0xA11CE);
     bytes32 constant PAINTED_SIG = keccak256("Painted(uint256,address,address,bytes,bytes,uint32,uint16)");
@@ -15,7 +15,7 @@ contract DifferentialFuzzTest is Test {
     function setUp() public {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         r = new MockR3tards();
-        p = new R3tardsPaint(
+        p = new R3OSPaint(
             address(r), uint64(vm.getBlockTimestamp()), alice, alice, 20_000, 0, 20_000, 16, 256
         );
     }

@@ -2,16 +2,16 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsFlipbook} from "../src/labs/R3tardsFlipbook.sol";
-import {R3tardsForks} from "../src/labs/R3tardsForks.sol";
-import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
-import {R3tardsSleepwalker} from "../src/labs/R3tardsSleepwalker.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSFlipbook} from "../src/labs/R3OSFlipbook.sol";
+import {R3OSForks} from "../src/labs/R3OSForks.sol";
+import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
+import {R3OSSleepwalker} from "../src/labs/R3OSSleepwalker.sol";
 import {SleepwalkerKey} from "../src/labs/SleepwalkerKey.sol";
-import {R3tardsRecycleBin} from "../src/labs/R3tardsRecycleBin.sol";
-import {R3tardsCDBurner} from "../src/labs/R3tardsCDBurner.sol";
+import {R3OSRecycleBin} from "../src/labs/R3OSRecycleBin.sol";
+import {R3OSCDBurner} from "../src/labs/R3OSCDBurner.sol";
 
 /// @notice Transaction-sized deployment regression under the Monad Foundry profile.
 /// @dev Deploys from artifact creation code so this test does not embed every creation blob in its own runtime.
@@ -24,36 +24,36 @@ contract DeployGasTest is Test {
         uint64 seasonStart = uint64(vm.getBlockTimestamp());
 
         (address paintAddress,) = _deploy(
-            "R3tardsPaint.sol:R3tardsPaint",
+            "R3OSPaint.sol:R3OSPaint",
             abi.encode(r3tards, seasonStart, address(this), royalty, uint32(32), uint32(16), uint32(256), uint32(16), uint32(256)),
-            "R3tardsPaint"
+            "R3OSPaint"
         );
-        R3tardsPaint paint = R3tardsPaint(paintAddress);
+        R3OSPaint paint = R3OSPaint(paintAddress);
         (address labsAddress,) = _deploy(
-            "R3tardsLabs.sol:R3tardsLabs", abi.encode(paintAddress, royalty), "R3tardsLabs"
+            "R3OSLabs.sol:R3OSLabs", abi.encode(paintAddress, royalty), "R3OSLabs"
         );
-        R3tardsLabs labs = R3tardsLabs(labsAddress);
+        R3OSLabs labs = R3OSLabs(labsAddress);
         (address diffAddress,) = _deploy("DiffRenderer.sol:DiffRenderer", bytes(""), "DiffRenderer");
         (address timelapseAddress,) = _deploy("SeasonTimelapseRenderer.sol:SeasonTimelapseRenderer", bytes(""), "SeasonTimelapseRenderer");
         (address df1Address,) = _deploy("DF1Renderer.sol:DF1Renderer", bytes(""), "DF1Renderer");
-        (address passAddress,) = _deploy("R3tardsPainterPass.sol:R3tardsPainterPass", abi.encode(paintAddress), "R3tardsPainterPass");
-        R3tardsPainterPass pass = R3tardsPainterPass(passAddress);
+        (address passAddress,) = _deploy("R3OSPainterPass.sol:R3OSPainterPass", abi.encode(paintAddress), "R3OSPainterPass");
+        R3OSPainterPass pass = R3OSPainterPass(passAddress);
 
         bytes memory genesis = vm.parseBytes(vm.trim(vm.readFile("script/flipbook-genesis.hex")));
         assertEq(genesis.length, 512);
         (address flipbookAddress,) = _deploy(
-            "R3tardsFlipbook.sol:R3tardsFlipbook",
+            "R3OSFlipbook.sol:R3OSFlipbook",
             abi.encode(paintAddress, labsAddress, seasonStart, uint256(300), genesis),
-            "R3tardsFlipbook"
+            "R3OSFlipbook"
         );
-        (address weedsAddress,) = _deploy("R3tardsWeeds.sol:R3tardsWeeds", abi.encode(paintAddress, seasonStart), "R3tardsWeeds");
+        (address weedsAddress,) = _deploy("R3OSWeeds.sol:R3OSWeeds", abi.encode(paintAddress, seasonStart), "R3OSWeeds");
         (address forksAddress,) = _deploy(
-            "R3tardsForks.sol:R3tardsForks", abi.encode(paintAddress, labsAddress, seasonStart), "R3tardsForks"
+            "R3OSForks.sol:R3OSForks", abi.encode(paintAddress, labsAddress, seasonStart), "R3OSForks"
         );
-        (address brushesAddress,) = _deploy("R3tardsBrushes.sol:R3tardsBrushes", abi.encode(paintAddress, seasonStart), "R3tardsBrushes");
-        (address auctionAddress,) = _deploy("R3tardsFinaleAuction.sol:R3tardsFinaleAuction", abi.encode(paintAddress), "R3tardsFinaleAuction");
-        (address questsAddress,) = _deploy("R3tardsQuests.sol:R3tardsQuests", abi.encode(paintAddress, seasonStart, address(this)), "R3tardsQuests");
-        R3tardsQuests quests = R3tardsQuests(questsAddress);
+        (address brushesAddress,) = _deploy("R3OSBrushes.sol:R3OSBrushes", abi.encode(paintAddress, seasonStart), "R3OSBrushes");
+        (address auctionAddress,) = _deploy("R3OSFinaleAuction.sol:R3OSFinaleAuction", abi.encode(paintAddress), "R3OSFinaleAuction");
+        (address questsAddress,) = _deploy("R3OSQuests.sol:R3OSQuests", abi.encode(paintAddress, seasonStart, address(this)), "R3OSQuests");
+        R3OSQuests quests = R3OSQuests(questsAddress);
 
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (diffAddress, "diff")), "wire renderer diff");
         _call(paintAddress, abi.encodeCall(paint.addRenderer, (timelapseAddress, "season timelapse")), "wire renderer timelapse");
@@ -62,14 +62,14 @@ contract DeployGasTest is Test {
         uint256 flipbookExperimentId = _wireLab(paint, pass, flipbookAddress, "flipbook", true);
         _call(
             flipbookAddress,
-            abi.encodeCall(R3tardsFlipbook.bindExperimentId, (flipbookExperimentId)),
+            abi.encodeCall(R3OSFlipbook.bindExperimentId, (flipbookExperimentId)),
             "wire flipbook experiment id"
         );
         _wireLab(paint, pass, weedsAddress, "weeds", true);
         uint256 forksExperimentId = _wireLab(paint, pass, forksAddress, "forks", true);
         _call(
             forksAddress,
-            abi.encodeCall(R3tardsForks.bindExperimentId, (forksExperimentId)),
+            abi.encodeCall(R3OSForks.bindExperimentId, (forksExperimentId)),
             "wire forks experiment id"
         );
         _wireLab(paint, pass, brushesAddress, "brushes", true);
@@ -80,34 +80,34 @@ contract DeployGasTest is Test {
             "SleepwalkerKey.sol:SleepwalkerKey", bytes(""), "SleepwalkerKey implementation"
         );
         (address sleepwalkerAddress,) = _deploy(
-            "R3tardsSleepwalker.sol:R3tardsSleepwalker",
+            "R3OSSleepwalker.sol:R3OSSleepwalker",
             abi.encode(paintAddress, labsAddress, sleepwalkerKeyAddress),
-            "R3tardsSleepwalker"
+            "R3OSSleepwalker"
         );
         uint256 sleepwalkerExperimentId = _wireLab(paint, pass, sleepwalkerAddress, "sleepwalker", true);
         _call(
             sleepwalkerAddress,
-            abi.encodeCall(R3tardsSleepwalker.bindExperimentId, (sleepwalkerExperimentId)),
+            abi.encodeCall(R3OSSleepwalker.bindExperimentId, (sleepwalkerExperimentId)),
             "wire sleepwalker experiment id"
         );
 
         (address recycleBinAddress,) = _deploy(
-            "R3tardsRecycleBin.sol:R3tardsRecycleBin", abi.encode(paintAddress), "R3tardsRecycleBin"
+            "R3OSRecycleBin.sol:R3OSRecycleBin", abi.encode(paintAddress), "R3OSRecycleBin"
         );
         uint256 recycleBinExperimentId = _wireLab(paint, pass, recycleBinAddress, "recycle-bin", true);
         _call(
             recycleBinAddress,
-            abi.encodeCall(R3tardsRecycleBin.bindExperimentId, (recycleBinExperimentId)),
+            abi.encodeCall(R3OSRecycleBin.bindExperimentId, (recycleBinExperimentId)),
             "wire recycle-bin experiment id"
         );
 
         (address cdBurnerAddress,) = _deploy(
-            "R3tardsCDBurner.sol:R3tardsCDBurner", abi.encode(paintAddress, labsAddress), "R3tardsCDBurner"
+            "R3OSCDBurner.sol:R3OSCDBurner", abi.encode(paintAddress, labsAddress), "R3OSCDBurner"
         );
         uint256 cdBurnerExperimentId = _wireLab(paint, pass, cdBurnerAddress, "cd-burner", false);
         _call(
             cdBurnerAddress,
-            abi.encodeCall(R3tardsCDBurner.bindExperimentId, (cdBurnerExperimentId)),
+            abi.encodeCall(R3OSCDBurner.bindExperimentId, (cdBurnerExperimentId)),
             "wire cd-burner experiment id"
         );
 
@@ -122,12 +122,12 @@ contract DeployGasTest is Test {
         _addOne(quests, "TIMELINES", forksAddress, bytes4(keccak256("painterInfo(address)")), 0, 10);
         _addOne(quests, "DNA HUNTER", brushesAddress, bytes4(keccak256("box(address)")), 11, 10);
 
-        R3tardsQuests.Condition[] memory labRat = new R3tardsQuests.Condition[](4);
+        R3OSQuests.Condition[] memory labRat = new R3OSQuests.Condition[](4);
         bytes4 stampSelector = bytes4(keccak256("stamp(address)"));
-        labRat[0] = R3tardsQuests.Condition(flipbookAddress, stampSelector, 1, 0, 1);
-        labRat[1] = R3tardsQuests.Condition(weedsAddress, stampSelector, 1, 0, 1);
-        labRat[2] = R3tardsQuests.Condition(forksAddress, stampSelector, 1, 0, 1);
-        labRat[3] = R3tardsQuests.Condition(brushesAddress, stampSelector, 1, 0, 1);
+        labRat[0] = R3OSQuests.Condition(flipbookAddress, stampSelector, 1, 0, 1);
+        labRat[1] = R3OSQuests.Condition(weedsAddress, stampSelector, 1, 0, 1);
+        labRat[2] = R3OSQuests.Condition(forksAddress, stampSelector, 1, 0, 1);
+        labRat[3] = R3OSQuests.Condition(brushesAddress, stampSelector, 1, 0, 1);
         _call(questsAddress, abi.encodeCall(quests.addQuest, ("LAB RAT", uint48(0), uint48(0), labRat)), "quest LAB RAT");
         _addOne(quests, "PADDLE UP", auctionAddress, bytes4(keccak256("bidderStats(address)")), 0, 1);
         _addOne(quests, "RECYCLER", recycleBinAddress, bytes4(keccak256("burnedBy(address)")), 0, 100);
@@ -150,8 +150,8 @@ contract DeployGasTest is Test {
     }
 
     function _wireLab(
-        R3tardsPaint paint,
-        R3tardsPainterPass pass,
+        R3OSPaint paint,
+        R3OSPainterPass pass,
         address lab,
         string memory name,
         bool stampSource
@@ -168,9 +168,9 @@ contract DeployGasTest is Test {
         }
     }
 
-    function _addOne(R3tardsQuests quests, string memory name, address target, bytes4 selector, uint8 word, uint256 threshold) private {
-        R3tardsQuests.Condition[] memory conditions = new R3tardsQuests.Condition[](1);
-        conditions[0] = R3tardsQuests.Condition(target, selector, word, 0, threshold);
+    function _addOne(R3OSQuests quests, string memory name, address target, bytes4 selector, uint8 word, uint256 threshold) private {
+        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](1);
+        conditions[0] = R3OSQuests.Condition(target, selector, word, 0, threshold);
         _call(address(quests), abi.encodeCall(quests.addQuest, (name, uint48(0), uint48(0), conditions)), string.concat("quest ", name));
     }
 

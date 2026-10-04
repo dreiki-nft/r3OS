@@ -2,14 +2,14 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
-import {R3tardsFlipbook} from "../src/labs/R3tardsFlipbook.sol";
-import {R3tardsWeeds} from "../src/labs/R3tardsWeeds.sol";
-import {R3tardsForks} from "../src/labs/R3tardsForks.sol";
-import {R3tardsBrushes} from "../src/labs/R3tardsBrushes.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
+import {R3OSFlipbook} from "../src/labs/R3OSFlipbook.sol";
+import {R3OSWeeds} from "../src/labs/R3OSWeeds.sol";
+import {R3OSForks} from "../src/labs/R3OSForks.sol";
+import {R3OSBrushes} from "../src/labs/R3OSBrushes.sol";
 import {BrushDNA} from "../src/lib/BrushDNA.sol";
 import {IStampSource} from "../src/interfaces/IStampSource.sol";
 import {MockR3tards} from "./MockR3tards.sol";
@@ -31,9 +31,9 @@ contract QuestTarget is IStampSource {
 }
 
 contract QuestsTest is Test {
-    R3tardsPaint paint;
-    R3tardsPainterPass pass;
-    R3tardsQuests quests;
+    R3OSPaint paint;
+    R3OSPainterPass pass;
+    R3OSQuests quests;
     MockR3tards r3tards;
     QuestTarget target;
     uint256 alicePk = 0xA11CE;
@@ -45,23 +45,23 @@ contract QuestsTest is Test {
         alice = vm.addr(alicePk);
         bob = makeAddr("bob");
         r3tards = new MockR3tards();
-        paint = R3tardsPaint(deployCode(
-            "R3tardsPaint.sol:R3tardsPaint",
+        paint = R3OSPaint(deployCode(
+            "R3OSPaint.sol:R3OSPaint",
             abi.encode(
                 address(r3tards), uint64(vm.getBlockTimestamp()), alice, makeAddr("royalty"),
                 uint32(512), uint32(0), uint32(512), uint32(16), uint32(256)
             )
         ));
-        pass = R3tardsPainterPass(deployCode(
-            "R3tardsPainterPass.sol:R3tardsPainterPass", abi.encode(address(paint))
+        pass = R3OSPainterPass(deployCode(
+            "R3OSPainterPass.sol:R3OSPainterPass", abi.encode(address(paint))
         ));
         vm.prank(alice);
-        quests = new R3tardsQuests(address(paint), uint64(vm.getBlockTimestamp()), address(this));
+        quests = new R3OSQuests(address(paint), uint64(vm.getBlockTimestamp()), address(this));
         target = new QuestTarget();
     }
 
     function testAddQuestValidationAndOwnable2Step() public {
-        R3tardsQuests.Condition[] memory one = _oneCondition(address(target), QuestTarget.metric.selector, 0, 0, 1);
+        R3OSQuests.Condition[] memory one = _oneCondition(address(target), QuestTarget.metric.selector, 0, 0, 1);
         string[7] memory badNames;
         badNames[0] = "";
         badNames[1] = "bad\"name";
@@ -71,27 +71,27 @@ contract QuestsTest is Test {
         badNames[5] = "bad&name";
         badNames[6] = "123456789012345678901";
         for (uint256 i; i < badNames.length; ++i) {
-            vm.expectRevert(R3tardsQuests.BadName.selector);
+            vm.expectRevert(R3OSQuests.BadName.selector);
             quests.addQuest(badNames[i], 0, 0, one);
         }
-        R3tardsQuests.Condition[] memory none = new R3tardsQuests.Condition[](0);
-        vm.expectRevert(R3tardsQuests.BadConditions.selector);
+        R3OSQuests.Condition[] memory none = new R3OSQuests.Condition[](0);
+        vm.expectRevert(R3OSQuests.BadConditions.selector);
         quests.addQuest("NONE", 0, 0, none);
-        R3tardsQuests.Condition[] memory five = new R3tardsQuests.Condition[](5);
+        R3OSQuests.Condition[] memory five = new R3OSQuests.Condition[](5);
         for (uint256 i; i < five.length; ++i) five[i] = one[0];
-        vm.expectRevert(R3tardsQuests.BadConditions.selector);
+        vm.expectRevert(R3OSQuests.BadConditions.selector);
         quests.addQuest("FIVE", 0, 0, five);
 
-        R3tardsQuests.Condition[] memory bad = _oneCondition(bob, QuestTarget.metric.selector, 0, 0, 1);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.BadCondition.selector, 0));
+        R3OSQuests.Condition[] memory bad = _oneCondition(bob, QuestTarget.metric.selector, 0, 0, 1);
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.BadCondition.selector, 0));
         quests.addQuest("EOA", 0, 0, bad);
         bad = _oneCondition(address(target), QuestTarget.metric.selector, 32, 0, 1);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.BadCondition.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.BadCondition.selector, 0));
         quests.addQuest("WORD", 0, 0, bad);
         bad = _oneCondition(address(target), QuestTarget.metric.selector, 0, 2, 1);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.BadCondition.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.BadCondition.selector, 0));
         quests.addQuest("OP", 0, 0, bad);
-        vm.expectRevert(R3tardsQuests.BadWindow.selector);
+        vm.expectRevert(R3OSQuests.BadWindow.selector);
         quests.addQuest("WINDOW", 100, 99, one);
 
         vm.expectRevert();
@@ -106,30 +106,30 @@ contract QuestsTest is Test {
     }
 
     function testTooManyQuestsAt257() public {
-        R3tardsQuests.Condition[] memory one = _oneCondition(address(target), QuestTarget.metric.selector, 0, 0, 0);
+        R3OSQuests.Condition[] memory one = _oneCondition(address(target), QuestTarget.metric.selector, 0, 0, 0);
         for (uint256 i; i < 256; ++i) quests.addQuest("Q", 0, 0, one);
         assertEq(quests.questCount(), 256);
-        vm.expectRevert(R3tardsQuests.TooManyQuests.selector);
+        vm.expectRevert(R3OSQuests.TooManyQuests.selector);
         quests.addQuest("Q", 0, 0, one);
     }
 
     function testReadFailuresAreConditionFailuresAndReturnBombIsBounded() public {
-        R3tardsQuests.Condition[] memory c = _oneCondition(address(target), QuestTarget.alwaysRevert.selector, 0, 0, 1);
+        R3OSQuests.Condition[] memory c = _oneCondition(address(target), QuestTarget.alwaysRevert.selector, 0, 0, 1);
         uint256 id = quests.addQuest("REVERT", 0, 0, c);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.ConditionNotMet.selector, id, 0, 0, 1));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.ConditionNotMet.selector, id, 0, 0, 1));
         vm.prank(alice);
         quests.claim(id);
 
         c = _oneCondition(address(target), QuestTarget.shortReturn.selector, 1, 0, 1);
         id = quests.addQuest("SHORT", 0, 0, c);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.ConditionNotMet.selector, id, 0, 0, 1));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.ConditionNotMet.selector, id, 0, 0, 1));
         vm.prank(alice);
         quests.claim(id);
 
         c = _oneCondition(address(target), QuestTarget.returnBomb.selector, 0, 0, 1);
         id = quests.addQuest("BOMB", 0, 0, c);
         uint256 beforeGas = gasleft();
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.ConditionNotMet.selector, id, 0, 0, 1));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.ConditionNotMet.selector, id, 0, 0, 1));
         vm.prank(alice);
         quests.claim(id);
         uint256 used = beforeGas - gasleft();
@@ -142,7 +142,7 @@ contract QuestsTest is Test {
         uint48 start = uint48(vm.getBlockNumber() + 5);
         uint48 end = start + 5;
         uint256 id = quests.addQuest("WINDOW", start, end, _oneCondition(address(target), QuestTarget.metric.selector, 0, 0, 7));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.QuestNotActive.selector, id));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.QuestNotActive.selector, id));
         vm.prank(alice);
         quests.claim(id);
         vm.roll(start);
@@ -153,13 +153,13 @@ contract QuestsTest is Test {
         quests.claim(id);
         assertEq(quests.completedCount(alice), 1);
         assertEq(quests.completedMask(alice), uint256(1) << id);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.AlreadyCompleted.selector, id));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.AlreadyCompleted.selector, id));
         vm.prank(alice);
         quests.claim(id);
 
         vm.roll(uint256(end) + 1);
         uint256 later = quests.addQuest("LATER", start, end, _oneCondition(address(target), QuestTarget.metric.selector, 0, 0, 7));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.QuestNotActive.selector, later));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.QuestNotActive.selector, later));
         vm.prank(alice);
         quests.claim(later);
 
@@ -168,18 +168,18 @@ contract QuestsTest is Test {
         quests.claim(le);
         target.setValue(bob, 8);
         uint256 fail = quests.addQuest("FAIL", 0, 0, _oneCondition(address(target), QuestTarget.metric.selector, 0, 1, 7));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.ConditionNotMet.selector, fail, 0, 8, 7));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.ConditionNotMet.selector, fail, 0, 8, 7));
         vm.prank(bob);
         quests.claim(fail);
     }
 
     function testConditionNotMetReportsFirstFailingIndex() public {
         target.setValue(alice, 7);
-        R3tardsQuests.Condition[] memory conditions = new R3tardsQuests.Condition[](2);
-        conditions[0] = R3tardsQuests.Condition(address(target), QuestTarget.metric.selector, 0, 0, 7);
-        conditions[1] = R3tardsQuests.Condition(address(target), QuestTarget.twoWords.selector, 1, 0, 9);
+        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](2);
+        conditions[0] = R3OSQuests.Condition(address(target), QuestTarget.metric.selector, 0, 0, 7);
+        conditions[1] = R3OSQuests.Condition(address(target), QuestTarget.twoWords.selector, 1, 0, 9);
         uint256 id = quests.addQuest("INDEX", 0, 0, conditions);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.ConditionNotMet.selector, id, 1, 8, 9));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.ConditionNotMet.selector, id, 1, 8, 9));
         vm.prank(alice);
         quests.claim(id);
     }
@@ -208,15 +208,15 @@ contract QuestsTest is Test {
     }
 
     function testNotOpenYetAndUnknownQuest() public {
-        R3tardsQuests future = R3tardsQuests(deployCode(
-            "R3tardsQuests.sol:R3tardsQuests",
+        R3OSQuests future = R3OSQuests(deployCode(
+            "R3OSQuests.sol:R3OSQuests",
             abi.encode(address(paint), uint64(vm.getBlockTimestamp() + 100), address(this))
         ));
         future.addQuest("FUTURE", 0, 0, _oneCondition(address(target), QuestTarget.metric.selector, 0, 0, 0));
-        vm.expectRevert(R3tardsQuests.NotOpenYet.selector);
+        vm.expectRevert(R3OSQuests.NotOpenYet.selector);
         vm.prank(alice);
         future.claim(0);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsQuests.NoQuest.selector, 99));
+        vm.expectRevert(abi.encodeWithSelector(R3OSQuests.NoQuest.selector, 99));
         vm.prank(alice);
         quests.claim(99);
     }
@@ -233,26 +233,26 @@ contract QuestsTest is Test {
         vm.roll(vm.getBlockNumber() + 700);
 
         bytes memory genesis = new bytes(512);
-        R3tardsLabs labs = new R3tardsLabs(address(paint), makeAddr("royalty"));
-        R3tardsFlipbook flipbook = R3tardsFlipbook(deployCode(
-            "R3tardsFlipbook.sol:R3tardsFlipbook",
+        R3OSLabs labs = new R3OSLabs(address(paint), makeAddr("royalty"));
+        R3OSFlipbook flipbook = R3OSFlipbook(deployCode(
+            "R3OSFlipbook.sol:R3OSFlipbook",
             abi.encode(address(paint), address(labs), uint64(vm.getBlockTimestamp()), uint256(300), genesis)
         ));
         vm.prank(alice);
         uint256 flipbookExperimentId = paint.addExperiment(address(flipbook), "flipbook", "");
         flipbook.bindExperimentId(flipbookExperimentId);
-        R3tardsWeeds weeds = R3tardsWeeds(deployCode(
-            "R3tardsWeeds.sol:R3tardsWeeds", abi.encode(address(paint), uint64(vm.getBlockTimestamp()))
+        R3OSWeeds weeds = R3OSWeeds(deployCode(
+            "R3OSWeeds.sol:R3OSWeeds", abi.encode(address(paint), uint64(vm.getBlockTimestamp()))
         ));
-        R3tardsForks forks = R3tardsForks(deployCode(
-            "R3tardsForks.sol:R3tardsForks",
+        R3OSForks forks = R3OSForks(deployCode(
+            "R3OSForks.sol:R3OSForks",
             abi.encode(address(paint), address(labs), uint64(vm.getBlockTimestamp()))
         ));
         vm.prank(alice);
         uint256 forksExperimentId = paint.addExperiment(address(forks), "forks", "");
         forks.bindExperimentId(forksExperimentId);
-        R3tardsBrushes brushes = R3tardsBrushes(deployCode(
-            "R3tardsBrushes.sol:R3tardsBrushes", abi.encode(address(paint), uint64(vm.getBlockTimestamp()))
+        R3OSBrushes brushes = R3OSBrushes(deployCode(
+            "R3OSBrushes.sol:R3OSBrushes", abi.encode(address(paint), uint64(vm.getBlockTimestamp()))
         ));
 
         // FLIPBOOK: ten distinct frames painted.
@@ -302,12 +302,12 @@ contract QuestsTest is Test {
         (, bool brushEarned) = brushes.stamp(alice);
         assertTrue(brushEarned);
 
-        R3tardsQuests.Condition[] memory conditions = new R3tardsQuests.Condition[](4);
+        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](4);
         bytes4 stampSelector = bytes4(keccak256("stamp(address)"));
-        conditions[0] = R3tardsQuests.Condition(address(flipbook), stampSelector, 1, 0, 1);
-        conditions[1] = R3tardsQuests.Condition(address(weeds), stampSelector, 1, 0, 1);
-        conditions[2] = R3tardsQuests.Condition(address(forks), stampSelector, 1, 0, 1);
-        conditions[3] = R3tardsQuests.Condition(address(brushes), stampSelector, 1, 0, 1);
+        conditions[0] = R3OSQuests.Condition(address(flipbook), stampSelector, 1, 0, 1);
+        conditions[1] = R3OSQuests.Condition(address(weeds), stampSelector, 1, 0, 1);
+        conditions[2] = R3OSQuests.Condition(address(forks), stampSelector, 1, 0, 1);
+        conditions[3] = R3OSQuests.Condition(address(brushes), stampSelector, 1, 0, 1);
         uint256 labRat = quests.addQuest("LAB RAT", 0, 0, conditions);
         vm.prank(alice);
         quests.claim(labRat);
@@ -324,7 +324,7 @@ contract QuestsTest is Test {
     function testGasTargets() public {
         vm.prank(alice);
         paint.paint(hex"00000304", new uint256[](0));
-        R3tardsQuests.Condition[] memory coreCondition = _oneCondition(
+        R3OSQuests.Condition[] memory coreCondition = _oneCondition(
             address(paint), bytes4(keccak256("painterStats(address)")), 2, 0, 1
         );
         uint256 one = quests.addQuest("CORE", 0, 0, coreCondition);
@@ -336,10 +336,10 @@ contract QuestsTest is Test {
         assertLt(used, 160_000);
 
         QuestTarget[4] memory sources;
-        R3tardsQuests.Condition[] memory four = new R3tardsQuests.Condition[](4);
+        R3OSQuests.Condition[] memory four = new R3OSQuests.Condition[](4);
         for (uint256 i; i < 4; ++i) {
             sources[i] = new QuestTarget();
-            four[i] = R3tardsQuests.Condition(address(sources[i]), QuestTarget.stamp.selector, 1, 0, 1);
+            four[i] = R3OSQuests.Condition(address(sources[i]), QuestTarget.stamp.selector, 1, 0, 1);
         }
         uint256 fourId = quests.addQuest("FOUR", 0, 0, four);
         beforeGas = gasleft();
@@ -359,10 +359,10 @@ contract QuestsTest is Test {
     function _oneCondition(address targetAddress, bytes4 selector, uint8 word, uint8 op, uint256 threshold)
         private
         pure
-        returns (R3tardsQuests.Condition[] memory conditions)
+        returns (R3OSQuests.Condition[] memory conditions)
     {
-        conditions = new R3tardsQuests.Condition[](1);
-        conditions[0] = R3tardsQuests.Condition(targetAddress, selector, word, op, threshold);
+        conditions = new R3OSQuests.Condition[](1);
+        conditions[0] = R3OSQuests.Condition(targetAddress, selector, word, op, threshold);
     }
 
     function _startSession(address key, uint256 blocks_, uint256 maxUnits) private {
@@ -374,7 +374,7 @@ contract QuestsTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 address(paint)

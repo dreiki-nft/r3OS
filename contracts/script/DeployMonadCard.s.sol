@@ -2,21 +2,21 @@
 pragma solidity ^0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
-import {R3tardsCardMemory} from "../src/monadcard/R3tardsCardMemory.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
+import {R3OSCardMemory} from "../src/monadcard/R3OSCardMemory.sol";
 
 /// @notice Deploy CARD.DRV, then configure Paint, Pass and Quests directly or emit Safe calldata.
 contract DeployMonadCard is Script {
     function run() external {
         address cardAddress = vm.envAddress("MONAD_CARD_ADDRESS");
-        R3tardsPaint paint = R3tardsPaint(vm.envAddress("PAINT_ADDRESS"));
-        R3tardsPainterPass pass = R3tardsPainterPass(vm.envAddress("PASS_ADDRESS"));
-        R3tardsQuests quests = R3tardsQuests(vm.envAddress("QUESTS_ADDRESS"));
+        R3OSPaint paint = R3OSPaint(vm.envAddress("PAINT_ADDRESS"));
+        R3OSPainterPass pass = R3OSPainterPass(vm.envAddress("PASS_ADDRESS"));
+        R3OSQuests quests = R3OSQuests(vm.envAddress("QUESTS_ADDRESS"));
 
         vm.startBroadcast();
-        R3tardsCardMemory cardMemory = new R3tardsCardMemory(cardAddress);
+        R3OSCardMemory cardMemory = new R3OSCardMemory(cardAddress);
         (, address broadcaster,) = vm.readCallers();
 
         uint256 expectedExperimentId = paint.experimentCount();
@@ -24,7 +24,7 @@ contract DeployMonadCard is Script {
         uint256 expectedQuestId = quests.questCount();
 
         bytes memory experimentCall = abi.encodeCall(
-            R3tardsPaint.addExperiment,
+            R3OSPaint.addExperiment,
             (address(cardMemory), "card-drv", "")
         );
         if (paint.owner() == broadcaster) {
@@ -34,7 +34,7 @@ contract DeployMonadCard is Script {
             console.logBytes(experimentCall);
         }
 
-        bytes memory stampCall = abi.encodeCall(R3tardsPainterPass.addStampSource, (address(cardMemory)));
+        bytes memory stampCall = abi.encodeCall(R3OSPainterPass.addStampSource, (address(cardMemory)));
         if (pass.owner() == broadcaster) {
             expectedSourceId = pass.addStampSource(address(cardMemory));
         } else {
@@ -42,22 +42,22 @@ contract DeployMonadCard is Script {
             console.logBytes(stampCall);
         }
 
-        R3tardsQuests.Condition[] memory conditions = new R3tardsQuests.Condition[](2);
-        conditions[0] = R3tardsQuests.Condition({
+        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](2);
+        conditions[0] = R3OSQuests.Condition({
             target: cardAddress,
             selector: bytes4(keccak256("balanceOf(address)")),
             word: 0,
             op: 0,
             threshold: 1
         });
-        conditions[1] = R3tardsQuests.Condition({
+        conditions[1] = R3OSQuests.Condition({
             target: address(paint),
             selector: bytes4(keccak256("painterStats(address)")),
             word: 2,
             op: 0,
             threshold: 143
         });
-        bytes memory questCall = abi.encodeCall(R3tardsQuests.addQuest, ("CARD CARRIER", 0, 0, conditions));
+        bytes memory questCall = abi.encodeCall(R3OSQuests.addQuest, ("CARD CARRIER", 0, 0, conditions));
         if (quests.owner() == broadcaster) {
             expectedQuestId = quests.addQuest("CARD CARRIER", 0, 0, conditions);
         } else {
@@ -66,7 +66,7 @@ contract DeployMonadCard is Script {
         }
         vm.stopBroadcast();
 
-        console.log("R3tardsCardMemory", address(cardMemory));
+        console.log("R3OSCardMemory", address(cardMemory));
         console.log("Monad Card", cardAddress);
         console.log("card-drv experiment id", expectedExperimentId);
         console.log("MONAD CARD stamp source id", expectedSourceId);

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "../interfaces/IStampSource.sol";
 import {BrushDNA} from "../lib/BrushDNA.sol";
 
 /// @notice Catch deterministic block-hash brushes, stamp them through normal core paint, then verify them onchain.
 /// @dev No owner, no admin, no funds. Each resolved owner has one 128-slot-aligned storage page.
-contract R3tardsBrushes is IStampSource {
+contract R3OSBrushes is IStampSource {
     error ZeroAddress();
     error NotOpenYet();
     error NotCatchable(uint256 blockNumber);
@@ -34,12 +34,12 @@ contract R3tardsBrushes is IStampSource {
     uint256 public constant CATCH_WINDOW_BLOCKS = 256;
     uint256 public constant STAMP_THRESHOLD = 3;
 
-    IR3tardsPaintData public immutable PAINT;
+    IR3OSPaintData public immutable PAINT;
     uint64 public immutable OPEN_TIME;
 
     constructor(address paintCore, uint64 openTime) {
         if (paintCore == address(0)) revert ZeroAddress();
-        PAINT = IR3tardsPaintData(paintCore);
+        PAINT = IR3OSPaintData(paintCore);
         OPEN_TIME = openTime;
     }
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/// @notice Standardized, adminless observations of r3tardOS usage.
+/// @notice Standardized, adminless observations of r3OS usage.
 /// @dev Live facts are read from existing contracts. Storage records only first observation blocks and observed seasons.
-contract R3tardsOperatorRecord {
+contract R3OSOperatorRecord {
     uint256 public constant SUBSYSTEM_COUNT = 16;
     uint256 public constant IDENTITY_MASK = uint256(1) << 15;
     uint256 public constant SOURCE_GAS = 100_000;
@@ -244,7 +244,7 @@ contract R3tardsOperatorRecord {
             first = _minNonZero(first, f.cardFirstWriteBlock);
         }
 
-        // MONAD CARD is identity, not r3tardOS use, so it never sets "first seen".
+        // MONAD CARD is identity, not r3OS use, so it never sets "first seen".
         uint256 base = recordBaseSlot(operator);
         for (uint256 i; i < SUBSYSTEM_COUNT; ++i) {
             if (i == MONAD_CARD_ID) continue;

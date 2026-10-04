@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {MonadHW} from "../lib/MonadHW.sol";
 
 /// @notice MIP-8 storage-page benchmark plus one writable 4 KiB page per wallet.
-contract R3tardsPageExe {
+contract R3OSPageExe {
     uint256 public constant BENCH_BASE = uint256(keccak256("r3tards.page.exe.bench")) & ~uint256(127);
     uint256 public constant USER_BASE =
         uint256(keccak256("r3tards.page.exe.users")) & ~uint256((uint256(1) << 167) - 1);

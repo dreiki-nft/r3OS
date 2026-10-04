@@ -2,7 +2,7 @@ import { zeroAddress, type Address } from 'viem'
 import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { readHeavy, readMany } from '../chain/readMany'
-import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
+import { R3OS_FLIPBOOK_ABI, R3OS_LABS_ABI } from '../lib/generated/abi'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
 
 export type LabsOwnedToken = { id: bigint; data?: LabsTokenData }
@@ -44,7 +44,7 @@ function ensureLabsTransferWatch(labs: Address) {
   if (!wsClient || stopLabsTransferWatch) return
   stopLabsTransferWatch = wsClient.watchContractEvent({
     address: labs,
-    abi: R3TARDS_LABS_ABI,
+    abi: R3OS_LABS_ABI,
     eventName: 'Transfer',
     onLogs: (logs) => {
       const prefix = `${labs.toLowerCase()}:`
@@ -79,7 +79,7 @@ export async function labsAddress() {
       if (!flipbook) throw new Error("this Lab isn't deployed on this network")
       return (await publicClient.readContract({
         address: flipbook,
-        abi: R3TARDS_FLIPBOOK_ABI,
+        abi: R3OS_FLIPBOOK_ABI,
         functionName: 'LABS',
       })) as Address
     })().catch((error) => {
@@ -102,7 +102,7 @@ export async function scanOwnedLabs(labs: Address, owner: Address, force = false
 
   const pending = (async () => {
     const total = BigInt(
-      await publicClient.readContract({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'totalMinted' }),
+      await publicClient.readContract({ address: labs, abi: R3OS_LABS_ABI, functionName: 'totalMinted' }),
     )
     if (total === 0n) return []
     // readMany already slices Multicall3 into 100-call chunks and runs four chunks at a time.
@@ -110,7 +110,7 @@ export async function scanOwnedLabs(labs: Address, owner: Address, force = false
     const rows = await readMany(
       Array.from({ length: Number(total) }, (_, i) => ({
         address: labs,
-        abi: R3TARDS_LABS_ABI,
+        abi: R3OS_LABS_ABI,
         functionName: 'ownerOf',
         args: [1n + BigInt(i)],
       })),
@@ -138,7 +138,7 @@ export async function loadOwnedLabsSources(labs: Address, owner: Address, force 
     const ids = await scanOwnedLabs(labs, owner, force)
     if (!ids.length) return new Map<string, Address>()
     const rows = await readMany(
-      ids.map((id) => ({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'sourceOf', args: [id] })),
+      ids.map((id) => ({ address: labs, abi: R3OS_LABS_ABI, functionName: 'sourceOf', args: [id] })),
       { allowFailure: true },
     )
     const values = new Map<string, Address>()

@@ -6,13 +6,13 @@ This is the contract-boundary threat model, maintained through Phase LAUNCH. Ite
 
 ## Core freeze
 
-`contracts/src/R3tardsPaint.sol` received its final pre-testnet SEC hardening before deployment: outline-density limits, experiment-registry controls, session nonce cancellation, finale grace-period authorization and fail-safe renderer calls. The current configuration is deployed on Monad Testnet; mainnet is not deployed yet. The Paint core is frozen for product work, so later Labs integrate only through registries, view APIs, stamp sources and events already exposed by that contract.
+The snapshot-28 Paint core received its pre-testnet SEC hardening before the current testnet deployment. Phase 7.5 deliberately reopens the **fresh mainnet source only** for a bounded delta: product/protocol naming plus two smaller mainnet-only holder bonuses. It does not replace the deployed testnet bytecode. The Phase 7.5 Foundry + frontend gate is therefore a new freeze gate; after it passes, `contracts/src/R3OSPaint.sol` is frozen again and later Labs integrate only through registries, view APIs, stamp sources and events unless a concrete launch-blocking bug is found.
 
 ## Administrative authority: `Ownable2Step`
 
-Ownership transfer is two-step. The current owner nominates a pending owner; the pending owner must explicitly accept. A typo therefore does not immediately transfer control. `R3tardsPaint.renounceOwnership()` is disabled so a broken Lab can always be retired by a valid owner; ownership can still move through the two-step path.
+Ownership transfer is two-step. The current owner nominates a pending owner; the pending owner must explicitly accept. A typo therefore does not immediately transfer control. `R3OSPaint.renounceOwnership()` is disabled so a broken Lab can always be retired by a valid owner; ownership can still move through the two-step path.
 
-The `R3tardsPaint` owner can:
+The `R3OSPaint` owner can:
 
 - configure/append/clear **future-season** outlines before those seasons start, capped at 16,384 unique outline pixels per season;
 - append optional renderer contracts and permanently freeze renderer additions;
@@ -52,11 +52,21 @@ Owners can call `incrementSessionNonce()` to invalidate signed but not-yet-start
 
 An active session key cannot use delegated identity to mint frames, flip face/background, or claim the Painter Pass. The frontend revokes before sweeping unused MON (Hardware Profiles → End session).
 
+The EIP-712 domain is part of the signed-session security boundary. Existing chain-10143 Paint keeps the deployed `r3tards paint` / version `2` domain; fresh local/mainnet `R3OSPaint` uses `r3OS paint` / version `2`. The frontend selects by chain id. A silent domain rename on the existing testnet contract would invalidate signatures and is explicitly forbidden.
+
+## Partner holder bonuses
+
+Phase 7.5 adds fixed mainnet-only holder reads for Skrumpeys (`0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0`) and Monad Cards (`0x0000CA12D5c07085022eBC74867157449919Fd67`). Each currently-held collection adds **128 px per UTC day per wallet**, compared with the stronger r3tards tier of **512 px per UTC day per supplied/owned token** in the launch configuration. The partner constants are part of the mainnet bytecode, not owner-configurable allowlists.
+
+The partner contracts are external liveness dependencies only for the **optional bonus check**. Each `balanceOf(owner)` probe is a read-only, **50,000-gas-capped `staticcall`** with strict 32-byte return validation; revert, malformed/no-code behaviour or an unavailable collection fails closed to **no bonus**. `_spendUnits` does not probe either collection at all when ordinary hourly + supplied r3tard quota already covers the action, so an external partner failure cannot brick the common Paint path. Launch Doctor verifies the exact chain-143 addresses, code presence and 128 px constants before mainnet.
+
+The partner quota is intentionally wallet/day-accounted rather than token-id-accounted. This keeps Skrumpeys and non-enumerable Monad Cards automatic and preserves the existing `paint(bytes,uint256[])` ABI, but a transferable partner NFT can make a second wallet eligible later in the same UTC day. This is **not** treated as Sybil resistance. The cap is deliberately only one 128 px bonus per wallet/collection/day; r3tards remains the only per-token holder tier with quota persistence across transfers. Monad Cards are additionally handled as a wallet-holder bonus rather than requiring token-id discovery.
+
 ## Painter Pass binding
 
-There is no core Painter Pass pointer. Session safety depends only on core-owned paint/session state, so a separate metadata contract cannot become a liveness dependency for `startSession`.
+The core retains a one-time `painterPass` **discovery pointer**, but session safety no longer calls through it. Session registration depends only on core-owned paint/session state, so a broken Pass cannot become a liveness dependency for `startSession`.
 
-The Painter Pass remains bound in the opposite direction through its immutable `PAINT` reference. That lets Pass metadata read the core without giving the Pass any authority over painting or session registration.
+The Painter Pass is also bound in the opposite direction through its immutable `PAINT` reference. That lets Pass metadata read the core without giving the Pass any authority over painting or session registration.
 
 ## Malicious external renderers
 
@@ -80,7 +90,7 @@ A user can predict storms exactly and coordinate activity around them. That is i
 
 ## Lab read APIs
 
-`regionWords` and `regionBlankMask` are view-only. They create no callback path from the core into a Lab contract and no Lab contract receives core permissions. `R3tardsWeeds` and later experiments consume these views from their own contracts.
+`regionWords` and `regionBlankMask` are view-only. They create no callback path from the core into a Lab contract and no Lab contract receives core permissions. `R3OSWeeds` and later experiments consume these views from their own contracts.
 
 `regionBlankMask` considers a cell available only when the background nibble is zero and the season outline does not cover it. Its SWAR result is tested against a naive reference.
 
@@ -94,7 +104,7 @@ A burned Pass cannot be re-claimed by the same address.
 
 ## Flipbook Lab
 
-`R3tardsFlipbook` has **no owner and no admin functions**. If its rules or renderer need a v2, deploy a new Lab and retire the old display entry in the core registry. Registry retirement does not mutate the old contract or its reels.
+`R3OSFlipbook` has **no owner and no admin functions**. If its rules or renderer need a v2, deploy a new Lab and retire the old display entry in the core registry. Registry retirement does not mutate the old contract or its reels.
 
 Active core session keys are paint-only in Flipbook as well: they resolve to the core session owner for ink and painter stats and cannot call `mintReel`. A stolen burner can therefore scribble within the Flipbook owner's remaining ink window, but cannot mint a reel. Core session expiry/revocation immediately removes that delegated identity.
 
@@ -114,7 +124,7 @@ Shared `FrameTraits` rebuilds the built-in immutable frame traits for optional r
 
 ## Weeds Lab
 
-`R3tardsWeeds` has **no owner and no admin functions**. It reads `currentSeason` and `regionBlankMask` from the core and never writes the core. A broken Weeds deployment is replaced and the old Lab registry entry can be retired without mutating either contract.
+`R3OSWeeds` has **no owner and no admin functions**. It reads `currentSeason` and `regionBlankMask` from the core and never writes the core. A broken Weeds deployment is replaced and the old Lab registry entry can be retired without mutating either contract.
 
 Each region's Life world and generation metadata live in that region's own aligned 128-slot page. Different-region world writes are disjoint. Per-address gardening statistics are separate account state, so activity attributed to the same resolved owner may still share that stats slot; the Lanes visualization remains an estimate from known app storage, not a claim about Monad's actual executor schedule.
 
@@ -157,7 +167,7 @@ Monad charges from the submitted gas limit, including reverted transactions. Ove
 
 ## Forks Lab
 
-`R3tardsForks` has no owner/admin and cannot write the core. It reads immutable frame data only when seeding a fork. The resulting fork lives entirely in the Lab contract.
+`R3OSForks` has no owner/admin and cannot write the core. It reads immutable frame data only when seeding a fork. The resulting fork lives entirely in the Lab contract.
 
 Open forks are deliberately griefable: any resolved painter can edit them. The NFT owner can close a fork to make painting owner-only or seal it permanently. The shared 256 px/block budget slows a coordinated wipe but is not Sybil resistance.
 
@@ -169,7 +179,7 @@ Sealed forks cannot be reopened. Forks may still be created from closed or seale
 
 ## Block DNA Brushes Lab
 
-`R3tardsBrushes` has no owner/admin, holds no funds, and never writes the core. A brush is deterministic from a recent block hash. A validator could theoretically withhold a block in an attempt to steer that single block's brush; the game provides no economic reward for a particular brush, so this is not treated as secure randomness.
+`R3OSBrushes` has no owner/admin, holds no funds, and never writes the core. A brush is deterministic from a recent block hash. A validator could theoretically withhold a block in an attempt to steer that single block's brush; the game provides no economic reward for a particular brush, so this is not treated as secure randomness.
 
 A brush may be verified only for the resolved owner whose box contains it. Stamping uses ordinary core paint, so another painter or DF1 corruption can change a filled cell before verification. Verification is intentionally current-season-only; season rollover invalidates old unstamped/unverified canvas placements.
 
@@ -179,7 +189,7 @@ Active session keys may catch and verify for their owner. Compromise therefore e
 
 ## Finale Candle Auction
 
-`R3tardsFinaleAuction` has **no owner or admin**. A finale holder explicitly approves and escrows only the finale they list. The auction cannot seize unapproved tokens or alter the Paint core.
+`R3OSFinaleAuction` has **no owner or admin**. A finale holder explicitly approves and escrows only the finale they list. The auction cannot seize unapproved tokens or alter the Paint core.
 
 The candle end depends on the closing block hash. The proposer of that exact block could theoretically try to influence its block contents or withhold a block, so the mechanism is not treated as cryptographic randomness for high-value adversarial games. Here it only selects one of 12,000 possible historical end points after a public 24-hour bidding window.
 
@@ -189,18 +199,18 @@ Bid deposits stay escrowed until settlement because a bidder who looks outbid at
 
 ## Quests Lab
 
-`R3tardsQuests` uses `Ownable2Step`, but its owner power is **append-only**: the owner may add a new display quest and may transfer ownership, but cannot edit, delete, revoke or retroactively complete an existing quest. Quests grant no pixels, NFT control, budgets, auction rights, Lab rights, funds or other protocol permissions.
+`R3OSQuests` uses `Ownable2Step`, but its owner power is **append-only**: the owner may add a new display quest and may transfer ownership, but cannot edit, delete, revoke or retroactively complete an existing quest. Quests grant no pixels, NFT control, budgets, auction rights, Lab rights, funds or other protocol permissions.
 
 Quest conditions are read-only `staticcall`s with a fixed gas cap and copy only one requested 32-byte return word. Reverting targets, missing words and return-bomb attempts therefore fail the condition without giving an external contract an unbounded metadata/claim callback. Completion is stored on the resolved painter address; active session keys can claim for their owner but cannot redirect the completion.
 
 
 ## Monad hardware experiments
 
-The Monad hardware suite is removable and grants no new authority over the Paint core. `R3tardsPageExe` has no owner/admin, holds no funds and can write only the caller's deterministic 128-word page. Its benchmark write path always reverts, so benchmark state cannot accumulate. The page log deliberately publishes the written words; page contents are public onchain data and must never be treated as private storage.
+The Monad hardware suite is removable and grants no new authority over the Paint core. `R3OSPageExe` has no owner/admin, holds no funds and can write only the caller's deterministic 128-word page. Its benchmark write path always reverts, so benchmark state cannot accumulate. The page log deliberately publishes the written words; page contents are public onchain data and must never be treated as private storage.
 
-`R3tardsBlockCamera` can mint only through its bound `R3tardsLabs` experiment id. Proposer/validator id is **not randomness**: a proposer can influence transaction inclusion, and the portrait uses proposer identity only as art/provenance. Parent hash, epoch and proposer availability are recorded with explicit known/unknown flags so a missing precompile does not silently become a fake zero-valued device.
+`R3OSBlockCamera` can mint only through its bound `R3OSLabs` experiment id. Proposer/validator id is **not randomness**: a proposer can influence transaction inclusion, and the portrait uses proposer identity only as art/provenance. Parent hash, epoch and proposer availability are recorded with explicit known/unknown flags so a missing precompile does not silently become a fake zero-valued device.
 
-`R3tardsKernelDebugger` has no admin. It may retain only `credits[msg.sender]`, which that same sender can withdraw. Its optional state step is an external self-call so a failure is isolated from the primary frame. A graceful reserve-dip path must successfully refund before it can continue; a rejecting refund receiver therefore reverts the whole run rather than pretending the unwind succeeded.
+`R3OSKernelDebugger` has no admin. It may retain only `credits[msg.sender]`, which that same sender can withdraw. Its optional state step is an external self-call so a failure is isolated from the primary frame. A graceful reserve-dip path must successfully refund before it can continue; a rejecting refund receiver therefore reverts the whole run rather than pretending the unwind succeeded.
 
 The retired Kernel Debugger UI used a **process key stored in localStorage**, in the same risk class as the Paint burner but in a separate namespace: `r3os.kernel.key.<chainId>.<owner>`. Browser compromise or malicious same-origin script can steal it. If that historical experiment is exercised directly, the key must be funded only with the tiny amount needed for the reserve experiment, kept below 10 MON, and swept back after use. The current production UI does not create or fund this key. It has no Paint session authority.
 
@@ -208,7 +218,7 @@ The naive burst is intentionally expected to revert when Monad enforces an uncor
 
 ## Monad Card / CARD.DRV
 
-`R3tardsCardMemory` is ownerless and has no upgrade, payable, approval or signature path. A page write is authorized only by the official/mock card contract's current `ownerOf(cardId)` result and exact `msg.sender`; Paint session keys and ERC-721 approvals do not grant CARD.DRV write authority. On chain 143 the constructor rejects every card address except the official Monad Card contract.
+`R3OSCardMemory` is ownerless and has no upgrade, payable, approval or signature path. A page write is authorized only by the official/mock card contract's current `ownerOf(cardId)` result and exact `msg.sender`; Paint session keys and ERC-721 approvals do not grant CARD.DRV write authority. On chain 143 the constructor rejects every card address except the official Monad Card contract.
 
 CARD.DRV memory is **public and permanently replayable**. `CardWritten` emits the full written words, so overwriting a label, message or USER byte does not erase the old value from chain history. Users must never put secrets, private keys, passwords or private messages in the page. LABEL and MESSAGE are untrusted user text and the frontend renders them only as text; they are never interpreted as HTML.
 
@@ -220,17 +230,17 @@ There is no admin path to edit, clear or migrate CARD.DRV pages. The only mutabl
 
 ## Operator record and system event
 
-`R3tardsOperatorRecord` is permissionless to record but cannot accept caller-supplied facts. Each observation is reconstructed with gas-capped `staticcall`s against the configured source contracts, and a first-observed block can move only from zero to the block in which the predicate was actually observed. Repeating the same action does not add another subsystem bit. Missing, reverting, malformed or gas-burning sources are treated as unanswered rather than converted into false facts.
+`R3OSOperatorRecord` is permissionless to record but cannot accept caller-supplied facts. Each observation is reconstructed with gas-capped `staticcall`s against the configured source contracts, and a first-observed block can move only from zero to the block in which the predicate was actually observed. Repeating the same action does not add another subsystem bit. Missing, reverting, malformed or gas-burning sources are treated as unanswered rather than converted into false facts.
 
 The record is **public history**. Its storage page and `OperatorRecorded` events are readable by anyone, and the Operator tab says so explicitly. It must not be described as private analytics. Session-key-capable sources already attribute their state to the Paint owner; contract-wallet addresses remain valid operators and do not need to originate the recording transaction themselves.
 
-`R3tardsSystemEvent` trusts the configured Chainlink MON/USD proxy and one fresh round that satisfies the deployed threshold. On chain 143 the contract hard-requires the verified proxy address. Activation is permissionless and permanent: there is no owner, pause, reset, feed migration or manual fallback. The consequence is intentional liveness risk: if the oracle stops returning fresh rounds before the condition is reached, this deployment cannot be repaired to force activation.
+`R3OSSystemEvent` trusts the configured Chainlink MON/USD proxy and one fresh round that satisfies the deployed threshold. On chain 143 the contract hard-requires the verified proxy address. Activation is permissionless and permanent: there is no owner, pause, reset, feed migration or manual fallback. The consequence is intentional liveness risk: if the oracle stops returning fresh rounds before the condition is reached, this deployment cannot be repaired to force activation.
 
 The UI keeps the oracle condition separate from the latch itself: **CONDITION MET** is not **ACTIVATED** until an `activate()` transaction succeeds. After activation, DEVICE 07 still says its driver is not installed and its next stage is unknown. New Operator / DEVICE 07 / Kernel event-copy is centralized and regression-tested against the phase's prohibited marketing vocabulary, and the Operator tab includes the explicit no-promise line required by the product spec.
 
 ## ROUTER.EXE / MRC-17 routing lab
 
-`R3tardsRouterLab` treats every configured adapter as hostile. Quote calls run with an explicit gas cap inside an external self-call that always reverts, and the parent accepts only its own structured revert envelope. Adapter revert data is copied only up to 512 bytes; successful quote returndata is rejected above the configured cap and strictly ABI-validated before use. One reverting, gas-burning or malformed venue therefore remains isolated from the other venue reports as long as the top-level call satisfies the lab's preflight gas budget.
+`R3OSRouterLab` treats every configured adapter as hostile. Quote calls run with an explicit gas cap inside an external self-call that always reverts, and the parent accepts only its own structured revert envelope. Adapter revert data is copied only up to 512 bytes; successful quote returndata is rejected above the configured cap and strictly ABI-validated before use. One reverting, gas-burning or malformed venue therefore remains isolated from the other venue reports as long as the top-level call satisfies the lab's preflight gas budget.
 
 The lab never uses `delegatecall`, never pulls user tokens, has no owner/config storage and exposes no persistent routing/execution entry point. `simulateNativeIn` is payable only for an `eth_call` execution preview and always reverts. Its per-venue WMON deposit, exact approval, adapter execution and received output also occur inside a self-call that always reverts. A real transaction to this function must fail, restoring the sender's value; the contract must never retain MON, token balances or allowances after the frame unwinds.
 

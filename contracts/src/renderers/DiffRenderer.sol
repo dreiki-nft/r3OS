@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {Base64} from "solady/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IFrameRenderer} from "../interfaces/IFrameRenderer.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {FrameTraits} from "../lib/FrameTraits.sol";
 
 contract DiffRenderer is IFrameRenderer {
@@ -16,8 +16,8 @@ contract DiffRenderer is IFrameRenderer {
 
     function tokenURI(address paint, uint256 tokenId) external view returns (string memory) {
         if (tokenId == 0) revert("diff: live canvas unsupported");
-        IR3tardsPaintData core = IR3tardsPaintData(paint);
-        IR3tardsPaintData.FrameInfoData memory info = core.frameInfo(tokenId);
+        IR3OSPaintData core = IR3OSPaintData(paint);
+        IR3OSPaintData.FrameInfoData memory info = core.frameInfo(tokenId);
         bytes memory current = core.frameCompositeData(tokenId);
         bytes memory previous;
 
@@ -52,7 +52,7 @@ contract DiffRenderer is IFrameRenderer {
             Base64.encode(bmp), '"/></svg>'
         );
         string memory json = string.concat(
-            '{"name":"r3tards paint diff #', tokenId.toString(),
+            '{"name":"r3OS paint diff #', tokenId.toString(),
             '","description":"pixels changed since the previous frame in this season are highlighted red.","image":"data:image/svg+xml;base64,',
             Base64.encode(bytes(svg)), '\",\"attributes\":[', FrameTraits.attributes(core, tokenId), ']}'
         );

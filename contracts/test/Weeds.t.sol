@@ -2,12 +2,12 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsWeeds} from "../src/labs/R3tardsWeeds.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSWeeds} from "../src/labs/R3OSWeeds.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
-contract R3tardsWeedsHarness is R3tardsWeeds {
-    constructor(address paintCore, uint64 openTime) R3tardsWeeds(paintCore, openTime) {}
+contract R3OSWeedsHarness is R3OSWeeds {
+    constructor(address paintCore, uint64 openTime) R3OSWeeds(paintCore, openTime) {}
 
     function step(uint64[64] memory w, uint64[64] memory soil) external pure returns (uint64[64] memory) {
         return _step(w, soil);
@@ -15,8 +15,8 @@ contract R3tardsWeedsHarness is R3tardsWeeds {
 }
 
 contract WeedsTest is Test {
-    R3tardsPaint paint;
-    R3tardsWeedsHarness weeds;
+    R3OSPaint paint;
+    R3OSWeedsHarness weeds;
     MockR3tards r3tards;
     uint256 alicePk = 0xA11CE;
     address alice;
@@ -27,23 +27,23 @@ contract WeedsTest is Test {
         alice = vm.addr(alicePk);
         bob = makeAddr("bob");
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
-        weeds = new R3tardsWeedsHarness(address(paint), uint64(vm.getBlockTimestamp()));
+        weeds = new R3OSWeedsHarness(address(paint), uint64(vm.getBlockTimestamp()));
     }
 
     function testNotOpenYetAndValidation() public {
-        R3tardsWeeds future = new R3tardsWeeds(address(paint), uint64(vm.getBlockTimestamp() + 100));
-        vm.expectRevert(R3tardsWeeds.NotOpenYet.selector);
+        R3OSWeeds future = new R3OSWeeds(address(paint), uint64(vm.getBlockTimestamp() + 100));
+        vm.expectRevert(R3OSWeeds.NotOpenYet.selector);
         future.tick(0);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsWeeds.InvalidRegion.selector, 16));
+        vm.expectRevert(abi.encodeWithSelector(R3OSWeeds.InvalidRegion.selector, 16));
         weeds.tick(16);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsWeeds.InvalidPlant.selector, 64, 0, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSWeeds.InvalidPlant.selector, 64, 0, 0));
         weeds.plant(0, 64, 0, 0);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsWeeds.InvalidPlant.selector, 0, 64, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSWeeds.InvalidPlant.selector, 0, 64, 0));
         weeds.plant(0, 0, 64, 0);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsWeeds.InvalidPlant.selector, 0, 0, 8));
+        vm.expectRevert(abi.encodeWithSelector(R3OSWeeds.InvalidPlant.selector, 0, 0, 8));
         weeds.plant(0, 0, 0, 8);
     }
 
@@ -90,7 +90,7 @@ contract WeedsTest is Test {
         vm.prank(alice);
         weeds.tick(0);
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsWeeds.AlreadyTicked.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSWeeds.AlreadyTicked.selector, 0));
         weeds.tick(0);
         vm.prank(bob);
         weeds.tick(5);
@@ -110,7 +110,7 @@ contract WeedsTest is Test {
 
         uint256 until = vm.getBlockNumber() + weeds.PLANT_COOLDOWN_BLOCKS();
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsWeeds.PlantCooldown.selector, until));
+        vm.expectRevert(abi.encodeWithSelector(R3OSWeeds.PlantCooldown.selector, until));
         weeds.plant(0, 20, 20, 5);
 
         vm.roll(until);
@@ -118,7 +118,7 @@ contract WeedsTest is Test {
         weeds.plant(0, 20, 20, 5);
         vm.roll(vm.getBlockNumber() + weeds.PLANT_COOLDOWN_BLOCKS());
         vm.prank(alice);
-        vm.expectRevert(R3tardsWeeds.NothingPlanted.selector);
+        vm.expectRevert(R3OSWeeds.NothingPlanted.selector);
         weeds.plant(0, 20, 20, 5);
 
         // Default outline does not cover region 0, while a painted canvas pixel removes soil immediately.
@@ -218,7 +218,7 @@ contract WeedsTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 address(paint)

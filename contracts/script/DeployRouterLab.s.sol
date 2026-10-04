@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsRouterLab} from "../src/router/R3tardsRouterLab.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSRouterLab} from "../src/router/R3OSRouterLab.sol";
 import {
     MockWrappedNative,
     MockUSD,
@@ -21,22 +21,22 @@ import {MockVenueDirectory} from "../test/MockVenueDirectory.sol";
 /// @notice Add-on deployment for the read-only MRC-17 routing lab.
 contract DeployRouterLab is Script {
     function run() external {
-        R3tardsPaint paint = R3tardsPaint(vm.envAddress("PAINT_ADDRESS"));
+        R3OSPaint paint = R3OSPaint(vm.envAddress("PAINT_ADDRESS"));
         bool deployMocks = block.chainid != 143 && vm.envOr("DEPLOY_MOCK_VENUES", true);
 
         vm.startBroadcast();
-        R3tardsRouterLab lab = new R3tardsRouterLab();
+        R3OSRouterLab lab = new R3OSRouterLab();
         MockVenueDirectory directory;
         if (deployMocks) directory = _deployMocks();
         (, address broadcaster,) = vm.readCallers();
 
         uint256 labId = paint.experimentCount();
         uint256 directoryId = labId + 1;
-        bytes memory labCall = abi.encodeCall(R3tardsPaint.addExperiment, (address(lab), "router-lab", ""));
+        bytes memory labCall = abi.encodeCall(R3OSPaint.addExperiment, (address(lab), "router-lab", ""));
         bytes memory directoryCall;
         if (address(directory) != address(0)) {
             directoryCall = abi.encodeCall(
-                R3tardsPaint.addExperiment,
+                R3OSPaint.addExperiment,
                 (address(directory), "router-mock-venues", "")
             );
         }
@@ -56,7 +56,7 @@ contract DeployRouterLab is Script {
         }
         vm.stopBroadcast();
 
-        console.log("R3tardsRouterLab", address(lab));
+        console.log("R3OSRouterLab", address(lab));
         console.log("router-lab experiment id", labId);
         if (address(directory) != address(0)) {
             console.log("MockVenueDirectory", address(directory));

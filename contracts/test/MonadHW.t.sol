@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsPageExe} from "../src/monadhw/R3tardsPageExe.sol";
-import {R3tardsBlockCamera} from "../src/monadhw/R3tardsBlockCamera.sol";
-import {R3tardsKernelDebugger} from "../src/monadhw/R3tardsKernelDebugger.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSPageExe} from "../src/monadhw/R3OSPageExe.sol";
+import {R3OSBlockCamera} from "../src/monadhw/R3OSBlockCamera.sol";
+import {R3OSKernelDebugger} from "../src/monadhw/R3OSKernelDebugger.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract ReserveBalanceMock {
@@ -16,9 +16,9 @@ contract ReserveBalanceMock {
 }
 
 contract RejectRefund {
-    R3tardsKernelDebugger immutable KERNEL;
+    R3OSKernelDebugger immutable KERNEL;
 
-    constructor(R3tardsKernelDebugger kernel) {
+    constructor(R3OSKernelDebugger kernel) {
         KERNEL = kernel;
     }
 
@@ -32,10 +32,10 @@ contract RejectRefund {
 }
 
 contract ReenterWithdraw {
-    R3tardsKernelDebugger immutable KERNEL;
+    R3OSKernelDebugger immutable KERNEL;
     bool public attempted;
 
-    constructor(R3tardsKernelDebugger kernel) {
+    constructor(R3OSKernelDebugger kernel) {
         KERNEL = kernel;
     }
 
@@ -59,11 +59,11 @@ contract MonadHWTest is Test {
     address constant STAKING = 0x0000000000000000000000000000000000001000;
     address constant RESERVE = 0x0000000000000000000000000000000000001001;
 
-    R3tardsPageExe page;
-    R3tardsBlockCamera camera;
-    R3tardsKernelDebugger kernel;
-    R3tardsPaint paint;
-    R3tardsLabs labs;
+    R3OSPageExe page;
+    R3OSBlockCamera camera;
+    R3OSKernelDebugger kernel;
+    R3OSPaint paint;
+    R3OSLabs labs;
     MockR3tards r3tards;
 
     address alice;
@@ -79,13 +79,13 @@ contract MonadHWTest is Test {
         vm.deal(bob, 100 ether);
 
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, royalty, 512, 0, 512, 16, 256
         );
-        labs = new R3tardsLabs(address(paint), royalty);
-        page = new R3tardsPageExe();
-        camera = new R3tardsBlockCamera(address(paint), address(labs), address(0));
-        kernel = new R3tardsKernelDebugger();
+        labs = new R3OSLabs(address(paint), royalty);
+        page = new R3OSPageExe();
+        camera = new R3OSBlockCamera(address(paint), address(labs), address(0));
+        kernel = new R3OSKernelDebugger();
 
         vm.prank(alice);
         uint256 cameraId = paint.addExperiment(address(camera), "block-camera", "");
@@ -125,7 +125,7 @@ contract MonadHWTest is Test {
     function testBenchWriteAlwaysRevertsAndLeavesStorageUnchanged() public {
         bytes32 slot = bytes32(page.BENCH_BASE());
         bytes32 beforeValue = vm.load(address(page), slot);
-        vm.expectPartialRevert(R3tardsPageExe.BenchWriteResult.selector);
+        vm.expectPartialRevert(R3OSPageExe.BenchWriteResult.selector);
         page.benchWrite(0, 32);
         assertEq(vm.load(address(page), slot), beforeValue);
     }
@@ -135,7 +135,7 @@ contract MonadHWTest is Test {
         try page.benchWrite(0, 32) {
             fail();
         } catch (bytes memory data) {
-            assertEq(bytes4(data), R3tardsPageExe.BenchWriteResult.selector);
+            assertEq(bytes4(data), R3OSPageExe.BenchWriteResult.selector);
             bytes memory args = new bytes(data.length - 4);
             for (uint256 i; i < args.length; ++i) args[i] = data[i + 4];
             (uint256 used,) = abi.decode(args, (uint256, uint256));
@@ -149,7 +149,7 @@ contract MonadHWTest is Test {
         words[1] = bytes32(uint256(0xCCDD));
 
         vm.expectEmit(true, false, false, true, address(page));
-        emit R3tardsPageExe.PageWritten(alice, 7, words);
+        emit R3OSPageExe.PageWritten(alice, 7, words);
         vm.prank(alice);
         page.writePage(7, words);
 
@@ -160,7 +160,7 @@ contract MonadHWTest is Test {
         assertEq(bobPage[7], bytes32(0));
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPageExe.PageWriteOutOfBounds.selector, 127, 2));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPageExe.PageWriteOutOfBounds.selector, 127, 2));
         page.writePage(127, words);
     }
 
@@ -187,7 +187,7 @@ contract MonadHWTest is Test {
         uint256 id = camera.capture();
         assertEq(labs.ownerOf(id), bob);
         assertEq(labs.sourceOf(id), address(camera));
-        R3tardsBlockCamera.Shot memory value = camera.shot(id);
+        R3OSBlockCamera.Shot memory value = camera.shot(id);
         assertEq(value.epoch, 123);
         assertEq(value.proposerValId, 182);
         assertTrue(value.epochKnown);
@@ -220,7 +220,7 @@ contract MonadHWTest is Test {
         vm.mockCallRevert(STAKING, bytes(""), bytes("missing"));
         vm.prank(bob);
         uint256 id = camera.capture();
-        R3tardsBlockCamera.Shot memory value = camera.shot(id);
+        R3OSBlockCamera.Shot memory value = camera.shot(id);
         assertFalse(value.epochKnown);
         assertFalse(value.proposerKnown);
         assertEq(value.epoch, 0);
@@ -240,7 +240,7 @@ contract MonadHWTest is Test {
         vm.prank(bob);
         camera.capture();
         vm.prank(bob);
-        vm.expectRevert(R3tardsBlockCamera.AlreadyCapturedThisBlock.selector);
+        vm.expectRevert(R3OSBlockCamera.AlreadyCapturedThisBlock.selector);
         camera.capture();
         vm.roll(block.number + 1);
         vm.prank(bob);
@@ -321,13 +321,13 @@ contract MonadHWTest is Test {
         );
         RejectRefund rejector = new RejectRefund(kernel);
         vm.deal(address(rejector), 1 ether);
-        vm.expectRevert(R3tardsKernelDebugger.RefundFailed.selector);
+        vm.expectRevert(R3OSKernelDebugger.RefundFailed.selector);
         rejector.run{value: 0.1 ether}();
     }
 
     function testOptionalStepOnlySelf() public {
         vm.prank(alice);
-        vm.expectRevert(R3tardsKernelDebugger.OnlySelf.selector);
+        vm.expectRevert(R3OSKernelDebugger.OnlySelf.selector);
         kernel.optionalStep(alice, false);
     }
 

@@ -1,6 +1,6 @@
 # Block DNA Brushes
 
-Phase 3 UI specification for `R3tardsBrushes`.
+Phase 3 UI specification for `R3OSBrushes`.
 
 ## Concept
 

@@ -7,17 +7,17 @@ import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Base64} from "solady/utils/Base64.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {IR3tardsPaintData} from "./interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "./interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "./interfaces/IStampSource.sol";
 import {PassArt} from "./lib/PassArt.sol";
 
 /// @notice ERC-5192-style soulbound painter credential. It grants no privileges.
-contract R3tardsPainterPass is ERC721, Ownable2Step {
+contract R3OSPainterPass is ERC721, Ownable2Step {
     using Strings for uint256;
 
     uint256 public constant STAMP_SOURCE_GAS_LIMIT = 100_000;
 
-    IR3tardsPaintData public immutable PAINT;
+    IR3OSPaintData public immutable PAINT;
     uint256 private _nextTokenId = 1;
     mapping(address => uint256) public passOf;
     mapping(address => bool) public hasClaimed;
@@ -39,9 +39,9 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
     event StampSourceEnabled(uint256 indexed sourceId, bool enabled);
     event ContractURIUpdated();
 
-    constructor(address paint) ERC721("r3tards painter pass", "R3PASS") Ownable(msg.sender) {
+    constructor(address paint) ERC721("r3OS painter pass", "R3OSPASS") Ownable(msg.sender) {
         if (paint == address(0)) revert NoPaintYet();
-        PAINT = IR3tardsPaintData(paint);
+        PAINT = IR3OSPaintData(paint);
     }
 
     function claim() external returns (uint256 tokenId) {
@@ -120,8 +120,8 @@ contract R3tardsPainterPass is ERC721, Ownable2Step {
             )
         );
         bytes memory json = abi.encodePacked(
-            '{"name":"r3tards painter pass",',
-            '"description":"Soulbound painter credentials for r3tards paint. Fully onchain on Monad.",',
+            '{"name":"r3OS painter pass",',
+            '"description":"Soulbound painter credentials for r3OS paint. Fully onchain on Monad.",',
             '"image":"data:image/svg+xml;base64,', Base64.encode(svg), '",',
             '"external_link":"', _jsonEscape(_externalLink), '",',
             '"seller_fee_basis_points":0,',

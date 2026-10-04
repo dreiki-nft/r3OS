@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { encodeErrorResult } from 'viem'
-import { R3TARDS_ROUTER_LAB_ABI } from '../lib/generated/abi'
+import { R3OS_ROUTER_LAB_ABI } from '../lib/generated/abi'
 import {
   DEFAULT_GAS_PER_FRAME,
   DEFAULT_PROBE_STATIC,
@@ -52,7 +52,7 @@ describe('router-lab frontend decoding', () => {
 
   it('decodes the Simulation custom-error envelope', () => {
     const data = encodeErrorResult({
-      abi: R3TARDS_ROUTER_LAB_ABI,
+      abi: R3OS_ROUTER_LAB_ABI,
       errorName: 'Simulation',
       args: [55n, [[C, 0, 100n, 10n, true, 99n, 20n, '0x00000000']]],
     } as any)

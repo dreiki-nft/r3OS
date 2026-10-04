@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {IR3tardsPaintData} from "../src/interfaces/IR3tardsPaintData.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {IR3OSPaintData} from "../src/interfaces/IR3OSPaintData.sol";
 import {DF1Renderer} from "../src/renderers/DF1Renderer.sol";
 import {DF1} from "../src/lib/DF1.sol";
 import {MockR3tards} from "./MockR3tards.sol";
@@ -15,7 +15,7 @@ contract DF1Harness {
 }
 
 contract DF1RendererTest is Test {
-    R3tardsPaint paint;
+    R3OSPaint paint;
     DF1Renderer renderer;
     DF1Harness harness;
     MockR3tards r3tards;
@@ -28,7 +28,7 @@ contract DF1RendererTest is Test {
         alice = makeAddr("alice");
         royalty = makeAddr("royalty");
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, royalty, 512, 0, 512, 16, 256
         );
         renderer = new DF1Renderer();
@@ -215,7 +215,7 @@ contract DF1RendererTest is Test {
             face = paint.faceColor(season);
             background = paint.backgroundColor(season);
         } else {
-            IR3tardsPaintData.FrameInfoData memory info = IR3tardsPaintData(address(paint)).frameInfo(tokenId);
+            IR3OSPaintData.FrameInfoData memory info = IR3OSPaintData(address(paint)).frameInfo(tokenId);
             season = info.season;
             face = info.faceColor;
             background = info.backgroundColor;

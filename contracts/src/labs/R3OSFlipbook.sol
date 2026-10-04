@@ -3,16 +3,16 @@ pragma solidity ^0.8.28;
 
 import {Base64} from "solady/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "../interfaces/IStampSource.sol";
 import {ILabTokenSource} from "../interfaces/ILabTokenSource.sol";
-import {R3tardsLabs} from "../R3tardsLabs.sol";
+import {R3OSLabs} from "../R3OSLabs.sol";
 import {LabTraits} from "../lib/LabTraits.sol";
 import {FrameStore} from "../lib/FrameStore.sol";
 
 /// @notice Disposable Lab experiment: one 32x32 animation frame per Monad block.
 /// @dev No owner and no admin functions. A new version means a new Lab deployment.
-contract R3tardsFlipbook is IStampSource, ILabTokenSource {
+contract R3OSFlipbook is IStampSource, ILabTokenSource {
     using Strings for uint256;
 
     uint256 public constant SIZE = 32;
@@ -45,8 +45,8 @@ contract R3tardsFlipbook is IStampSource, ILabTokenSource {
     uint256 private constant FRAMESTORE_DATA_OFFSET = 15;
     uint256 private constant SVG_CAPACITY = 80_000;
 
-    IR3tardsPaintData public immutable PAINT;
-    R3tardsLabs public immutable LABS;
+    IR3OSPaintData public immutable PAINT;
+    R3OSLabs public immutable LABS;
     uint64 public immutable OPEN_TIME;
     uint256 public immutable TICK_MS;
 
@@ -123,8 +123,8 @@ contract R3tardsFlipbook is IStampSource, ILabTokenSource {
         if (paintCore == address(0) || labs == address(0)) revert ZeroAddress();
         if (tickMs == 0 || genesis.length != FRAME_BYTES) revert InvalidConfig();
 
-        PAINT = IR3tardsPaintData(paintCore);
-        LABS = R3tardsLabs(labs);
+        PAINT = IR3OSPaintData(paintCore);
+        LABS = R3OSLabs(labs);
         OPEN_TIME = openTime;
         TICK_MS = tickMs;
 
@@ -146,7 +146,7 @@ contract R3tardsFlipbook is IStampSource, ILabTokenSource {
 
     function bindExperimentId(uint256 id) external {
         if (experimentId != type(uint256).max) revert ExperimentAlreadyBound();
-        IR3tardsPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
+        IR3OSPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
         (address experiment, bool retired) = (info_.experiment, info_.retired);
         if (experiment != address(this) || retired) revert InvalidExperiment(id);
         experimentId = id;

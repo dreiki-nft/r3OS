@@ -5,7 +5,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {MonadHW} from "../lib/MonadHW.sol";
 
 /// @notice Isolated MIP-4 reserve-condition demonstrator. No owner, admin or upgrade path.
-contract R3tardsKernelDebugger is ReentrancyGuard {
+contract R3OSKernelDebugger is ReentrancyGuard {
     mapping(address => uint256) public processCount;
     mapping(address => uint256) public lastRunBlock;
     mapping(address => uint256) public lastNote;

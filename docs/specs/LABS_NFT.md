@@ -1,10 +1,10 @@
-# r3tards labs NFT collection
+# r3OS labs NFT collection
 
-`R3tardsLabs` is the single tradeable ERC-721 collection for token-producing Labs. Flipbook reels, Forks, Sleepwalker dreams and mix CD-Rs use it now; future token-producing Labs use the same collection later. The frozen `R3tardsPaint` core remains a separate collection, and the Painter Pass remains a separate soulbound collection.
+`R3OSLabs` is the single tradeable ERC-721 collection for token-producing Labs. Flipbook reels, Forks, Sleepwalker dreams and mix CD-Rs use it now; future token-producing Labs use the same collection later. The frozen `R3OSPaint` core remains a separate collection, and the Painter Pass remains a separate soulbound collection.
 
 ## Collection authority
 
-`R3tardsLabs` is `ERC721 + ERC2981 + Ownable2Step`, named `r3tards labs` with symbol `R3LABS`.
+`R3OSLabs` is `ERC721 + ERC2981 + Ownable2Step`, named `r3OS labs` with symbol `R3OSLABS`.
 
 The collection owner exists only for marketplace administration. Its only application-level setter is `setExternalLink(string)`, which emits ERC-7572 `ContractURIUpdated()`. It cannot authorize a Lab, mint, transfer, burn, change token rendering or change royalties.
 
@@ -16,7 +16,7 @@ A Lab calls `mint(to, experimentId)`. The collection reads the frozen core regis
 
 Flipbook, Forks, Sleepwalker and the CD Burner use a two-step deployment that avoids predicting registry IDs:
 
-1. deploy the Lab with the shared `R3tardsLabs` address;
+1. deploy the Lab with the shared `R3OSLabs` address;
 2. add the Lab to the core registry;
 3. call its permissionless one-time `bindExperimentId(id)`.
 
@@ -41,7 +41,7 @@ function labToken(uint256 tokenId) external view returns (
 function canBurn(uint256 tokenId) external view returns (bool);
 ```
 
-`attributes` is empty or begins with a comma. `R3tardsLabs` builds the common JSON itself. A source whose immutable token name needs more than the standard kind/id form may also implement the optional `ILabTokenNameSource.labTokenName(tokenId)` hook; the collection gas-caps that call and falls back to its standard name when the hook is absent or fails. The source call is gas-capped; if it reverts or exhausts the cap, the collection still returns valid metadata with common traits and an onchain placeholder image.
+`attributes` is empty or begins with a comma. `R3OSLabs` builds the common JSON itself. A source whose immutable token name needs more than the standard kind/id form may also implement the optional `ILabTokenNameSource.labTokenName(tokenId)` hook; the collection gas-caps that call and falls back to its standard name when the hook is absent or fails. The source call is gas-capped; if it reverts or exhausts the cap, the collection still returns valid metadata with common traits and an onchain placeholder image.
 
 Burning is owner-only and also requires the source Lab to return `true` from `canBurn`. Flipbook reels and Forks remain non-burnable, matching their pre-migration behavior. Mix CD-R artifacts are non-burnable, matching immutable reels and forks. The source Paint frames remain separate and may still be transferred or recycled normally.
 
@@ -158,10 +158,10 @@ The image is a deterministic 64 × 64 pixel CD-R enlarged to 512 × 512. Its bru
 
 ## Names and URLs
 
-Names are `r3tards labs reel #N`, `r3tards labs fork #N`, `r3tards labs dream #N`, and `r3tards labs cd #N: <label>`. The CD name comes from the optional source-name hook; all other existing Labs continue to use the collection default.
+Names are `r3OS labs reel #N`, `r3OS labs fork #N`, `r3OS labs dream #N`, and `r3OS labs cd #N: <label>`. The CD name comes from the optional source-name hook; all other existing Labs continue to use the collection default.
 
 When the collection external link is non-empty, each token includes `external_url` as `<link>/#/labs?token=<id>` (without duplicating the slash when the configured link already ends in `/`).
 
 ## Contract metadata
 
-`contractURI()` follows ERC-7572 and returns fully onchain JSON with collection name, description covering reels/forks/dreams/mix CD-Rs, a black-and-white `r3tards labs` SVG wordmark with one DF1-cyan accent, external link, 500 seller-fee basis points and the immutable royalty receiver.
+`contractURI()` follows ERC-7572 and returns fully onchain JSON with collection name, description covering reels/forks/dreams/mix CD-Rs, a black-and-white `r3OS labs` SVG wordmark with one DF1-cyan accent, external link, 500 seller-fee basis points and the immutable royalty receiver.

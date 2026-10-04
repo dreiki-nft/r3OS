@@ -2,19 +2,19 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsFinaleAuction} from "../src/labs/R3tardsFinaleAuction.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSFinaleAuction} from "../src/labs/R3OSFinaleAuction.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 
 contract AuctionReenterer {
-    R3tardsFinaleAuction public immutable auction;
+    R3OSFinaleAuction public immutable auction;
     uint256 public auctionId;
     bool public triedWithdraw;
     bool public withdrawReentered;
     bool public bidReentered;
 
-    constructor(R3tardsFinaleAuction auction_) { auction = auction_; }
+    constructor(R3OSFinaleAuction auction_) { auction = auction_; }
 
     function place(uint256 id) external payable {
         auctionId = id;
@@ -34,8 +34,8 @@ contract AuctionReenterer {
 }
 
 contract FinaleAuctionTest is Test {
-    R3tardsPaint paint;
-    R3tardsFinaleAuction auction;
+    R3OSPaint paint;
+    R3OSFinaleAuction auction;
     MockR3tards r3tards;
     address seller;
     address royalty;
@@ -56,34 +56,34 @@ contract FinaleAuctionTest is Test {
         vm.deal(bob, 1_000 ether);
         vm.deal(carol, 1_000 ether);
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), seller, royalty, 512, 0, 512, 16, 256
         );
-        auction = new R3tardsFinaleAuction(address(paint));
+        auction = new R3OSFinaleAuction(address(paint));
         (regularFrame, finale) = _makeFrameAndFinale();
     }
 
     function testListValidationAndEscrow() public {
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.NotFinale.selector, regularFrame));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.NotFinale.selector, regularFrame));
         vm.prank(seller);
         auction.list(regularFrame, 1 ether, 0);
 
-        vm.expectRevert(R3tardsFinaleAuction.NotTokenOwner.selector);
+        vm.expectRevert(R3OSFinaleAuction.NotTokenOwner.selector);
         vm.prank(alice);
         auction.list(finale, 1 ether, 0);
 
-        vm.expectRevert(R3tardsFinaleAuction.ZeroReserve.selector);
+        vm.expectRevert(R3OSFinaleAuction.ZeroReserve.selector);
         vm.prank(seller);
         auction.list(finale, 0, 0);
 
         uint256 current = vm.getBlockNumber();
         uint256 maxStartDelay = auction.MAX_START_DELAY();
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.BadStartBlock.selector, uint48(current - 1)));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.BadStartBlock.selector, uint48(current - 1)));
         vm.prank(seller);
         auction.list(finale, 1 ether, uint48(current - 1));
         vm.expectRevert(
             abi.encodeWithSelector(
-                R3tardsFinaleAuction.BadStartBlock.selector,
+                R3OSFinaleAuction.BadStartBlock.selector,
                 uint48(current + maxStartDelay + 1)
             )
         );
@@ -95,7 +95,7 @@ contract FinaleAuctionTest is Test {
         uint256 id = auction.list(finale, 1 ether, 0);
         assertEq(id, 1);
         assertEq(paint.ownerOf(finale), address(auction));
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         assertEq(info.seller, seller);
         assertEq(info.reserve, 1 ether);
         assertEq(info.startBlock, current);
@@ -111,15 +111,15 @@ contract FinaleAuctionTest is Test {
         _approveFinale();
         vm.prank(seller);
         id = auction.list(finale, 100, futureStart);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.NotStarted.selector, futureStart));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.NotStarted.selector, futureStart));
         vm.prank(alice);
         auction.bid{value: 100}(id);
         vm.roll(futureStart);
 
-        vm.expectRevert(R3tardsFinaleAuction.ZeroValue.selector);
+        vm.expectRevert(R3OSFinaleAuction.ZeroValue.selector);
         vm.prank(alice);
         auction.bid{value: 0}(id);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.BidTooLow.selector, 100));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.BidTooLow.selector, 100));
         vm.prank(alice);
         auction.bid{value: 99}(id);
 
@@ -128,7 +128,7 @@ contract FinaleAuctionTest is Test {
         assertEq(auction.depositOf(id, alice), 100);
         assertEq(auction.minNextBid(id), 105);
 
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.BidTooLow.selector, 105));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.BidTooLow.selector, 105));
         vm.prank(alice);
         auction.bid{value: 4}(id);
         vm.prank(alice);
@@ -141,9 +141,9 @@ contract FinaleAuctionTest is Test {
         (uint32 bidsPlaced,) = auction.bidderStats(alice);
         assertEq(bidsPlaced, 2);
 
-        R3tardsFinaleAuction.AuctionInfo memory live = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory live = auction.auctionInfo(id);
         vm.roll(uint256(live.closeBlock) + 1);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.BiddingClosed.selector, id));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.BiddingClosed.selector, id));
         vm.prank(carol);
         auction.bid{value: 1 ether}(id);
     }
@@ -152,14 +152,14 @@ contract FinaleAuctionTest is Test {
         uint256 id = _list(1);
         uint256 huge = uint256(type(uint128).max) + 1;
         vm.deal(alice, huge);
-        vm.expectRevert(R3tardsFinaleAuction.BidTooLarge.selector);
+        vm.expectRevert(R3OSFinaleAuction.BidTooLarge.selector);
         vm.prank(alice);
         auction.bid{value: huge}(id);
     }
 
     function testCancelRules() public {
         uint256 id = _list(1 ether);
-        vm.expectRevert(R3tardsFinaleAuction.NotSeller.selector);
+        vm.expectRevert(R3OSFinaleAuction.NotSeller.selector);
         vm.prank(alice);
         auction.cancel(id);
         vm.prank(seller);
@@ -178,18 +178,18 @@ contract FinaleAuctionTest is Test {
         uint256 id2 = auction.list(finale2, 1 ether, 0);
         vm.prank(alice);
         auction.bid{value: 1 ether}(id2);
-        vm.expectRevert(R3tardsFinaleAuction.HasBids.selector);
+        vm.expectRevert(R3OSFinaleAuction.HasBids.selector);
         vm.prank(seller);
         auction.cancel(id2);
     }
 
     function testSec_SettleInsideWindowUsesRandomCandle() public {
         uint256 id = _list(1 ether);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.prank(alice);
         auction.bid{value: 1 ether}(id);
         vm.roll(uint256(info.closeBlock));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.StillBidding.selector, info.closeBlock));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.StillBidding.selector, info.closeBlock));
         auction.settle(id);
 
         bytes32 closeHash = keccak256("close block");
@@ -204,16 +204,16 @@ contract FinaleAuctionTest is Test {
         auction.settle(id);
         uint256 gasUsed = gasBefore - gasleft();
         console.log("GAS Auction settle history available", gasUsed);
-        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.endBlock, expected);
         assertFalse(settled.usedFallback);
-        vm.expectRevert(R3tardsFinaleAuction.AlreadySettled.selector);
+        vm.expectRevert(R3OSFinaleAuction.AlreadySettled.selector);
         auction.settle(id);
     }
 
     function testSec_Eip2935ExtendsAuctionHistoryWindow() public {
         uint256 id = _list(1 ether);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.prank(alice);
         auction.bid{value: 1 ether}(id);
 
@@ -231,7 +231,7 @@ contract FinaleAuctionTest is Test {
         assertTrue(known);
         assertEq(preview, expected);
         auction.settle(id);
-        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.endBlock, expected);
         assertFalse(settled.usedFallback);
     }
@@ -240,7 +240,7 @@ contract FinaleAuctionTest is Test {
         uint256 id = _list(1 ether);
         vm.prank(alice);
         auction.bid{value: 1 ether}(id);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         (bool known, uint256 preview) = auction.previewEndBlock(id);
         assertTrue(known);
@@ -249,14 +249,14 @@ contract FinaleAuctionTest is Test {
         auction.settle(id);
         uint256 gasUsed = gasBefore - gasleft();
         console.log("GAS Auction settle history expired", gasUsed);
-        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.endBlock, info.candleStartBlock);
         assertTrue(settled.usedFallback);
     }
 
     function testSec_FallbackCandleStartRejectsLateBidAndLateBidderWithdraws() public {
         uint256 id = _list(1 ether);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
 
         vm.roll(info.candleStartBlock);
         vm.prank(alice);
@@ -267,7 +267,7 @@ contract FinaleAuctionTest is Test {
 
         vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         auction.settle(id);
-        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.endBlock, info.candleStartBlock);
         assertEq(settled.winner, alice);
         assertEq(auction.depositOf(id, bob), 1.05 ether);
@@ -280,7 +280,7 @@ contract FinaleAuctionTest is Test {
 
     function testCandleIgnoresLateBidAndRefundsLateTopup() public {
         uint256 id = _list(1 ether);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         uint256 candleStart = info.candleStartBlock;
         vm.roll(candleStart);
         vm.prank(alice);
@@ -304,7 +304,7 @@ contract FinaleAuctionTest is Test {
         vm.roll(uint256(info.closeBlock) + 1);
         vm.setBlockhash(info.closeBlock, h);
         auction.settle(id);
-        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         address expectedWinner = end == candleStart ? alice : bob;
         assertEq(settled.winner, expectedWinner);
         if (expectedWinner == alice) assertEq(auction.depositOf(id, alice), 0.1025 ether);
@@ -313,7 +313,7 @@ contract FinaleAuctionTest is Test {
 
     function testNoBidBeforeCandleReturnsTokenAndDepositsRemainWithdrawable() public {
         uint256 id = _list(1 ether);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.roll(uint256(info.candleStartBlock) + 5);
         vm.prank(alice);
         auction.bid{value: 1 ether}(id);
@@ -343,10 +343,10 @@ contract FinaleAuctionTest is Test {
         auction.bid{value: 1 ether}(id);
         vm.prank(bob);
         auction.bid{value: 1.05 ether}(id);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1); // fallback includes both
         auction.settle(id);
-        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.winner, bob);
         assertEq(settled.price, 1.05 ether);
         assertEq(settled.royalty, 0.0525 ether);
@@ -359,7 +359,7 @@ contract FinaleAuctionTest is Test {
 
     function testRoyaltyZeroWhenSellerIsReceiver() public {
         MockR3tards otherR3tards = new MockR3tards();
-        R3tardsPaint otherPaint = new R3tardsPaint(
+        R3OSPaint otherPaint = new R3OSPaint(
             address(otherR3tards), uint64(vm.getBlockTimestamp()), seller, seller, 512, 0, 512, 16, 256
         );
         vm.prank(seller);
@@ -368,14 +368,14 @@ contract FinaleAuctionTest is Test {
         vm.roll(vm.getBlockNumber() + 1);
         vm.prank(seller);
         uint256 otherFinale = otherPaint.mintSeasonFinale(0);
-        R3tardsFinaleAuction otherAuction = new R3tardsFinaleAuction(address(otherPaint));
+        R3OSFinaleAuction otherAuction = new R3OSFinaleAuction(address(otherPaint));
         vm.prank(seller);
         otherPaint.approve(address(otherAuction), otherFinale);
         vm.prank(seller);
         uint256 id = otherAuction.list(otherFinale, 100, 0);
         vm.prank(alice);
         otherAuction.bid{value: 100}(id);
-        R3tardsFinaleAuction.AuctionInfo memory info = otherAuction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = otherAuction.auctionInfo(id);
         vm.roll(uint256(info.closeBlock) + otherAuction.HISTORY_WINDOW() + 1);
         otherAuction.settle(id);
         assertEq(otherAuction.auctionInfo(id).royalty, 0);
@@ -388,22 +388,22 @@ contract FinaleAuctionTest is Test {
         auction.bid{value: 1 ether}(id);
         vm.prank(bob);
         auction.bid{value: 1.05 ether}(id);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFinaleAuction.NotSettled.selector, id));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFinaleAuction.NotSettled.selector, id));
         vm.prank(alice);
         auction.withdraw(id);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         auction.settle(id);
 
         vm.prank(alice);
         auction.withdraw(id);
-        vm.expectRevert(R3tardsFinaleAuction.NothingToWithdraw.selector);
+        vm.expectRevert(R3OSFinaleAuction.NothingToWithdraw.selector);
         vm.prank(alice);
         auction.withdraw(id);
 
         vm.prank(seller);
         auction.withdrawCredits();
-        vm.expectRevert(R3tardsFinaleAuction.NothingToWithdraw.selector);
+        vm.expectRevert(R3OSFinaleAuction.NothingToWithdraw.selector);
         vm.prank(seller);
         auction.withdrawCredits();
         vm.prank(royalty);
@@ -417,7 +417,7 @@ contract FinaleAuctionTest is Test {
         attacker.place{value: 1 ether}(id);
         vm.prank(bob);
         auction.bid{value: 1.05 ether}(id);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         auction.settle(id);
         attacker.pull();
@@ -476,7 +476,7 @@ contract FinaleAuctionTest is Test {
             vm.prank(bidder);
             auction.bid{value: minBid}(id);
         }
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         vm.roll(uint256(info.closeBlock) + auction.HISTORY_WINDOW() + 1);
         beforeGas = gasleft();
         auction.settle(id);
@@ -494,7 +494,7 @@ contract FinaleAuctionTest is Test {
 
     function testFuzzWinnerMatchesBruteForce(uint256 seed) public {
         uint256 id = _list(100);
-        R3tardsFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory info = auction.auctionInfo(id);
         uint256 bidCount = 1 + (seed % 16);
         address[] memory bidders = new address[](bidCount);
         uint48[] memory blocks_ = new uint48[](bidCount);
@@ -527,7 +527,7 @@ contract FinaleAuctionTest is Test {
             }
         }
         auction.settle(id);
-        R3tardsFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
+        R3OSFinaleAuction.AuctionInfo memory settled = auction.auctionInfo(id);
         assertEq(settled.winner, expected);
         assertEq(settled.price, expectedPrice);
         assertEq(paint.ownerOf(finale), expected == address(0) ? seller : expected);

@@ -3,16 +3,16 @@ pragma solidity ^0.8.28;
 
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Base64} from "solady/utils/Base64.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "../interfaces/IStampSource.sol";
 import {ILabTokenSource} from "../interfaces/ILabTokenSource.sol";
-import {R3tardsLabs} from "../R3tardsLabs.sol";
+import {R3OSLabs} from "../R3OSLabs.sol";
 import {LabTraits} from "../lib/LabTraits.sol";
 import {Source64} from "../lib/Source64.sol";
 
-/// @notice Disposable 64x64 side canvases forked from immutable r3tards paint frames.
+/// @notice Disposable 64x64 side canvases forked from immutable r3OS paint frames.
 /// @dev No owner or admin. Each fork owns one 128-slot-aligned storage page.
-contract R3tardsForks is IStampSource, ILabTokenSource {
+contract R3OSForks is IStampSource, ILabTokenSource {
     using Strings for uint256;
 
     error ZeroAddress();
@@ -69,8 +69,8 @@ contract R3tardsForks is IStampSource, ILabTokenSource {
     uint256 public constant MAX_RUNS_PER_PAINT = 32;
     uint256 public constant FORK_PIXELS_PER_BLOCK = 256;
 
-    IR3tardsPaintData public immutable PAINT;
-    R3tardsLabs public immutable LABS;
+    IR3OSPaintData public immutable PAINT;
+    R3OSLabs public immutable LABS;
     uint64 public immutable OPEN_TIME;
     uint256 public forkCount;
     uint256 public experimentId = type(uint256).max;
@@ -80,14 +80,14 @@ contract R3tardsForks is IStampSource, ILabTokenSource {
 
     constructor(address paintCore, address labs, uint64 openTime) {
         if (paintCore == address(0) || labs == address(0)) revert ZeroAddress();
-        PAINT = IR3tardsPaintData(paintCore);
-        LABS = R3tardsLabs(labs);
+        PAINT = IR3OSPaintData(paintCore);
+        LABS = R3OSLabs(labs);
         OPEN_TIME = openTime;
     }
 
     function bindExperimentId(uint256 id) external {
         if (experimentId != type(uint256).max) revert ExperimentAlreadyBound();
-        IR3tardsPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
+        IR3OSPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
         (address experiment, bool retired) = (info_.experiment, info_.retired);
         if (experiment != address(this) || retired) revert InvalidExperiment(id);
         experimentId = id;
@@ -95,7 +95,7 @@ contract R3tardsForks is IStampSource, ILabTokenSource {
 
     function forkFrame(uint256 frameId) external returns (uint256 forkId) {
         _requireCanFork(msg.sender);
-        IR3tardsPaintData.FrameInfoData memory info = PAINT.frameInfo(frameId);
+        IR3OSPaintData.FrameInfoData memory info = PAINT.frameInfo(frameId);
         uint256[64] memory rows = Source64.rows(
             PAINT.frameData(frameId), PAINT.genesisFrameData(info.season), info.faceColor
         );
@@ -297,7 +297,7 @@ contract R3tardsForks is IStampSource, ILabTokenSource {
             Base64.encode(forkBMP(forkId)),
             '"/></svg>'
         );
-        IR3tardsPaintData.FrameInfoData memory source = PAINT.frameInfo(info.sourceFrameId);
+        IR3OSPaintData.FrameInfoData memory source = PAINT.frameInfo(info.sourceFrameId);
         string memory state = info.isSealed ? "Sealed" : info.isOpen ? "Open" : "Closed";
         uint256 displayDepth = uint256(info.depth) + 1;
 
@@ -320,7 +320,7 @@ contract R3tardsForks is IStampSource, ILabTokenSource {
 
         kind = "Fork";
         description = string.concat(
-            "a 64x64 side canvas forked from r3tards paint frame #",
+            "a 64x64 side canvas forked from r3OS paint frame #",
             uint256(info.sourceFrameId).toString(),
             ", stored and drawn fully onchain."
         );

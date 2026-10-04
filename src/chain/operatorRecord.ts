@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { RETIRED_SUBSYSTEMS } from '../os/retired'
 import { type Address } from 'viem'
-import { R3TARDS_OPERATOR_RECORD_ABI } from '../lib/generated/abi'
+import { R3OS_OPERATOR_RECORD_ABI } from '../lib/generated/abi'
 import { discoverContracts, readCoreConstants } from './contracts'
 import { publicClient } from './clients'
 import { readHeavy, readMany } from './readMany'
@@ -458,7 +458,7 @@ async function readOperator(address: Address): Promise<OperatorSnapshot> {
     readHeavy([
       {
         address: driverAddress,
-        abi: R3TARDS_OPERATOR_RECORD_ABI,
+        abi: R3OS_OPERATOR_RECORD_ABI,
         functionName: 'facts',
         args: [address],
       },
@@ -467,13 +467,13 @@ async function readOperator(address: Address): Promise<OperatorSnapshot> {
       [
         {
           address: driverAddress,
-          abi: R3TARDS_OPERATOR_RECORD_ABI,
+          abi: R3OS_OPERATOR_RECORD_ABI,
           functionName: 'recordOf',
           args: [address],
         },
         {
           address: driverAddress,
-          abi: R3TARDS_OPERATOR_RECORD_ABI,
+          abi: R3OS_OPERATOR_RECORD_ABI,
           functionName: 'firstSeenBlock',
           args: [address],
         },

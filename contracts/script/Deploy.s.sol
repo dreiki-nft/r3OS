@@ -2,22 +2,22 @@
 pragma solidity ^0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
 import {DiffRenderer} from "../src/renderers/DiffRenderer.sol";
 import {SeasonTimelapseRenderer} from "../src/renderers/SeasonTimelapseRenderer.sol";
 import {DF1Renderer} from "../src/renderers/DF1Renderer.sol";
-import {R3tardsFlipbook} from "../src/labs/R3tardsFlipbook.sol";
-import {R3tardsWeeds} from "../src/labs/R3tardsWeeds.sol";
-import {R3tardsForks} from "../src/labs/R3tardsForks.sol";
-import {R3tardsBrushes} from "../src/labs/R3tardsBrushes.sol";
-import {R3tardsFinaleAuction} from "../src/labs/R3tardsFinaleAuction.sol";
-import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
-import {R3tardsSleepwalker} from "../src/labs/R3tardsSleepwalker.sol";
+import {R3OSFlipbook} from "../src/labs/R3OSFlipbook.sol";
+import {R3OSWeeds} from "../src/labs/R3OSWeeds.sol";
+import {R3OSForks} from "../src/labs/R3OSForks.sol";
+import {R3OSBrushes} from "../src/labs/R3OSBrushes.sol";
+import {R3OSFinaleAuction} from "../src/labs/R3OSFinaleAuction.sol";
+import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
+import {R3OSSleepwalker} from "../src/labs/R3OSSleepwalker.sol";
 import {SleepwalkerKey} from "../src/labs/SleepwalkerKey.sol";
-import {R3tardsRecycleBin} from "../src/labs/R3tardsRecycleBin.sol";
-import {R3tardsCDBurner} from "../src/labs/R3tardsCDBurner.sol";
+import {R3OSRecycleBin} from "../src/labs/R3OSRecycleBin.sol";
+import {R3OSCDBurner} from "../src/labs/R3OSCDBurner.sol";
 
 contract Deploy is Script {
     uint256 private constant QUEST_MONTH_IN_ACTIVE_DAYS = 30;
@@ -56,9 +56,9 @@ contract Deploy is Script {
 
         vm.startBroadcast(deployer);
 
-        R3tardsPaint paint = R3tardsPaint(
+        R3OSPaint paint = R3OSPaint(
             vm.deployCode(
-                "R3tardsPaint.sol:R3tardsPaint",
+                "R3OSPaint.sol:R3OSPaint",
                 abi.encode(
                     r3tards,
                     seasonStart,
@@ -72,15 +72,15 @@ contract Deploy is Script {
                 )
             )
         );
-        R3tardsLabs labs = R3tardsLabs(
-            vm.deployCode("R3tardsLabs.sol:R3tardsLabs", abi.encode(address(paint), royaltyReceiver))
+        R3OSLabs labs = R3OSLabs(
+            vm.deployCode("R3OSLabs.sol:R3OSLabs", abi.encode(address(paint), royaltyReceiver))
         );
         DiffRenderer diff = DiffRenderer(vm.deployCode("DiffRenderer.sol:DiffRenderer"));
         SeasonTimelapseRenderer timelapse =
             SeasonTimelapseRenderer(vm.deployCode("SeasonTimelapseRenderer.sol:SeasonTimelapseRenderer"));
         DF1Renderer df1 = DF1Renderer(vm.deployCode("DF1Renderer.sol:DF1Renderer"));
-        R3tardsPainterPass pass = R3tardsPainterPass(
-            vm.deployCode("R3tardsPainterPass.sol:R3tardsPainterPass", abi.encode(address(paint)))
+        R3OSPainterPass pass = R3OSPainterPass(
+            vm.deployCode("R3OSPainterPass.sol:R3OSPainterPass", abi.encode(address(paint)))
         );
         paint.setPainterPass(address(pass));
 
@@ -90,9 +90,9 @@ contract Deploy is Script {
 
         bytes memory genesis = vm.parseBytes(vm.trim(vm.readFile("script/flipbook-genesis.hex")));
         require(genesis.length == 512, "genesis must be 512 bytes");
-        R3tardsFlipbook flipbook = R3tardsFlipbook(
+        R3OSFlipbook flipbook = R3OSFlipbook(
             vm.deployCode(
-                "R3tardsFlipbook.sol:R3tardsFlipbook",
+                "R3OSFlipbook.sol:R3OSFlipbook",
                 abi.encode(address(paint), address(labs), seasonStart, uint256(300), genesis)
             )
         );
@@ -102,45 +102,45 @@ contract Deploy is Script {
         flipbook.bindExperimentId(flipbookExperimentId);
         pass.addStampSource(address(flipbook));
 
-        R3tardsWeeds weeds = R3tardsWeeds(
-            vm.deployCode("R3tardsWeeds.sol:R3tardsWeeds", abi.encode(address(paint), seasonStart))
+        R3OSWeeds weeds = R3OSWeeds(
+            vm.deployCode("R3OSWeeds.sol:R3OSWeeds", abi.encode(address(paint), seasonStart))
         );
         uint256 weedsExperimentId = paint.addExperiment(address(weeds), "weeds", string.concat(labBaseUri, "/weeds"));
         pass.addStampSource(address(weeds));
 
-        R3tardsForks forks = R3tardsForks(
+        R3OSForks forks = R3OSForks(
             vm.deployCode(
-                "R3tardsForks.sol:R3tardsForks", abi.encode(address(paint), address(labs), seasonStart)
+                "R3OSForks.sol:R3OSForks", abi.encode(address(paint), address(labs), seasonStart)
             )
         );
         uint256 forksExperimentId = paint.addExperiment(address(forks), "forks", string.concat(labBaseUri, "/forks"));
         forks.bindExperimentId(forksExperimentId);
         pass.addStampSource(address(forks));
 
-        R3tardsBrushes brushes = R3tardsBrushes(
-            vm.deployCode("R3tardsBrushes.sol:R3tardsBrushes", abi.encode(address(paint), seasonStart))
+        R3OSBrushes brushes = R3OSBrushes(
+            vm.deployCode("R3OSBrushes.sol:R3OSBrushes", abi.encode(address(paint), seasonStart))
         );
         uint256 brushesExperimentId =
             paint.addExperiment(address(brushes), "brushes", string.concat(labBaseUri, "/brushes"));
         pass.addStampSource(address(brushes));
 
-        R3tardsFinaleAuction auction = R3tardsFinaleAuction(
-            vm.deployCode("R3tardsFinaleAuction.sol:R3tardsFinaleAuction", abi.encode(address(paint)))
+        R3OSFinaleAuction auction = R3OSFinaleAuction(
+            vm.deployCode("R3OSFinaleAuction.sol:R3OSFinaleAuction", abi.encode(address(paint)))
         );
         uint256 auctionExperimentId = paint.addExperiment(
             address(auction), "finale auction", string.concat(labBaseUri, "/finale-auction")
         );
 
-        R3tardsQuests quests = R3tardsQuests(
-            vm.deployCode("R3tardsQuests.sol:R3tardsQuests", abi.encode(address(paint), seasonStart, deployer))
+        R3OSQuests quests = R3OSQuests(
+            vm.deployCode("R3OSQuests.sol:R3OSQuests", abi.encode(address(paint), seasonStart, deployer))
         );
         uint256 questsExperimentId = paint.addExperiment(address(quests), "quests", string.concat(labBaseUri, "/quests"));
         pass.addStampSource(address(quests));
 
         SleepwalkerKey sleepwalkerKey = SleepwalkerKey(vm.deployCode("SleepwalkerKey.sol:SleepwalkerKey"));
-        R3tardsSleepwalker sleepwalker = R3tardsSleepwalker(
+        R3OSSleepwalker sleepwalker = R3OSSleepwalker(
             vm.deployCode(
-                "R3tardsSleepwalker.sol:R3tardsSleepwalker",
+                "R3OSSleepwalker.sol:R3OSSleepwalker",
                 abi.encode(address(paint), address(labs), address(sleepwalkerKey))
             )
         );
@@ -150,8 +150,8 @@ contract Deploy is Script {
         sleepwalker.bindExperimentId(sleepwalkerExperimentId);
         pass.addStampSource(address(sleepwalker));
 
-        R3tardsRecycleBin recycleBin = R3tardsRecycleBin(
-            vm.deployCode("R3tardsRecycleBin.sol:R3tardsRecycleBin", abi.encode(address(paint)))
+        R3OSRecycleBin recycleBin = R3OSRecycleBin(
+            vm.deployCode("R3OSRecycleBin.sol:R3OSRecycleBin", abi.encode(address(paint)))
         );
         uint256 recycleBinExperimentId = paint.addExperiment(
             address(recycleBin), "recycle-bin", string.concat(labBaseUri, "/recycle-bin")
@@ -159,8 +159,8 @@ contract Deploy is Script {
         recycleBin.bindExperimentId(recycleBinExperimentId);
         pass.addStampSource(address(recycleBin));
 
-        R3tardsCDBurner cdBurner = R3tardsCDBurner(
-            vm.deployCode("R3tardsCDBurner.sol:R3tardsCDBurner", abi.encode(address(paint), address(labs)))
+        R3OSCDBurner cdBurner = R3OSCDBurner(
+            vm.deployCode("R3OSCDBurner.sol:R3OSCDBurner", abi.encode(address(paint), address(labs)))
         );
         uint256 cdBurnerExperimentId = paint.addExperiment(
             address(cdBurner), "cd-burner", string.concat(labBaseUri, "/cd-burner")
@@ -187,22 +187,22 @@ contract Deploy is Script {
         console.log("token #0 recipient", tokenZeroRecipient);
         console.log("royalty receiver", royaltyReceiver);
         console.log("final owner", finalOwner);
-        console.log("R3tardsPaint", address(paint));
-        console.log("R3tardsPainterPass", address(pass));
-        console.log("R3tardsLabs", address(labs));
+        console.log("R3OSPaint", address(paint));
+        console.log("R3OSPainterPass", address(pass));
+        console.log("R3OSLabs", address(labs));
         console.log("DiffRenderer", address(diff));
         console.log("SeasonTimelapseRenderer", address(timelapse));
         console.log("DF1Renderer", address(df1));
-        console.log("R3tardsFlipbook", address(flipbook));
-        console.log("R3tardsWeeds", address(weeds));
-        console.log("R3tardsForks", address(forks));
-        console.log("R3tardsBrushes", address(brushes));
-        console.log("R3tardsFinaleAuction", address(auction));
-        console.log("R3tardsQuests", address(quests));
+        console.log("R3OSFlipbook", address(flipbook));
+        console.log("R3OSWeeds", address(weeds));
+        console.log("R3OSForks", address(forks));
+        console.log("R3OSBrushes", address(brushes));
+        console.log("R3OSFinaleAuction", address(auction));
+        console.log("R3OSQuests", address(quests));
         console.log("SleepwalkerKey implementation", address(sleepwalkerKey));
-        console.log("R3tardsSleepwalker", address(sleepwalker));
-        console.log("R3tardsRecycleBin", address(recycleBin));
-        console.log("R3tardsCDBurner", address(cdBurner));
+        console.log("R3OSSleepwalker", address(sleepwalker));
+        console.log("R3OSRecycleBin", address(recycleBin));
+        console.log("R3OSCDBurner", address(cdBurner));
         console.log("flipbook experiment id", flipbookExperimentId);
         console.log("weeds experiment id", weedsExperimentId);
         console.log("forks experiment id", forksExperimentId);
@@ -233,14 +233,14 @@ contract Deploy is Script {
     }
 
     function _addDayOneQuests(
-        R3tardsQuests quests,
-        R3tardsPaint paint,
-        R3tardsFlipbook flipbook,
-        R3tardsWeeds weeds,
-        R3tardsForks forks,
-        R3tardsBrushes brushes,
-        R3tardsFinaleAuction auction,
-        R3tardsRecycleBin recycleBin
+        R3OSQuests quests,
+        R3OSPaint paint,
+        R3OSFlipbook flipbook,
+        R3OSWeeds weeds,
+        R3OSForks forks,
+        R3OSBrushes brushes,
+        R3OSFinaleAuction auction,
+        R3OSRecycleBin recycleBin
     ) private {
         _addOne(quests, "MONTH IN", address(paint), bytes4(keccak256("painterStats(address)")), 0, QUEST_MONTH_IN_ACTIVE_DAYS);
         _addOne(quests, "STORM REGULAR", address(paint), bytes4(keccak256("painterStats(address)")), 9, QUEST_STORM_REGULAR_PAINTS);
@@ -253,12 +253,12 @@ contract Deploy is Script {
         _addOne(quests, "TIMELINES", address(forks), bytes4(keccak256("painterInfo(address)")), 0, QUEST_TIMELINES_FORKS);
         _addOne(quests, "DNA HUNTER", address(brushes), bytes4(keccak256("box(address)")), 11, QUEST_DNA_HUNTER_VERIFIED);
 
-        R3tardsQuests.Condition[] memory labRat = new R3tardsQuests.Condition[](4);
+        R3OSQuests.Condition[] memory labRat = new R3OSQuests.Condition[](4);
         bytes4 stampSelector = bytes4(keccak256("stamp(address)"));
-        labRat[0] = R3tardsQuests.Condition(address(flipbook), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
-        labRat[1] = R3tardsQuests.Condition(address(weeds), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
-        labRat[2] = R3tardsQuests.Condition(address(forks), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
-        labRat[3] = R3tardsQuests.Condition(address(brushes), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
+        labRat[0] = R3OSQuests.Condition(address(flipbook), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
+        labRat[1] = R3OSQuests.Condition(address(weeds), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
+        labRat[2] = R3OSQuests.Condition(address(forks), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
+        labRat[3] = R3OSQuests.Condition(address(brushes), stampSelector, 1, 0, QUEST_LAB_RAT_STAMP);
         quests.addQuest("LAB RAT", 0, 0, labRat);
 
         _addOne(quests, "PADDLE UP", address(auction), bytes4(keccak256("bidderStats(address)")), 0, QUEST_PADDLE_UP_BIDS);
@@ -273,15 +273,15 @@ contract Deploy is Script {
     }
 
     function _addOne(
-        R3tardsQuests quests,
+        R3OSQuests quests,
         string memory name,
         address target,
         bytes4 selector,
         uint8 word,
         uint256 threshold
     ) private {
-        R3tardsQuests.Condition[] memory conditions = new R3tardsQuests.Condition[](1);
-        conditions[0] = R3tardsQuests.Condition(target, selector, word, 0, threshold);
+        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](1);
+        conditions[0] = R3OSQuests.Condition(target, selector, word, 0, threshold);
         quests.addQuest(name, 0, 0, conditions);
     }
 }

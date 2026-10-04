@@ -11,7 +11,7 @@ import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { discoverContracts } from '../chain/contracts'
 import { readMany } from '../chain/readMany'
-import { R3TARDS_ROUTER_LAB_ABI } from '../lib/generated/abi'
+import { R3OS_ROUTER_LAB_ABI } from '../lib/generated/abi'
 import { ERC20_METADATA_ABI, MOCK_DIRECTORY_ABI, MONOPER_ABI } from './mrc17'
 import {
   MAINNET_TOKENS,
@@ -261,7 +261,7 @@ export async function runCompare(args: {
   const client = publicClient
   const blockNumber = args.blockNumber ?? (await client.getBlockNumber())
   const data = encodeFunctionData({
-    abi: R3TARDS_ROUTER_LAB_ABI as any,
+    abi: R3OS_ROUTER_LAB_ABI as any,
     functionName: 'compare',
     args: [
       args.tokenIn,
@@ -284,7 +284,7 @@ export async function runCompare(args: {
   }
   if (!result.data) throw new Error('router-lab returned no data')
   const decoded = decodeFunctionResult({
-    abi: R3TARDS_ROUTER_LAB_ABI as any,
+    abi: R3OS_ROUTER_LAB_ABI as any,
     functionName: 'compare',
     data: result.data,
   })
@@ -306,7 +306,7 @@ function findRevertData(error: unknown, depth = 0): Hex | undefined {
 }
 
 export function decodeSimulationError(data: Hex): { blockNumber: bigint; reports: RouterSimReport[] } {
-  const decoded = decodeErrorResult({ abi: R3TARDS_ROUTER_LAB_ABI as any, data }) as any
+  const decoded = decodeErrorResult({ abi: R3OS_ROUTER_LAB_ABI as any, data }) as any
   if (decoded.errorName !== 'Simulation') throw new Error(`unexpected router revert: ${decoded.errorName}`)
   const args = decoded.args ?? []
   const blockNumber = BigInt(args.blockNumber ?? args[0] ?? 0)
@@ -328,7 +328,7 @@ export async function runSimulation(args: {
   if (!publicClient) throw new Error('RPC unavailable')
   const client = publicClient
   const data = encodeFunctionData({
-    abi: R3TARDS_ROUTER_LAB_ABI as any,
+    abi: R3OS_ROUTER_LAB_ABI as any,
     functionName: 'simulateNativeIn',
     args: [args.wrappedNative, args.tokenOut, venueArgs(args.venues), args.gasPerFrame],
   })

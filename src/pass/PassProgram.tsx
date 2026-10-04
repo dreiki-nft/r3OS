@@ -11,7 +11,7 @@ import { readHeavy } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { formattedBalance, getWalletSnapshot, subscribeWallet, walletOnCorrectChain } from '../chain/wallet'
 import { decodeJsonDataUri } from '../lib/dataUri'
-import { R3TARDS_PAINTER_PASS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINTER_PASS_ABI, R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { readPainterProfile } from '../chain/painterProfile'
 import { markProgramDataReady } from '../chain/perf'
 import { readPassIdentity } from './passData'
@@ -190,7 +190,7 @@ export function PassProgram() {
     void quoteAction({
       kind: 'estimate',
       address: passAddress,
-      abi: R3TARDS_PAINTER_PASS_ABI,
+      abi: R3OS_PAINTER_PASS_ABI,
       functionName: 'claim',
       account: wallet.account,
     })
@@ -218,7 +218,7 @@ export function PassProgram() {
     void (async () => {
       const uri = (await client.readContract({
         address: passAddress,
-        abi: R3TARDS_PAINTER_PASS_ABI,
+        abi: R3OS_PAINTER_PASS_ABI,
         functionName: 'tokenURI',
         args: [passId],
       })) as string
@@ -282,7 +282,7 @@ export function PassProgram() {
     void publicClient
       .readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'budgetOf',
         args: [wallet.account, ids],
       })
@@ -310,7 +310,7 @@ export function PassProgram() {
       await sendAction({
         kind: 'estimate',
         address: passAddress,
-        abi: R3TARDS_PAINTER_PASS_ABI,
+        abi: R3OS_PAINTER_PASS_ABI,
         functionName: 'claim',
         account: wallet.account,
         quote: claimQuote,
@@ -404,7 +404,7 @@ export function PassProgram() {
                   <b />
                 </button>
                 <div>
-                  <p>System: r3tards painter pass / build {block.block.toString()}</p>
+                  <p>System: r3OS painter pass / build {block.block.toString()}</p>
                   <p>
                     Registered to: {short(wallet.account)} / pass #{passId.toString()} · soulbound
                   </p>

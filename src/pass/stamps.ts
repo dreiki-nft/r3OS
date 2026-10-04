@@ -1,7 +1,7 @@
 import { parseAbi, type Address } from 'viem'
 import { publicClient } from '../chain/clients'
 import { readMany, type ReadManyResult } from '../chain/readMany'
-import { R3TARDS_PAINTER_PASS_ABI } from '../lib/generated/abi'
+import { R3OS_PAINTER_PASS_ABI } from '../lib/generated/abi'
 
 export const STAMP_ABI = parseAbi(['function stamp(address painter) view returns (string name,bool earned)'])
 
@@ -25,13 +25,13 @@ export async function loadLabStamps(pass: Address, owner: Address) {
   const client = publicClient
   const count = (await client.readContract({
     address: pass,
-    abi: R3TARDS_PAINTER_PASS_ABI,
+    abi: R3OS_PAINTER_PASS_ABI,
     functionName: 'stampSourceCount',
   })) as bigint
   const sources = (await readMany(
     Array.from({ length: Number(count) }, (_, index) => ({
       address: pass,
-      abi: R3TARDS_PAINTER_PASS_ABI,
+      abi: R3OS_PAINTER_PASS_ABI,
       functionName: 'stampSource',
       args: [BigInt(index)],
     })),

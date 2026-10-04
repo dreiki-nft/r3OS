@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 import { config } from './config'
 import { readMany } from './readMany'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 
 export interface PainterProfile {
   stats: readonly bigint[]
@@ -40,13 +40,13 @@ export function readPainterProfile(owner: Address, force = false): Promise<Paint
     [
       {
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'painterStats',
         args: [owner],
       },
       {
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'isR3tardHolder',
         args: [owner],
       },

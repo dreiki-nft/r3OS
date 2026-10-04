@@ -2,7 +2,7 @@ import type { Address, Hex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 
 export interface BurnerRecord {
   privateKey: Hex
@@ -120,7 +120,7 @@ export async function burnerStatus(owner: Address): Promise<BurnerStatus | undef
   const [rawSession, balance] = await Promise.all([
     client.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'sessionInfo',
       args: [burner.address],
     }) as Promise<readonly [Address, bigint, bigint, bigint, boolean, boolean]>,

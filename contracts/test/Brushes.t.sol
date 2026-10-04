@@ -2,14 +2,14 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsBrushes} from "../src/labs/R3tardsBrushes.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSBrushes} from "../src/labs/R3OSBrushes.sol";
 import {BrushDNA} from "../src/lib/BrushDNA.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract BrushesTest is Test {
-    R3tardsPaint paint;
-    R3tardsBrushes brushes;
+    R3OSPaint paint;
+    R3OSBrushes brushes;
     MockR3tards r3tards;
     uint256 alicePk = 0xA11CE;
     address alice;
@@ -18,13 +18,13 @@ contract BrushesTest is Test {
         vm.roll(1_000_700);
         alice = vm.addr(alicePk);
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
         vm.prank(alice);
         paint.setSeasonOutline(1, bytes(""), "");
         vm.warp(paint.seasonStartTime(1));
-        brushes = new R3tardsBrushes(address(paint), uint64(vm.getBlockTimestamp()));
+        brushes = new R3OSBrushes(address(paint), uint64(vm.getBlockTimestamp()));
     }
 
     function testVectorsAndRunsHash() public view {
@@ -49,7 +49,7 @@ contract BrushesTest is Test {
 
     function testCatchWindowAndRules() public {
         uint256 current = vm.getBlockNumber();
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.NotCatchable.selector, current));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.NotCatchable.selector, current));
         vm.prank(alice);
         brushes.catchBrush(current);
 
@@ -60,7 +60,7 @@ contract BrushesTest is Test {
         assertEq(slot, 0);
 
         vm.roll(current + 1);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.NotCatchable.selector, current - 256));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.NotCatchable.selector, current - 256));
         vm.prank(alice);
         brushes.catchBrush(current - 256);
 
@@ -70,12 +70,12 @@ contract BrushesTest is Test {
         vm.prank(alice);
         brushes.catchBrush(src);
         vm.setBlockhash(src - 1, keccak256("other source"));
-        vm.expectRevert(R3tardsBrushes.AlreadyCaughtThisBlock.selector);
+        vm.expectRevert(R3OSBrushes.AlreadyCaughtThisBlock.selector);
         vm.prank(alice);
         brushes.catchBrush(src - 1);
 
         vm.roll(vm.getBlockNumber() + 1);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.AlreadyInBox.selector, src));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.AlreadyInBox.selector, src));
         vm.prank(alice);
         brushes.catchBrush(src);
     }
@@ -141,22 +141,22 @@ contract BrushesTest is Test {
         vm.roll(vm.getBlockNumber() + 1);
         vm.prank(alice);
         paint.paint(abi.encodePacked(bytes1(py), bytes1(px), bytes1(px), bytes1(wrong)), new uint256[](0));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.NotOnCanvas.selector, px, py, want, wrong));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.NotOnCanvas.selector, px, py, want, wrong));
         vm.prank(alice);
         brushes.verify(slot, 20, 20);
 
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.OffCanvas.selector, 249, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.OffCanvas.selector, 249, 0));
         brushes.brushRuns(brush, 249, 0);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.InvalidSlot.selector, 8));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.InvalidSlot.selector, 8));
         vm.prank(alice);
         brushes.verify(8, 0, 0);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.EmptySlot.selector, 7));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.EmptySlot.selector, 7));
         vm.prank(makeAddr("empty owner"));
         brushes.verify(7, 0, 0);
 
         vm.roll(vm.getBlockNumber() + 1);
         (uint8 goodSlot,,) = _catchStampVerify(alice, 100, 100, keccak256("already verified"));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.AlreadyVerified.selector, goodSlot));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.AlreadyVerified.selector, goodSlot));
         vm.prank(alice);
         brushes.verify(goodSlot, 100, 100);
 
@@ -170,23 +170,23 @@ contract BrushesTest is Test {
         vm.prank(alice);
         paint.paint(seasonRuns, new uint256[](0));
         vm.warp(paint.seasonStartTime(2));
-        vm.expectPartialRevert(R3tardsBrushes.NotOnCanvas.selector);
+        vm.expectPartialRevert(R3OSBrushes.NotOnCanvas.selector);
         vm.prank(alice);
         brushes.verify(seasonSlot, 150, 150);
     }
 
     function testBrushOverDefaultOutlineCannotVerify() public {
-        R3tardsPaint defaultPaint = new R3tardsPaint(
+        R3OSPaint defaultPaint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
-        R3tardsBrushes defaultBrushes = new R3tardsBrushes(address(defaultPaint), uint64(vm.getBlockTimestamp()));
+        R3OSBrushes defaultBrushes = new R3OSBrushes(address(defaultPaint), uint64(vm.getBlockTimestamp()));
         bytes memory outline = defaultPaint.genesisFrameData(0);
         (uint8 x, uint8 y) = _firstSafeOutlinePixel(outline);
         uint256 brush = uint256(0x55555555555555555555555555555555) | (uint256(4) << 128);
         vm.store(address(defaultBrushes), bytes32(defaultBrushes.boxBase(alice)), bytes32(brush));
         vm.prank(alice);
         defaultPaint.paint(BrushDNA.runs(brush, x, y), new uint256[](0));
-        vm.expectRevert(abi.encodeWithSelector(R3tardsBrushes.NotOnCanvas.selector, x, y, uint8(4), uint8(0)));
+        vm.expectRevert(abi.encodeWithSelector(R3OSBrushes.NotOnCanvas.selector, x, y, uint8(4), uint8(0)));
         vm.prank(alice);
         defaultBrushes.verify(0, x, y);
     }
@@ -309,7 +309,7 @@ contract BrushesTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 address(paint)

@@ -1,6 +1,6 @@
 # Monad Card / CARD.DRV
 
-Phase MONAD CARD plugs the official Monad Card into r3OS as a hardware identity device without modifying the card contract. `R3tardsCardMemory` is a separate, ownerless driver: every card id addresses one raw 4 KiB storage page and only the card's current `ownerOf(cardId)` may write it.
+Phase MONAD CARD plugs the official Monad Card into r3OS as a hardware identity device without modifying the card contract. `R3OSCardMemory` is a separate, ownerless driver: every card id addresses one raw 4 KiB storage page and only the card's current `ownerOf(cardId)` may write it.
 
 The driver is registered in the Paint experiment registry as `card-drv`. The frontend program is `CARDMEM.EXE`. PAGE.EXE, Kernel Debugger, Block Camera, Monad Hardware, the Painter Pass and Quests all consume the same driver/page state.
 
@@ -8,7 +8,7 @@ The official card contract is never wrapped, escrowed, transferred or modified b
 
 ## Trust and authority
 
-`R3tardsCardMemory` has:
+`R3OSCardMemory` has:
 
 - no owner or admin;
 - no upgrade path;
@@ -35,6 +35,8 @@ Every card id receives one 128-word, 4,096-byte page:
 base = uint256(keccak256(abi.encode("r3tards.card.drv.v1", cardId))) & ~uint256(127)
 page = base >> 7
 ```
+
+Phase 7.5 deliberately keeps the historical `r3tards.card.drv.v1` storage derivation salt on fresh deployments. It is an internal deterministic page-layout key, not product-facing branding; retaining it minimizes protocol/layout delta while the contract and UI are rebranded to r3OS.
 
 The card id is a full `uint256`; CARD.DRV does not assume sequential ids or impose an id bound. The base is always 128-word aligned. Distinct ids therefore map to disjoint pages except for a 249-bit aligned-keccak collision.
 
@@ -122,7 +124,7 @@ The frontend deliberately does not scan historical card `Transfer` or claim even
 
 Discovery order is:
 
-1. `R3tardsCardMemory.cardOf(wallet)`, then verify the id with the card's `ownerOf`;
+1. `R3OSCardMemory.cardOf(wallet)`, then verify the id with the card's `ownerOf`;
 2. a per-chain/per-wallet id remembered in localStorage, then verify it with `ownerOf`;
 3. the Found New Hardware flow in CARDMEM.EXE, where the user enters an id and the app verifies `ownerOf`.
 
@@ -191,7 +193,7 @@ Card-shot metadata is immutable with respect to later CARD.DRV edits: rendering 
 
 ## Painter Pass and CARD CARRIER
 
-`R3tardsCardMemory` implements the existing stamp interface:
+`R3OSCardMemory` implements the existing stamp interface:
 
 ```text
 MONAD CARD = balanceOf(painter) > 0

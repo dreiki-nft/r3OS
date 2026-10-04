@@ -2,19 +2,19 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsSleepwalker} from "../src/labs/R3tardsSleepwalker.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSSleepwalker} from "../src/labs/R3OSSleepwalker.sol";
 import {SleepwalkerKey} from "../src/labs/SleepwalkerKey.sol";
 import {LabTraits} from "../src/lib/LabTraits.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract ToggleRefundOwner {
-    R3tardsPaint public immutable paint;
-    R3tardsSleepwalker public immutable sleepwalker;
+    R3OSPaint public immutable paint;
+    R3OSSleepwalker public immutable sleepwalker;
     bool public rejectRefunds = true;
 
-    constructor(R3tardsPaint paint_, R3tardsSleepwalker sleepwalker_) {
+    constructor(R3OSPaint paint_, R3OSSleepwalker sleepwalker_) {
         paint = paint_;
         sleepwalker = sleepwalker_;
     }
@@ -37,7 +37,7 @@ contract ToggleRefundOwner {
 
     function goToSleep(
         bytes calldata stencil,
-        R3tardsSleepwalker.StartSessionAuthorization[] calldata sessions,
+        R3OSSleepwalker.StartSessionAuthorization[] calldata sessions,
         uint256 tip
     ) external payable {
         sleepwalker.sleep{value: msg.value}(stencil, new uint256[](0), sessions, tip);
@@ -57,9 +57,9 @@ contract ToggleRefundOwner {
 }
 
 contract SleepwalkerTest is Test {
-    R3tardsPaint paint;
-    R3tardsLabs labs;
-    R3tardsSleepwalker sleepwalker;
+    R3OSPaint paint;
+    R3OSLabs labs;
+    R3OSSleepwalker sleepwalker;
     SleepwalkerKey keyImplementation;
     MockR3tards r3tards;
 
@@ -74,7 +74,7 @@ contract SleepwalkerTest is Test {
         vm.deal(owner, 100 ether);
         vm.deal(cranker, 0);
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards),
             uint64(vm.getBlockTimestamp()),
             address(this),
@@ -85,9 +85,9 @@ contract SleepwalkerTest is Test {
             20,
             256
         );
-        labs = new R3tardsLabs(address(paint), address(this));
+        labs = new R3OSLabs(address(paint), address(this));
         keyImplementation = new SleepwalkerKey();
-        sleepwalker = new R3tardsSleepwalker(address(paint), address(labs), address(keyImplementation));
+        sleepwalker = new R3OSSleepwalker(address(paint), address(labs), address(keyImplementation));
         experimentId = paint.addExperiment(address(sleepwalker), "sleepwalker", "");
         sleepwalker.bindExperimentId(experimentId);
     }
@@ -97,15 +97,15 @@ contract SleepwalkerTest is Test {
         _assertActiveDays(1);
 
         bytes memory stencil = _run(10, 0, 99, 5);
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(4, 4_096);
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(4, 4_096);
         uint256 tip = 0.01 ether;
         vm.prank(owner);
         sleepwalker.sleep{value: 0.1 ether}(stencil, _emptyIds(), sessions, tip);
 
         uint256 beforeCranker = cranker.balance;
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Painted));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Painted));
         assertEq(cranker.balance, beforeCranker + tip);
 
         (, uint256 cursor,,,,,,) = sleepwalker.dreamOf(owner);
@@ -120,21 +120,21 @@ contract SleepwalkerTest is Test {
         vm.roll(vm.getBlockNumber() + 100);
         vm.prank(cranker);
         (code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Allowance));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Allowance));
 
         uint256 tomorrow = ((vm.getBlockTimestamp() / 1 days) + 1) * 1 days;
         vm.warp(tomorrow);
         vm.roll(vm.getBlockNumber() + 100);
         vm.prank(cranker);
         (code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.NotPaintedToday));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.NotPaintedToday));
         _assertActiveDays(1);
 
         _humanPaint(1, 0, 19, 6);
         _assertActiveDays(2);
         vm.prank(cranker);
         (code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Painted));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Painted));
         _assertActiveDays(2);
         assertEq(sleepwalker.dreamingDays(owner), 2);
     }
@@ -147,12 +147,12 @@ contract SleepwalkerTest is Test {
 
         _sleep(_run(12, 0, uint8(dreamPixels - 1), 5), 1, 128, 1 wei, 0);
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
         if (expectedDays == 0) {
-            assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.NotPaintedToday));
+            assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.NotPaintedToday));
         } else {
             assertTrue(
-                code == R3tardsSleepwalker.StepCode.Painted || code == R3tardsSleepwalker.StepCode.Complete
+                code == R3OSSleepwalker.StepCode.Painted || code == R3OSSleepwalker.StepCode.Complete
             );
         }
         _assertActiveDays(expectedDays);
@@ -166,14 +166,14 @@ contract SleepwalkerTest is Test {
         _sleep(_run(13, 0, 199, 5), 2, 64, 1 wei, 0);
 
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode first,) = sleepwalker.step(owner);
-        assertEq(uint256(first), uint256(R3tardsSleepwalker.StepCode.Painted));
+        (R3OSSleepwalker.StepCode first,) = sleepwalker.step(owner);
+        assertEq(uint256(first), uint256(R3OSSleepwalker.StepCode.Painted));
         assertEq(paint.sessionNonces(owner), 1);
 
         vm.roll(firstExpiry + 1);
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode second,) = sleepwalker.step(owner);
-        assertEq(uint256(second), uint256(R3tardsSleepwalker.StepCode.Painted));
+        (R3OSSleepwalker.StepCode second,) = sleepwalker.step(owner);
+        assertEq(uint256(second), uint256(R3OSSleepwalker.StepCode.Painted));
         assertEq(paint.sessionNonces(owner), 2);
         (address sessionOwner,,,,, bool active) = paint.sessionInfo(sleepwalker.keyOf(owner));
         assertEq(sessionOwner, owner);
@@ -192,8 +192,8 @@ contract SleepwalkerTest is Test {
         assertEq(paint.sessionNonces(owner), 3);
 
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Stalled));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Stalled));
         (,,,,,,, bool stalled) = sleepwalker.dreamOf(owner);
         assertTrue(stalled);
         _assertKeyNeverPaintedAsItself();
@@ -210,8 +210,8 @@ contract SleepwalkerTest is Test {
 
         uint256 beforeBalance = cranker.balance;
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Budget));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Budget));
         assertEq(cranker.balance, beforeBalance);
         (, uint256 cursor,, uint256 deposit,,,,) = sleepwalker.dreamOf(owner);
         assertEq(cursor, 0);
@@ -227,8 +227,8 @@ contract SleepwalkerTest is Test {
 
         uint256 beforeBalance = cranker.balance;
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.CoreRejected));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.CoreRejected));
         assertEq(cranker.balance, beforeBalance);
         (, uint256 cursor,, uint256 deposit,,,,) = sleepwalker.dreamOf(owner);
         assertEq(cursor, 0);
@@ -256,8 +256,8 @@ contract SleepwalkerTest is Test {
 
         vm.roll(vm.getBlockNumber() + paint.MAX_SESSION_BLOCKS() + 1);
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.NoDream));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.NoDream));
     }
 
     function testDreamCompleteAutoWakesAndRefunds() public {
@@ -268,8 +268,8 @@ contract SleepwalkerTest is Test {
 
         uint256 ownerBefore = owner.balance;
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Complete));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Complete));
         (, uint256 cursor, uint256 total, uint256 left,, uint256 sessionsLeft,,) = sleepwalker.dreamOf(owner);
         assertEq(cursor, total);
         assertEq(total, 10);
@@ -279,7 +279,7 @@ contract SleepwalkerTest is Test {
 
         vm.prank(cranker);
         (code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Complete));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Complete));
     }
 
     function testMintAfterCompleteAndTraitsAreValidJson() public {
@@ -316,7 +316,7 @@ contract SleepwalkerTest is Test {
         assertEq(vm.parseJsonUint(string(json), ".attributes[10].value"), 0);
 
         vm.prank(owner);
-        vm.expectRevert(R3tardsSleepwalker.DreamAlreadyMinted.selector);
+        vm.expectRevert(R3OSSleepwalker.DreamAlreadyMinted.selector);
         sleepwalker.mintDream();
         vm.prank(owner);
         sleepwalker.wake();
@@ -364,8 +364,8 @@ contract SleepwalkerTest is Test {
         _sleep(_run(30, 0, 31, 5), 1, 32, 1 wei, 0);
 
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Painted));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Painted));
         (, uint256 cursor,,,,,,) = sleepwalker.dreamOf(owner);
         assertEq(cursor, 16);
     }
@@ -373,14 +373,14 @@ contract SleepwalkerTest is Test {
     function testMissedSessionWindowStallsAndResumeKeepsProgress() public {
         _humanPaint(32, 0, 63, 4);
         bytes memory stencil = _run(33, 0, 95, 5);
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(3, 256);
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(3, 256);
         uint256 missedExpiry = sessions[1].expiryBlock;
         vm.prank(owner);
         sleepwalker.sleep(stencil, _emptyIds(), sessions, 1 wei);
 
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Painted));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Painted));
         (, uint256 cursorBefore,,,,,,) = sleepwalker.dreamOf(owner);
         assertEq(cursorBefore, 64);
 
@@ -393,9 +393,9 @@ contract SleepwalkerTest is Test {
 
         vm.prank(cranker);
         (code,) = sleepwalker.step(owner);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Stalled));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Stalled));
 
-        R3tardsSleepwalker.StartSessionAuthorization[] memory fresh = _signedSessions(2, 256);
+        R3OSSleepwalker.StartSessionAuthorization[] memory fresh = _signedSessions(2, 256);
         vm.prank(owner);
         sleepwalker.resume(fresh);
         uint256 cursorAfter;
@@ -406,7 +406,7 @@ contract SleepwalkerTest is Test {
         vm.prank(cranker);
         (code,) = sleepwalker.step(owner);
         assertTrue(
-            code == R3tardsSleepwalker.StepCode.Painted || code == R3tardsSleepwalker.StepCode.Complete
+            code == R3OSSleepwalker.StepCode.Painted || code == R3OSSleepwalker.StepCode.Complete
         );
     }
 
@@ -415,9 +415,9 @@ contract SleepwalkerTest is Test {
         vm.deal(address(contractOwner), 1 ether);
         contractOwner.paintByHand(_run(34, 0, 19, 4));
 
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions =
-            new R3tardsSleepwalker.StartSessionAuthorization[](1);
-        sessions[0] = R3tardsSleepwalker.StartSessionAuthorization({
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions =
+            new R3OSSleepwalker.StartSessionAuthorization[](1);
+        sessions[0] = R3OSSleepwalker.StartSessionAuthorization({
             expiryBlock: vm.getBlockNumber() + paint.MAX_SESSION_BLOCKS(),
             maxUnits: 128,
             nonce: paint.sessionNonces(address(contractOwner)),
@@ -429,8 +429,8 @@ contract SleepwalkerTest is Test {
         contractOwner.goToSleep{value: deposit}(_run(35, 0, 9, 5), sessions, 1 wei);
 
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(address(contractOwner));
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Complete));
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(address(contractOwner));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Complete));
         assertEq(sleepwalker.refunds(address(contractOwner)), deposit - 1 wei);
 
         contractOwner.setRejectRefunds(false);
@@ -461,7 +461,7 @@ contract SleepwalkerTest is Test {
                 }
 
                 uint256 count = kind == 4 ? 2 : 1;
-                R3tardsSleepwalker.StartSessionAuthorization[] memory sessions =
+                R3OSSleepwalker.StartSessionAuthorization[] memory sessions =
                     _signedSessionsFor(pk, painter, count, 256);
                 vm.prank(painter);
                 sleepwalker.sleep{value: 1 wei}(
@@ -483,16 +483,16 @@ contract SleepwalkerTest is Test {
             owners[0] = painter;
             bool ready = sleepwalker.stepReady(owners)[0];
             vm.prank(cranker);
-            (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(painter);
-            bool painted = code == R3tardsSleepwalker.StepCode.Painted
-                || (code == R3tardsSleepwalker.StepCode.Complete && kind != 0);
+            (R3OSSleepwalker.StepCode code,) = sleepwalker.step(painter);
+            bool painted = code == R3OSSleepwalker.StepCode.Painted
+                || (code == R3OSSleepwalker.StepCode.Complete && kind != 0);
             assertEq(ready, painted, "stepReady mismatch");
         }
     }
 
     function testSec_ResumeAllowedWheneverCoreSessionIsInactive() public {
         _humanPaint(36, 0, 31, 4);
-        R3tardsSleepwalker.StartSessionAuthorization[] memory first = _signedSessions(1, 256);
+        R3OSSleepwalker.StartSessionAuthorization[] memory first = _signedSessions(1, 256);
         vm.prank(owner);
         sleepwalker.sleep{value: 1 wei}(_run(37, 0, 95, 5), _emptyIds(), first, 1 wei);
 
@@ -500,7 +500,7 @@ contract SleepwalkerTest is Test {
         (,,,,,,, bool stalledBefore) = sleepwalker.dreamOf(owner);
         assertTrue(stalledBefore); // S1: exhausted sessions now report the dream as stalled
 
-        R3tardsSleepwalker.StartSessionAuthorization[] memory fresh = _signedSessions(1, 256);
+        R3OSSleepwalker.StartSessionAuthorization[] memory fresh = _signedSessions(1, 256);
         vm.prank(owner);
         sleepwalker.resume(fresh);
         (,,,,,,, bool stalledAfter) = sleepwalker.dreamOf(owner);
@@ -520,10 +520,10 @@ contract SleepwalkerTest is Test {
         uint256 crankerBefore = cranker.balance;
         uint256 gasBefore = gasleft();
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
         uint256 gasUsed = gasBefore - gasleft();
         console.log("GAS Sleepwalker skipped step", gasUsed);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Skipped));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Skipped));
         assertEq(cranker.balance, crankerBefore);
         (, uint256 cursor,, uint256 remaining,,,,) = sleepwalker.dreamOf(owner);
         assertEq(cursor, 64);
@@ -534,9 +534,9 @@ contract SleepwalkerTest is Test {
         ToggleRefundOwner contractOwner = new ToggleRefundOwner(paint, sleepwalker);
         vm.deal(address(contractOwner), 1 ether);
 
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions =
-            new R3tardsSleepwalker.StartSessionAuthorization[](1);
-        sessions[0] = R3tardsSleepwalker.StartSessionAuthorization({
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions =
+            new R3OSSleepwalker.StartSessionAuthorization[](1);
+        sessions[0] = R3OSSleepwalker.StartSessionAuthorization({
             expiryBlock: vm.getBlockNumber() + paint.MAX_SESSION_BLOCKS(),
             maxUnits: 128,
             nonce: paint.sessionNonces(address(contractOwner)),
@@ -555,9 +555,9 @@ contract SleepwalkerTest is Test {
         ToggleRefundOwner contractOwner = new ToggleRefundOwner(paint, sleepwalker);
         vm.deal(address(contractOwner), 1 ether);
 
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions =
-            new R3tardsSleepwalker.StartSessionAuthorization[](1);
-        sessions[0] = R3tardsSleepwalker.StartSessionAuthorization({
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions =
+            new R3OSSleepwalker.StartSessionAuthorization[](1);
+        sessions[0] = R3OSSleepwalker.StartSessionAuthorization({
             expiryBlock: vm.getBlockNumber() + paint.MAX_SESSION_BLOCKS(),
             maxUnits: 128,
             nonce: paint.sessionNonces(address(contractOwner)),
@@ -578,7 +578,7 @@ contract SleepwalkerTest is Test {
 
     function testSec_SessionsUsedWiderThanUint8() public {
         _humanPaint(41, 0, 31, 4);
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(1, 256);
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(1, 256);
         vm.prank(owner);
         sleepwalker.sleep{value: 1 wei}(_run(42, 0, 95, 5), _emptyIds(), sessions, 1 wei);
 
@@ -591,7 +591,7 @@ contract SleepwalkerTest is Test {
 
         vm.prank(owner);
         uint256 tokenId = sleepwalker.mintDream();
-        R3tardsSleepwalker.DreamTokenData memory data = sleepwalker.dreamToken(tokenId);
+        R3OSSleepwalker.DreamTokenData memory data = sleepwalker.dreamToken(tokenId);
         assertEq(data.nights, 256);
     }
 
@@ -604,8 +604,8 @@ contract SleepwalkerTest is Test {
         assertFalse(sleepwalker.stepReady(owners)[0]);
 
         vm.prank(owner);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
-        assertTrue(code == R3tardsSleepwalker.StepCode.Painted || code == R3tardsSleepwalker.StepCode.Complete);
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        assertTrue(code == R3OSSleepwalker.StepCode.Painted || code == R3OSSleepwalker.StepCode.Complete);
     }
 
     function testSec_GasCompletingStep() public {
@@ -613,17 +613,17 @@ contract SleepwalkerTest is Test {
         _sleep(_run(46, 0, 9, 5), 1, 128, 1 wei, 1 wei);
         uint256 before = gasleft();
         vm.prank(cranker);
-        (R3tardsSleepwalker.StepCode code,) = sleepwalker.step(owner);
+        (R3OSSleepwalker.StepCode code,) = sleepwalker.step(owner);
         uint256 used = before - gasleft();
         console.log("GAS Sleepwalker completing step", used);
-        assertEq(uint256(code), uint256(R3tardsSleepwalker.StepCode.Complete));
+        assertEq(uint256(code), uint256(R3OSSleepwalker.StepCode.Complete));
     }
 
     function testGasSleepStepWake() public {
         _humanPaint(20, 0, 31, 4);
         bytes memory stencil;
         for (uint8 y = 30; y < 46; ++y) stencil = abi.encodePacked(stencil, _run(y, 0, 255, 5));
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(4, 5_000);
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(4, 5_000);
 
         uint256 before = gasleft();
         vm.prank(owner);
@@ -679,7 +679,7 @@ contract SleepwalkerTest is Test {
     }
 
     function _sleep(bytes memory stencil, uint256 count, uint256 maxUnits, uint256 tip, uint256 value) private {
-        R3tardsSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(count, maxUnits);
+        R3OSSleepwalker.StartSessionAuthorization[] memory sessions = _signedSessions(count, maxUnits);
         vm.prank(owner);
         sleepwalker.sleep{value: value}(stencil, _emptyIds(), sessions, tip);
     }
@@ -710,16 +710,16 @@ contract SleepwalkerTest is Test {
     function _signedSessions(uint256 count, uint256 maxUnits)
         private
         view
-        returns (R3tardsSleepwalker.StartSessionAuthorization[] memory sessions)
+        returns (R3OSSleepwalker.StartSessionAuthorization[] memory sessions)
     {
         return _signedSessionsFor(ownerPk, owner, count, maxUnits);
     }
 
     function _signedSessionsFor(uint256 pk, address signer, uint256 count, uint256 maxUnits)
         private
-        view returns (R3tardsSleepwalker.StartSessionAuthorization[] memory sessions)
+        view returns (R3OSSleepwalker.StartSessionAuthorization[] memory sessions)
     {
-        sessions = new R3tardsSleepwalker.StartSessionAuthorization[](count);
+        sessions = new R3OSSleepwalker.StartSessionAuthorization[](count);
         address key = sleepwalker.keyOf(signer);
         uint256 nonce = paint.sessionNonces(signer);
         uint256 maxBlocks = paint.MAX_SESSION_BLOCKS();
@@ -727,7 +727,7 @@ contract SleepwalkerTest is Test {
         uint256 deadline = vm.getBlockTimestamp() + 1 days;
         for (uint256 i; i < count; ++i) {
             uint256 expiry = firstExpiry + i * maxBlocks;
-            sessions[i] = R3tardsSleepwalker.StartSessionAuthorization({
+            sessions[i] = R3OSSleepwalker.StartSessionAuthorization({
                 expiryBlock: expiry,
                 maxUnits: maxUnits,
                 nonce: nonce + i,
@@ -759,7 +759,7 @@ contract SleepwalkerTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 address(paint)

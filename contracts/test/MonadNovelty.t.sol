@@ -2,18 +2,18 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract MonadNoveltyTest is Test {
-    R3tardsPaint paint;
+    R3OSPaint paint;
     MockR3tards r;
     address alice = address(0xA11CE);
 
     function setUp() public {
         vm.roll(1_000);
         r = new MockR3tards();
-        paint = new R3tardsPaint(address(r), uint64(vm.getBlockTimestamp()), alice, alice, 20_000, 0, 20_000, 16, 256);
+        paint = new R3OSPaint(address(r), uint64(vm.getBlockTimestamp()), alice, alice, 20_000, 0, 20_000, 16, 256);
     }
 
     function testValidatorSealStoresCoinbaseForFrameAndFinale() public {
@@ -23,7 +23,7 @@ contract MonadNoveltyTest is Test {
         paint.paint(hex"00000304", new uint256[](0));
         vm.prank(alice);
         uint256 frameId = paint.mintFrame();
-        R3tardsPaint.FrameInfoData memory frameInfo = paint.frameInfo(frameId);
+        R3OSPaint.FrameInfoData memory frameInfo = paint.frameInfo(frameId);
         assertEq(frameInfo.proposer, proposer1);
 
         vm.warp(paint.seasonEndTime(0) + 1);
@@ -31,7 +31,7 @@ contract MonadNoveltyTest is Test {
         vm.coinbase(proposer2);
         vm.prank(alice);
         uint256 finale = paint.mintSeasonFinale(0);
-        R3tardsPaint.FrameInfoData memory finaleInfo = paint.frameInfo(finale);
+        R3OSPaint.FrameInfoData memory finaleInfo = paint.frameInfo(finale);
         assertEq(finaleInfo.proposer, proposer2);
     }
 
@@ -59,7 +59,7 @@ contract MonadNoveltyTest is Test {
 
         vm.prank(alice);
         uint256 frameId = paint.mintFrame();
-        R3tardsPaint.FrameInfoData memory info = paint.frameInfo(frameId);
+        R3OSPaint.FrameInfoData memory info = paint.frameInfo(frameId);
         assertEq(info.df1Amount, 200);
         assertTrue(paint.isStorm(info.blockNumber));
     }

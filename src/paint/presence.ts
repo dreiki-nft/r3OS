@@ -9,7 +9,7 @@ import { getBlockSnapshot } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { getLogsWindow } from '../chain/logs'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { getCanvasSnapshot, subscribeCanvasActivity, type CanvasActivity } from './canvasStore'
 
 export interface Box {
@@ -235,7 +235,7 @@ function addStrokes(incoming: Stroke[], live: boolean) {
   }
 }
 
-const paintedEvent = (R3TARDS_PAINT_ABI as readonly { type: string; name?: string }[]).find(
+const paintedEvent = (R3OS_PAINT_ABI as readonly { type: string; name?: string }[]).find(
   (item) => item.type === 'event' && item.name === 'Painted',
 )
 
@@ -278,7 +278,7 @@ async function refreshSeason() {
   const season = getCanvasSnapshot().season
   const info = (await publicClient.readContract({
     address: config.paintAddress,
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     functionName: 'seasonInfo',
     args: [season],
   })) as readonly unknown[]

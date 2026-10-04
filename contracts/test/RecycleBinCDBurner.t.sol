@@ -3,26 +3,26 @@ pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsQuests} from "../src/labs/R3tardsQuests.sol";
-import {R3tardsRecycleBin} from "../src/labs/R3tardsRecycleBin.sol";
-import {R3tardsCDBurner} from "../src/labs/R3tardsCDBurner.sol";
-import {R3tardsBlockCamera} from "../src/monadhw/R3tardsBlockCamera.sol";
-import {IR3tardsPaintData} from "../src/interfaces/IR3tardsPaintData.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
+import {R3OSRecycleBin} from "../src/labs/R3OSRecycleBin.sol";
+import {R3OSCDBurner} from "../src/labs/R3OSCDBurner.sol";
+import {R3OSBlockCamera} from "../src/monadhw/R3OSBlockCamera.sol";
+import {IR3OSPaintData} from "../src/interfaces/IR3OSPaintData.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract MockRecycleCore {
     mapping(uint256 => address) private _owners;
     mapping(uint256 => address) private _approvals;
     mapping(address => mapping(address => bool)) private _operators;
-    mapping(uint256 => IR3tardsPaintData.FrameInfoData) private _info;
+    mapping(uint256 => IR3OSPaintData.FrameInfoData) private _info;
     uint256 private _nextId = 1;
 
     function mint(address to) external returns (uint256 id) {
         id = _nextId++;
         _owners[id] = to;
-        _info[id] = IR3tardsPaintData.FrameInfoData({
+        _info[id] = IR3OSPaintData.FrameInfoData({
             minter: to,
             proposer: address(0xBEEF),
             dataPointer: address(1),
@@ -70,7 +70,7 @@ contract MockRecycleCore {
         delete _approvals[tokenId];
     }
 
-    function frameInfo(uint256 tokenId) external view returns (IR3tardsPaintData.FrameInfoData memory) {
+    function frameInfo(uint256 tokenId) external view returns (IR3OSPaintData.FrameInfoData memory) {
         return _info[tokenId];
     }
 
@@ -98,7 +98,7 @@ contract MockRecycleCore {
 contract MockCDCore {
     mapping(uint256 => address) private _owners;
     mapping(uint256 => bytes) private _data;
-    mapping(uint256 => IR3tardsPaintData.FrameInfoData) private _info;
+    mapping(uint256 => IR3OSPaintData.FrameInfoData) private _info;
     address private _experiment;
     uint256 private _nextId = 1;
 
@@ -110,7 +110,7 @@ contract MockCDCore {
         id = _nextId++;
         _owners[id] = to;
         _data[id] = data;
-        _info[id] = IR3tardsPaintData.FrameInfoData({
+        _info[id] = IR3OSPaintData.FrameInfoData({
             minter: to,
             proposer: address(0xBEEF),
             dataPointer: address(1),
@@ -132,7 +132,7 @@ contract MockCDCore {
         require(owner != address(0), "no token");
     }
 
-    function frameInfo(uint256 tokenId) external view returns (IR3tardsPaintData.FrameInfoData memory) {
+    function frameInfo(uint256 tokenId) external view returns (IR3OSPaintData.FrameInfoData memory) {
         return _info[tokenId];
     }
 
@@ -140,9 +140,9 @@ contract MockCDCore {
         return _data[tokenId];
     }
 
-    function experimentInfo(uint256 experimentId) external view returns (IR3tardsPaintData.ExperimentData memory) {
+    function experimentInfo(uint256 experimentId) external view returns (IR3OSPaintData.ExperimentData memory) {
         require(experimentId == 0, "bad experiment");
-        return IR3tardsPaintData.ExperimentData({
+        return IR3OSPaintData.ExperimentData({
             experiment: _experiment,
             name: "cd-burner",
             uri: "",
@@ -169,11 +169,11 @@ contract MockCDCore {
 
 contract RecycleBinCDBurnerTest is Test {
     MockR3tards r3tards;
-    R3tardsPaint paint;
-    R3tardsLabs labs;
-    R3tardsRecycleBin bin;
-    R3tardsCDBurner cd;
-    R3tardsBlockCamera camera;
+    R3OSPaint paint;
+    R3OSLabs labs;
+    R3OSRecycleBin bin;
+    R3OSCDBurner cd;
+    R3OSBlockCamera camera;
 
     uint256 alicePk = 0xA11CE;
     address alice;
@@ -186,13 +186,13 @@ contract RecycleBinCDBurnerTest is Test {
         alice = vm.addr(alicePk);
         seasonStart = uint64(vm.getBlockTimestamp());
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), seasonStart, alice, royalty, 10_000, 0, 10_000, 16, 256
         );
-        labs = new R3tardsLabs(address(paint), royalty);
-        bin = new R3tardsRecycleBin(address(paint));
-        cd = new R3tardsCDBurner(address(paint), address(labs));
-        camera = new R3tardsBlockCamera(address(paint), address(labs), address(0));
+        labs = new R3OSLabs(address(paint), royalty);
+        bin = new R3OSRecycleBin(address(paint));
+        cd = new R3OSCDBurner(address(paint), address(labs));
+        camera = new R3OSBlockCamera(address(paint), address(labs), address(0));
 
         vm.prank(alice);
         uint256 binExperiment = paint.addExperiment(address(bin), "recycle-bin", "");
@@ -207,8 +207,8 @@ contract RecycleBinCDBurnerTest is Test {
 
     function testRecycleWithApprovalSnapshotsAndEvents() public {
         uint256[] memory ids = _makeFrames(3);
-        IR3tardsPaintData.FrameInfoData[] memory infos = new IR3tardsPaintData.FrameInfoData[](3);
-        for (uint256 i; i < 3; ++i) infos[i] = IR3tardsPaintData(address(paint)).frameInfo(ids[i]);
+        IR3OSPaintData.FrameInfoData[] memory infos = new IR3OSPaintData.FrameInfoData[](3);
+        for (uint256 i; i < 3; ++i) infos[i] = IR3OSPaintData(address(paint)).frameInfo(ids[i]);
 
         vm.prank(alice);
         paint.setApprovalForAll(address(bin), true);
@@ -245,7 +245,7 @@ contract RecycleBinCDBurnerTest is Test {
             assertEq(storm, paint.isStorm(infos[i].blockNumber));
 
             // Core snapshots deliberately survive an ERC-721 burn; the Bin tombstone is a cheap indexed graveyard record.
-            IR3tardsPaintData.FrameInfoData memory survivingInfo = IR3tardsPaintData(address(paint)).frameInfo(ids[i]);
+            IR3OSPaintData.FrameInfoData memory survivingInfo = IR3OSPaintData(address(paint)).frameInfo(ids[i]);
             assertEq(survivingInfo.minter, infos[i].minter);
             assertEq(paint.frameData(ids[i]).length, 32_768);
         }
@@ -253,17 +253,17 @@ contract RecycleBinCDBurnerTest is Test {
 
     function testRecycleRejectsBadBatchSizesAndMissingApproval() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsRecycleBin.InvalidCount.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSRecycleBin.InvalidCount.selector, 0));
         bin.recycle(new uint256[](0));
 
         uint256[] memory tooMany = new uint256[](51);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsRecycleBin.InvalidCount.selector, 51));
+        vm.expectRevert(abi.encodeWithSelector(R3OSRecycleBin.InvalidCount.selector, 51));
         bin.recycle(tooMany);
 
         uint256 frame = _makeFrame(alice, 0);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsRecycleBin.BinNotApproved.selector, frame));
+        vm.expectRevert(abi.encodeWithSelector(R3OSRecycleBin.BinNotApproved.selector, frame));
         bin.recycle(_one(frame));
         assertEq(paint.ownerOf(frame), alice);
     }
@@ -275,13 +275,13 @@ contract RecycleBinCDBurnerTest is Test {
 
         uint256[] memory one = _one(frame);
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsRecycleBin.NotFrameOwner.selector, frame, alice));
+        vm.expectRevert(abi.encodeWithSelector(R3OSRecycleBin.NotFrameOwner.selector, frame, alice));
         bin.recycle(one);
 
         vm.prank(alice);
         paint.approve(address(bin), 0);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.NonBurnableToken.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.NonBurnableToken.selector, 0));
         bin.recycle(_one(0));
 
         vm.warp(uint256(seasonStart) + 30 days);
@@ -291,25 +291,25 @@ contract RecycleBinCDBurnerTest is Test {
         vm.prank(alice);
         paint.approve(address(bin), finale);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.NonBurnableToken.selector, finale));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.NonBurnableToken.selector, finale));
         bin.recycle(_one(finale));
 
         address key = makeAddr("recycle-session");
         _startSession(key, 100, 512);
         vm.prank(key);
-        vm.expectRevert(R3tardsRecycleBin.SessionKeyCannotRecycle.selector);
+        vm.expectRevert(R3OSRecycleBin.SessionKeyCannotRecycle.selector);
         bin.recycle(one);
 
         vm.prank(alice);
         paint.setApprovalForAll(key, true);
         vm.prank(key);
-        vm.expectRevert(R3tardsRecycleBin.SessionKeyCannotRecycle.selector);
+        vm.expectRevert(R3OSRecycleBin.SessionKeyCannotRecycle.selector);
         paint.safeTransferFrom(alice, address(bin), frame);
     }
 
     function testReceiverRejectsOtherCollections() public {
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsRecycleBin.WrongCollection.selector, bob));
+        vm.expectRevert(abi.encodeWithSelector(R3OSRecycleBin.WrongCollection.selector, bob));
         bin.onERC721Received(alice, alice, 1, "");
     }
 
@@ -328,7 +328,7 @@ contract RecycleBinCDBurnerTest is Test {
 
     function testTopTenMatchesNaiveStableSortAcrossFifteenWallets() public {
         MockRecycleCore core = new MockRecycleCore();
-        R3tardsRecycleBin mockBin = new R3tardsRecycleBin(address(core));
+        R3OSRecycleBin mockBin = new R3OSRecycleBin(address(core));
         address[] memory wallets = new address[](15);
         uint256[] memory counts = new uint256[](15);
 
@@ -368,7 +368,7 @@ contract RecycleBinCDBurnerTest is Test {
 
     function testTopTenReordersOnLaterUpdatesAndKeepsFirstToTieAhead() public {
         MockRecycleCore core = new MockRecycleCore();
-        R3tardsRecycleBin mockBin = new R3tardsRecycleBin(address(core));
+        R3OSRecycleBin mockBin = new R3OSRecycleBin(address(core));
         address a = address(0xA0);
         address b = address(0xB0);
 
@@ -405,7 +405,7 @@ contract RecycleBinCDBurnerTest is Test {
 
     function testRecyclerQuestThirteenBecomesClaimableAtOneHundredBurns() public {
         MockRecycleCore core = new MockRecycleCore();
-        R3tardsRecycleBin mockBin = new R3tardsRecycleBin(address(core));
+        R3OSRecycleBin mockBin = new R3OSRecycleBin(address(core));
         vm.prank(alice);
         core.setApprovalForAll(address(mockBin), true);
         for (uint256 batch; batch < 2; ++batch) {
@@ -419,7 +419,7 @@ contract RecycleBinCDBurnerTest is Test {
         assertEq(stampName, "RECYCLER");
         assertTrue(earned);
 
-        R3tardsQuests quests = new R3tardsQuests(address(core), 0, address(this));
+        R3OSQuests quests = new R3OSQuests(address(core), 0, address(this));
         for (uint256 i; i < 12; ++i) _addQuest(quests, mockBin, string.concat("DUMMY ", vm.toString(i)), 0);
         _addQuest(quests, mockBin, "RECYCLER", 100);
         assertEq(quests.questCount(), 13);
@@ -431,54 +431,54 @@ contract RecycleBinCDBurnerTest is Test {
 
     function testCDBurnerValidationAndUppercaseFold() public {
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCDBurner.InvalidTrackCount.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCDBurner.InvalidTrackCount.selector, 0));
         cd.burnCD(new uint256[](0), "mix");
 
         uint256[] memory thirteen = new uint256[](13);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCDBurner.InvalidTrackCount.selector, 13));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCDBurner.InvalidTrackCount.selector, 13));
         cd.burnCD(thirteen, "mix");
 
         uint256 frame = _makeFrame(alice, 0);
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCDBurner.InvalidLabelLength.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCDBurner.InvalidLabelLength.selector, 0));
         cd.burnCD(_one(frame), "");
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCDBurner.InvalidLabelLength.selector, 25));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCDBurner.InvalidLabelLength.selector, 25));
         cd.burnCD(_one(frame), "abcdefghijklmnopqrstuvwxy");
 
         uint256[] memory duplicate = new uint256[](2);
         duplicate[0] = frame;
         duplicate[1] = frame;
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCDBurner.DuplicateTrack.selector, frame));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCDBurner.DuplicateTrack.selector, frame));
         cd.burnCD(duplicate, "mix");
 
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCDBurner.NotFrameOwner.selector, frame, alice));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCDBurner.NotFrameOwner.selector, frame, alice));
         cd.burnCD(_one(frame), "mix");
 
         vm.prank(alice);
-        vm.expectRevert(R3tardsCDBurner.TokenZeroNotAllowed.selector);
+        vm.expectRevert(R3OSCDBurner.TokenZeroNotAllowed.selector);
         cd.burnCD(_one(0), "mix");
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCDBurner.InvalidLabelCharacter.selector, uint256(3), bytes1("_")));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCDBurner.InvalidLabelCharacter.selector, uint256(3), bytes1("_")));
         cd.burnCD(_one(frame), "bad_label");
 
         address key = makeAddr("cd-session");
         _startSession(key, 100, 512);
         vm.prank(key);
-        vm.expectRevert(R3tardsCDBurner.SessionKeyCannotBurnCD.selector);
+        vm.expectRevert(R3OSCDBurner.SessionKeyCannotBurnCD.selector);
         cd.burnCD(_one(frame), "mix");
 
         vm.prank(alice);
         uint256 cdId = cd.burnCD(_one(frame), "MY MIX #1");
         bytes memory json = _json(labs.tokenURI(cdId));
         vm.parseJson(string(json));
-        assertEq(vm.parseJsonString(string(json), ".name"), string.concat("r3tards labs cd #", vm.toString(cdId), ": my mix #1"));
+        assertEq(vm.parseJsonString(string(json), ".name"), string.concat("r3OS labs cd #", vm.toString(cdId), ": my mix #1"));
     }
 
     function testCDBurnerMixedBlockPhotoWritesV3AndKeepsSources() public {
@@ -524,7 +524,7 @@ contract RecycleBinCDBurnerTest is Test {
         assertEq(paint.ownerOf(ids[0]), alice);
         assertEq(paint.ownerOf(ids[1]), alice);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsLabs.BurnNotAllowed.selector, cdId));
+        vm.expectRevert(abi.encodeWithSelector(R3OSLabs.BurnNotAllowed.selector, cdId));
         labs.burn(cdId);
 
         bytes32 beforeHash = keccak256(bytes(labs.tokenURI(cdId)));
@@ -601,7 +601,7 @@ contract RecycleBinCDBurnerTest is Test {
 
 
     function testCDTrackColoursPickTopTwoAndLowerTie() public {
-        (MockCDCore core, R3tardsLabs mockLabs, R3tardsCDBurner mockCd) = _newMockCD();
+        (MockCDCore core, R3OSLabs mockLabs, R3OSCDBurner mockCd) = _newMockCD();
         bytes memory data = new bytes(32_768);
         for (uint256 i; i < 7; ++i) _setSample(data, i, 4);
         for (uint256 i = 7; i < 12; ++i) _setSample(data, i, 5);
@@ -621,7 +621,7 @@ contract RecycleBinCDBurnerTest is Test {
     }
 
     function testCDBlackAndWhiteHasNoDiscColoursAndRendersSilver() public {
-        (MockCDCore core, R3tardsLabs mockLabs, R3tardsCDBurner mockCd) = _newMockCD();
+        (MockCDCore core, R3OSLabs mockLabs, R3OSCDBurner mockCd) = _newMockCD();
         bytes memory data = new bytes(32_768);
         for (uint256 i; i < 24; ++i) _setSample(data, i, 7);
 
@@ -655,7 +655,7 @@ contract RecycleBinCDBurnerTest is Test {
     }
 
     function testCDOneDiscColourStoresExactlyOne() public {
-        (MockCDCore core, R3tardsLabs mockLabs, R3tardsCDBurner mockCd) = _newMockCD();
+        (MockCDCore core, R3OSLabs mockLabs, R3OSCDBurner mockCd) = _newMockCD();
         bytes memory data = new bytes(32_768);
         for (uint256 i; i < 19; ++i) _setSample(data, i, 8);
 
@@ -702,10 +702,10 @@ contract RecycleBinCDBurnerTest is Test {
     }
 
 
-    function _newMockCD() private returns (MockCDCore core, R3tardsLabs mockLabs, R3tardsCDBurner mockCd) {
+    function _newMockCD() private returns (MockCDCore core, R3OSLabs mockLabs, R3OSCDBurner mockCd) {
         core = new MockCDCore();
-        mockLabs = new R3tardsLabs(address(core), royalty);
-        mockCd = new R3tardsCDBurner(address(core), address(mockLabs));
+        mockLabs = new R3OSLabs(address(core), royalty);
+        mockCd = new R3OSCDBurner(address(core), address(mockLabs));
         core.setExperiment(address(mockCd));
         mockCd.bindExperimentId(0);
     }
@@ -757,7 +757,7 @@ contract RecycleBinCDBurnerTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 address(paint)
@@ -769,11 +769,11 @@ contract RecycleBinCDBurnerTest is Test {
         paint.startSession(alice, key, expiry, maxUnits, nonce, deadline, abi.encodePacked(r, s, v));
     }
 
-    function _addQuest(R3tardsQuests quests, R3tardsRecycleBin target, string memory name, uint256 threshold)
+    function _addQuest(R3OSQuests quests, R3OSRecycleBin target, string memory name, uint256 threshold)
         private
     {
-        R3tardsQuests.Condition[] memory conditions = new R3tardsQuests.Condition[](1);
-        conditions[0] = R3tardsQuests.Condition(
+        R3OSQuests.Condition[] memory conditions = new R3OSQuests.Condition[](1);
+        conditions[0] = R3OSQuests.Condition(
             address(target), bytes4(keccak256("burnedBy(address)")), 0, 0, threshold
         );
         quests.addQuest(name, 0, 0, conditions);

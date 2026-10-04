@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {Test} from "forge-std/Test.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract CoreCanvasTest is Test {
-    R3tardsPaint p;
+    R3OSPaint p;
     MockR3tards r;
     address alice = address(0xA11CE);
     address bob = address(0xB0B);
@@ -16,7 +16,7 @@ contract CoreCanvasTest is Test {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         r = new MockR3tards();
         start = uint64(vm.getBlockTimestamp());
-        p = new R3tardsPaint(address(r), start, alice, alice, 32, 16, 256, 16, 256);
+        p = new R3OSPaint(address(r), start, alice, alice, 32, 16, 256, 16, 256);
     }
 
     function testLayoutAndGenesis() public view {
@@ -33,7 +33,7 @@ contract CoreCanvasTest is Test {
 
     function testOutlineCoveredWriteIsCompleteNoOp() public {
         vm.prank(alice);
-        vm.expectRevert(R3tardsPaint.NoChange.selector);
+        vm.expectRevert(R3OSPaint.NoChange.selector);
         p.paint(hex"5A707004", new uint256[](0));
         assertEq(p.backgroundPixelAt(0, 112, 90), 0);
     }
@@ -64,23 +64,23 @@ contract CoreCanvasTest is Test {
     }
 
     function testFaceAndBackgroundCooldownsAndAllowedColors() public {
-        R3tardsPaint rich = new R3tardsPaint(
+        R3OSPaint rich = new R3OSPaint(
             address(r), uint64(vm.getBlockTimestamp()), alice, alice, 10_000, 0, 10_000, 16, 256
         );
         vm.prank(alice);
         rich.setFace(7, new uint256[](0));
 
         vm.prank(alice);
-        vm.expectRevert(R3tardsPaint.NoChange.selector);
+        vm.expectRevert(R3OSPaint.NoChange.selector);
         rich.setFace(7, new uint256[](0));
 
         uint256 faceUntil = vm.getBlockNumber() + rich.FACE_FLIP_COOLDOWN_BLOCKS();
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.CooldownActive.selector, faceUntil));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.CooldownActive.selector, faceUntil));
         rich.setFace(1, new uint256[](0));
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.InvalidBackgroundColor.selector, 4));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.InvalidBackgroundColor.selector, 4));
         rich.setBackground(4, new uint256[](0));
 
         vm.prank(alice);
@@ -88,16 +88,16 @@ contract CoreCanvasTest is Test {
         uint256 bgUntil = vm.getBlockNumber() + rich.BACKGROUND_COOLDOWN_BLOCKS();
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.CooldownActive.selector, bgUntil));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.CooldownActive.selector, bgUntil));
         rich.setBackground(6, new uint256[](0));
     }
 
     function testSeasonRolloverIsFreshAndActionsBeforeStartRevert() public {
-        R3tardsPaint future = new R3tardsPaint(
+        R3OSPaint future = new R3OSPaint(
             address(r), uint64(vm.getBlockTimestamp() + 100), alice, alice, 32, 16, 256, 16, 256
         );
         vm.prank(alice);
-        vm.expectRevert(R3tardsPaint.NotOpenYet.selector);
+        vm.expectRevert(R3OSPaint.NotOpenYet.selector);
         future.paint(hex"00000004", new uint256[](0));
 
         vm.prank(alice);
@@ -136,10 +136,10 @@ contract CoreCanvasTest is Test {
     }
 
     function testConstructorValidation() public {
-        vm.expectRevert(R3tardsPaint.InvalidConfig.selector);
-        new R3tardsPaint(address(r), start, alice, alice, 300, 0, 256, 16, 256);
+        vm.expectRevert(R3OSPaint.InvalidConfig.selector);
+        new R3OSPaint(address(r), start, alice, alice, 300, 0, 256, 16, 256);
 
-        vm.expectRevert(R3tardsPaint.InvalidConfig.selector);
-        new R3tardsPaint(address(r), start, alice, alice, 32, 16, 256, 16, 65_536);
+        vm.expectRevert(R3OSPaint.InvalidConfig.selector);
+        new R3OSPaint(address(r), start, alice, alice, 32, 16, 256, 16, 65_536);
     }
 }

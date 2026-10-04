@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
-contract R3tardsPaintBenchmark is R3tardsPaint {
+contract R3OSPaintBenchmark is R3OSPaint {
     constructor(address r, address recipient)
-        R3tardsPaint(r, uint64(block.timestamp), recipient, recipient, 200_000, 0, 200_000, 16, 256)
+        R3OSPaint(r, uint64(block.timestamp), recipient, recipient, 200_000, 0, 200_000, 16, 256)
     {}
 
     function _maxRegionPixels() internal pure override returns (uint256) {
@@ -18,22 +18,22 @@ contract R3tardsPaintBenchmark is R3tardsPaint {
 
 contract GasBenchmarksTest is Test {
     MockR3tards r;
-    R3tardsPaintBenchmark bench;
-    R3tardsPaint prod;
+    R3OSPaintBenchmark bench;
+    R3OSPaint prod;
     address alice = address(0xA11CE);
 
     function setUp() public {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         r = new MockR3tards();
-        bench = new R3tardsPaintBenchmark(address(r), alice);
-        prod = new R3tardsPaint(
+        bench = new R3OSPaintBenchmark(address(r), alice);
+        prod = new R3OSPaint(
             address(r), uint64(vm.getBlockTimestamp()), alice, alice, 200_000, 0, 200_000, 16, 256
         );
     }
 
     function testGasDeployUnder30M() public {
         uint256 g = gasleft();
-        new R3tardsPaint(
+        new R3OSPaint(
             address(r), uint64(vm.getBlockTimestamp()), alice, alice, 32, 16, 256, 16, 256
         );
         uint256 used = g - gasleft();
@@ -141,7 +141,7 @@ contract GasBenchmarksTest is Test {
         assertLt(used, 10_000_000);
     }
 
-    function _measurePaint(R3tardsPaint target, bytes memory runs) internal returns (uint256 used) {
+    function _measurePaint(R3OSPaint target, bytes memory runs) internal returns (uint256 used) {
         uint256 g = gasleft();
         vm.prank(alice);
         target.paint(runs, new uint256[](0));

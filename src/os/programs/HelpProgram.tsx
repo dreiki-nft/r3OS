@@ -56,8 +56,9 @@ const pages: Record<HelpSlug, ReactNode> = {
     <>
       <p>everyone paints the same canvas. you only pay gas: there is no mint price.</p>
       <p>
-        each hour you get a pixel budget. it grows with every day you paint, and holding r3tards adds a daily
-        bonus. painting a blank or still-wet pixel costs less of your budget than painting over dry art.
+        each hour you get a pixel budget. it grows with every day you paint. r3tards add the largest holder
+        bonus per token; on mainnet, Skrumpeys and Monad Cards each add a smaller automatic daily bonus.
+        painting a blank or still-wet pixel costs less of your budget than painting over dry art.
       </p>
       <p>
         a busy area can make fresh pixels glitch (that's DF1, see “storms & glitches”). the outline of the

@@ -3,7 +3,7 @@ import { decodeJsonDataUri } from '../lib/dataUri'
 import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { readHeavy } from '../chain/readMany'
-import { R3TARDS_FLIPBOOK_ABI, R3TARDS_LABS_ABI } from '../lib/generated/abi'
+import { R3OS_FLIPBOOK_ABI, R3OS_LABS_ABI } from '../lib/generated/abi'
 
 export type LabsAttributeValue = string | number | boolean
 export interface LabsTokenData {
@@ -49,7 +49,7 @@ async function labsAddress() {
     if (!publicClient) throw new Error('DEMO_MODE')
     const flipbook = (await discoverContracts()).labs.flipbook
     if (!flipbook) throw new Error("this Lab isn't deployed on this network")
-    const result = await readHeavy([{ address: flipbook, abi: R3TARDS_FLIPBOOK_ABI, functionName: 'LABS' }])
+    const result = await readHeavy([{ address: flipbook, abi: R3OS_FLIPBOOK_ABI, functionName: 'LABS' }])
     if (result[0]?.status !== 'success') throw result[0]?.error ?? new Error('LABS_UNAVAILABLE')
     return result[0].result as Address
   })()
@@ -60,7 +60,7 @@ function ensureMetadataWatch(labs: Address) {
   if (!wsClient || stopMetadataWatch) return
   stopMetadataWatch = wsClient.watchContractEvent({
     address: labs,
-    abi: R3TARDS_LABS_ABI,
+    abi: R3OS_LABS_ABI,
     eventName: 'MetadataUpdate',
     onLogs: (logs) => {
       for (const log of logs) {
@@ -84,7 +84,7 @@ export async function readLabsToken(id: bigint, version: string | number | bigin
   const hit = cache.get(key)
   if (hit && hit.expiresAt > Date.now()) return hit.data
   const result = await readHeavy([
-    { address: labs, abi: R3TARDS_LABS_ABI, functionName: 'tokenURI', args: [id] },
+    { address: labs, abi: R3OS_LABS_ABI, functionName: 'tokenURI', args: [id] },
   ])
   if (result[0]?.status !== 'success') throw result[0]?.error ?? new Error('TOKEN_URI_UNAVAILABLE')
   const data = decodeLabsTokenUri(String(result[0].result))

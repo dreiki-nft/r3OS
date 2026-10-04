@@ -1,6 +1,6 @@
 # Weeds Lab
 
-Phase 3/4 UI specification for `R3tardsWeeds`.
+Phase 3/4 UI specification for `R3OSWeeds`.
 
 ## Concept
 

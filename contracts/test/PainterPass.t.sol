@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsPainterPass} from "../src/R3tardsPainterPass.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
 import {IStampSource} from "../src/interfaces/IStampSource.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
@@ -20,8 +20,8 @@ contract RevertingStamp is IStampSource {
 }
 
 contract PainterPassTest is Test {
-    R3tardsPaint paint;
-    R3tardsPainterPass pass;
+    R3OSPaint paint;
+    R3OSPainterPass pass;
     MockR3tards r;
     address alice = address(0xA11CE);
     address bob = address(0xB0B);
@@ -29,10 +29,10 @@ contract PainterPassTest is Test {
     function setUp() public {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         r = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r), uint64(vm.getBlockTimestamp()), alice, alice, 512, 0, 512, 16, 256
         );
-        pass = new R3tardsPainterPass(address(paint));
+        pass = new R3OSPainterPass(address(paint));
     }
 
     function testPainterPassCoreBindingIsImmutable() public view {
@@ -41,7 +41,7 @@ contract PainterPassTest is Test {
 
     function testClaimRequiresPaintSoulboundAndOwnerMayBurn() public {
         vm.prank(bob);
-        vm.expectRevert(R3tardsPainterPass.NoPaintYet.selector);
+        vm.expectRevert(R3OSPainterPass.NoPaintYet.selector);
         pass.claim();
 
         vm.prank(alice);
@@ -62,13 +62,13 @@ contract PainterPassTest is Test {
         assertEq(_count(svg, bytes("data:image/bmp;base64,")), 1);
 
         vm.prank(alice);
-        vm.expectRevert(R3tardsPainterPass.Soulbound.selector);
+        vm.expectRevert(R3OSPainterPass.Soulbound.selector);
         pass.transferFrom(alice, bob, id);
         vm.prank(alice);
         pass.burn(id);
         assertEq(pass.passOf(alice), 0);
         vm.prank(alice);
-        vm.expectRevert(R3tardsPainterPass.AlreadyClaimed.selector);
+        vm.expectRevert(R3OSPainterPass.AlreadyClaimed.selector);
         pass.claim();
     }
 
@@ -80,7 +80,7 @@ contract PainterPassTest is Test {
         pass.setExternalLink("https://r3tards.example/pass");
         bytes memory json = _decodeDataUri(pass.contractURI(), bytes("data:application/json;base64,"));
         vm.parseJson(string(json));
-        assertEq(vm.parseJsonString(string(json), ".name"), "r3tards painter pass");
+        assertEq(vm.parseJsonString(string(json), ".name"), "r3OS painter pass");
         assertEq(vm.parseJsonUint(string(json), ".seller_fee_basis_points"), 0);
         assertEq(vm.parseJsonString(string(json), ".external_link"), "https://r3tards.example/pass");
     }

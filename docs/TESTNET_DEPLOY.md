@@ -63,16 +63,16 @@ export MONAD_CARD=<MockMonadCard deployed address>
 
 cast send $MONAD_CARD "claim()" --rpc-url $RPC --account r3tards-deployer
 
-export PAINT_ADDRESS=<R3tardsPaint from step 3>
-export PASS_ADDRESS=<R3tardsPainterPass from step 3>
-export QUESTS_ADDRESS=<R3tardsQuests from step 3>
+export PAINT_ADDRESS=<R3OSPaint from step 3>
+export PASS_ADDRESS=<R3OSPainterPass from step 3>
+export QUESTS_ADDRESS=<R3OSQuests from step 3>
 
 MONAD_CARD_ADDRESS=$MONAD_CARD \
 PAINT_ADDRESS=$PAINT_ADDRESS PASS_ADDRESS=$PASS_ADDRESS QUESTS_ADDRESS=$QUESTS_ADDRESS \
 FOUNDRY_PROFILE=deploy forge script script/DeployMonadCard.s.sol:DeployMonadCard \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 
-export CARD_MEMORY_ADDRESS=<R3tardsCardMemory from DeployMonadCard output>
+export CARD_MEMORY_ADDRESS=<R3OSCardMemory from DeployMonadCard output>
 ```
 
 CARD.DRV is now discoverable as `card-drv`. On testnet the hardware screen must label the card as a mock/unknown manufacturer rather than presenting it as the official chain-143 device.
@@ -82,7 +82,7 @@ CARD.DRV is now discoverable as `card-drv`. On testnet the hardware screen must 
 After CARD.DRV is deployed, run the Monad Hardware add-on so Block Camera receives the CARD.DRV address in its constructor:
 
 ```bash
-export LABS_ADDRESS=<R3tardsLabs from step 3>
+export LABS_ADDRESS=<R3OSLabs from step 3>
 
 PAINT_ADDRESS=$PAINT_ADDRESS LABS_ADDRESS=$LABS_ADDRESS CARD_MEMORY_ADDRESS=$CARD_MEMORY_ADDRESS \
 FOUNDRY_PROFILE=deploy forge script script/DeployMonadHW.s.sol:DeployMonadHW \
@@ -110,7 +110,7 @@ FOUNDRY_PROFILE=deploy forge script script/DeployOperator.s.sol:DeployOperator \
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
-Save the `R3tardsOperatorRecord` and `R3tardsSystemEvent` addresses and experiment ids. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe instead of pretending registration succeeded.
+Save the `R3OSOperatorRecord` and `R3OSSystemEvent` addresses and experiment ids. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe instead of pretending registration succeeded.
 
 Soak the latch through all three visible states:
 
@@ -137,7 +137,7 @@ FOUNDRY_PROFILE=deploy forge script script/DeployRouterLab.s.sol:DeployRouterLab
   --rpc-url $RPC --account r3tards-deployer --broadcast --slow
 ```
 
-Save the `R3tardsRouterLab` address and experiment id. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe. On mainnet, run the same script without mock venues; Explore Monad's Liquidity race uses the pinned mainnet adapter manifest and Router Lab verifies runtime-code hashes through RPC reads.
+Save the `R3OSRouterLab` address and experiment id. If the broadcaster is not the Paint owner, the script prints the exact `addExperiment` calldata for the Safe. On mainnet, run the same script without mock venues; Explore Monad's Liquidity race uses the pinned mainnet adapter manifest and Router Lab verifies runtime-code hashes through RPC reads.
 
 Contract-check Router Lab on testnet with the mock directory: `compare` must preserve each mock's exact status and a gas-burning venue must not hide later rows. The old ROUTER.EXE and Kernel Debugger command UIs remain retired. Browser-check **Explore Monad → Liquidity race** as the supported surface and confirm System Information reports the routing backend as expected.
 
@@ -172,7 +172,7 @@ VITE_DEPLOY_BLOCK=<deploy block from step 3>
 VITE_WS_URL=wss://testnet-rpc.monad.xyz
 VITE_WALLET_RPC_URL=https://testnet-rpc.monad.xyz
 VITE_EXPLORER_URL=https://testnet.monadvision.com
-VITE_PAINT_ADDRESS=<R3tardsPaint address>
+VITE_PAINT_ADDRESS=<R3OSPaint address>
 VITE_REVEAL_ALL=true
 VITE_BUILD_ID=<public build label, e.g. snapshot-24>
 ```

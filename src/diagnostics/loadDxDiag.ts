@@ -9,7 +9,7 @@ import { getCachedMonadHardware, readMonadHardware } from '../chain/monadHardwar
 import { readMany } from '../chain/readMany'
 import { rpcStatsSnapshot, rpcStatsTotalSnapshot } from '../chain/rpcStats'
 import { eventState, getCachedSystemEvent, readSystemEventNow } from '../chain/systemEvent'
-import { R3TARDS_CARD_MEMORY_ABI } from '../lib/generated/abi'
+import { R3OS_CARD_MEMORY_ABI } from '../lib/generated/abi'
 import {
   driverState,
   normalizeBuildId,
@@ -102,7 +102,7 @@ export async function loadDxDiag(
     ? Promise.resolve(undefined)
     : cardDriver && publicClient
       ? settle(
-          readMany([{ address: cardDriver, abi: R3TARDS_CARD_MEMORY_ABI, functionName: 'MONAD_CARD' }], {
+          readMany([{ address: cardDriver, abi: R3OS_CARD_MEMORY_ABI, functionName: 'MONAD_CARD' }], {
             allowFailure: true,
           }),
         )

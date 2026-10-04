@@ -72,7 +72,7 @@ Missing/reverting/empty precompiles produce `ok = false` and zero values. The he
 
 ## PAGE.EXE
 
-Contract: `R3tardsPageExe`
+Contract: `R3OSPageExe`
 
 Registry name: `page-exe`
 
@@ -119,11 +119,11 @@ The frontend exposes:
 
 ## Block Camera
 
-Contract: `R3tardsBlockCamera`
+Contract: `R3OSBlockCamera`
 
 Registry name: `block-camera`
 
-Block Camera mints through the existing `R3tardsLabs` collection. It does not create another NFT collection.
+Block Camera mints through the existing `R3OSLabs` collection. It does not create another NFT collection.
 
 `bindExperimentId` follows the same one-time registry validation pattern as Flipbook. `capture()` permits at most one capture per wallet per block and seals:
 
@@ -159,7 +159,7 @@ The live viewfinder is only a preview of the current head. The actual NFT is reb
 
 ## Kernel Debugger
 
-Contract: `R3tardsKernelDebugger`
+Contract: `R3OSKernelDebugger`
 
 Registry name: `kernel-debugger`
 

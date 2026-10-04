@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { zeroAddress, type Address } from 'viem'
 import { wsClient } from '../chain/clients'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_LABS_ABI } from '../lib/generated/abi'
+import { R3OS_LABS_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
 import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os/releases'
 import { Button } from '../os/ui/Button'
@@ -59,7 +59,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
     if (!wsClient || !labs || !wallet.account) return
     return wsClient.watchContractEvent({
       address: labs,
-      abi: R3TARDS_LABS_ABI,
+      abi: R3OS_LABS_ABI,
       eventName: 'Transfer',
       onLogs: (logs) => {
         setTokens((current) => {

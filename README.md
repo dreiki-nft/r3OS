@@ -30,7 +30,9 @@ Paint is the center of the project: draw locally, commit pixels as a transaction
 
 There is **no app backend or database**. The frontend is static and reads contracts, logs and block data directly from Monad RPCs.
 
-**Naming:** `r3OS` is the product and interface. Existing testnet contracts keep their deployed `R3tards*` / `r3tards paint` identifiers, and the r3tards NFT remains an optional holder-integration surface. Those onchain names are compatibility/history, not the product name.
+**Naming:** `r3OS` is the product and interface. The already-deployed snapshot-28 testnet suite keeps its historical `R3tards*` contract names and `r3tards paint` EIP-712 domain. The fresh mainnet source uses `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`. The actual **r3tards** NFT collection keeps its real collection name and remains the primary holder-integration surface.
+
+A few internal deterministic storage/hash salts still contain historical `r3tards.*` strings on purpose. They are protocol layout keys, not public branding; Phase 7.5 leaves those derivations unchanged while rebranding product-facing contracts and metadata.
 
 ### Hackathon thesis
 
@@ -66,6 +68,19 @@ The exact two-browser recording path is in [`docs/LIVE_DEMO.md`](docs/LIVE_DEMO.
 | **Explore Monad** | Live block timing, MIP-8 storage-page experiments, chain/device information and read-only routing research. |
 | **DXDIAG.EXE** | Local-only proof of boot readiness, program responsiveness, RPC method counts and transaction timings. |
 
+### Mainnet holder budgets
+
+The planned launch configuration keeps participation open while giving collection holders extra daily room:
+
+| Holder state | Extra Paint budget | Accounting |
+| --- | ---: | --- |
+| No supported NFT | none | ordinary hourly budget only |
+| **r3tards** | **+512 px/day per owned token** | quota follows the token id, so transfers do not reset that token's daily spend |
+| **Skrumpeys** | **+128 px/day** | once per current-holder wallet on Monad mainnet |
+| **Monad Cards** | **+128 px/day** | once per current-holder wallet on Monad mainnet |
+
+Skrumpeys (`0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0`) and Monad Cards (`0x0000CA12D5c07085022eBC74867157449919Fd67`) are checked directly by the Paint contract with a gas-capped `balanceOf` probe. Their bonuses are intentionally smaller than r3tards, stack with each other, and are disabled off chain 143. The transaction hot path does not touch either external collection unless ordinary hourly + r3tards quota is insufficient; a failed optional probe simply grants no partner bonus.
+
 ## Why Monad
 
 The canvas does not need a blockchain merely to store pixels. It needs one where those writes can become an interaction loop.
@@ -96,7 +111,7 @@ flowchart LR
   UI --> WS["WebSocket block + event stream"]
   UI --> WALLET["connected wallet"]
   UI --> LIVE["browser-held Live session key"]
-  READ --> PAINT["R3tardsPaint"]
+  READ --> PAINT["R3OSPaint"]
   WS --> PAINT
   WALLET --> PAINT
   LIVE --> PAINT

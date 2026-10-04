@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IR3tardsSleepwalkerCore} from "../interfaces/IR3tardsSleepwalkerCore.sol";
+import {IR3OSSleepwalkerCore} from "../interfaces/IR3OSSleepwalkerCore.sol";
 
 /// @notice Tiny EIP-1167 session key used only by its Sleepwalker Lab clone factory.
 contract SleepwalkerKey {
     address public lab;
-    IR3tardsSleepwalkerCore public core;
+    IR3OSSleepwalkerCore public core;
 
     error AlreadyInitialized();
     error OnlyLab();
@@ -22,7 +22,7 @@ contract SleepwalkerKey {
         if (lab != address(0)) revert AlreadyInitialized();
         if (core_ == address(0)) revert ZeroAddress();
         lab = msg.sender;
-        core = IR3tardsSleepwalkerCore(core_);
+        core = IR3OSSleepwalkerCore(core_);
     }
 
     function start(

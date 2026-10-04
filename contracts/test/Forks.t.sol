@@ -2,16 +2,16 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsForks} from "../src/labs/R3tardsForks.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSForks} from "../src/labs/R3OSForks.sol";
 import {Source64} from "../src/lib/Source64.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract ForksTest is Test {
-    R3tardsPaint paint;
-    R3tardsForks forks;
-    R3tardsLabs labs;
+    R3OSPaint paint;
+    R3OSForks forks;
+    R3OSLabs labs;
     MockR3tards r3tards;
 
     uint256 alicePk = 0xA11CE;
@@ -28,11 +28,11 @@ contract ForksTest is Test {
         carol = makeAddr("carol");
         royalty = makeAddr("royalty");
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, royalty, 512, 0, 512, 16, 256
         );
-        labs = new R3tardsLabs(address(paint), royalty);
-        forks = new R3tardsForks(address(paint), address(labs), uint64(vm.getBlockTimestamp()));
+        labs = new R3OSLabs(address(paint), royalty);
+        forks = new R3OSForks(address(paint), address(labs), uint64(vm.getBlockTimestamp()));
         vm.prank(alice);
         uint256 experimentId = paint.addExperiment(address(forks), "forks", "");
         forks.bindExperimentId(experimentId);
@@ -62,7 +62,7 @@ contract ForksTest is Test {
         uint256[64] memory actualRows = forks.forkRows(forkId);
         for (uint256 y; y < 64; ++y) assertEq(actualRows[y], expectedRows[y]);
 
-        R3tardsForks.ForkInfo memory info = forks.forkInfo(forkId);
+        R3OSForks.ForkInfo memory info = forks.forkInfo(forkId);
         assertEq(info.sourceFrameId, guestFrame);
         assertEq(info.parentForkId, 0);
         assertEq(info.depth, 0);
@@ -82,18 +82,18 @@ contract ForksTest is Test {
         vm.prank(alice);
         forks.forkFrame(type(uint128).max);
 
-        vm.expectRevert(R3tardsForks.NotPainter.selector);
+        vm.expectRevert(R3OSForks.NotPainter.selector);
         vm.prank(bob);
         forks.forkFrame(frameId);
 
         address key = makeAddr("session-key");
         _startSession(key, 100, 512);
-        vm.expectRevert(R3tardsForks.SessionKeyCannotFork.selector);
+        vm.expectRevert(R3OSForks.SessionKeyCannotFork.selector);
         vm.prank(key);
         forks.forkFrame(frameId);
 
-        R3tardsForks futureForks = new R3tardsForks(address(paint), address(labs), uint64(vm.getBlockTimestamp() + 100));
-        vm.expectRevert(R3tardsForks.NotOpenYet.selector);
+        R3OSForks futureForks = new R3OSForks(address(paint), address(labs), uint64(vm.getBlockTimestamp() + 100));
+        vm.expectRevert(R3OSForks.NotOpenYet.selector);
         vm.prank(alice);
         futureForks.forkFrame(frameId);
     }
@@ -103,7 +103,7 @@ contract ForksTest is Test {
         forks.forkFrame(frameId);
         uint256 first = vm.getBlockNumber();
         vm.roll(first + 599);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsForks.ForkCooldown.selector, first + 600));
+        vm.expectRevert(abi.encodeWithSelector(R3OSForks.ForkCooldown.selector, first + 600));
         vm.prank(alice);
         forks.forkFrame(frameId);
         vm.roll(first + 600);
@@ -125,7 +125,7 @@ contract ForksTest is Test {
         vm.prank(alice);
         uint256 childClosed = forks.forkFork(parent);
         _assertRowsEqual(forks.forkRows(childClosed), paintedRows);
-        R3tardsForks.ForkInfo memory closedInfo = forks.forkInfo(childClosed);
+        R3OSForks.ForkInfo memory closedInfo = forks.forkInfo(childClosed);
         assertEq(closedInfo.parentForkId, parent);
         assertEq(closedInfo.sourceFrameId, frameId);
         assertEq(closedInfo.depth, 1);
@@ -137,7 +137,7 @@ contract ForksTest is Test {
         uint256 childSealed = forks.forkFork(parent);
         _assertRowsEqual(forks.forkRows(childSealed), paintedRows);
 
-        vm.expectRevert(abi.encodeWithSelector(R3tardsForks.NoFork.selector, 999));
+        vm.expectRevert(abi.encodeWithSelector(R3OSForks.NoFork.selector, 999));
         vm.prank(alice);
         forks.forkFork(999);
     }
@@ -153,27 +153,27 @@ contract ForksTest is Test {
         bad[5] = hex"00000010";
         bad[6] = hex"0100010100000102"; // decreasing row: y=1 then y=0
         for (uint256 i; i < bad.length; ++i) {
-            vm.expectRevert(R3tardsForks.InvalidRuns.selector);
+            vm.expectRevert(R3OSForks.InvalidRuns.selector);
             vm.prank(bob);
             forks.paint(forkId, bad[i]);
         }
 
         bytes memory tooMany = abi.encodePacked(hex"00003f01", hex"01000001");
-        vm.expectRevert(abi.encodeWithSelector(R3tardsForks.TooManyPixels.selector, 65));
+        vm.expectRevert(abi.encodeWithSelector(R3OSForks.TooManyPixels.selector, 65));
         vm.prank(bob);
         forks.paint(forkId, tooMany);
 
         uint256[64] memory rows = forks.forkRows(forkId);
         uint8 existing = uint8(rows[0] >> 252);
         bytes memory same = abi.encodePacked(bytes1(0), bytes1(0), bytes1(0), bytes1(existing));
-        vm.expectRevert(R3tardsForks.NoChange.selector);
+        vm.expectRevert(R3OSForks.NoChange.selector);
         vm.prank(bob);
         forks.paint(forkId, same);
     }
 
     function testTwoRunsThatRestoreOriginalRevertWithoutAccounting() public {
         uint256 forkId = _forkAsAlice();
-        R3tardsForks.ForkInfo memory beforeInfo = forks.forkInfo(forkId);
+        R3OSForks.ForkInfo memory beforeInfo = forks.forkInfo(forkId);
         (uint32 beforeForksPainted,) = forks.painterInfo(bob);
         uint256[64] memory rows = forks.forkRows(forkId);
         uint8 original = uint8(rows[0] >> 252);
@@ -182,10 +182,10 @@ contract ForksTest is Test {
             bytes1(uint8(0)), bytes1(uint8(0)), bytes1(uint8(0)), bytes1(temporary),
             bytes1(uint8(0)), bytes1(uint8(0)), bytes1(uint8(0)), bytes1(original)
         );
-        vm.expectRevert(R3tardsForks.NoChange.selector);
+        vm.expectRevert(R3OSForks.NoChange.selector);
         vm.prank(bob);
         forks.paint(forkId, runs);
-        R3tardsForks.ForkInfo memory afterInfo = forks.forkInfo(forkId);
+        R3OSForks.ForkInfo memory afterInfo = forks.forkInfo(forkId);
         (uint32 afterForksPainted,) = forks.painterInfo(bob);
         assertEq(afterInfo.paints, beforeInfo.paints);
         assertEq(afterInfo.painters, beforeInfo.painters);
@@ -213,7 +213,7 @@ contract ForksTest is Test {
         uint256 forkId = _forkAsAlice();
         vm.prank(bob);
         forks.paint(forkId, hex"00003f02");
-        vm.expectRevert(abi.encodeWithSelector(R3tardsForks.AlreadyPaintedThisBlock.selector, forkId));
+        vm.expectRevert(abi.encodeWithSelector(R3OSForks.AlreadyPaintedThisBlock.selector, forkId));
         vm.prank(bob);
         forks.paint(forkId, hex"01013f03");
 
@@ -223,7 +223,7 @@ contract ForksTest is Test {
             vm.prank(painters[i]);
             forks.paint(forkId, abi.encodePacked(bytes1(uint8(i + 1)), bytes1(0), bytes1(uint8(63)), bytes1(uint8(i + 3))));
         }
-        vm.expectRevert(abi.encodeWithSelector(R3tardsForks.ForkBlockFull.selector, 256));
+        vm.expectRevert(abi.encodeWithSelector(R3OSForks.ForkBlockFull.selector, 256));
         vm.prank(painters[4]);
         forks.paint(forkId, hex"05053f09");
 
@@ -247,7 +247,7 @@ contract ForksTest is Test {
         uint256 forkId = _forkAsAlice();
         vm.prank(alice);
         forks.setOpen(forkId, false);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsForks.ForkClosed.selector, forkId));
+        vm.expectRevert(abi.encodeWithSelector(R3OSForks.ForkClosed.selector, forkId));
         vm.prank(bob);
         forks.paint(forkId, hex"00000304");
 
@@ -265,7 +265,7 @@ contract ForksTest is Test {
         vm.prank(alice);
         labs.transferFrom(alice, bob, forkId);
 
-        vm.expectRevert(abi.encodeWithSelector(R3tardsForks.NotForkOwner.selector, forkId));
+        vm.expectRevert(abi.encodeWithSelector(R3OSForks.NotForkOwner.selector, forkId));
         vm.prank(alice);
         forks.setOpen(forkId, false);
         vm.prank(bob);
@@ -273,7 +273,7 @@ contract ForksTest is Test {
         vm.prank(bob);
         forks.seal(forkId);
 
-        bytes memory sealedRevert = abi.encodeWithSelector(R3tardsForks.SealedFork.selector, forkId);
+        bytes memory sealedRevert = abi.encodeWithSelector(R3OSForks.SealedFork.selector, forkId);
         vm.expectRevert(sealedRevert);
         vm.prank(bob);
         forks.setOpen(forkId, true);
@@ -367,7 +367,7 @@ contract ForksTest is Test {
         assertEq(bmp.length, 2_166);
         assertEq(uint8(bmp[0]), 0x42);
         assertEq(uint8(bmp[1]), 0x4d);
-        R3tardsForks.ForkInfo memory info = forks.forkInfo(forkId);
+        R3OSForks.ForkInfo memory info = forks.forkInfo(forkId);
         uint24[16] memory pal = paint.palette();
         uint24 bg = pal[info.background];
         assertEq(uint8(bmp[54]), uint8(bg));
@@ -475,7 +475,7 @@ contract ForksTest is Test {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("r3tards paint")),
+                keccak256(bytes("r3OS paint")),
                 keccak256(bytes("2")),
                 block.chainid,
                 address(paint)

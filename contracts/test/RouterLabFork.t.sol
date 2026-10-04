@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
-import {R3tardsRouterLab} from "../src/router/R3tardsRouterLab.sol";
+import {R3OSRouterLab} from "../src/router/R3OSRouterLab.sol";
 
 contract RouterLabForkTest is Test {
     address constant WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A;
@@ -36,18 +36,18 @@ contract RouterLabForkTest is Test {
         _assertCodeHash(HANJI, HANJI_HASH, "hanji");
         _assertCodeHash(THOG, THOG_HASH, "thog");
 
-        R3tardsRouterLab lab = new R3tardsRouterLab();
-        R3tardsRouterLab.Venue[] memory venues = new R3tardsRouterLab.Venue[](5);
+        R3OSRouterLab lab = new R3OSRouterLab();
+        R3OSRouterLab.Venue[] memory venues = new R3OSRouterLab.Venue[](5);
         venues[0] = _venue(POE);
         venues[1] = _venue(CLOBER);
         venues[2] = _venue(METRIC);
         venues[3] = _venue(HANJI);
         venues[4] = _venue(THOG);
 
-        R3tardsRouterLab.Comparison memory result = lab.compare(WMON, USDC, 1 ether, venues, 5_000_000, true);
+        R3OSRouterLab.Comparison memory result = lab.compare(WMON, USDC, 1 ether, venues, 5_000_000, true);
         bool anyOk;
         for (uint256 i; i < result.reports.length; ++i) {
-            R3tardsRouterLab.QuoteReport memory report = result.reports[i];
+            R3OSRouterLab.QuoteReport memory report = result.reports[i];
             console2.log("adapter", report.adapter);
             console2.log("status", uint256(report.status));
             console2.log("amountOut", report.amountOut);
@@ -55,13 +55,13 @@ contract RouterLabForkTest is Test {
             console2.log("static probe", uint256(report.staticProbe));
             console2.log("revert selector");
             console2.logBytes4(report.revertSelector);
-            if (report.status == R3tardsRouterLab.Status.OK) anyOk = true;
+            if (report.status == R3OSRouterLab.Status.OK) anyOk = true;
         }
         assertTrue(anyOk, "at least one WMON/USDC adapter should quote");
-        if (result.reports[2].status == R3tardsRouterLab.Status.OK) {
+        if (result.reports[2].status == R3OSRouterLab.Status.OK) {
             assertEq(
                 uint256(result.reports[2].staticProbe),
-                uint256(R3tardsRouterLab.StaticProbe.STATIC_FAILED),
+                uint256(R3OSRouterLab.StaticProbe.STATIC_FAILED),
                 "Metric non-view quote should fail under STATICCALL"
             );
         } else {
@@ -73,7 +73,7 @@ contract RouterLabForkTest is Test {
         try lab.simulateNativeIn{value: 1 ether}(WMON, USDC, venues, 5_000_000) {
             fail("simulation must revert");
         } catch (bytes memory reason) {
-            (uint256 simulatedBlock, R3tardsRouterLab.SimReport[] memory reports) = _decodeSimulation(reason);
+            (uint256 simulatedBlock, R3OSRouterLab.SimReport[] memory reports) = _decodeSimulation(reason);
             console2.log("simulation block", simulatedBlock);
             for (uint256 i; i < reports.length; ++i) {
                 console2.log("sim adapter", reports[i].adapter);
@@ -84,8 +84,8 @@ contract RouterLabForkTest is Test {
         }
     }
 
-    function _venue(address adapter) private pure returns (R3tardsRouterLab.Venue memory) {
-        return R3tardsRouterLab.Venue({adapter: adapter, quoteData: bytes("")});
+    function _venue(address adapter) private pure returns (R3OSRouterLab.Venue memory) {
+        return R3OSRouterLab.Venue({adapter: adapter, quoteData: bytes("")});
     }
 
     function _assertCodeHash(address adapter, bytes32 expected, string memory label) private view {
@@ -98,15 +98,15 @@ contract RouterLabForkTest is Test {
     function _decodeSimulation(bytes memory reason)
         private
         pure
-        returns (uint256 simulatedBlock, R3tardsRouterLab.SimReport[] memory reports)
+        returns (uint256 simulatedBlock, R3OSRouterLab.SimReport[] memory reports)
     {
         bytes4 selector;
         assembly ("memory-safe") {
             selector := mload(add(reason, 32))
         }
-        assertEq(selector, R3tardsRouterLab.Simulation.selector);
+        assertEq(selector, R3OSRouterLab.Simulation.selector);
         bytes memory body = new bytes(reason.length - 4);
         for (uint256 i; i < body.length; ++i) body[i] = reason[i + 4];
-        return abi.decode(body, (uint256, R3tardsRouterLab.SimReport[]));
+        return abi.decode(body, (uint256, R3OSRouterLab.SimReport[]));
     }
 }

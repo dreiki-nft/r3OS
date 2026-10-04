@@ -1,6 +1,6 @@
 # Burn a CD
 
-`R3tardsCDBurner` turns 1–12 owned Paint frames and/or Block Camera photos into one immutable mix CD-R NFT in the shared `R3tardsLabs` collection. "Burn" means burning a disc, not burning source ERC-721s: every source stays with its owner unless it is later transferred or recycled separately.
+`R3OSCDBurner` turns 1–12 owned Paint frames and/or Block Camera photos into one immutable mix CD-R NFT in the shared `R3OSLabs` collection. "Burn" means burning a disc, not burning source ERC-721s: every source stays with its owner unless it is later transferred or recycled separately.
 
 ## Minting
 
@@ -18,7 +18,7 @@ Rules:
 - allowed label characters are `a-z`, `0-9`, space, `! ? . , ' & - #`;
 - `A-Z` is accepted and folded to lowercase before storage.
 
-The Lab is registered in the frozen core registry as `cd-burner`, bound once to that experiment id, and mints through `R3tardsLabs.mint`.
+The Lab is registered in the frozen core registry as `cd-burner`, bound once to that experiment id, and mints through `R3OSLabs.mint`.
 
 ## Immutable snapshot
 
@@ -80,7 +80,7 @@ The reference's integer operation order, Q12 rounding, HSV interpolation, angle 
 
 Name:
 
-`r3tards labs cd #<id>: <label>`
+`r3OS labs cd #<id>: <label>`
 
 Description is the legacy frame-only sentence for v2/frame-only discs; mixed v3 discs say they contain Paint frames and Block Camera photos. V3 metadata also reports `Paint frames` and `Block photos`.
 
@@ -104,7 +104,7 @@ CD-specific traits follow the common Labs traits:
 
 ## Burning the Labs token
 
-CD artifacts are non-burnable through `R3tardsLabs.burn`. Source Paint frames and Block Camera Labs NFTs remain independent and may still be transferred normally; Paint frames may still be recycled independently.
+CD artifacts are non-burnable through `R3OSLabs.burn`. Source Paint frames and Block Camera Labs NFTs remain independent and may still be transferred normally; Paint frames may still be recycled independently.
 
 ## Gas
 

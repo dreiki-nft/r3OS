@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
 import { readMany } from '../chain/readMany'
-import { R3TARDS_QUESTS_ABI } from '../lib/generated/abi'
+import { R3OS_QUESTS_ABI } from '../lib/generated/abi'
 import { labAddress } from './labCommon'
 import { mapQuestProgress, type QuestProgressState } from './quests'
 
@@ -64,7 +64,7 @@ export async function readQuestDefinitions(address: Address, force = false) {
   const entry: Cached<QuestDefinition[]> = existing ?? { fetchedAt: 0 }
   const pending = (async () => {
     const countRows = await readMany(
-      [{ address, abi: R3TARDS_QUESTS_ABI, functionName: 'questCount' }],
+      [{ address, abi: R3OS_QUESTS_ABI, functionName: 'questCount' }],
       { allowFailure: false },
     )
     const count = Number(countRows[0] as bigint)
@@ -72,7 +72,7 @@ export async function readQuestDefinitions(address: Address, force = false) {
     const values = await readMany(
       Array.from({ length: count }, (_, id) => ({
         address,
-        abi: R3TARDS_QUESTS_ABI,
+        abi: R3OS_QUESTS_ABI,
         functionName: 'questInfo',
         args: [BigInt(id)],
       })),
@@ -116,12 +116,12 @@ export async function readQuestAccountData(
     }
     const rows = await readMany(
       [
-        { address, abi: R3TARDS_QUESTS_ABI, functionName: 'claimable', args: [owner] },
-        { address, abi: R3TARDS_QUESTS_ABI, functionName: 'completedMask', args: [owner] },
-        { address, abi: R3TARDS_QUESTS_ABI, functionName: 'completedCount', args: [owner] },
+        { address, abi: R3OS_QUESTS_ABI, functionName: 'claimable', args: [owner] },
+        { address, abi: R3OS_QUESTS_ABI, functionName: 'completedMask', args: [owner] },
+        { address, abi: R3OS_QUESTS_ABI, functionName: 'completedCount', args: [owner] },
         ...defs.map((quest) => ({
           address,
-          abi: R3TARDS_QUESTS_ABI,
+          abi: R3OS_QUESTS_ABI,
           functionName: 'progress',
           args: [owner, BigInt(quest.id)],
         })),

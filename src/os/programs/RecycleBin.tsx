@@ -27,7 +27,7 @@ import { getFrameInfoBatch, mineTokenIds, refreshFrameIndex, type FrameInfo } fr
 import { decodePacked4Bpp, getFrameImage, type PixelImage } from '../../frames/frameImage'
 import { PixelPreview } from '../../frames/PixelPreview'
 import { loadBurner } from '../../live/burner'
-import { R3TARDS_PAINT_ABI, R3TARDS_RECYCLE_BIN_ABI } from '../../lib/generated/abi'
+import { R3OS_PAINT_ABI, R3OS_RECYCLE_BIN_ABI } from '../../lib/generated/abi'
 import { idbGet, idbSet } from '../../lib/idb'
 import { openProgram } from '../programs'
 import { playSound } from '../sound'
@@ -82,7 +82,7 @@ async function quoteRecycleWithApprovalOverride({
   if (!publicClient) return undefined
   try {
     const data = encodeFunctionData({
-      abi: R3TARDS_RECYCLE_BIN_ABI,
+      abi: R3OS_RECYCLE_BIN_ABI,
       functionName: 'recycle',
       args: [ids.map(BigInt)],
     })
@@ -127,13 +127,13 @@ function GrayscaleFrame({ id, tombstone }: { id: number; tombstone: Tombstone })
       if (!contracts.paint || !publicClient) return
       const info = (await publicClient.readContract({
         address: contracts.paint,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'frameInfo',
         args: [BigInt(id)],
       })) as any
       const raw = (await publicClient.readContract({
         address: contracts.paint,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'frameData',
         args: [BigInt(id)],
       })) as Hex
@@ -201,9 +201,9 @@ export function RecycleBin() {
   const loadSidebar = useCallback(async (address: Address, owner?: Address) => {
     if (!publicClient) return
     const calls = [
-      { address, abi: R3TARDS_RECYCLE_BIN_ABI, functionName: 'totalBurned' },
-      { address, abi: R3TARDS_RECYCLE_BIN_ABI, functionName: 'topBurners' },
-      ...(owner ? [{ address, abi: R3TARDS_RECYCLE_BIN_ABI, functionName: 'burnedBy', args: [owner] }] : []),
+      { address, abi: R3OS_RECYCLE_BIN_ABI, functionName: 'totalBurned' },
+      { address, abi: R3OS_RECYCLE_BIN_ABI, functionName: 'topBurners' },
+      ...(owner ? [{ address, abi: R3OS_RECYCLE_BIN_ABI, functionName: 'burnedBy', args: [owner] }] : []),
     ]
     const result = (await readMany(calls, { allowFailure: true })) as any[]
     if (result[0]?.status === 'success') setTotal(BigInt(result[0].result))
@@ -282,7 +282,7 @@ export function RecycleBin() {
     const reads = await readMany(
       latest.map((row) => ({
         address,
-        abi: R3TARDS_RECYCLE_BIN_ABI,
+        abi: R3OS_RECYCLE_BIN_ABI,
         functionName: 'tombstone',
         args: [BigInt(row.id)],
       })),
@@ -326,14 +326,14 @@ export function RecycleBin() {
     if (!wsClient || !bin) return
     return wsClient.watchContractEvent({
       address: bin,
-      abi: R3TARDS_RECYCLE_BIN_ABI,
+      abi: R3OS_RECYCLE_BIN_ABI,
       eventName: 'Recycled',
       onLogs: (logs) => {
         void (async () => {
           const reads = await readMany(
             logs.map((log) => ({
               address: bin,
-              abi: R3TARDS_RECYCLE_BIN_ABI,
+              abi: R3OS_RECYCLE_BIN_ABI,
               functionName: 'tombstone',
               args: [log.args.frameId!],
             })),
@@ -428,7 +428,7 @@ export function RecycleBin() {
       const approved = Boolean(
         await publicClient.readContract({
           address: (await discoverContracts()).paint!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'isApprovedForAll',
           args: [wallet.account!, bin],
         }),
@@ -442,7 +442,7 @@ export function RecycleBin() {
           ? await quoteAction({
               kind: 'estimate',
               address: paint,
-              abi: R3TARDS_PAINT_ABI,
+              abi: R3OS_PAINT_ABI,
               functionName: 'safeTransferFrom',
               args: [wallet.account!, bin, BigInt(picked[0])],
               account: wallet.account!,
@@ -452,7 +452,7 @@ export function RecycleBin() {
             ? await quoteAction({
                 kind: 'estimate',
                 address: paint,
-                abi: R3TARDS_PAINT_ABI,
+                abi: R3OS_PAINT_ABI,
                 functionName: 'setApprovalForAll',
                 args: [bin, true],
                 account: wallet.account!,
@@ -461,7 +461,7 @@ export function RecycleBin() {
             : await quoteAction({
                 kind: 'estimate',
                 address: bin,
-                abi: R3TARDS_RECYCLE_BIN_ABI,
+                abi: R3OS_RECYCLE_BIN_ABI,
                 functionName: 'recycle',
                 args: [picked.map(BigInt)],
                 account: wallet.account!,
@@ -496,7 +496,7 @@ export function RecycleBin() {
         await sendAction({
           kind: 'estimate',
           address: paint,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'safeTransferFrom',
           args: [wallet.account, bin, BigInt(picked[0])],
           account: wallet.account,
@@ -508,7 +508,7 @@ export function RecycleBin() {
           await sendAction({
             kind: 'estimate',
             address: paint,
-            abi: R3TARDS_PAINT_ABI,
+            abi: R3OS_PAINT_ABI,
             functionName: 'setApprovalForAll',
             args: [bin, true],
             account: wallet.account,
@@ -518,7 +518,7 @@ export function RecycleBin() {
           const nextRecycleQuote = await quoteAction({
             kind: 'estimate',
             address: bin,
-            abi: R3TARDS_RECYCLE_BIN_ABI,
+            abi: R3OS_RECYCLE_BIN_ABI,
             functionName: 'recycle',
             args: [picked.map(BigInt)],
             account: wallet.account,
@@ -531,7 +531,7 @@ export function RecycleBin() {
           await sendAction({
             kind: 'estimate',
             address: bin,
-            abi: R3TARDS_RECYCLE_BIN_ABI,
+            abi: R3OS_RECYCLE_BIN_ABI,
             functionName: 'recycle',
             args: [picked.map(BigInt)],
             account: wallet.account,
@@ -542,7 +542,7 @@ export function RecycleBin() {
           await sendAction({
             kind: 'estimate',
             address: bin,
-            abi: R3TARDS_RECYCLE_BIN_ABI,
+            abi: R3OS_RECYCLE_BIN_ABI,
             functionName: 'recycle',
             args: [picked.map(BigInt)],
             account: wallet.account,

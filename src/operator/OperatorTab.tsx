@@ -5,7 +5,7 @@ import { useOperatorRecord, recordRows, visibleSubsystems } from '../chain/opera
 import { useSystemEvent } from '../chain/systemEvent'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_OPERATOR_RECORD_ABI } from '../lib/generated/abi'
+import { R3OS_OPERATOR_RECORD_ABI } from '../lib/generated/abi'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { TreeView } from '../os/ui/TreeView'
@@ -31,7 +31,7 @@ export function OperatorTab() {
     void quoteAction({
       kind: 'estimate',
       address: operator.driverAddress,
-      abi: R3TARDS_OPERATOR_RECORD_ABI,
+      abi: R3OS_OPERATOR_RECORD_ABI,
       functionName: 'record',
       args: [wallet.account],
       account: wallet.account,
@@ -61,7 +61,7 @@ export function OperatorTab() {
       const result = await sendAction({
         kind: 'estimate',
         address: operator.driverAddress,
-        abi: R3TARDS_OPERATOR_RECORD_ABI,
+        abi: R3OS_OPERATOR_RECORD_ABI,
         functionName: 'record',
         args: [wallet.account],
         account: wallet.account,
@@ -74,7 +74,7 @@ export function OperatorTab() {
       for (const log of result.receipt.logs) {
         try {
           const decoded = decodeEventLog({
-            abi: R3TARDS_OPERATOR_RECORD_ABI,
+            abi: R3OS_OPERATOR_RECORD_ABI,
             data: log.data,
             topics: log.topics,
           })

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { parseAbi, type Address } from 'viem'
-import { R3TARDS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
+import { R3OS_SYSTEM_EVENT_ABI } from '../lib/generated/abi'
 import { discoverContracts } from './contracts'
 import { readMany } from './readMany'
 import { useRefreshTick } from './refreshTick'
@@ -83,11 +83,11 @@ async function readStaticEvent() {
 
     const rows = await readMany(
       [
-        { address, abi: R3TARDS_SYSTEM_EVENT_ABI, functionName: 'TRIGGER' },
-        { address, abi: R3TARDS_SYSTEM_EVENT_ABI, functionName: 'FEED' },
-        { address, abi: R3TARDS_SYSTEM_EVENT_ABI, functionName: 'FEED_DECIMALS' },
-        { address, abi: R3TARDS_SYSTEM_EVENT_ABI, functionName: 'THRESHOLD_MILLI_USD' },
-        { address, abi: R3TARDS_SYSTEM_EVENT_ABI, functionName: 'MAX_AGE' },
+        { address, abi: R3OS_SYSTEM_EVENT_ABI, functionName: 'TRIGGER' },
+        { address, abi: R3OS_SYSTEM_EVENT_ABI, functionName: 'FEED' },
+        { address, abi: R3OS_SYSTEM_EVENT_ABI, functionName: 'FEED_DECIMALS' },
+        { address, abi: R3OS_SYSTEM_EVENT_ABI, functionName: 'THRESHOLD_MILLI_USD' },
+        { address, abi: R3OS_SYSTEM_EVENT_ABI, functionName: 'MAX_AGE' },
       ],
       { allowFailure: true },
     )
@@ -157,17 +157,17 @@ async function readSystemEventFresh(): Promise<SystemEventSnapshot> {
     [
       {
         address: staticValues.address,
-        abi: R3TARDS_SYSTEM_EVENT_ABI,
+        abi: R3OS_SYSTEM_EVENT_ABI,
         functionName: 'activatedBlock',
       },
       {
         address: staticValues.address,
-        abi: R3TARDS_SYSTEM_EVENT_ABI,
+        abi: R3OS_SYSTEM_EVENT_ABI,
         functionName: 'activationAnswer',
       },
       {
         address: staticValues.address,
-        abi: R3TARDS_SYSTEM_EVENT_ABI,
+        abi: R3OS_SYSTEM_EVENT_ABI,
         functionName: 'condition',
       },
     ],

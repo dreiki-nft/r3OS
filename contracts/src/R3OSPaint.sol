@@ -17,14 +17,18 @@ interface IR3tardsCollection {
     function balanceOf(address owner) external view returns (uint256);
 }
 
-interface IR3tardsPainterPassLink {
+interface IERC721Balance {
+    function balanceOf(address owner) external view returns (uint256);
+}
+
+interface IR3OSPainterPassLink {
     function PAINT() external view returns (address);
 }
 
-/// @title r3tards paint v2
+/// @title r3OS paint v2
 /// @notice Shared 256x256 fully-onchain paint canvas and immutable frame NFTs.
 /// @dev Token #0 is the transferable live canvas. Regular frames are transferable/burnable.
-contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
+contract R3OSPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     using Strings for uint256;
 
     uint256 public constant WIDTH = 256;
@@ -53,6 +57,15 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     uint256 public constant STORM_PERIOD_BLOCKS = 200_000;
     uint256 public constant STORM_LENGTH_BLOCKS = 600;
 
+    // Mainnet partner collections. r3tards remains the primary holder tier and is
+    // quota-accounted per token id. Partner bonuses are deliberately smaller and
+    // apply once per wallet/day while the wallet currently holds that collection.
+    address public constant SKRUMPEYS = 0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0;
+    address public constant MONAD_CARDS = 0x0000CA12D5c07085022eBC74867157449919Fd67;
+    uint32 public constant SKRUMPEYS_PIXELS_PER_DAY = 128;
+    uint32 public constant MONAD_CARD_PIXELS_PER_DAY = 128;
+    uint256 private constant PARTNER_BALANCE_GAS = 50_000;
+
     bytes32 public constant SESSION_TYPEHASH = keccak256(
         "StartSession(address owner,address sessionKey,uint256 expiryBlock,uint256 maxUnits,uint256 nonce,uint256 deadline)"
     );
@@ -61,6 +74,8 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     uint8 public constant FACE_WHITE = 7;
     uint16 public constant ROYALTY_BPS = 500;
 
+    // Historical r3tards.* derivation salts below are intentionally retained as protocol
+    // layout keys. They are not product-facing branding and changing them would alter storage.
     // Canvas is 8 MIP-8 pages. Per-region state gets one aligned page per region.
     /// @notice Permanent genesis r3tard outline used by seasons without a custom guest.
     uint256 public constant OUTLINE_BASE_SLOT =
@@ -203,6 +218,8 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
 
     mapping(address painter => PainterData) private _painters;
     mapping(uint256 tokenId => TokenQuota) private _holderQuota;
+    mapping(address owner => TokenQuota) private _skrumpeysQuota;
+    mapping(address owner => TokenQuota) private _monadCardQuota;
     mapping(uint256 season => SeasonStateData) private _seasons;
     mapping(uint256 tokenId => FrameInfoData) private _frames;
     mapping(uint256 season => mapping(uint48 seasonFrameIndex => uint256 tokenId)) private _seasonFrameToken;
@@ -317,7 +334,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         uint32 maxPixelsPerHour,
         uint32 minPixelsForActiveDay,
         uint32 holderPixelsPerDay
-    ) ERC721("r3tards paint", "R3PAINT") Ownable(initialTokenZeroRecipient) EIP712("r3tards paint", "2") {
+    ) ERC721("r3OS paint", "R3OSPAINT") Ownable(initialTokenZeroRecipient) EIP712("r3OS paint", "2") {
         if (block.chainid != 143 && block.chainid != 10_143 && block.chainid != 31_337) {
             revert UnsupportedChain(block.chainid);
         }
@@ -780,7 +797,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     function setPainterPass(address pass) external onlyOwner {
         if (painterPass != address(0)) revert PainterPassAlreadySet();
         if (pass == address(0) || pass.code.length == 0) revert InvalidPainterPass();
-        try IR3tardsPainterPassLink(pass).PAINT() returns (address linkedPaint) {
+        try IR3OSPainterPassLink(pass).PAINT() returns (address linkedPaint) {
             if (linkedPaint != address(this)) revert InvalidPainterPass();
         } catch {
             revert InvalidPainterPass();
@@ -1296,9 +1313,49 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
     }
 
     function _quotaAvailable(uint256 tokenId, uint48 dayBucket) internal view returns (uint256) {
-        TokenQuota storage q = _holderQuota[tokenId];
+        return _walletQuotaAvailable(_holderQuota[tokenId], dayBucket, HOLDER_PIXELS_PER_DAY);
+    }
+
+    function _walletQuotaAvailable(TokenQuota storage q, uint48 dayBucket, uint256 limit)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 spent = q.dayBucket == dayBucket ? q.spent : 0;
-        return spent >= HOLDER_PIXELS_PER_DAY ? 0 : HOLDER_PIXELS_PER_DAY - spent;
+        return spent >= limit ? 0 : limit - spent;
+    }
+
+    function _holdsPartner(address collection, address owner) internal view returns (bool holds) {
+        if (block.chainid != 143 || owner == address(0)) return false;
+
+        // Copy at most one ABI word from the untrusted partner contract. A normal high-level
+        // staticcall into `bytes memory` copies the entire returndata and therefore lets a
+        // malicious/malformed target create a returndata bomb despite the call gas cap.
+        // Both partner addresses are fixed, but keeping this boundary bounded makes the optional
+        // bonus probe fail closed without becoming a Paint liveness dependency.
+        uint256 selector = uint32(IERC721Balance.balanceOf.selector);
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            mstore(ptr, shl(224, selector))
+            mstore(add(ptr, 4), owner)
+            let ok := staticcall(PARTNER_BALANCE_GAS, collection, ptr, 36, ptr, 32)
+            holds := and(ok, and(eq(returndatasize(), 32), iszero(iszero(mload(ptr)))))
+        }
+    }
+
+    function _spendWalletQuota(TokenQuota storage q, uint48 dayBucket, uint256 limit, uint256 remaining)
+        internal
+        returns (uint256)
+    {
+        if (remaining == 0 || limit == 0) return remaining;
+        if (q.dayBucket != dayBucket) {
+            q.dayBucket = dayBucket;
+            q.spent = 0;
+        }
+        uint256 free = q.spent >= limit ? 0 : limit - q.spent;
+        uint256 take = remaining < free ? remaining : free;
+        q.spent += uint16(take);
+        return remaining - take;
     }
 
     function _spendUnits(address owner, uint32 needed, uint256[] calldata ids) internal {
@@ -1309,6 +1366,28 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         uint48 dayBucket = uint48(block.timestamp / 1 days);
         uint256 holderAvailable;
         for (uint256 i; i < ids.length; ++i) holderAvailable += _quotaAvailable(ids[i], dayBucket);
+
+        uint256 baseAvailable = hourlyAvailable + holderAvailable;
+        bool skrumpeyHolder;
+        bool monadCardHolder;
+        if (needed > baseAvailable) {
+            // Partner probes are optional and only run when ordinary hourly + r3tards quota
+            // cannot cover this action. This keeps the hot paint path independent of external
+            // collections for the common case.
+            skrumpeyHolder = _holdsPartner(SKRUMPEYS, owner);
+            monadCardHolder = _holdsPartner(MONAD_CARDS, owner);
+            if (skrumpeyHolder) {
+                holderAvailable += _walletQuotaAvailable(
+                    _skrumpeysQuota[owner], dayBucket, SKRUMPEYS_PIXELS_PER_DAY
+                );
+            }
+            if (monadCardHolder) {
+                holderAvailable += _walletQuotaAvailable(
+                    _monadCardQuota[owner], dayBucket, MONAD_CARD_PIXELS_PER_DAY
+                );
+            }
+        }
+
         uint256 available = hourlyAvailable + holderAvailable;
         if (needed > available) revert InsufficientBudget(needed, available);
 
@@ -1316,15 +1395,17 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         p.unitsThisHour += uint32(fromHourly);
         uint256 remaining = needed - fromHourly;
         for (uint256 i; i < ids.length && remaining != 0; ++i) {
-            TokenQuota storage q = _holderQuota[ids[i]];
-            if (q.dayBucket != dayBucket) {
-                q.dayBucket = dayBucket;
-                q.spent = 0;
-            }
-            uint256 free = HOLDER_PIXELS_PER_DAY - q.spent;
-            uint256 take = remaining < free ? remaining : free;
-            q.spent += uint16(take);
-            remaining -= take;
+            remaining = _spendWalletQuota(_holderQuota[ids[i]], dayBucket, HOLDER_PIXELS_PER_DAY, remaining);
+        }
+        if (skrumpeyHolder && remaining != 0) {
+            remaining = _spendWalletQuota(
+                _skrumpeysQuota[owner], dayBucket, SKRUMPEYS_PIXELS_PER_DAY, remaining
+            );
+        }
+        if (monadCardHolder && remaining != 0) {
+            remaining = _spendWalletQuota(
+                _monadCardQuota[owner], dayBucket, MONAD_CARD_PIXELS_PER_DAY, remaining
+            );
         }
     }
 
@@ -1669,8 +1750,41 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         hourlyAvailable = spent >= hourlyLimit ? 0 : hourlyLimit - spent;
         uint48 dayBucket = uint48(block.timestamp / 1 days);
         for (uint256 i; i < ids.length; ++i) holderAvailable += _quotaAvailable(ids[i], dayBucket);
+        if (_holdsPartner(SKRUMPEYS, owner)) {
+            holderAvailable += _walletQuotaAvailable(
+                _skrumpeysQuota[owner], dayBucket, SKRUMPEYS_PIXELS_PER_DAY
+            );
+        }
+        if (_holdsPartner(MONAD_CARDS, owner)) {
+            holderAvailable += _walletQuotaAvailable(
+                _monadCardQuota[owner], dayBucket, MONAD_CARD_PIXELS_PER_DAY
+            );
+        }
         totalAvailable = hourlyAvailable + holderAvailable;
         activeDays = p.activeDays;
+    }
+
+    /// @notice Mainnet-only wallet bonuses for partner collections. These are separate from
+    ///         the per-token r3tards quota returned as part of budgetOf().
+    function partnerBudgetOf(address owner) external view returns (
+        bool skrumpeyHolder,
+        uint256 skrumpeyAvailable,
+        bool monadCardHolder,
+        uint256 monadCardAvailable
+    ) {
+        uint48 dayBucket = uint48(block.timestamp / 1 days);
+        skrumpeyHolder = _holdsPartner(SKRUMPEYS, owner);
+        monadCardHolder = _holdsPartner(MONAD_CARDS, owner);
+        if (skrumpeyHolder) {
+            skrumpeyAvailable = _walletQuotaAvailable(
+                _skrumpeysQuota[owner], dayBucket, SKRUMPEYS_PIXELS_PER_DAY
+            );
+        }
+        if (monadCardHolder) {
+            monadCardAvailable = _walletQuotaAvailable(
+                _monadCardQuota[owner], dayBucket, MONAD_CARD_PIXELS_PER_DAY
+            );
+        }
     }
 
     function tileState(uint256 season, uint16 tile) external view returns (
@@ -1877,7 +1991,7 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         if (tokenId == 0) {
             uint256 season = currentSeason();
             string memory json0 = string.concat(
-                '{"name":"r3tards paint - live canvas","description":"paint monad. pay gas. try not to ruin it. r3tards is not a r3al proj3ct.","image":"',
+                '{"name":"r3OS paint - live canvas","description":"the shared live canvas inside r3OS. fully onchain on Monad.","image":"',
                 image,
                 '","attributes":[{"trait_type":"Season","value":',
                 (season + 1).toString(),
@@ -1895,11 +2009,11 @@ contract R3tardsPaint is ERC721, ERC2981, Ownable2Step, EIP712 {
         FrameInfoData storage f = _frames[tokenId];
         string memory kind = f.finale ? "season finale" : "frame";
         string memory json = string.concat(
-            '{"name":"r3tards paint ',
+            '{"name":"r3OS paint ',
             kind,
             ' #',
             tokenId.toString(),
-            '","description":"a fully onchain frame from the shared r3tards paint canvas. it was free. the gas was not imaginary.","image":"',
+            '","description":"a fully onchain frame from the shared r3OS paint canvas. it was free. the gas was not imaginary.","image":"',
             image,
             '","attributes":[',
             '{"trait_type":"Season","value":',

@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
-import {R3tardsCardMemory} from "../src/monadcard/R3tardsCardMemory.sol";
+import {R3OSCardMemory} from "../src/monadcard/R3OSCardMemory.sol";
 
 interface IOfficialMonadCard {
     function ownerOf(uint256 tokenId) external view returns (address);
@@ -28,7 +28,7 @@ contract MonadCardForkTest is Test {
         assertTrue(owner != address(0));
         assertGe(card.balanceOf(owner), 1);
 
-        R3tardsCardMemory memory_ = new R3tardsCardMemory(OFFICIAL);
+        R3OSCardMemory memory_ = new R3OSCardMemory(OFFICIAL);
         bytes32[] memory words = new bytes32[](1);
         words[0] = bytes32("fork test");
         vm.prank(owner);
@@ -39,7 +39,7 @@ contract MonadCardForkTest is Test {
 
         address stranger = makeAddr("stranger");
         vm.prank(stranger);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsCardMemory.NotCardOwner.selector, cardId, owner));
+        vm.expectRevert(abi.encodeWithSelector(R3OSCardMemory.NotCardOwner.selector, cardId, owner));
         memory_.write(cardId, 1, words);
 
         uint256 nonexistent = type(uint256).max;

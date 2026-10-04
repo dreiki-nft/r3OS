@@ -5,7 +5,7 @@ import { discoverContracts } from '../chain/contracts'
 import { useRefreshTick } from '../chain/refreshTick'
 import { getTxTraceSnapshot, subscribeTxTrace } from '../chain/txTrace'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI, R3TARDS_PAINTER_PASS_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI, R3OS_PAINTER_PASS_ABI } from '../lib/generated/abi'
 import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { helpHash } from './helpTopics'
 import { openProgram } from './programs'
@@ -77,7 +77,7 @@ export function Welcome() {
       const [stats, contracts] = await Promise.all([
         client.readContract({
           address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'painterStats',
           args: [account],
         }) as Promise<readonly bigint[]>,
@@ -86,7 +86,7 @@ export function Welcome() {
       const passId = contracts.pass
         ? ((await client.readContract({
             address: contracts.pass,
-            abi: R3TARDS_PAINTER_PASS_ABI,
+            abi: R3OS_PAINTER_PASS_ABI,
             functionName: 'passOf',
             args: [account],
           })) as bigint)

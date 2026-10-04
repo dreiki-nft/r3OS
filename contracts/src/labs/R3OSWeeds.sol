@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "../interfaces/IStampSource.sol";
 
 /// @notice Sixteen independent 64x64 toroidal Conway worlds living only on blank canvas soil.
 /// @dev No owner or admin. Each region world occupies its own 128-slot-aligned storage page.
-contract R3tardsWeeds is IStampSource {
+contract R3OSWeeds is IStampSource {
     error ZeroAddress();
     error NotOpenYet();
     error InvalidRegion(uint8 region);
@@ -35,7 +35,7 @@ contract R3tardsWeeds is IStampSource {
     uint256 public constant PLANT_COOLDOWN_BLOCKS = 100;
     uint256 internal constant M64 = 0xFFFFFFFFFFFFFFFF;
 
-    IR3tardsPaintData public immutable PAINT;
+    IR3OSPaintData public immutable PAINT;
     uint64 public immutable OPEN_TIME;
 
     struct GardenerData {
@@ -48,7 +48,7 @@ contract R3tardsWeeds is IStampSource {
 
     constructor(address paintCore, uint64 openTime) {
         if (paintCore == address(0)) revert ZeroAddress();
-        PAINT = IR3tardsPaintData(paintCore);
+        PAINT = IR3OSPaintData(paintCore);
         OPEN_TIME = openTime;
     }
 

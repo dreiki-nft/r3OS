@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface IR3tardsPaintData {
+interface IR3OSPaintData {
     struct ExperimentData {
         address experiment;
         string name;

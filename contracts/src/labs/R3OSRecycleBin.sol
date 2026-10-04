@@ -2,10 +2,10 @@
 pragma solidity ^0.8.28;
 
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "../interfaces/IStampSource.sol";
 
-interface IR3tardsRecycleCore is IR3tardsPaintData {
+interface IR3OSRecycleCore is IR3OSPaintData {
     function ownerOf(uint256 tokenId) external view returns (address);
     function getApproved(uint256 tokenId) external view returns (address);
     function isApprovedForAll(address owner, address operator) external view returns (bool);
@@ -14,11 +14,11 @@ interface IR3tardsRecycleCore is IR3tardsPaintData {
 
 /// @notice Permissionless frame graveyard. Owners explicitly approve or safe-transfer frames to burn them.
 /// @dev No owner/admin, no payable entry points, and no custody survives a successful call.
-contract R3tardsRecycleBin is IERC721Receiver, IStampSource {
+contract R3OSRecycleBin is IERC721Receiver, IStampSource {
     uint256 public constant MAX_RECYCLE = 50;
     uint256 public constant RECYCLER_STAMP_BURNS = 100;
 
-    IR3tardsRecycleCore public immutable CORE;
+    IR3OSRecycleCore public immutable CORE;
     uint256 public experimentId = type(uint256).max;
 
     struct Tombstone {
@@ -49,12 +49,12 @@ contract R3tardsRecycleBin is IERC721Receiver, IStampSource {
 
     constructor(address paintCore) {
         if (paintCore == address(0)) revert ZeroAddress();
-        CORE = IR3tardsRecycleCore(paintCore);
+        CORE = IR3OSRecycleCore(paintCore);
     }
 
     function bindExperimentId(uint256 id) external {
         if (experimentId != type(uint256).max) revert ExperimentAlreadyBound();
-        IR3tardsPaintData.ExperimentData memory info_ = CORE.experimentInfo(id);
+        IR3OSPaintData.ExperimentData memory info_ = CORE.experimentInfo(id);
         if (info_.experiment != address(this) || info_.retired) revert InvalidExperiment(id);
         experimentId = id;
     }
@@ -105,7 +105,7 @@ contract R3tardsRecycleBin is IERC721Receiver, IStampSource {
             return;
         }
 
-        IR3tardsPaintData.FrameInfoData memory info = CORE.frameInfo(frameId);
+        IR3OSPaintData.FrameInfoData memory info = CORE.frameInfo(frameId);
         tombstone[frameId] = Tombstone({
             minter: info.minter,
             season: info.season,

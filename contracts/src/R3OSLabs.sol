@@ -8,22 +8,22 @@ import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Base64} from "solady/utils/Base64.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {IR3tardsPaintData} from "./interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "./interfaces/IR3OSPaintData.sol";
 import {ILabTokenSource} from "./interfaces/ILabTokenSource.sol";
 import {ILabTokenNameSource} from "./interfaces/ILabTokenNameSource.sol";
 import {LabTraits} from "./lib/LabTraits.sol";
 import {PaletteNames} from "./lib/PaletteNames.sol";
 
-/// @notice Shared tradeable collection for every token-producing r3tards Lab.
+/// @notice Shared tradeable collection for every token-producing r3OS Lab.
 /// @dev The owner can only edit the collection external link. Labs mint through the immutable core registry.
-contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
+contract R3OSLabs is ERC721, ERC2981, Ownable2Step {
     using Strings for uint256;
 
     uint256 public constant LAB_TOKEN_GAS_LIMIT = 14_000_000;
     uint256 public constant LAB_TOKEN_NAME_GAS_LIMIT = 100_000;
     uint96 public constant ROYALTY_BPS = 500;
 
-    IR3tardsPaintData public immutable CORE;
+    IR3OSPaintData public immutable CORE;
     address public immutable ROYALTY_RECEIVER;
 
     struct MintData {
@@ -55,18 +55,18 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
     event LabTokenMinted(uint256 indexed tokenId, uint256 indexed experimentId, address indexed lab, address to);
 
     constructor(address core, address royaltyReceiver)
-        ERC721("r3tards labs", "R3LABS")
+        ERC721("r3OS labs", "R3OSLABS")
         Ownable(msg.sender)
     {
         if (core == address(0) || royaltyReceiver == address(0)) revert ZeroAddress();
-        CORE = IR3tardsPaintData(core);
+        CORE = IR3OSPaintData(core);
         ROYALTY_RECEIVER = royaltyReceiver;
         _setDefaultRoyalty(royaltyReceiver, ROYALTY_BPS);
     }
 
     function mint(address to, uint256 experimentId) external returns (uint256 tokenId) {
         if (experimentId > type(uint32).max) revert ExperimentIdTooLarge(experimentId);
-        IR3tardsPaintData.ExperimentData memory info_ = CORE.experimentInfo(experimentId);
+        IR3OSPaintData.ExperimentData memory info_ = CORE.experimentInfo(experimentId);
         (address experiment, bool retired) = (info_.experiment, info_.retired);
         if (experiment == address(0)) revert InvalidExperiment(experimentId);
         if (experiment != msg.sender) revert UnauthorizedLab(experimentId, msg.sender);
@@ -146,7 +146,7 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
         string memory registryName = CORE.experimentInfo(data.experimentId).name;
 
         string memory kind = _fallbackKind(registryName);
-        string memory description = "an onchain r3tards labs artifact on monad.";
+        string memory description = "an onchain r3OS labs artifact on monad.";
         bytes memory imageSvg = _placeholderImage();
         string memory labAttributes;
         uint8 dominantColour;
@@ -193,7 +193,7 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
             externalField = abi.encodePacked(',"external_url":"', _jsonEscape(_tokenExternalUrl(tokenId)), '"');
         }
 
-        string memory tokenName = string.concat("r3tards labs ", _lower(kind), " #", tokenId.toString());
+        string memory tokenName = string.concat("r3OS labs ", _lower(kind), " #", tokenId.toString());
         // forge-lint: disable-start(return-bomb)
         (bool nameOk, bytes memory nameData) = data.lab.staticcall{gas: LAB_TOKEN_NAME_GAS_LIMIT}(
             abi.encodeCall(ILabTokenNameSource.labTokenName, (tokenId))
@@ -222,13 +222,13 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
                 '<rect width="512" height="512" fill="#0b0b0c"/>',
                 '<rect x="32" y="32" width="448" height="448" fill="none" stroke="#f2efe9"/>',
                 '<rect x="32" y="428" width="160" height="20" fill="#5feddf"/>',
-                '<text x="48" y="270" fill="#f2efe9" font-family="monospace" font-size="42">r3tards labs</text>',
+                '<text x="48" y="270" fill="#f2efe9" font-family="monospace" font-size="42">r3OS labs</text>',
                 '</svg>'
             )
         );
         bytes memory json = abi.encodePacked(
-            '{"name":"r3tards labs",',
-            '"description":"Everything the r3tards labs make: reels, forks, dreams and mix CD-Rs from r3tards paint. Fully onchain on Monad.",',
+            '{"name":"r3OS labs",',
+            '"description":"Everything the r3OS labs make: reels, forks, dreams and mix CD-Rs from r3OS paint. Fully onchain on Monad.",',
             '"image":"data:image/svg+xml;base64,', Base64.encode(svg), '",',
             '"external_link":"', _jsonEscape(_externalLink), '",',
             '"seller_fee_basis_points":500,',
@@ -343,7 +343,7 @@ contract R3tardsLabs is ERC721, ERC2981, Ownable2Step {
                 '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">',
                 '<rect width="512" height="512" fill="#0b0b0c"/>',
                 '<rect x="24" y="24" width="464" height="464" fill="none" stroke="#f2efe9"/>',
-                '<text x="48" y="264" fill="#f2efe9" font-family="monospace" font-size="32">r3tards labs</text>',
+                '<text x="48" y="264" fill="#f2efe9" font-family="monospace" font-size="32">r3OS labs</text>',
                 '</svg>'
             )
         );

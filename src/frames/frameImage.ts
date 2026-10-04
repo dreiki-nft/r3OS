@@ -3,7 +3,7 @@ import { publicClient } from '../chain/clients'
 import { config, deploymentScope } from '../chain/config'
 import { decodeJsonDataUri } from '../lib/dataUri'
 import { applyDf1 } from '../lib/df1'
-import { DF1_RENDERER_ABI, R3TARDS_PAINT_ABI, SEASON_TIMELAPSE_RENDERER_ABI } from '../lib/generated/abi'
+import { DF1_RENDERER_ABI, R3OS_PAINT_ABI, SEASON_TIMELAPSE_RENDERER_ABI } from '../lib/generated/abi'
 import { idbGet, idbSet } from '../lib/idb'
 import { PALETTE } from '../lib/palette'
 import { getCanvasSnapshot } from '../paint/canvasStore'
@@ -116,7 +116,7 @@ export async function getFrameCompositeBytes(tokenId: number) {
   if (!publicClient || !config.paintAddress) throw new Error('frame data unavailable')
   const raw = (await publicClient.readContract({
     address: config.paintAddress,
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     functionName: 'frameCompositeData',
     args: [BigInt(tokenId)],
   })) as Hex
@@ -159,7 +159,7 @@ export async function rendererList(force = false) {
   const count = Number(
     await client.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'rendererCount',
     }),
   )
@@ -169,7 +169,7 @@ export async function rendererList(force = false) {
       (_, id) =>
         client.readContract({
           address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'rendererInfo',
           args: [BigInt(id)],
         }) as Promise<readonly [Address, string]>,
@@ -185,7 +185,7 @@ export async function tokenRenderer(tokenId: number) {
   return Number(
     await publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'tokenRenderer',
       args: [BigInt(tokenId)],
     }),
@@ -202,7 +202,7 @@ export async function getDiffImage(tokenId: number, info?: FrameInfo) {
   if (frame.finale) {
     const seasonInfo = (await publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'seasonInfo',
       args: [BigInt(frame.season)],
     })) as readonly unknown[]
@@ -210,7 +210,7 @@ export async function getDiffImage(tokenId: number, info?: FrameInfo) {
     if (regularFrames === 0n) {
       const raw = (await publicClient.readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'genesisFrameData',
         args: [BigInt(frame.season)],
       })) as Hex
@@ -219,7 +219,7 @@ export async function getDiffImage(tokenId: number, info?: FrameInfo) {
       const previousId = Number(
         await publicClient.readContract({
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'seasonFrameToken',
           args: [BigInt(frame.season), Number(regularFrames)],
         }),
@@ -229,7 +229,7 @@ export async function getDiffImage(tokenId: number, info?: FrameInfo) {
   } else if (frame.seasonFrameIndex <= 1n) {
     const raw = (await publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'genesisFrameData',
       args: [BigInt(frame.season)],
     })) as Hex
@@ -238,7 +238,7 @@ export async function getDiffImage(tokenId: number, info?: FrameInfo) {
     const previousId = Number(
       await publicClient.readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'seasonFrameToken',
         args: [BigInt(frame.season), Number(frame.seasonFrameIndex - 1n)],
       }),
@@ -278,7 +278,7 @@ export async function getSiteDf1(tokenId: number) {
     getFrameImage(tokenId),
     publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'df1Seed',
       args: [BigInt(tokenId)],
     }),

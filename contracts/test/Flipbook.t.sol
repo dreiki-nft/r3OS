@@ -2,15 +2,15 @@
 pragma solidity ^0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
-import {R3tardsLabs} from "../src/R3tardsLabs.sol";
-import {R3tardsFlipbook} from "../src/labs/R3tardsFlipbook.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
+import {R3OSLabs} from "../src/R3OSLabs.sol";
+import {R3OSFlipbook} from "../src/labs/R3OSFlipbook.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract FlipbookTest is Test {
-    R3tardsPaint paint;
-    R3tardsFlipbook flipbook;
-    R3tardsLabs labs;
+    R3OSPaint paint;
+    R3OSFlipbook flipbook;
+    R3OSLabs labs;
     MockR3tards r3tards;
 
     uint256 alicePk = 0xA11CE;
@@ -26,11 +26,11 @@ contract FlipbookTest is Test {
         carol = makeAddr("carol");
         royalty = makeAddr("royalty");
         r3tards = new MockR3tards();
-        paint = new R3tardsPaint(
+        paint = new R3OSPaint(
             address(r3tards), uint64(vm.getBlockTimestamp()), alice, royalty, 512, 0, 512, 16, 256
         );
-        labs = new R3tardsLabs(address(paint), royalty);
-        flipbook = new R3tardsFlipbook(address(paint), address(labs), uint64(vm.getBlockTimestamp()), 300, _genesis());
+        labs = new R3OSLabs(address(paint), royalty);
+        flipbook = new R3OSFlipbook(address(paint), address(labs), uint64(vm.getBlockTimestamp()), 300, _genesis());
         vm.prank(alice);
         uint256 experimentId = paint.addExperiment(address(flipbook), "flipbook", "");
         flipbook.bindExperimentId(experimentId);
@@ -49,25 +49,25 @@ contract FlipbookTest is Test {
 
 
     function testConstructorValidation() public {
-        vm.expectRevert(R3tardsFlipbook.ZeroAddress.selector);
-        new R3tardsFlipbook(address(0), address(labs), uint64(vm.getBlockTimestamp()), 300, _genesis());
+        vm.expectRevert(R3OSFlipbook.ZeroAddress.selector);
+        new R3OSFlipbook(address(0), address(labs), uint64(vm.getBlockTimestamp()), 300, _genesis());
 
-        vm.expectRevert(R3tardsFlipbook.ZeroAddress.selector);
-        new R3tardsFlipbook(address(paint), address(0), uint64(vm.getBlockTimestamp()), 300, _genesis());
+        vm.expectRevert(R3OSFlipbook.ZeroAddress.selector);
+        new R3OSFlipbook(address(paint), address(0), uint64(vm.getBlockTimestamp()), 300, _genesis());
 
-        vm.expectRevert(R3tardsFlipbook.InvalidConfig.selector);
-        new R3tardsFlipbook(address(paint), address(labs), uint64(vm.getBlockTimestamp()), 0, _genesis());
+        vm.expectRevert(R3OSFlipbook.InvalidConfig.selector);
+        new R3OSFlipbook(address(paint), address(labs), uint64(vm.getBlockTimestamp()), 0, _genesis());
 
-        vm.expectRevert(R3tardsFlipbook.InvalidConfig.selector);
-        new R3tardsFlipbook(address(paint), address(labs), uint64(vm.getBlockTimestamp()), 300, new bytes(511));
+        vm.expectRevert(R3OSFlipbook.InvalidConfig.selector);
+        new R3OSFlipbook(address(paint), address(labs), uint64(vm.getBlockTimestamp()), 300, new bytes(511));
     }
 
     function testNotOpenYet() public {
-        R3tardsFlipbook future = new R3tardsFlipbook(
+        R3OSFlipbook future = new R3OSFlipbook(
             address(paint), address(labs), uint64(vm.getBlockTimestamp() + 100), 300, _genesis()
         );
         vm.prank(alice);
-        vm.expectRevert(R3tardsFlipbook.NotOpenYet.selector);
+        vm.expectRevert(R3OSFlipbook.NotOpenYet.selector);
         future.paint(hex"00000004");
     }
 
@@ -107,32 +107,32 @@ contract FlipbookTest is Test {
         vm.prank(alice);
         flipbook.paint(hex"00000004");
         vm.prank(alice);
-        vm.expectRevert(R3tardsFlipbook.AlreadyPaintedThisBlock.selector);
+        vm.expectRevert(R3OSFlipbook.AlreadyPaintedThisBlock.selector);
         flipbook.paint(hex"01010104");
     }
 
     function testNoChangeRevertsAndDoesNotCreateFrame() public {
         vm.roll(vm.getBlockNumber() + 1);
         vm.prank(alice);
-        vm.expectRevert(R3tardsFlipbook.NoChange.selector);
+        vm.expectRevert(R3OSFlipbook.NoChange.selector);
         flipbook.paint(hex"00000000");
         assertEq(flipbook.frameCount(), 1);
     }
 
     function testRunValidationAndPixelCap() public {
         vm.startPrank(alice);
-        vm.expectRevert(R3tardsFlipbook.InvalidRunsLength.selector);
+        vm.expectRevert(R3OSFlipbook.InvalidRunsLength.selector);
         flipbook.paint(hex"");
-        vm.expectRevert(R3tardsFlipbook.InvalidRunsLength.selector);
+        vm.expectRevert(R3OSFlipbook.InvalidRunsLength.selector);
         flipbook.paint(hex"00");
 
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.InvalidRun.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.InvalidRun.selector, 0));
         flipbook.paint(hex"20000001");
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.InvalidRun.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.InvalidRun.selector, 0));
         flipbook.paint(hex"00020101");
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.InvalidRun.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.InvalidRun.selector, 0));
         flipbook.paint(hex"00002001");
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.InvalidRun.selector, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.InvalidRun.selector, 0));
         flipbook.paint(hex"00000010");
 
         bytes memory tooManyRuns = new bytes(33 * 4);
@@ -142,10 +142,10 @@ contract FlipbookTest is Test {
             tooManyRuns[i * 4 + 2] = 0x00;
             tooManyRuns[i * 4 + 3] = 0x01;
         }
-        vm.expectRevert(R3tardsFlipbook.TooManyRuns.selector);
+        vm.expectRevert(R3OSFlipbook.TooManyRuns.selector);
         flipbook.paint(tooManyRuns);
 
-        vm.expectRevert(R3tardsFlipbook.TooManyPixels.selector);
+        vm.expectRevert(R3OSFlipbook.TooManyPixels.selector);
         flipbook.paint(hex"00001F0101001F0102001F01");
         vm.stopPrank();
     }
@@ -159,7 +159,7 @@ contract FlipbookTest is Test {
         assertEq(available, 0);
         vm.roll(vm.getBlockNumber() + 1);
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.InsufficientInk.selector, 1, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.InsufficientInk.selector, 1, 0));
         flipbook.paint(hex"02000001");
 
         vm.prank(bob);
@@ -179,7 +179,7 @@ contract FlipbookTest is Test {
         assertEq(available, 0);
         vm.roll(vm.getBlockNumber() + 1);
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.InsufficientInk.selector, 1, 0));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.InsufficientInk.selector, 1, 0));
         flipbook.paint(hex"0C000001");
 
         vm.roll(resetAt + 1);
@@ -202,7 +202,7 @@ contract FlipbookTest is Test {
         assertEq(keyFramePlusOne, 0);
 
         vm.prank(key);
-        vm.expectRevert(R3tardsFlipbook.SessionKeyPaintOnly.selector);
+        vm.expectRevert(R3OSFlipbook.SessionKeyPaintOnly.selector);
         flipbook.mintReel();
     }
 
@@ -220,7 +220,7 @@ contract FlipbookTest is Test {
             flipbook.paint(runs);
         }
         assertEq(flipbook.frameCount(), 40);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.FrameExpired.selector, 5));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.FrameExpired.selector, 5));
         flipbook.frame(5);
 
         (uint64 first, bytes memory pixels, uint48[] memory blocks,,,) = _recent32();
@@ -251,12 +251,12 @@ contract FlipbookTest is Test {
 
     function testReelRulesAndSnapshotImmutability() public {
         vm.prank(alice);
-        vm.expectRevert(R3tardsFlipbook.NotEnoughFrames.selector);
+        vm.expectRevert(R3OSFlipbook.NotEnoughFrames.selector);
         flipbook.mintReel();
 
         _makeFrames(7, alice);
         vm.prank(bob);
-        vm.expectRevert(R3tardsFlipbook.NotInReel.selector);
+        vm.expectRevert(R3OSFlipbook.NotInReel.selector);
         flipbook.mintReel();
 
         vm.prank(alice);
@@ -269,14 +269,14 @@ contract FlipbookTest is Test {
         _makeFrames(1, alice);
         uint256 minimumEnd = uint256(flipbook.lastReelEndFrame()) + flipbook.MIN_NEW_FRAMES_PER_REEL();
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.ReelTooSoon.selector, minimumEnd));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.ReelTooSoon.selector, minimumEnd));
         flipbook.mintReel();
 
         _makeFrames(31, alice);
         (,,,,, uint48 lastReelBlock) = flipbook.painterInfo(alice);
         uint256 until = uint256(lastReelBlock) + flipbook.REEL_COOLDOWN_BLOCKS();
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsFlipbook.CooldownActive.selector, until));
+        vm.expectRevert(abi.encodeWithSelector(R3OSFlipbook.CooldownActive.selector, until));
         flipbook.mintReel();
 
         _makeFrames(2, bob);
@@ -583,7 +583,7 @@ contract FlipbookTest is Test {
         bytes32 structHash = keccak256(abi.encode(typehash, alice, key, expiry, maxUnits, nonce, deadline));
         bytes32 domain = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-            keccak256(bytes("r3tards paint")), keccak256(bytes("2")), block.chainid, address(paint)
+            keccak256(bytes("r3OS paint")), keccak256(bytes("2")), block.chainid, address(paint)
         ));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domain, structHash));
         (uint8 v, bytes32 rr, bytes32 ss) = vm.sign(alicePk, digest);

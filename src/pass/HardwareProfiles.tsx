@@ -8,7 +8,7 @@ import { useRefreshTick } from '../chain/refreshTick'
 import { config } from '../chain/config'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI, R3TARDS_SLEEPWALKER_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI, R3OS_SLEEPWALKER_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -66,7 +66,7 @@ export function HardwareProfiles() {
       const nonce = BigInt(
         await client.readContract({
           address: config.paintAddress!,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'sessionNonces',
           args: [account],
         }),
@@ -77,7 +77,7 @@ export function HardwareProfiles() {
       if (sleepwalker) {
         const dream = (await client.readContract({
           address: sleepwalker,
-          abi: R3TARDS_SLEEPWALKER_ABI,
+          abi: R3OS_SLEEPWALKER_ABI,
           functionName: 'dreamOf',
           args: [account],
         })) as readonly unknown[]
@@ -98,7 +98,7 @@ export function HardwareProfiles() {
     void quoteAction({
       kind: 'estimate',
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'incrementSessionNonce',
       account,
       action: 'cancel unused session signatures',
@@ -199,7 +199,7 @@ export function HardwareProfiles() {
       await sendAction({
         kind: 'estimate',
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'incrementSessionNonce',
         account: wallet.account,
         quote: cancelQuote,
@@ -210,7 +210,7 @@ export function HardwareProfiles() {
         await quoteAction({
           kind: 'estimate',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'incrementSessionNonce',
           account: wallet.account,
           action: 'cancel unused session signatures',
@@ -235,7 +235,7 @@ export function HardwareProfiles() {
         const revokeQuote = await quoteAction({
           kind: 'estimate',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'revokeSession',
           args: [live.burner.address],
           account: wallet.account,
@@ -244,7 +244,7 @@ export function HardwareProfiles() {
         await sendAction({
           kind: 'estimate',
           address: config.paintAddress,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'revokeSession',
           args: [live.burner.address],
           account: wallet.account,

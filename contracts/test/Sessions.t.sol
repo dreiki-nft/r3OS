@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract Mock1271Owner is IERC1271 {
@@ -23,7 +23,7 @@ contract Mock1271Owner is IERC1271 {
 }
 
 contract SessionsTest is Test {
-    R3tardsPaint paint;
+    R3OSPaint paint;
     MockR3tards r;
     uint256 ownerPk = 0xA11CE;
     address owner;
@@ -33,7 +33,7 @@ contract SessionsTest is Test {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         owner = vm.addr(ownerPk);
         r = new MockR3tards();
-        paint = new R3tardsPaint(address(r), uint64(vm.getBlockTimestamp()), owner, owner, 512, 0, 512, 16, 256);
+        paint = new R3OSPaint(address(r), uint64(vm.getBlockTimestamp()), owner, owner, 512, 0, 512, 16, 256);
     }
 
     function testSessionPaintAttributedToOwnerAndPaintOnly() public {
@@ -49,10 +49,10 @@ contract SessionsTest is Test {
         assertTrue(active);
 
         vm.prank(key);
-        vm.expectRevert(R3tardsPaint.SessionKeyPaintOnly.selector);
+        vm.expectRevert(R3OSPaint.SessionKeyPaintOnly.selector);
         paint.mintFrame();
         vm.prank(key);
-        vm.expectRevert(R3tardsPaint.SessionKeyPaintOnly.selector);
+        vm.expectRevert(R3OSPaint.SessionKeyPaintOnly.selector);
         paint.setFace(7, new uint256[](0));
     }
 
@@ -67,13 +67,13 @@ contract SessionsTest is Test {
             ownerPk, address(paint), owner, key, replayExpiry, 16, suppliedNonce, replayDeadline
         );
         vm.prank(key);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.InvalidSessionNonce.selector, expectedNonce, suppliedNonce));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.InvalidSessionNonce.selector, expectedNonce, suppliedNonce));
         paint.startSession(owner, key, replayExpiry, 16, suppliedNonce, replayDeadline, replaySig);
 
         uint256 needed = 32;
         uint256 available = 16;
         vm.prank(key);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SessionUnitsExceeded.selector, needed, available));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.SessionUnitsExceeded.selector, needed, available));
         paint.paint(hex"00001F04", new uint256[](0));
 
         vm.prank(owner);
@@ -108,7 +108,7 @@ contract SessionsTest is Test {
         bytes memory sig = _signatureFor(ownerPk, address(paint), owner, victim, expiry, 100, nonce, deadline);
 
         vm.prank(attacker);
-        vm.expectRevert(R3tardsPaint.InvalidSessionKey.selector);
+        vm.expectRevert(R3OSPaint.InvalidSessionKey.selector);
         paint.startSession(owner, victim, expiry, 100, nonce, deadline, sig);
 
         vm.prank(victim);
@@ -128,7 +128,7 @@ contract SessionsTest is Test {
         uint256 deadline = vm.getBlockTimestamp() + 1 hours;
         bytes memory otherSig = _signatureFor(otherPk, address(paint), otherOwner, key, expiry, 100, 0, deadline);
         vm.prank(key);
-        vm.expectRevert(abi.encodeWithSelector(R3tardsPaint.SessionKeyInUse.selector, owner));
+        vm.expectRevert(abi.encodeWithSelector(R3OSPaint.SessionKeyInUse.selector, owner));
         paint.startSession(otherOwner, key, expiry, 100, 0, deadline, otherSig);
     }
 
@@ -136,7 +136,7 @@ contract SessionsTest is Test {
         address paintedKey = address(0x1111);
         vm.prank(paintedKey);
         paint.paint(hex"04000304", new uint256[](0));
-        _expectSessionStartError(paintedKey, R3tardsPaint.SessionKeyHasOwnerHistory.selector);
+        _expectSessionStartError(paintedKey, R3OSPaint.SessionKeyHasOwnerHistory.selector);
     }
 
     function testActiveSessionKeyCannotBecomeSessionOwner() public {
@@ -155,7 +155,7 @@ contract SessionsTest is Test {
         );
 
         vm.prank(secondKey);
-        vm.expectRevert(R3tardsPaint.InvalidSessionKey.selector);
+        vm.expectRevert(R3OSPaint.InvalidSessionKey.selector);
         paint.startSession(firstKey, secondKey, expiry, 100, nonce, deadline, sig);
     }
 
@@ -163,7 +163,7 @@ contract SessionsTest is Test {
         uint256 signerPk = 0xC0FFEE;
         address signer = vm.addr(signerPk);
         Mock1271Owner wallet = new Mock1271Owner(signer);
-        R3tardsPaint p2 = new R3tardsPaint(address(r), uint64(vm.getBlockTimestamp()), address(wallet), owner, 512, 0, 512, 16, 256);
+        R3OSPaint p2 = new R3OSPaint(address(r), uint64(vm.getBlockTimestamp()), address(wallet), owner, 512, 0, 512, 16, 256);
         address sessionKey = address(0x1234);
         uint256 expiry = vm.getBlockNumber() + 100;
         uint256 deadline = vm.getBlockTimestamp() + 1 hours;
@@ -217,7 +217,7 @@ contract SessionsTest is Test {
         bytes32 structHash = keccak256(abi.encode(typehash, owner_, sessionKey, expiry, maxUnits, nonce, deadline));
         bytes32 domain = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-            keccak256(bytes("r3tards paint")), keccak256(bytes("2")), block.chainid, verifyingContract
+            keccak256(bytes("r3OS paint")), keccak256(bytes("2")), block.chainid, verifyingContract
         ));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domain, structHash));
         (uint8 v, bytes32 rr, bytes32 ss) = vm.sign(signerPk, digest);

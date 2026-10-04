@@ -10,7 +10,7 @@ Reference adapter behavior was studied at `haythemsellami/mrc-17-adapters` commi
 
 ## Isolation model
 
-`R3tardsRouterLab.compare` evaluates all configured venues in one top-level call. Each adapter quote is sent through `quoteFrame`, an external self-call that uses an ordinary gas-capped `CALL` and then reverts unconditionally with a structured envelope containing the quote result or bounded failure data. The parent catches that envelope and continues to the next venue.
+`R3OSRouterLab.compare` evaluates all configured venues in one top-level call. Each adapter quote is sent through `quoteFrame`, an external self-call that uses an ordinary gas-capped `CALL` and then reverts unconditionally with a structured envelope containing the quote result or bounded failure data. The parent catches that envelope and continues to the next venue.
 
 The self-call/revert pattern follows the architecture demonstrated by Monoper, with two additional resource limits here: adapter gas is capped and revert/success returndata is bounded. A venue cannot make quote-side state persist, and a revert from one venue does not by itself discard reports from the others.
 

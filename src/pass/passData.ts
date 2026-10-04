@@ -4,7 +4,7 @@ import { config } from '../chain/config'
 import { discoverContracts } from '../chain/contracts'
 import { resolveHolderIds } from '../chain/holders'
 import { readMany } from '../chain/readMany'
-import { R3TARDS_PAINTER_PASS_ABI } from '../lib/generated/abi'
+import { R3OS_PAINTER_PASS_ABI } from '../lib/generated/abi'
 
 export interface PassIdentityData {
   passAddress?: Address
@@ -54,13 +54,13 @@ export function readPassIdentity(owner: Address, force = false): Promise<PassIde
         [
           {
             address: contracts.pass,
-            abi: R3TARDS_PAINTER_PASS_ABI,
+            abi: R3OS_PAINTER_PASS_ABI,
             functionName: 'passOf',
             args: [owner],
           },
           {
             address: contracts.pass,
-            abi: R3TARDS_PAINTER_PASS_ABI,
+            abi: R3OS_PAINTER_PASS_ABI,
             functionName: 'hasClaimed',
             args: [owner],
           },

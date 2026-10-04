@@ -1,6 +1,6 @@
 # Operator Record
 
-`R3tardsOperatorRecord` is an adminless, composable history primitive for r3OS. It does not award anything, compute a score, rank addresses or copy activity counters into new state. It reads objective facts from the contracts that already own them and stores only when a fact was first **observed** plus a prospective bitmap of paint seasons observed after the recorder exists.
+`R3OSOperatorRecord` is an adminless, composable history primitive for r3OS. It does not award anything, compute a score, rank addresses or copy activity counters into new state. It reads objective facts from the contracts that already own them and stores only when a fact was first **observed** plus a prospective bitmap of paint seasons observed after the recorder exists.
 
 The frontend registers it under the Paint experiment name `operator-record`.
 

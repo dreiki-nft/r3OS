@@ -9,7 +9,7 @@ import { config } from '../chain/config'
 import { markProgramDataReady } from '../chain/perf'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
@@ -65,7 +65,7 @@ async function readOwner(tokenId: number) {
   try {
     return (await publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'ownerOf',
       args: [BigInt(tokenId)],
     })) as Address
@@ -152,7 +152,7 @@ export function FramePropsDialog() {
     if (publicClient && config.paintAddress) {
       const value = (await publicClient.readContract({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'royaltyInfo',
         args: [BigInt(tokenId), 10_000n],
       })) as readonly [Address, bigint]
@@ -210,7 +210,7 @@ export function FramePropsDialog() {
     void quoteAction({
       kind: 'estimate',
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'setTokenRenderer',
       args: [BigInt(tokenId), BigInt(choice)],
       account: wallet.account,
@@ -249,7 +249,7 @@ export function FramePropsDialog() {
       await sendAction({
         kind: 'estimate',
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'setTokenRenderer',
         args: [BigInt(tokenId), BigInt(choice)],
         account: wallet.account,

@@ -4,11 +4,11 @@ pragma solidity ^0.8.28;
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 
-/// @notice Permissionless candle auctions for immutable r3tards season finales.
+/// @notice Permissionless candle auctions for immutable r3OS season finales.
 /// @dev No owner or admin. Bids use pull-payment escrow; settlement uses the close block hash when still available.
-contract R3tardsFinaleAuction is ReentrancyGuard {
+contract R3OSFinaleAuction is ReentrancyGuard {
     uint256 public constant BIDDING_BLOCKS = 288_000;
     uint256 public constant CANDLE_BLOCKS = 12_000;
     uint256 public constant REVEAL_WINDOW = 256;
@@ -105,7 +105,7 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
         uint32 auctionsWon;
     }
 
-    IR3tardsPaintData public immutable PAINT;
+    IR3OSPaintData public immutable PAINT;
     address public immutable CORE;
 
     uint256 public auctionCount;
@@ -117,12 +117,12 @@ contract R3tardsFinaleAuction is ReentrancyGuard {
 
     constructor(address paintCore) {
         if (paintCore == address(0)) revert ZeroAddress();
-        PAINT = IR3tardsPaintData(paintCore);
+        PAINT = IR3OSPaintData(paintCore);
         CORE = paintCore;
     }
 
     function list(uint256 tokenId, uint128 reserve, uint48 startBlock) external returns (uint256 auctionId) {
-        IR3tardsPaintData.FrameInfoData memory info = PAINT.frameInfo(tokenId);
+        IR3OSPaintData.FrameInfoData memory info = PAINT.frameInfo(tokenId);
         if (!info.finale) revert NotFinale(tokenId);
         if (IERC721(CORE).ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
         if (reserve == 0) revert ZeroReserve();

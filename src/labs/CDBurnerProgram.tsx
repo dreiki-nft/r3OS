@@ -17,7 +17,7 @@ import {
   loadOwnedLabsTokensBySources,
   type LabsOwnedToken,
 } from '../frames/labsStore'
-import { R3TARDS_CD_BURNER_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_CD_BURNER_ABI, R3OS_LABS_ABI, R3OS_PAINT_ABI } from '../lib/generated/abi'
 import {
   discMaskFromCounts,
   formatName,
@@ -78,7 +78,7 @@ async function countsForFrame(id: number, info: FrameInfo) {
   if (!paint) throw new Error('paint is not deployed on this network')
   const raw = (await publicClient.readContract({
     address: paint,
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     functionName: 'frameData',
     args: [BigInt(id)],
   })) as Hex
@@ -120,7 +120,7 @@ async function staleTrackKeys(owner: Address, tracks: readonly Track[]) {
   const rows = await readMany(
     tracks.map((track) => ({
       address: track.kind === 'frame' ? contracts.paint! : labs!,
-      abi: track.kind === 'frame' ? R3TARDS_PAINT_ABI : R3TARDS_LABS_ABI,
+      abi: track.kind === 'frame' ? R3OS_PAINT_ABI : R3OS_LABS_ABI,
       functionName: 'ownerOf',
       args: [BigInt(track.id)],
     })),
@@ -260,7 +260,7 @@ export function CDBurnerProgram() {
       const total = BigInt(
         await publicClient.readContract({
           address: labs,
-          abi: R3TARDS_LABS_ABI,
+          abi: R3OS_LABS_ABI,
           functionName: 'totalMinted',
         }),
       )
@@ -336,7 +336,7 @@ export function CDBurnerProgram() {
       const next = await quoteAction({
         kind: 'estimate',
         address: burner,
-        abi: hasPhotos ? MIXED_CD_ABI : R3TARDS_CD_BURNER_ABI,
+        abi: hasPhotos ? MIXED_CD_ABI : R3OS_CD_BURNER_ABI,
         functionName,
         args: hasPhotos
           ? [
@@ -411,7 +411,7 @@ export function CDBurnerProgram() {
       const result = await sendAction({
         kind: 'estimate',
         address: burner,
-        abi: hasPhotos ? MIXED_CD_ABI : R3TARDS_CD_BURNER_ABI,
+        abi: hasPhotos ? MIXED_CD_ABI : R3OS_CD_BURNER_ABI,
         functionName: hasPhotos ? 'burnMixedCD' : 'burnCD',
         args: hasPhotos
           ? [
@@ -428,7 +428,7 @@ export function CDBurnerProgram() {
       })
       // the minted id comes from this tx's CDBurned event, not totalMinted(), which races other Labs mints
       const burned = parseEventLogs({
-        abi: R3TARDS_CD_BURNER_ABI,
+        abi: R3OS_CD_BURNER_ABI,
         eventName: 'CDBurned',
         logs: result.receipt.logs as Log[],
       })[0]
@@ -437,7 +437,7 @@ export function CDBurnerProgram() {
         : BigInt(
             await publicClient!.readContract({
               address: await labsAddress(),
-              abi: R3TARDS_LABS_ABI,
+              abi: R3OS_LABS_ABI,
               functionName: 'totalMinted',
             }),
           )

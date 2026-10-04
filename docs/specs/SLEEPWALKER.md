@@ -2,7 +2,7 @@
 
 Sleepwalker lets a painter hand the canvas a stencil before bed and let other players crank that stencil onto the real canvas overnight.
 
-It has no privileged paint path. **No Lab has special powers over the canvas; Sleepwalker only paints through your own signed session, with your own budget.** Every successful step is an ordinary `R3tardsPaint.paint` call made by a deterministic session-key clone that the owner authorized with the core's normal EIP-712 `StartSession` signature.
+It has no privileged paint path. **No Lab has special powers over the canvas; Sleepwalker only paints through your own signed session, with your own budget.** Every successful step is an ordinary `R3OSPaint.paint` call made by a deterministic session-key clone that the owner authorized with the core's normal EIP-712 `StartSession` signature.
 
 ## The rule: paint to dream
 
@@ -34,10 +34,10 @@ keyOf(owner)
 
 The clone salt is the owner's address. The clone is deployed lazily by `sleep`, so the site can compute its address before any transaction and ask the owner to sign sessions for that exact address.
 
-`SleepwalkerKey` accepts calls only from `R3tardsSleepwalker`. Its two operational actions are:
+`SleepwalkerKey` accepts calls only from `R3OSSleepwalker`. Its two operational actions are:
 
-- `start(...)` → `R3tardsPaint.startSession(owner, key, ...)`;
-- `paint(runs, holderIds)` → `R3tardsPaint.paint(runs, holderIds)`.
+- `start(...)` → `R3OSPaint.startSession(owner, key, ...)`;
+- `paint(runs, holderIds)` → `R3OSPaint.paint(runs, holderIds)`.
 
 The Lab checks `sessionInfo(key)` before every paint. It never calls `key.paint` unless the core reports an active session whose owner is the sleeper. This matters because an expired/revoked core session key becomes a normal wallet again; painting from it without an active session would incorrectly create painter history for the key itself.
 
@@ -147,7 +147,7 @@ The completed stencil pointer and its counters remain until the owner mints the 
 - deletes the stored holder IDs;
 - attempts the same 30,000-gas refund push, crediting `refunds(owner)` on failure instead of reverting.
 
-The Lab cannot revoke the currently active core session because `R3tardsPaint.revokeSession` is owner-only. The 3c UI therefore revokes the key from the owner's wallet **before** calling `wake`. Even if the user calls `wake` alone, Sleepwalker has deleted the signatures and state and will never call that key again.
+The Lab cannot revoke the currently active core session because `R3OSPaint.revokeSession` is owner-only. The 3c UI therefore revokes the key from the owner's wallet **before** calling `wake`. Even if the user calls `wake` alone, Sleepwalker has deleted the signatures and state and will never call that key again.
 
 ## Views
 
@@ -191,7 +191,7 @@ and is earned once `N >= 1`.
 
 ## Dream NFTs
 
-Sleepwalker is an `ILabTokenSource`. It mints through the shared `R3tardsLabs` collection using its bound core experiment ID.
+Sleepwalker is an `ILabTokenSource`. It mints through the shared `R3OSLabs` collection using its bound core experiment ID.
 
 `mintDream()` is owner-only and can be used once per dream:
 
@@ -209,7 +209,7 @@ The NFT snapshots:
 - survival at mint;
 - stencil colour statistics.
 
-The token remains valid after `wake`. Dream tokens are burnable through `R3tardsLabs`.
+The token remains valid after `wake`. Dream tokens are burnable through `R3OSLabs`.
 
 ### Survival sampling
 
@@ -225,7 +225,7 @@ The NFT image is a cropped onchain SVG of the stencil. Base runs use the core pa
 
 ### Dream traits
 
-The Lab source returns these type-specific traits to `R3tardsLabs`:
+The Lab source returns these type-specific traits to `R3OSLabs`:
 
 | Trait | Values |
 |---|---|

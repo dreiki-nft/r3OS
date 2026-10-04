@@ -13,7 +13,7 @@ interface IERC20Balance {
 }
 
 /// @notice Stateless MRC-17 routing diagnostics. It never executes a persistent swap.
-contract R3tardsRouterLab {
+contract R3OSRouterLab {
     uint256 public constant MAX_VENUES = 8;
     uint256 public constant MIN_GAS_PER_FRAME = 50_000;
     uint256 public constant MAX_GAS_PER_FRAME = 5_000_000;

@@ -1,6 +1,6 @@
 # Finale Candle Auction
 
-Phase 3 UI specification for `R3tardsFinaleAuction`.
+Phase 3 UI specification for `R3OSFinaleAuction`.
 
 ## What this is
 
@@ -67,7 +67,7 @@ Connected users may opt into **Settle for me when bidding closes**. The preferen
 ## Seller flow
 
 1. Pick a finale owned by the connected wallet.
-2. Approve `R3tardsFinaleAuction` for that token.
+2. Approve `R3OSFinaleAuction` for that token.
 3. Choose a non-zero reserve.
 4. List immediately or choose a start block no more than 2,016,000 blocks, about seven days, ahead.
 

@@ -6,7 +6,7 @@ import { waitForActionFundingSettlement } from '../chain/actionRpc'
 import { friendlyError } from '../chain/errors'
 import { quoteAction, refreshActionQuoteFees, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, switchToMonad, walletOnCorrectChain } from '../chain/wallet'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { encodeChangedRuns } from '../lib/patch'
 import { getCanvasSnapshot } from '../paint/canvasStore'
 import { confirmHigherCost } from '../os/confirm'
@@ -85,7 +85,7 @@ async function samplePaintGas(owner: Address) {
     const quote = await quoteAction({
       kind: 'corePaint',
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'paint',
       args: [sample.hex, []],
       account: owner,
@@ -146,7 +146,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   const paintGasPromise = samplePaintGas(owner)
   const noncePromise = client.readContract({
     address: paint,
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     functionName: 'sessionNonces',
     args: [owner],
   }) as Promise<bigint>
@@ -195,7 +195,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   const startBase = {
     kind: 'estimate' as const,
     address: paint,
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     functionName: 'startSession',
     args: startArgs,
     account: owner,

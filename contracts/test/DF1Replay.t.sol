@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {R3tardsPaint} from "../src/R3tardsPaint.sol";
+import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {MockR3tards} from "./MockR3tards.sol";
 
 contract DF1ReplayTest is Test {
-    R3tardsPaint p;
+    R3OSPaint p;
     MockR3tards r;
     address alice = address(0xA11CE);
     address bob = address(0xB0B);
@@ -18,7 +18,7 @@ contract DF1ReplayTest is Test {
     function setUp() public {
         vm.roll(1_000); // keep ordinary tests outside deterministic DF1 storm windows
         r = new MockR3tards();
-        p = new R3tardsPaint(
+        p = new R3OSPaint(
             address(r), uint64(vm.getBlockTimestamp()), alice, alice, 20_000, 0, 20_000, 16, 256
         );
     }
@@ -114,7 +114,7 @@ contract DF1ReplayTest is Test {
         p.paint(hex"000A1106", new uint256[](0)); // current handoff makes stored pressure 5 => amount 150 at frame time
         vm.prank(bob);
         uint256 id = p.mintFrame();
-        R3tardsPaint.FrameInfoData memory info = p.frameInfo(id);
+        R3OSPaint.FrameInfoData memory info = p.frameInfo(id);
         assertEq(info.df1Amount, 150);
     }
 
@@ -123,7 +123,7 @@ contract DF1ReplayTest is Test {
         p.paint(hex"00000004", new uint256[](0));
         vm.prank(alice);
         uint256 id = p.mintFrame();
-        R3tardsPaint.FrameInfoData memory info = p.frameInfo(id);
+        R3OSPaint.FrameInfoData memory info = p.frameInfo(id);
 
         uint32 expected = uint32(uint256(keccak256(abi.encode("r3tards.df1.v1", id, uint256(info.blockNumber)))));
         assertEq(p.df1Seed(id), expected);

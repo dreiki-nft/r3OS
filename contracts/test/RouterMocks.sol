@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPropAMMRouter} from "../src/router/IPropAMMRouter.sol";
-import {R3tardsRouterLab} from "../src/router/R3tardsRouterLab.sol";
+import {R3OSRouterLab} from "../src/router/R3OSRouterLab.sol";
 
 interface IMintableToken {
     function mint(address to, uint256 amount) external;
@@ -318,9 +318,9 @@ contract OpaqueSwapDataVenue is MockVenueBase {
 }
 
 contract ReentrantVenue is MockVenueBase {
-    R3tardsRouterLab public immutable LAB;
+    R3OSRouterLab public immutable LAB;
 
-    constructor(uint256 rate, R3tardsRouterLab lab) MockVenueBase(rate) {
+    constructor(uint256 rate, R3OSRouterLab lab) MockVenueBase(rate) {
         LAB = lab;
     }
 
@@ -328,7 +328,7 @@ contract ReentrantVenue is MockVenueBase {
         external
         returns (uint256, bytes memory)
     {
-        R3tardsRouterLab.Venue[] memory empty = new R3tardsRouterLab.Venue[](0);
+        R3OSRouterLab.Venue[] memory empty = new R3OSRouterLab.Venue[](0);
         try LAB.compare(tokenIn, tokenOut, amountIn, empty, 50_000, false) {} catch {}
         try LAB.quoteFrame(address(this), bytes(""), 50_000) {} catch {}
         return (_quote(amountIn), bytes(""));

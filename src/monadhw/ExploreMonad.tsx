@@ -4,7 +4,7 @@ import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { chainName, config } from '../chain/config'
 import { MONAD_HW_SPEC } from '../chain/monadHardware'
 import { readHeavy } from '../chain/readMany'
-import { R3TARDS_PAGE_EXE_ABI } from '../lib/generated/abi'
+import { R3OS_PAGE_EXE_ABI } from '../lib/generated/abi'
 import { labAddress, labLoadError, LabNotDeployedError, shortAddress } from '../labs/labCommon'
 import { openProgram } from '../os/programs'
 import { isMuted, subscribeSoundSettings } from '../os/sound'
@@ -165,17 +165,17 @@ function StorageRace() {
         [
           {
             address,
-            abi: R3TARDS_PAGE_EXE_ABI,
+            abi: R3OS_PAGE_EXE_ABI,
             functionName: 'benchRead',
             args: [0, BigInt(STORAGE_RACE_READS)],
           },
           {
             address,
-            abi: R3TARDS_PAGE_EXE_ABI,
+            abi: R3OS_PAGE_EXE_ABI,
             functionName: 'benchRead',
             args: [1, BigInt(STORAGE_RACE_READS)],
           },
-          { address, abi: R3TARDS_PAGE_EXE_ABI, functionName: 'probePage' },
+          { address, abi: R3OS_PAGE_EXE_ABI, functionName: 'probePage' },
         ],
         { concurrency: 2 },
       )

@@ -7,7 +7,7 @@ import { getLogsWindow } from '../chain/logs'
 export { chunkBlockRanges } from '../chain/logs'
 import { decodeCoreEventLog } from '../chain/coreLogs'
 import { demoConstants, readCoreConstants, seasonAtTimestamp } from '../chain/contracts'
-import { R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { OUTLINE_MASK } from '../lib/layers'
 import { decodePackedCanvas } from '../lib/patch'
 import { applyPainted, expandOutlineRuns } from './replay'
@@ -397,27 +397,27 @@ export async function loadCanvasNow() {
   const block = await publicClient.getBlockNumber({ cacheTime: 0 })
   const season = (await publicClient.readContract({
     address: config.paintAddress,
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     functionName: 'currentSeason',
     blockNumber: block,
   })) as bigint
   const [packed, info, custom] = await Promise.all([
     publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'getBackgroundCanvas',
       blockNumber: block,
     }) as Promise<Hex>,
     publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'seasonInfo',
       args: [season],
       blockNumber: block,
     }) as Promise<readonly unknown[]>,
     publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'hasCustomOutline',
       args: [season],
       blockNumber: block,
@@ -427,7 +427,7 @@ export async function loadCanvasNow() {
   if (custom) {
     const runs = (await publicClient.readContract({
       address: config.paintAddress,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'seasonOutlineRuns',
       args: [season],
       blockNumber: block,
@@ -558,7 +558,7 @@ export function startCanvasStore() {
     if (wsClient && config.paintAddress) {
       unwatch = wsClient.watchContractEvent({
         address: config.paintAddress,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         onLogs: (logs) => void onSubscriptionLogs(logs),
         onError: () => {
           void catchUp().finally(startPolling)
@@ -704,7 +704,7 @@ export async function readTileState(tile: number, headBlock: bigint, force = fal
   if (!tileNeedsFetch(cached, headBlock, force)) return cached!.state
   const result = (await publicClient.readContract({
     address: config.paintAddress,
-    abi: R3TARDS_PAINT_ABI,
+    abi: R3OS_PAINT_ABI,
     functionName: 'tileState',
     args: [snapshot.season, tile],
   })) as readonly bigint[]
@@ -727,7 +727,7 @@ export async function readTileStates(tiles: readonly number[], headBlock: bigint
     const results = (await readMany(
       needed.map((tile) => ({
         address: config.paintAddress!,
-        abi: R3TARDS_PAINT_ABI,
+        abi: R3OS_PAINT_ABI,
         functionName: 'tileState',
         args: [snapshot.season, tile],
       })),

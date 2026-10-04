@@ -48,7 +48,7 @@ export const EXPECTED_STAMP_SOURCES = Object.freeze([
   'card-drv',
 ])
 
-/** From R3tardsPainterPass / PassArt: six built-in pins, then one pin per stamp source, 16 drawn. */
+/** From R3OSPainterPass / PassArt: six built-in pins, then one pin per stamp source, 16 drawn. */
 export const PASS_BUILTIN_PINS = 6
 export const PASS_MAX_PINS = 16
 /** Policy (docs/PRE_MAINNET_CHECKLIST.md): the last two visual pins stay unassigned. */
@@ -85,8 +85,19 @@ export const OPERATOR_SOURCES = Object.freeze([
 
 export const OFFICIAL = Object.freeze({
   monadCard: '0x0000CA12D5c07085022eBC74867157449919Fd67',
+  skrumpeys: '0xb0dad798c80e40dd6b8e8545074c6a5b7b97d2c0',
   monUsdFeed: '0xBcD78f76005B7515837af6b50c7C52BCf73822fb',
   multicall3: '0xcA11bde05977b3631167028862bE2a173976CA11',
+})
+
+export const EXPECTED_BUDGETS = Object.freeze({
+  basePixelsPerHour: 512n,
+  pixelsPerActiveDay: 32n,
+  maxPixelsPerHour: 2048n,
+  minPixelsForActiveDay: 16n,
+  holderPixelsPerDay: 512n,
+  skrumpeysPixelsPerDay: 128n,
+  monadCardPixelsPerDay: 128n,
 })
 
 export const MONAD_DEVICES = Object.freeze({
@@ -411,7 +422,7 @@ export function allChecks(report) {
 export function formatHuman(result, { secrets = [] } = {}) {
   const width = 30
   const lines = [
-    'R3TARDS LAUNCH DOCTOR',
+    'r3OS LAUNCH DOCTOR',
     `chain ${result.chain.id ?? '?'} (${result.chain.name}) · expected ${result.chain.expectedId ?? 'not specified'} · block ${result.block ?? '?'}`,
     'read-only: no transaction, signature or wallet access',
     '',
@@ -442,7 +453,7 @@ export function formatHuman(result, { secrets = [] } = {}) {
 export function toJson(result, { secrets = [] } = {}) {
   const json = JSON.stringify(
     {
-      tool: 'r3tards-launch-doctor',
+      tool: 'r3os-launch-doctor',
       readOnly: true,
       chain: result.chain,
       block: result.block == null ? null : String(result.block),
@@ -583,6 +594,11 @@ export async function runDoctor({
     royaltyBps,
     seasonStart,
     seasonLength,
+    basePixelsPerHour,
+    pixelsPerActiveDay,
+    maxPixelsPerHour,
+    minPixelsForActiveDay,
+    holderPixelsPerDay,
   ] = await Promise.all([
     P('function owner() view returns (address)'),
     P('function pendingOwner() view returns (address)'),
@@ -598,6 +614,11 @@ export async function runDoctor({
     P('function ROYALTY_BPS() view returns (uint16)'),
     P('function SEASON_START() view returns (uint64)'),
     P('function SEASON_LENGTH() view returns (uint256)'),
+    P('function BASE_PIXELS_PER_HOUR() view returns (uint32)'),
+    P('function PIXELS_PER_ACTIVE_DAY() view returns (uint32)'),
+    P('function MAX_PIXELS_PER_HOUR() view returns (uint32)'),
+    P('function MIN_PIXELS_FOR_ACTIVE_DAY() view returns (uint32)'),
+    P('function HOLDER_PIXELS_PER_DAY() view returns (uint32)'),
   ])
   const passAddress = addr(passRes)
   const r3Code = r3tards.ok ? await hasCode(r3tards.value) : undefined
@@ -623,6 +644,54 @@ export async function runDoctor({
       ? `start ${new Date(Number(seasonStart.value) * 1000).toISOString()} · length ${seasonLength.value}s`
       : 'unreadable',
   )
+  const budgetReads = [
+    ['base/hour', basePixelsPerHour, EXPECTED_BUDGETS.basePixelsPerHour],
+    ['active-day step', pixelsPerActiveDay, EXPECTED_BUDGETS.pixelsPerActiveDay],
+    ['hour cap', maxPixelsPerHour, EXPECTED_BUDGETS.maxPixelsPerHour],
+    ['active-day threshold', minPixelsForActiveDay, EXPECTED_BUDGETS.minPixelsForActiveDay],
+    ['r3tard/day', holderPixelsPerDay, EXPECTED_BUDGETS.holderPixelsPerDay],
+  ]
+  const unreadableBudget = budgetReads.some(([, result]) => !result.ok)
+  const badBudget = budgetReads.filter(([, result, expected]) => result.ok && BigInt(result.value) !== expected)
+  report.add(
+    'Pixel budgets',
+    unreadableBudget ? STATUS.UNKNOWN : badBudget.length ? STATUS.FAIL : STATUS.OK,
+    unreadableBudget
+      ? 'unreadable'
+      : `base ${basePixelsPerHour.value}/h · +${pixelsPerActiveDay.value}/day · cap ${maxPixelsPerHour.value}/h · r3tard +${holderPixelsPerDay.value}/day`,
+    badBudget.length ? `unexpected: ${badBudget.map(([label, result, expected]) => `${label}=${result.value} expected ${expected}`).join(', ')}` : '',
+  )
+
+  if (chainId === 143) {
+    const [skrumpeys, monadCards, skrumpeysPx, monadCardPx] = await Promise.all([
+      P('function SKRUMPEYS() view returns (address)'),
+      P('function MONAD_CARDS() view returns (address)'),
+      P('function SKRUMPEYS_PIXELS_PER_DAY() view returns (uint32)'),
+      P('function MONAD_CARD_PIXELS_PER_DAY() view returns (uint32)'),
+    ])
+    const partnerChecks = [
+      { label: 'Skrumpeys bonus', address: skrumpeys, expectedAddress: OFFICIAL.skrumpeys, pixels: skrumpeysPx, expectedPixels: EXPECTED_BUDGETS.skrumpeysPixelsPerDay },
+      { label: 'Monad Cards bonus', address: monadCards, expectedAddress: OFFICIAL.monadCard, pixels: monadCardPx, expectedPixels: EXPECTED_BUDGETS.monadCardPixelsPerDay },
+    ]
+    for (const partner of partnerChecks) {
+      const configured = addr(partner.address)
+      const code = configured ? await hasCode(configured) : undefined
+      const readable = partner.address.ok && partner.pixels.ok
+      const matches =
+        readable &&
+        sameAddress(configured, partner.expectedAddress) &&
+        BigInt(partner.pixels.value) === partner.expectedPixels &&
+        code === true
+      report.add(
+        partner.label,
+        !readable || code == null ? STATUS.UNKNOWN : matches ? STATUS.OK : STATUS.FAIL,
+        readable ? `${short(configured)} · +${partner.pixels.value} px/day` : 'unreadable',
+        readable && !matches
+          ? `expected ${short(partner.expectedAddress)} · +${partner.expectedPixels} px/day${code === false ? ' · NO CODE' : ''}`
+          : '',
+      )
+    }
+  }
   report.add(
     'Token #0',
     tokenZero.ok

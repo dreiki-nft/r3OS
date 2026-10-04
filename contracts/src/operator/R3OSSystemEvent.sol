@@ -11,7 +11,7 @@ interface IAggregatorV3 {
 }
 
 /// @notice Permanent .333 system-event latch driven only by the Chainlink MON / USD feed.
-contract R3tardsSystemEvent {
+contract R3OSSystemEvent {
     string public constant TRIGGER = "MON_PRICE_TRIGGER";
     address public constant OFFICIAL_MON_USD_FEED = 0xBcD78f76005B7515837af6b50c7C52BCf73822fb;
 

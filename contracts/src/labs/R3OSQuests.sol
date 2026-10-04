@@ -4,12 +4,12 @@ pragma solidity ^0.8.28;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {IStampSource} from "../interfaces/IStampSource.sol";
 
 /// @notice Append-only display quests whose claims become one cheap Painter Pass stamp.
 /// @dev Quests grant no permissions. Conditions are gas-capped staticcalls that copy only one requested return word.
-contract R3tardsQuests is Ownable2Step, IStampSource {
+contract R3OSQuests is Ownable2Step, IStampSource {
     using Strings for uint256;
 
     struct Condition {
@@ -46,7 +46,7 @@ contract R3tardsQuests is Ownable2Step, IStampSource {
     event QuestAdded(uint256 indexed questId, string name, uint48 startBlock, uint48 endBlock);
     event QuestCompleted(address indexed owner, address indexed sender, uint256 indexed questId, uint32 count);
 
-    IR3tardsPaintData public immutable PAINT;
+    IR3OSPaintData public immutable PAINT;
     uint64 public immutable OPEN_TIME;
     Quest[] private _quests;
     mapping(address => uint256) public completedMask;
@@ -54,7 +54,7 @@ contract R3tardsQuests is Ownable2Step, IStampSource {
 
     constructor(address paintCore, uint64 openTime, address initialOwner) Ownable(initialOwner) {
         if (paintCore == address(0)) revert ZeroAddress();
-        PAINT = IR3tardsPaintData(paintCore);
+        PAINT = IR3OSPaintData(paintCore);
         OPEN_TIME = openTime;
     }
 

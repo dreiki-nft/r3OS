@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   EXPECTED_EXPERIMENTS,
+  EXPECTED_BUDGETS,
   aggregateMatches,
   chainIntentCheck,
   parseChainId,
@@ -79,6 +80,19 @@ function healthy(chainId = 31337): Fixture {
   set(PAINT, 'ROYALTY_BPS', 500)
   set(PAINT, 'SEASON_START', 1_790_000_000n)
   set(PAINT, 'SEASON_LENGTH', 2_592_000n)
+  set(PAINT, 'BASE_PIXELS_PER_HOUR', EXPECTED_BUDGETS.basePixelsPerHour)
+  set(PAINT, 'PIXELS_PER_ACTIVE_DAY', EXPECTED_BUDGETS.pixelsPerActiveDay)
+  set(PAINT, 'MAX_PIXELS_PER_HOUR', EXPECTED_BUDGETS.maxPixelsPerHour)
+  set(PAINT, 'MIN_PIXELS_FOR_ACTIVE_DAY', EXPECTED_BUDGETS.minPixelsForActiveDay)
+  set(PAINT, 'HOLDER_PIXELS_PER_DAY', EXPECTED_BUDGETS.holderPixelsPerDay)
+  if (chainId === 143) {
+    set(PAINT, 'SKRUMPEYS', OFFICIAL.skrumpeys)
+    set(PAINT, 'MONAD_CARDS', OFFICIAL.monadCard)
+    set(PAINT, 'SKRUMPEYS_PIXELS_PER_DAY', EXPECTED_BUDGETS.skrumpeysPixelsPerDay)
+    set(PAINT, 'MONAD_CARD_PIXELS_PER_DAY', EXPECTED_BUDGETS.monadCardPixelsPerDay)
+    code.add(OFFICIAL.skrumpeys.toLowerCase())
+    code.add(OFFICIAL.monadCard.toLowerCase())
+  }
   NAMES.forEach((name, index) =>
     set(PAINT, 'experimentInfo', { experiment: lab[name], name, uri: '', retired: false }, [BigInt(index)]),
   )
@@ -372,6 +386,23 @@ describe('launch doctor: full run against fixtures', () => {
     expect(find(result, 'REGISTRY', 'Test-only on mainnet').status).toBe('WARN')
   })
 
+  it('checks the mainnet partner bonus addresses and exact smaller quotas', async () => {
+    const fixture = healthy(143)
+    fixture.reads.set(key(lab['card-drv'], 'MONAD_CARD'), OFFICIAL.monadCard)
+    fixture.reads.set(key(lab['system-event'], 'FEED'), OFFICIAL.monUsdFeed)
+    fixture.code.add(OFFICIAL.monUsdFeed.toLowerCase())
+    const result = await run(fixture)
+    expect(find(result, 'CORE', 'Pixel budgets').status).toBe('OK')
+    expect(find(result, 'CORE', 'Skrumpeys bonus').status).toBe('OK')
+    expect(find(result, 'CORE', 'Skrumpeys bonus').value).toContain('+128 px/day')
+    expect(find(result, 'CORE', 'Monad Cards bonus').status).toBe('OK')
+    expect(find(result, 'CORE', 'Monad Cards bonus').value).toContain('+128 px/day')
+
+    fixture.reads.set(key(PAINT, 'SKRUMPEYS_PIXELS_PER_DAY'), 512n)
+    const bad = await run(fixture)
+    expect(find(bad, 'CORE', 'Skrumpeys bonus').status).toBe('FAIL')
+  })
+
   it('turns malformed or reverting reads into UNKNOWN instead of crashing', async () => {
     const fixture = healthy()
     fixture.reads.delete(key(lab['system-event'], 'condition'))
@@ -414,7 +445,7 @@ describe('launch doctor: full run against fixtures', () => {
     expect(json.summary.FAIL).toBe(0)
     expect(Array.isArray(json.sections)).toBe(true)
     const human = formatHuman(result, { secrets: [rpc] })
-    expect(human).toContain('R3TARDS LAUNCH DOCTOR')
+    expect(human).toContain('r3OS LAUNCH DOCTOR')
     expect(human).toContain('RESULT')
     expect(human).not.toContain('rpc.example')
   })

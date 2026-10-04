@@ -10,7 +10,7 @@ import { markProgramDataReady } from '../chain/perf'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { loadOwnedLabsSources, scanOwnedLabs } from '../frames/labsStore'
-import { R3TARDS_BLOCK_CAMERA_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_BLOCK_CAMERA_ABI, R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
 import { errorText, labAddress, labLoadError, LabNotDeployedError, shortAddress } from '../labs/labCommon'
 import { WalletChooser } from '../os/WalletChooser'
@@ -26,7 +26,7 @@ import './monadhw.css'
 
 const RULES = [
   'the viewfinder turns the current block context into a deterministic 32×32 portrait: validator glyph, epoch pattern, parent-hash stars, block barcode and your corner mark.',
-  'capture reads epoch and proposer with CALL inside the capture transaction, then mints the result through the existing r3tards labs collection.',
+  'capture reads epoch and proposer with CALL inside the capture transaction, then mints the result through the existing r3OS Labs collection.',
   'proposer identity is provenance and art only. validators influence inclusion, so it is never treated as randomness.',
 ] as const
 
@@ -80,9 +80,9 @@ export function BlockCameraProgram() {
     if (!address) return
     try {
       const calls = [
-        { address, abi: R3TARDS_BLOCK_CAMERA_ABI, functionName: 'LABS' },
+        { address, abi: R3OS_BLOCK_CAMERA_ABI, functionName: 'LABS' },
         ...(config.paintAddress
-          ? [{ address: config.paintAddress, abi: R3TARDS_PAINT_ABI, functionName: 'currentSeason' }]
+          ? [{ address: config.paintAddress, abi: R3OS_PAINT_ABI, functionName: 'currentSeason' }]
           : []),
       ]
       const rows = await readMany(calls, { allowFailure: false })
@@ -156,7 +156,7 @@ export function BlockCameraProgram() {
           const rows = await readHeavy([
             {
               address,
-              abi: R3TARDS_BLOCK_CAMERA_ABI,
+              abi: R3OS_BLOCK_CAMERA_ABI,
               functionName: 'previewPortrait',
               args: sent,
             },
@@ -181,7 +181,7 @@ export function BlockCameraProgram() {
     void quoteAction({
       kind: 'estimate',
       address,
-      abi: R3TARDS_BLOCK_CAMERA_ABI,
+      abi: R3OS_BLOCK_CAMERA_ABI,
       functionName: 'capture',
       account: wallet.account,
       action: 'capture block portrait',
@@ -214,7 +214,7 @@ export function BlockCameraProgram() {
       quoteAction({
         kind: 'estimate',
         address,
-        abi: R3TARDS_BLOCK_CAMERA_ABI,
+        abi: R3OS_BLOCK_CAMERA_ABI,
         functionName: 'captureCard',
         args: [id, false],
         account,
@@ -223,7 +223,7 @@ export function BlockCameraProgram() {
       quoteAction({
         kind: 'estimate',
         address,
-        abi: R3TARDS_BLOCK_CAMERA_ABI,
+        abi: R3OS_BLOCK_CAMERA_ABI,
         functionName: 'captureCard',
         args: [id, true],
         account,
@@ -296,7 +296,7 @@ export function BlockCameraProgram() {
       const result = await sendAction({
         kind: 'estimate',
         address,
-        abi: R3TARDS_BLOCK_CAMERA_ABI,
+        abi: R3OS_BLOCK_CAMERA_ABI,
         functionName: cardMode ? 'captureCard' : 'capture',
         args: cardMode ? [card.cardId!, withCanvas] : undefined,
         account: wallet.account,
@@ -313,7 +313,7 @@ export function BlockCameraProgram() {
       for (const log of result.receipt.logs) {
         try {
           const decoded = decodeEventLog({
-            abi: R3TARDS_BLOCK_CAMERA_ABI,
+            abi: R3OS_BLOCK_CAMERA_ABI,
             data: log.data,
             topics: log.topics,
           })

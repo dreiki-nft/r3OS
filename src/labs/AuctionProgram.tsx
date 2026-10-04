@@ -11,7 +11,7 @@ import { promptCountLabel, sendActions, walletCanBatch, type BatchItem } from '.
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { confirmHigherCost } from '../os/confirm'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
-import { R3TARDS_FINALE_AUCTION_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_FINALE_AUCTION_ABI, R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { HISTORY_STORAGE_ADDRESS, auctionSettleWindow, winnerAt, type AuctionBid } from '../lib/auction'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
@@ -182,7 +182,7 @@ export function AuctionProgram() {
         id = BigInt(
           await publicClient.readContract({
             address,
-            abi: R3TARDS_FINALE_AUCTION_ABI,
+            abi: R3OS_FINALE_AUCTION_ABI,
             functionName: 'auctionCount',
           }),
         )
@@ -190,14 +190,14 @@ export function AuctionProgram() {
       }
       if (!id) return
       const baseCalls: any[] = [
-        { address, abi: R3TARDS_FINALE_AUCTION_ABI, functionName: 'auctionInfo', args: [id] },
-        { address, abi: R3TARDS_FINALE_AUCTION_ABI, functionName: 'minNextBid', args: [id] },
-        { address, abi: R3TARDS_FINALE_AUCTION_ABI, functionName: 'previewEndBlock', args: [id] },
+        { address, abi: R3OS_FINALE_AUCTION_ABI, functionName: 'auctionInfo', args: [id] },
+        { address, abi: R3OS_FINALE_AUCTION_ABI, functionName: 'minNextBid', args: [id] },
+        { address, abi: R3OS_FINALE_AUCTION_ABI, functionName: 'previewEndBlock', args: [id] },
       ]
       if (wallet.account) {
         baseCalls.push(
-          { address, abi: R3TARDS_FINALE_AUCTION_ABI, functionName: 'depositOf', args: [id, wallet.account] },
-          { address, abi: R3TARDS_FINALE_AUCTION_ABI, functionName: 'credits', args: [wallet.account] },
+          { address, abi: R3OS_FINALE_AUCTION_ABI, functionName: 'depositOf', args: [id, wallet.account] },
+          { address, abi: R3OS_FINALE_AUCTION_ABI, functionName: 'credits', args: [wallet.account] },
         )
       }
       const values = (await readMany(baseCalls, { allowFailure: false })) as any[]
@@ -220,7 +220,7 @@ export function AuctionProgram() {
         const start = bidCountRef.current
         const bidCalls = Array.from({ length: next.bidCount - start }, (_, offset) => ({
           address,
-          abi: R3TARDS_FINALE_AUCTION_ABI,
+          abi: R3OS_FINALE_AUCTION_ABI,
           functionName: 'bidAt',
           args: [id, BigInt(start + offset)],
         }))
@@ -272,7 +272,7 @@ export function AuctionProgram() {
     void quoteAction({
       kind: 'estimate',
       address,
-      abi: R3TARDS_FINALE_AUCTION_ABI,
+      abi: R3OS_FINALE_AUCTION_ABI,
       functionName: 'bid',
       args: [auctionId],
       account: wallet.account,
@@ -315,13 +315,13 @@ export function AuctionProgram() {
       const [single, all] = await Promise.all([
         client.readContract({
           address: paint,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'getApproved',
           args: [sellerToken],
         }),
         client.readContract({
           address: paint,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'isApprovedForAll',
           args: [account, address],
         }),
@@ -333,7 +333,7 @@ export function AuctionProgram() {
         const next = await quoteAction({
           kind: 'estimate',
           address,
-          abi: R3TARDS_FINALE_AUCTION_ABI,
+          abi: R3OS_FINALE_AUCTION_ABI,
           functionName: 'list',
           args: [sellerToken, reserveWei, 0],
           account,
@@ -344,7 +344,7 @@ export function AuctionProgram() {
         const next = await quoteAction({
           kind: 'estimate',
           address: paint,
-          abi: R3TARDS_PAINT_ABI,
+          abi: R3OS_PAINT_ABI,
           functionName: 'approve',
           args: [address, sellerToken],
           account,
@@ -372,7 +372,7 @@ export function AuctionProgram() {
       (await quoteAction({
         kind: 'estimate',
         address,
-        abi: R3TARDS_FINALE_AUCTION_ABI,
+        abi: R3OS_FINALE_AUCTION_ABI,
         functionName,
         args,
         account: wallet.account,
@@ -384,7 +384,7 @@ export function AuctionProgram() {
       await sendAction({
         kind: 'estimate',
         address,
-        abi: R3TARDS_FINALE_AUCTION_ABI,
+        abi: R3OS_FINALE_AUCTION_ABI,
         functionName,
         args,
         account: wallet.account,
@@ -414,7 +414,7 @@ export function AuctionProgram() {
     const listItem: BatchItem = {
       kind: 'estimate',
       address,
-      abi: R3TARDS_FINALE_AUCTION_ABI,
+      abi: R3OS_FINALE_AUCTION_ABI,
       functionName: 'list',
       args: [sellerToken, reserveWei, 0],
       account: wallet.account,
@@ -429,7 +429,7 @@ export function AuctionProgram() {
           {
             kind: 'estimate',
             address: config.paintAddress,
-            abi: R3TARDS_PAINT_ABI,
+            abi: R3OS_PAINT_ABI,
             functionName: 'approve',
             args: [address, sellerToken],
             account: wallet.account,

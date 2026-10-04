@@ -6,17 +6,17 @@ import { readHeavy, readMany } from '../chain/readMany'
 import { getFrameInfoBatch, type FrameInfo } from '../frames/framesStore'
 import { labsAddress, loadOwnedLabsSources, scanOwnedLabs } from '../frames/labsStore'
 import { readLabsToken, type LabsTokenData } from '../labs/labsToken'
-import { R3TARDS_CD_BURNER_ABI, R3TARDS_LABS_ABI, R3TARDS_PAINT_ABI } from '../lib/generated/abi'
+import { R3OS_CD_BURNER_ABI, R3OS_LABS_ABI, R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { safeRouteInt } from '../lib/route'
 
 /**
- * CD-ROM (D:). A burned CD is an immutable onchain snapshot (R3tardsCDBurner, SSTORE2-style FrameStore):
+ * CD-ROM (D:). A burned CD is an immutable onchain snapshot (R3OSCDBurner, SSTORE2-style FrameStore):
  * header, label, then one 38-byte record per track holding the source frame id. The pixels of every
  * track stay in the Paint core forever (burning a frame removes its owner, not its frame data), so any
  * viewer can read the original tracks; ownership is only needed for the wallet's Insert disc convenience.
  */
 
-// Layout constants mirror R3tardsCDBurner (snapshot = pointer runtime code minus the STOP byte).
+// Layout constants mirror R3OSCDBurner (snapshot = pointer runtime code minus the STOP byte).
 export const LEGACY_SNAPSHOT_VERSION = 2
 export const SNAPSHOT_VERSION = 3
 export const HEADER_SIZE = 80
@@ -195,7 +195,7 @@ export function cdInfoText(cd: LoadedCd, statuses: ReadonlyMap<number, TrackStat
   const seasons = s.minSeason === s.maxSeason ? `${s.minSeason + 1}` : `${s.minSeason + 1}–${s.maxSeason + 1}`
   const format = String(cd.token?.attributes.Format ?? '')
   const lines = [
-    `r3tards labs cd #${cd.tokenId}`,
+    `r3OS labs cd #${cd.tokenId}`,
     '',
     `label ......... ${s.label}`,
     `tracks ........ ${s.trackCount}${format ? ` (${format})` : ''}`,
@@ -284,8 +284,8 @@ async function loadCdUncached(tokenId: bigint): Promise<LoadedCd> {
   const labs = await labsAddress()
   const [pointerRow, mintRow] = await readMany(
     [
-      { address: burner, abi: R3TARDS_CD_BURNER_ABI, functionName: 'snapshotPointer', args: [tokenId] },
-      { address: labs, abi: R3TARDS_LABS_ABI, functionName: 'mintData', args: [tokenId] },
+      { address: burner, abi: R3OS_CD_BURNER_ABI, functionName: 'snapshotPointer', args: [tokenId] },
+      { address: labs, abi: R3OS_LABS_ABI, functionName: 'mintData', args: [tokenId] },
     ],
     { allowFailure: true },
   )
@@ -389,7 +389,7 @@ export function loadCdSummary(tokenId: bigint) {
       if (!client || !burner) throw new Error('DEMO_MODE')
       const pointer = (await client.readContract({
         address: burner,
-        abi: R3TARDS_CD_BURNER_ABI,
+        abi: R3OS_CD_BURNER_ABI,
         functionName: 'snapshotPointer',
         args: [tokenId],
       })) as Address
@@ -414,7 +414,7 @@ export async function trackStatuses(frameIds: readonly number[]) {
   const rows = await readMany(
     frameIds.map((id) => ({
       address: paint,
-      abi: R3TARDS_PAINT_ABI,
+      abi: R3OS_PAINT_ABI,
       functionName: 'ownerOf',
       args: [BigInt(id)],
     })),
@@ -436,7 +436,7 @@ export async function cdOwner(tokenId: bigint) {
   if (!client) return undefined
   const labs = await labsAddress()
   return (await client
-    .readContract({ address: labs, abi: R3TARDS_LABS_ABI, functionName: 'ownerOf', args: [tokenId] })
+    .readContract({ address: labs, abi: R3OS_LABS_ABI, functionName: 'ownerOf', args: [tokenId] })
     .catch(() => undefined)) as Address | undefined
 }
 

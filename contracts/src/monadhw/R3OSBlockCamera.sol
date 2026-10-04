@@ -3,19 +3,19 @@ pragma solidity ^0.8.28;
 
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {LibString} from "solady/utils/LibString.sol";
-import {IR3tardsPaintData} from "../interfaces/IR3tardsPaintData.sol";
+import {IR3OSPaintData} from "../interfaces/IR3OSPaintData.sol";
 import {ILabTokenSource} from "../interfaces/ILabTokenSource.sol";
-import {R3tardsLabs} from "../R3tardsLabs.sol";
+import {R3OSLabs} from "../R3OSLabs.sol";
 import {MonadHW} from "../lib/MonadHW.sol";
 import {R3tardsPalette} from "../lib/R3tardsPalette.sol";
 
 /// @notice A one-block portrait camera using Monad consensus state as creative material.
 /// @dev Proposer identity is provenance/art only. It is never used as randomness.
-contract R3tardsBlockCamera is ILabTokenSource {
+contract R3OSBlockCamera is ILabTokenSource {
     using Strings for uint256;
 
-    IR3tardsPaintData public immutable PAINT;
-    R3tardsLabs public immutable LABS;
+    IR3OSPaintData public immutable PAINT;
+    R3OSLabs public immutable LABS;
     address public immutable CARD_MEMORY;
     uint256 public experimentId = type(uint256).max;
 
@@ -79,14 +79,14 @@ contract R3tardsBlockCamera is ILabTokenSource {
     // forge-lint: disable-next-line(missing-zero-check)
     constructor(address paintCore, address labs, address cardMemory) {
         if (paintCore == address(0) || labs == address(0)) revert ZeroAddress();
-        PAINT = IR3tardsPaintData(paintCore);
-        LABS = R3tardsLabs(labs);
+        PAINT = IR3OSPaintData(paintCore);
+        LABS = R3OSLabs(labs);
         CARD_MEMORY = cardMemory;
     }
 
     function bindExperimentId(uint256 id) external {
         if (experimentId != type(uint256).max) revert ExperimentAlreadyBound();
-        IR3tardsPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
+        IR3OSPaintData.ExperimentData memory info_ = PAINT.experimentInfo(id);
         if (info_.experiment != address(this) || info_.retired) revert InvalidExperiment(id);
         experimentId = id;
     }

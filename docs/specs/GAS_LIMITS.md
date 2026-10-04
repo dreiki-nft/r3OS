@@ -34,7 +34,7 @@ Preflight with `eth_call` remains mandatory so user transactions do not intentio
 
 ## Weeds
 
-For `R3tardsWeeds.tick(region)` and `plant(region, x, y, pattern)`, use `eth_estimateGas` plus **10%**. These actions do not have Flipbook's first-paint/new-frame ambiguity. Keep the usual `eth_call` preflight so known cooldown, region and `NothingPlanted` failures never become paid reverts.
+For `R3OSWeeds.tick(region)` and `plant(region, x, y, pattern)`, use `eth_estimateGas` plus **10%**. These actions do not have Flipbook's first-paint/new-frame ambiguity. Keep the usual `eth_call` preflight so known cooldown, region and `NothingPlanted` failures never become paid reverts.
 
 ## Other actions
 
@@ -81,7 +81,7 @@ Use `eth_estimateGas + 10%` for `forkFrame`, `forkFork`, `setOpen` and `seal`.
 
 ## Sleepwalker
 
-`R3tardsSleepwalker.step(owner)` uses a fixed gas limit:
+`R3OSSleepwalker.step(owner)` uses a fixed gas limit:
 
 ```ts
 const SLEEPWALKER_STEP_GAS_LIMIT = 1_000_000n
@@ -120,7 +120,7 @@ The 12-track Foundry regression target is **≤ 3.5M gas** (measured 3.1M). `tok
 
 ## Kernel Debugger
 
-`R3tardsKernelDebugger.ping()` and `run()` deliberately use fixed limits and **must not** use `eth_estimateGas`:
+`R3OSKernelDebugger.ping()` and `run()` deliberately use fixed limits and **must not** use `eth_estimateGas`:
 
 ```ts
 const KERNEL_PING_GAS = 40_000n

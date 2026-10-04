@@ -7,7 +7,7 @@ import { playSound } from './sound'
 import { Icon } from './ui/Icon'
 import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
-import { R3TARDS_RECYCLE_BIN_ABI } from '../lib/generated/abi'
+import { R3OS_RECYCLE_BIN_ABI } from '../lib/generated/abi'
 import { getReleaseSnapshot, programNeedsSparkle, subscribeReleases } from './releases'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { currentDisc, getCdromVersion, subscribeCdrom, volumeLabel } from '../cdrom/cdromStore'
@@ -96,7 +96,7 @@ export function Desktop() {
         const total = BigInt(
           await client.readContract({
             address: bin,
-            abi: R3TARDS_RECYCLE_BIN_ABI,
+            abi: R3OS_RECYCLE_BIN_ABI,
             functionName: 'totalBurned',
           }),
         )
@@ -106,7 +106,7 @@ export function Desktop() {
       if (wsClient) {
         stop = wsClient.watchContractEvent({
           address: bin,
-          abi: R3TARDS_RECYCLE_BIN_ABI,
+          abi: R3OS_RECYCLE_BIN_ABI,
           eventName: 'Recycled',
           onLogs: () => void read(),
         })

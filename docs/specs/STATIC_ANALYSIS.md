@@ -32,7 +32,7 @@ next to it in `foundry.toml`.
 
 ## Compiler warnings fixed
 
-- `R3tardsSleepwalker`: two `uint128(1) << i` shifts rewritten as `uint256` shifts. Behaviour is identical
+- `R3OSSleepwalker`: two `uint128(1) << i` shifts rewritten as `uint256` shifts. Behaviour is identical
   (`i < MAX_SURVIVAL_SAMPLES = 128`).
 - `MockMonadCard` (test / testnet mock): soulbound check moved to `_update`, removing OpenZeppelin's
   "unreachable code" warning. Transfers and safe transfers still revert `Soulbound()`.

@@ -1,6 +1,6 @@
 # Quests
 
-Phase 3 UI specification for `R3tardsQuests`.
+Phase 3 UI specification for `R3OSQuests`.
 
 ## Model
 
@@ -60,6 +60,6 @@ Use `eth_estimateGas + 10%` for claims. If a condition target reverts, returns t
 `DeployMonadCard.s.sol` appends **CARD CARRIER** after the base suite; with the current deployment it is quest id 13 and is not part of `Deploy.s.sol`'s day-one quest list. It is unbounded in block time and has two conditions:
 
 1. the configured Monad Card contract `balanceOf(painter)` return word 0 is at least 1;
-2. `R3tardsPaint.painterStats(painter)` return word 2 (`totalPixelsPainted`) is at least 143.
+2. `R3OSPaint.painterStats(painter)` return word 2 (`totalPixelsPainted`) is at least 143.
 
 The quest therefore means: **hold a Monad Card and paint 143 pixels**. On testnet the first condition points to `MockMonadCard`; mainnet uses the official card address supplied to CARD.DRV.
