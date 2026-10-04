@@ -208,7 +208,7 @@ function SystemInformation() {
         key: 'system',
         device: 'rom',
         label: 'System',
-        value: `r3tardOS 98 · app ${packageJson.version}`,
+        value: `r3OS 98 · app ${packageJson.version}`,
         source: '',
       },
       {

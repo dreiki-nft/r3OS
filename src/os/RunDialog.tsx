@@ -7,7 +7,7 @@ import { Icon } from './ui/Icon'
 import { MessageBox } from './ui/MessageBox'
 import { closeWindow } from './windows'
 
-/** Win98 Run… dialog. Opens allowlisted r3tardOS destinations only, always through openProgram. */
+/** Win98 Run… dialog. Opens allowlisted r3OS destinations only, always through openProgram. */
 export function RunDialog() {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
@@ -45,7 +45,7 @@ export function RunDialog() {
         <div className="run-dialog-body">
           <Icon name="rocket" size={32} colour="#FEC343" />
           <p>
-            Type the name of a program, folder, document, or r3tardOS resource, and it will open it for you.
+            Type the name of a program, folder, document, or r3OS resource, and it will open it for you.
           </p>
         </div>
         <label className="run-dialog-field">

@@ -1,6 +1,6 @@
 # Monad hardware experiments
 
-Phase MONAD-HW treats Monad as the hardware underneath r3tardOS 98. The feature is intentionally an add-on: no existing core, Pass or Lab contract is modified. Removing all three new contracts and all four frontend programs leaves the rest of the system unchanged.
+Phase MONAD-HW treats Monad as the hardware underneath r3OS 98. The feature is intentionally an add-on: no existing core, Pass or Lab contract is modified. Removing all three new contracts and all four frontend programs leaves the rest of the system unchanged.
 
 The four programs share one frontend hardware probe layer and one `HardwareBus` strip:
 

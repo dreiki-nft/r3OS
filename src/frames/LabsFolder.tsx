@@ -156,7 +156,7 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
                 ? 'open this token in its Lab'
                 : targetLab && !isProgramAvailable(targetLab, releases)
                   ? 'not installed yet'
-                  : 'this historical Lab has no active r3tardOS window'
+                  : 'this historical Lab has no active r3OS window'
             }
             onClick={() => {
               if (targetLab === 'cd') openProgram('cd', true, `#/cd?token=${chosen.id}`)

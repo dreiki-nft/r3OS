@@ -1,6 +1,6 @@
 /**
  * In-OS confirmation dialogs. `osConfirm` returns a promise that settles when the person answers the
- * r3tardOS message box rendered by <ConfirmHost />. It replaces `window.confirm`, which is off-brand,
+ * r3OS message box rendered by <ConfirmHost />. It replaces `window.confirm`, which is off-brand,
  * blocks the page and is suppressed by some embedded wallet browsers.
  */
 
@@ -44,7 +44,7 @@ export function osConfirm(input: ConfirmInput): Promise<boolean> {
       ...queue,
       {
         id: nextId++,
-        title: input.title ?? 'r3tardOS',
+        title: input.title ?? 'r3OS',
         message: input.message,
         details: input.details,
         kind: input.kind ?? 'warning',

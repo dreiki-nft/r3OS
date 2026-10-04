@@ -10,7 +10,7 @@ const pages: Record<HelpSlug, ReactNode> = {
   welcome: (
     <>
       <p>
-        r3tardOS is a Windows 98 style desktop for a shared onchain world on Monad. the app is static: it reads
+        r3OS is an operating system for the world computer, presented as a Windows 98 style desktop. the app is static: it reads
         contracts and chain events directly, with no app backend or database.
       </p>
       <p>
@@ -141,7 +141,7 @@ const pages: Record<HelpSlug, ReactNode> = {
   quests: (
     <>
       <p>
-        goals across r3tardOS: paint a lot, paint in a storm, save frames, bid, recycle, hold a Monad Card…
+        goals across r3OS: paint a lot, paint in a storm, save frames, bid, recycle, hold a Monad Card…
         each goal is checked against the chain, so it can't be faked.
       </p>
       <p>when a goal is reached, press Claim. your Pass shows how many quests you've completed.</p>
@@ -165,7 +165,7 @@ const pages: Record<HelpSlug, ReactNode> = {
         the block-sealing addresses seen in saved frames. the heartbeat follows the live block stream and beats once
         per block; the window shows the cadence this browser is actually measuring.
       </p>
-      <p>frames store <code>block.coinbase</code>. until Monad documents its identity semantics for this use, r3tardOS treats it as a fee-recipient / sealer address rather than claiming a verified validator identity.</p>
+      <p>frames store <code>block.coinbase</code>. until Monad documents its identity semantics for this use, r3OS treats it as a fee-recipient / sealer address rather than claiming a verified validator identity.</p>
     </>
   ),
   'block-camera': (
@@ -213,7 +213,7 @@ const pages: Record<HelpSlug, ReactNode> = {
   dxdiag: (
     <>
       <p>
-        shows what this browser is connected to: the chain, the latest block, which r3tardOS parts it can see
+        shows what this browser is connected to: the chain, the latest block, which r3OS parts it can see
         and which Monad devices answer.
       </p>
       <p>
@@ -265,11 +265,11 @@ const pages: Record<HelpSlug, ReactNode> = {
   ),
   gas: (
     <p>
-      on Monad you pay for the gas limit you set, not only the gas you use, so r3tardOS sets tight limits for
+      on Monad you pay for the gas limit you set, not only the gas you use, so r3OS sets tight limits for
       each action. every button that sends a transaction shows its maximum cost before you sign.
     </p>
   ),
-  sounds: <p>preview, change the volume of, or mute every r3tardOS sound.</p>,
+  sounds: <p>preview, change the volume of, or mute every r3OS sound.</p>,
   run: (
     <p>
       Start › Run… opens a program by name: <code>paint</code>, <code>frames</code>, <code>camera</code>,{' '}
@@ -295,7 +295,7 @@ const pages: Record<HelpSlug, ReactNode> = {
     </p>
   ),
   credits: (
-    <p>Paint · r3tardOS 98. made by r3tards, on Monad. built to show how the chain works, not hide it.</p>
+    <p>Paint · r3OS 98. made by dreiki, on Monad. built to show how the chain works, not hide it.</p>
   ),
 }
 

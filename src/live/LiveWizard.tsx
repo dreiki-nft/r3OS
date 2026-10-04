@@ -336,7 +336,7 @@ export function LiveWizard() {
     <div className="live-wizard">
       <div className="live-wizard-body">
         <div className="live-wizard-art sunken">
-          <SafeImage src="/os/brand/pfp-main.webp" alt="r3tards" width={168} height={338} />
+          <SafeImage src="/os/brand/pfp-main.webp" alt="r3OS" width={168} height={338} />
         </div>
         <section className="live-wizard-step">
           {quick ? (

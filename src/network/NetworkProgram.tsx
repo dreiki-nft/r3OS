@@ -190,7 +190,7 @@ export function NetworkProgram() {
       </div>
 
       <IntroBar
-        lead="the block-sealing addresses seen in saved frames. every frame records block.coinbase; r3tardOS does not claim that address is a verified validator identity."
+        lead="the block-sealing addresses seen in saved frames. every frame records block.coinbase; r3OS does not claim that address is a verified validator identity."
         monad="Monad blocks arrive fast; this heartbeat follows the measured live block stream. frame coinbase addresses are shown as provenance, not validator identity."
         rules={RULES}
       />

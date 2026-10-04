@@ -73,7 +73,7 @@ export async function loadDxDiag(
   const block = getBlockSnapshot()
   const cachedContracts = getCachedContracts()
   const cachedCoreStatus = getCachedCoreStatus()
-  onStep('reading the r3tardOS contract list…')
+  onStep('reading the r3OS contract list…')
   const contracts = (await settle(discoverContracts(force))) ?? cachedContracts
   const paint = contracts?.paint
   onStep('probing Monad devices and drivers…')

@@ -1,14 +1,14 @@
-# r3tards paint: technical reference
+# r3OS: technical reference
 
-> a canvas that runs at the speed of Monad.
+> an operating system for the world computer.
 >
 > paint monad. pay gas. try not to ruin it.
->
-> r3tards is not a r3al proj3ct.
 
-r3tards paint is a shared 256×256 fully onchain canvas and frame collection. The contract is designed around Monad's page storage and parallel execution: the canvas is split into **16 independent 64×64 regions**, so it behaves like a living canvas running as 16 parallel worlds. The accurate claim is that this is **one of the first apps designed for Monad's page storage and parallel execution**. Onchain canvases and onchain Game of Life systems exist elsewhere; this project does not claim otherwise.
+r3OS is a Windows 98-style onchain computer whose signature app is a shared 256×256 fully onchain canvas and frame collection. The contract is designed around Monad's page storage and parallel execution: the canvas is split into **16 independent 64×64 regions**, so it behaves like a living canvas running as 16 parallel worlds. The accurate claim is that this is **one of the first apps designed for Monad's page storage and parallel execution**. Onchain canvases and onchain Game of Life systems exist elsewhere; this project does not claim otherwise.
 
-The r3tardOS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/chain`.
+The r3OS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/chain`.
+
+The product/interface name is **r3OS**. Existing deployed testnet contracts and protocol-bound EIP-712 metadata retain `R3tards*` / `r3tards paint` identifiers for compatibility; those names are not being rewritten as part of the frontend rebrand.
 
 ## Core freeze
 
@@ -16,7 +16,7 @@ The r3tardOS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/cha
 
 ## Current UI boundary (2026-10-03)
 
-The production r3tardOS interface intentionally does **not** expose every experiment built during development. Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger and ROUTER.EXE are retired UI surfaces. Their contracts and historical data remain documented because deployed state is immutable and a few active features still read specific backend experiments. The retired React programs themselves are removed from the production program registry and bundle; `src/os/retired.ts` remains the shared policy for hiding retired quests, Pass stamps and Operator subsystems.
+The production r3OS interface intentionally does **not** expose every experiment built during development. Flipbook, Weeds, Forks, Block DNA, Sleepwalker, Lanes, Disk Defragmenter, PAGE.EXE, CARDMEM.EXE, Kernel Debugger and ROUTER.EXE are retired UI surfaces. Their contracts and historical data remain documented because deployed state is immutable and a few active features still read specific backend experiments. The retired React programs themselves are removed from the production program registry and bundle; `src/os/retired.ts` remains the shared policy for hiding retired quests, Pass stamps and Operator subsystems.
 
 Two backend dependencies are deliberate: **Explore Monad → Storage race** reads the PAGE.EXE experiment, and **Explore Monad → Liquidity race** reads Router Lab. CARD.DRV also remains an active backend for Monad Card / Block Camera integration. UI retirement is not contract retirement.
 
@@ -354,7 +354,7 @@ The lab has no owner, storage, custody, fees or persistent execution path. Mainn
 ### Launch tooling: Launch Doctor, DXDIAG.EXE, Run…
 
 - **Launch Doctor** (`RPC_URL="$MONAD_RPC_URL" npm run -s launch:doctor -- --paint <0x…> [--expected-owner <0x…>] [--expected-chain <id>] [--json]`) is a read-only Node CLI for the deployer. It verifies ownership and pending owners, immutable wiring, the experiment and renderer registries, Pass pin capacity, CARD.DRV, Block Camera links, every Operator Record source pointer, the System Event feed, ROUTER adapter code hashes on mainnet, the release schedule and freeze readiness. Every check is `OK`, `WARN`, `FAIL` or `UNKNOWN`; the exit code is 1 only when something `FAIL`s. It never signs, never sends a transaction and never prints the RPC URL.
-- **DXDIAG.EXE** (Start → System Tools) shows what this browser is connected to and which r3tardOS components it can see, reads once on open (Refresh to re-read) and copies a plain-text support report without RPC URLs or wallet data.
+- **DXDIAG.EXE** (Start → System Tools) shows what this browser is connected to and which r3OS components it can see, reads once on open (Refresh to re-read) and copies a plain-text support report without RPC URLs or wallet data.
 - **Run…** (Start menu) opens allowlisted programs and a few typed routes (`operator`, `frame <id>`, `auction <id>`) through the same release-aware path as every icon. It is not a shell: no URLs, no `javascript:`, no arbitrary hashes.
 
 The canonical launch list is [`docs/PRE_MAINNET_CHECKLIST.md`](PRE_MAINNET_CHECKLIST.md).
@@ -510,7 +510,7 @@ The product direction is deliberately narrower than the historical experiment se
 - **DEVICE 07 next stage:** intentionally unknown.
 - **Block Cinema:** concept only, POST-LAUNCH / UNDEFINED.
 
-## Frontend: r3tardOS 98
+## Frontend: r3OS 98
 
 The current frontend is a complete Windows 98-style desktop shell. `src/os/programs.ts` is the active program boundary; launch-critical modules are prefetched during the real boot sequence and resolved into the registry before the desktop appears.
 
@@ -548,7 +548,7 @@ Demo mode now means either no app RPC URL is configured at all (`VITE_RPC_URL` a
 
 ## Shell layout (2026-10-02 simplification)
 
-The desktop holds only what defines r3tardOS, in judge-first order: **Paint, Explore Monad, My Frames, My Pass, Block Camera, CD-ROM (D:), Quests** and the **Recycle Bin**. **Auction** joins them only while a finale auction is live onchain. Start has **Programs ▸** (everything a person uses, including Burn a CD and Auction), **Explore Monad**, **System Tools ▸** (Monad X-ray, Network, DXDIAG.EXE, Sounds), Help and Run…. Burn a CD is also a toolbar button in My Frames. The layout lives in `src/os/layout.ts`; retired programs stay retired (`src/os/retired.ts`).
+The desktop holds only what defines r3OS, in judge-first order: **Paint, Explore Monad, My Frames, My Pass, Block Camera, CD-ROM (D:), Quests** and the **Recycle Bin**. **Auction** joins them only while a finale auction is live onchain. Start has **Programs ▸** (everything a person uses, including Burn a CD and Auction), **Explore Monad**, **System Tools ▸** (Monad X-ray, Network, DXDIAG.EXE, Sounds), Help and Run…. Burn a CD is also a toolbar button in My Frames. The layout lives in `src/os/layout.ts`; retired programs stay retired (`src/os/retired.ts`).
 
 **Explore Monad** (the `monad-hw` program) opens on four one-button experiments; the previous Device Manager view is its **System Information** tab:
 

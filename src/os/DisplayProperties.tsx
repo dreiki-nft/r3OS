@@ -59,7 +59,7 @@ function useNarrowOrTouch() {
 
 function wallpaperOptions(frames: readonly number[], photo?: bigint) {
   const options: Array<{ label: string; resource?: ImageResource }> = [
-    { label: '(None) r3tards' },
+    { label: '(None) r3OS' },
     { label: 'Live canvas', resource: { kind: 'canvas' } },
   ]
   for (const tokenId of frames.filter((id) => id > 0).slice(0, 50)) {
@@ -184,14 +184,14 @@ export function DisplayProperties() {
                   </label>
                 ))}
               </fieldset>
-              <small>{draft.resource ? resourceLabel(draft.resource) : 'default r3tardOS wallpaper'}</small>
+              <small>{draft.resource ? resourceLabel(draft.resource) : 'default r3OS wallpaper'}</small>
             </div>
           </>
         ) : (
           <div className="display-screensaver-page">
             <div className="display-monitor screensaver-preview-monitor">
               <div className="display-monitor-screen screensaver-mini">
-                <span>{screenDraft === 'canvas' ? 'r3tardOS Canvas' : 'None'}</span>
+                <span>{screenDraft === 'canvas' ? 'r3OS Canvas' : 'None'}</span>
               </div>
               <i />
               <b />
@@ -205,7 +205,7 @@ export function DisplayProperties() {
                 onChange={(event) => setScreenDraft(event.target.value as ScreensaverSetting)}
               >
                 <option value="none">(None)</option>
-                <option value="canvas">r3tardOS Canvas</option>
+                <option value="canvas">r3OS Canvas</option>
               </select>
               <p>Wait: 3 minutes</p>
               <Button disabled={screenDraft === 'none' || narrowOrTouch} onClick={requestScreensaverPreview}>

@@ -6,6 +6,7 @@ const problems = []
 
 const forbiddenRootFiles = [
   'APPLY_PHASE6_CLEANUP.sh',
+  'APPLY_R3OS_REBRAND.sh',
   'APPLY.txt',
   'CLAUDE_SNAPSHOT_28_REVIEW.md',
   'DELETIONS.txt',
@@ -77,6 +78,23 @@ if (existsSync(resolve(root, 'contracts/contracts'))) {
 
 const read = (file) => readFileSync(resolve(root, file), 'utf8')
 const readme = read('README.md')
+
+// Product rename guard: r3tards remains a collection/onchain namespace, but the old OS product name must not return.
+const brandingFiles = [
+  'README.md',
+  'THREAT_MODEL.md',
+  'index.html',
+  'vite.config.ts',
+  'contracts/README.md',
+  'public/os/README.md',
+  ...markdownUnder('docs'),
+]
+for (const file of brandingFiles) {
+  if (new RegExp('r3tard' + 'OS', 'i').test(read(file))) problems.push(`legacy product brand in ${file}`)
+}
+const legacyShellPath = ['src/os/R3tard', 'OS.tsx'].join('')
+if (existsSync(resolve(root, legacyShellPath))) problems.push(`legacy shell component still present: ${legacyShellPath}`)
+
 for (const placeholder of ['LIVE_APP_URL', 'DEMO_VIDEO_URL', 'MAINNET_ADDRESSES']) {
   if (readme.includes(placeholder)) problems.push(`README placeholder: ${placeholder}`)
 }
@@ -145,5 +163,5 @@ if (problems.length) {
   for (const problem of problems) console.error(`- ${problem}`)
   process.exitCode = 1
 } else {
-  console.log('repo doctor: OK — root, docs, links and retired UI reachability are clean')
+  console.log('repo doctor: OK — root, docs, links, r3OS branding and retired UI reachability are clean')
 }

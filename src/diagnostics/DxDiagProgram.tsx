@@ -122,7 +122,7 @@ export function DxDiagProgram() {
     <div className="dxdiag-program">
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
       <p className="dxdiag-intro">
-        This tool reports what this browser is connected to and which r3tardOS components it can see. It reads
+        This tool reports what this browser is connected to and which r3OS components it can see. It reads
         once when opened; press Refresh to read again. It never signs or sends anything.
       </p>
       <div className="dxdiag-body">
@@ -136,7 +136,7 @@ export function DxDiagProgram() {
         ) : tab === 'System' ? (
           <>
             <GroupBox title="System Information">
-              <Row label="Version" value={`r3tardOS 98 · app ${d.appVersion}`} source="config" />
+              <Row label="Version" value={`r3OS 98 · app ${d.appVersion}`} source="config" />
               <Row label="Build" value={d.buildId ?? 'unknown'} source={d.buildId ? 'config' : 'unknown'} />
               <Row label="Chain" value={`${d.chain.name} · ${d.chain.id}`} source="config" />
               {d.chain.client && <Row label="Client" value={d.chain.client} source="onchain" />}

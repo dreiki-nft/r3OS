@@ -192,7 +192,7 @@ export function StartMenu({
   return (
     <div ref={root} className="start-menu window">
       <div className="start-band">
-        <b>r3tardOS</b>
+        <b>r3OS</b>
         <span className="start-band-version"> 98</span>
       </div>
       <div className="start-items" role="menu" aria-label="Start">

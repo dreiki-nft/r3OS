@@ -52,7 +52,7 @@ describe('DXDIAG report model', () => {
   it('formats a deterministic plain-text report', () => {
     const a = formatReport(input())
     expect(formatReport(input())).toBe(a)
-    expect(a.split('\n')[0]).toBe('R3TARDOS DXDIAG')
+    expect(a.split('\n')[0]).toBe('R3OS DXDIAG')
     expect(a).toContain('chain: Monad (143)')
     expect(a).toContain('block: 109483102')
     expect(a).toContain('block mode: live (websocket)')
@@ -124,7 +124,7 @@ describe('DXDIAG report model', () => {
   it('reports the build id separately from the app version, honestly when absent', () => {
     const withBuild = formatReport(input({ buildId: 'snapshot-24' }))
     const lines = withBuild.split('\n')
-    expect(lines[1]).toBe('version: r3tardOS 98 · app 0.1.0')
+    expect(lines[1]).toBe('version: r3OS 98 · app 0.1.0')
     expect(lines[2]).toBe('build: snapshot-24')
     expect(formatReport(input()).split('\n')[2]).toBe('build: unknown')
   })

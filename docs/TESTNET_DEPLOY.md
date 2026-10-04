@@ -117,11 +117,11 @@ Soak the latch through all three visible states:
 ```bash
 cast send $MON_USD_FEED "setAnswer(int256)" 3000000 \
   --rpc-url $RPC --account r3tards-deployer
-# r3tardOS: DEVICE 07 must show ARMED.
+# r3OS: DEVICE 07 must show ARMED.
 
 cast send $MON_USD_FEED "setAnswer(int256)" 33300000 \
   --rpc-url $RPC --account r3tards-deployer
-# r3tardOS: DEVICE 07 must show CONDITION MET before activation.
+# r3OS: DEVICE 07 must show CONDITION MET before activation.
 ```
 
 Use the active System Information DEVICE 07 action, or send `activate()` permissionlessly from a test account. After the receipt, System Information and the My Pass Operator tab must show the same permanent activation block. Reload the app and verify the state remains activated.

@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, info: ErrorInfo) {
     if (this.loggedError === error) return
     this.loggedError = error
-    console.error('r3tardOS component error', error, info.componentStack)
+    console.error('r3OS component error', error, info.componentStack)
   }
 
   render() {

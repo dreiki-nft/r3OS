@@ -1,4 +1,4 @@
-# r3tardOS 98 asset pack
+# r3OS 98 asset pack
 
 Drop this folder into the web app's `public/` as `public/os/`. Everything here is already sized and normalised. Nothing needs a build step.
 
@@ -125,7 +125,7 @@ Quests added later (ids 13+) fall back to a generic trophy badge until art exist
 
 | File | Plays when |
 |---|---|
-| `system-initiate.mp3` | wallet connects / r3tardOS boots |
+| `system-initiate.mp3` | wallet connects / r3OS boots |
 | `system-shutdown.mp3` | disconnect, Start › Shut Down |
 | `select.mp3` | selecting a tool, colour, desktop icon, tab, list row; menu clicks |
 | `confirm.mp3` | the wallet signed; OK buttons |

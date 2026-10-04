@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { answerConfirm, getConfirm, subscribeConfirm } from '../confirm'
 import { MessageBox } from './MessageBox'
 
-/** Renders the head of the `osConfirm` queue as an r3tardOS message box. Mounted once by the shell. */
+/** Renders the head of the `osConfirm` queue as an r3OS message box. Mounted once by the shell. */
 export function ConfirmHost() {
   const request = useSyncExternalStore(subscribeConfirm, getConfirm)
   if (!request) return null

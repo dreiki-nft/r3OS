@@ -20,7 +20,7 @@ function storage() {
   }
 }
 
-/** First visit only: what r3tardOS is in one line, and three ways in. No wallet, no steps. */
+/** First visit only: what r3OS is in one line, and three ways in. No wallet, no steps. */
 export function FirstRun() {
   const [show, setShow] = useState(() =>
     shouldShowFirstRun(storage(), typeof location === 'undefined' ? '' : location.hash),
@@ -64,7 +64,7 @@ export function FirstRun() {
           </button>
         </header>
         <div className="first-run-body">
-          <h2>Welcome to r3tardOS 98</h2>
+          <h2>Welcome to r3OS 98</h2>
           <p>One shared computer on Monad. Watch it live first; connect only when you want to write onchain.</p>
           <div className="first-run-choices">
             {FIRST_RUN_CHOICES.map((choice, index) => (

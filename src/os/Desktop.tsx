@@ -62,7 +62,7 @@ export function desktopRows(height = typeof innerHeight === 'number' ? innerHeig
 export function Desktop() {
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const auctionLive = useAuctionLive()
-  // Only the programs that define r3tardOS sit on the desktop; the rest live in Start (src/os/layout.ts).
+  // Only the programs that define r3OS sit on the desktop; the rest live in Start (src/os/layout.ts).
   const programs = useMemo(
     () =>
       desktopProgramIds((id) => {

@@ -1,5 +1,5 @@
 /**
- * Programs retired from the r3tardOS interface (2026-10-01 product decision). Their contracts stay deployed and
+ * Programs retired from the r3OS interface (2026-10-01 product decision). Their contracts stay deployed and
  * untouched; the app just never opens them, lists them, links to them or counts them. Pure data, no React, so
  * Run…, the program registry, Quests, My Pass and the Operator view all share one list.
  */

@@ -205,14 +205,14 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
     return {
       name: 'ActionFundingSettlementTimeout',
       message:
-        'the burner funding receipt arrived, but the action RPCs are still catching up. r3tardOS stopped before starting the session; wait a moment and try Live Mode again.',
+        'the burner funding receipt arrived, but the action RPCs are still catching up. r3OS stopped before starting the session; wait a moment and try Live Mode again.',
     }
   }
   if (message === 'ACTION_RECEIPT_TIMEOUT') {
     return {
       name: 'ActionReceiptTimeout',
       message:
-        'the transaction was sent, but r3tardOS could not read its receipt yet. check the explorer before retrying.',
+        'the transaction was sent, but r3OS could not read its receipt yet. check the explorer before retrying.',
     }
   }
   return { name: 'Unknown', message: screenSafeMessage(error), details: raw }

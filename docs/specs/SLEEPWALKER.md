@@ -241,7 +241,7 @@ The Lab source returns these type-specific traits to `R3tardsLabs`:
 
 `dominantColour` and `coloursUsed` come from the stencil and feed the common Labs traits.
 
-## 3c r3tardOS window
+## 3c r3OS window
 
 ### Intro bar
 
@@ -297,7 +297,7 @@ The Night Shift tab batches `stepReady(owners[])` and shows sleepers that can cu
 
 When ordinary Live Mode is active, the UI may offer an opt-in **help sleepers while I paint** toggle. The local burner may submit `Sleepwalker.step(owner)` calls for tips, but it gets no special Sleepwalker authority: `step` is permissionless for everyone.
 
-Use the normal r3tardOS 98 neutral chrome and DF1 cyan selection. No purple UI chrome.
+Use the normal r3OS 98 neutral chrome and DF1 cyan selection. No purple UI chrome.
 
 ### Bounded history and replay
 

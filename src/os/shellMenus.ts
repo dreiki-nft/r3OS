@@ -1,5 +1,5 @@
 /**
- * Pure helpers for r3tardOS shell menus: viewport placement, the desktop / icon menu models, desktop
+ * Pure helpers for r3OS shell menus: viewport placement, the desktop / icon menu models, desktop
  * target classification and the touch long-press rules. No DOM access here, so all of it is unit-tested.
  */
 

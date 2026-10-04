@@ -3,7 +3,7 @@ export const OPERATOR_COPY = {
   driverMissing: 'operator-record driver not installed.',
   noWallet: 'connect a wallet to read this address.',
   publicLine: 'public onchain facts about this address. anyone can read them.',
-  promiseLine: 'r3tardOS makes no promise about what, if anything, they will be used for.',
+  promiseLine: 'r3OS makes no promise about what, if anything, they will be used for.',
   recordButton: 'RECORD',
   recordHelp:
     'copies facts that are already onchain into this record, stamped with the current block. anyone can record any address.',

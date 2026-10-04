@@ -1,6 +1,6 @@
 # System Event
 
-`R3tardsSystemEvent` is the permanent `.333` system-event latch used by r3tardOS DEVICE 07. It has one job: once a fresh Chainlink MON/USD round reports a value at or above the configured threshold, anyone can permanently latch that fact onchain.
+`R3tardsSystemEvent` is the permanent `.333` system-event latch used by r3OS DEVICE 07. It has one job: once a fresh Chainlink MON/USD round reports a value at or above the configured threshold, anyone can permanently latch that fact onchain.
 
 The frontend discovers it through the Paint experiment name `system-event`.
 

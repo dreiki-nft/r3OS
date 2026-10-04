@@ -4,7 +4,7 @@ The contract package contains the frozen canvas/frame core plus day-1 Lab contra
 
 ## Frontend boundary
 
-The deployed/tested contract set is intentionally broader than the current r3tardOS interface. Direct UI for Flipbook, Weeds, Forks, Block DNA / Brushes, Sleepwalker, Lanes, Disk Defrag, PAGE.EXE, CARDMEM.EXE, Kernel Debugger and ROUTER.EXE is retired. Their contracts, ABIs, tests and historical readers remain where they preserve immutable history, deployed compatibility, recovery paths or active backend features. The active judge-facing UI boundary is documented in the root `README.md` and `docs/TECHNICAL.md`.
+The deployed/tested contract set is intentionally broader than the current r3OS interface. Direct UI for Flipbook, Weeds, Forks, Block DNA / Brushes, Sleepwalker, Lanes, Disk Defrag, PAGE.EXE, CARDMEM.EXE, Kernel Debugger and ROUTER.EXE is retired. Their contracts, ABIs, tests and historical readers remain where they preserve immutable history, deployed compatibility, recovery paths or active backend features. The active judge-facing UI boundary is documented in the root `README.md` and `docs/TECHNICAL.md`.
 
 Do not delete or retire deployed contracts merely to mirror frontend cleanup.
 

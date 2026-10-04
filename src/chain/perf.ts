@@ -12,6 +12,7 @@ export type PerfKind =
   | 'program-open'
   | 'program-ready'
   | 'ui-settle'
+  | 'paint-stream'
   | 'remote-paint'
 
 export interface PerfSample {

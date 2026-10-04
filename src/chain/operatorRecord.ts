@@ -271,7 +271,7 @@ export function firstSeen(facts: OperatorFacts, record: OperatorRecordData) {
   const values = [
     facts.firstPaintBlock,
     facts.cardFormatted ? facts.cardFirstWriteBlock : 0n,
-    // MONAD CARD (id 15) is identity, not r3tardOS use: it never sets "first seen".
+    // MONAD CARD (id 15) is identity, not r3OS use: it never sets "first seen".
     ...record.firstObserved.filter((_, id) => id !== 15),
   ].filter((value) => value > 0n)
   return values.length ? values.reduce((min, value) => (value < min ? value : min)) : 0n

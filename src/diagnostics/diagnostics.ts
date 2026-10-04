@@ -2,7 +2,7 @@
  * DXDIAG.EXE report model. Pure: no RPC, no React. `loadDxDiag` (./loadDxDiag.ts) gathers the input once;
  * this file decides labels and formats the copyable support report.
  *
- * DXDIAG answers "what is this browser connected to, and which r3tardOS components can it see?".
+ * DXDIAG answers "what is this browser connected to, and which r3OS components can it see?".
  * Deployment certification lives in the Launch Doctor CLI (scripts/launch-doctor.mjs), not here.
  */
 import type { HardwareSource } from '../chain/monadHardware'
@@ -100,8 +100,8 @@ export function redactReport(text: string, secrets: readonly string[] = []) {
 export function formatReport(input: DxDiagInput, secrets: readonly string[] = []) {
   const lines: string[] = []
   const row = (label: string, value: string | number) => lines.push(`${label}: ${value}`)
-  lines.push('R3TARDOS DXDIAG')
-  row('version', `r3tardOS 98 · app ${input.appVersion}`)
+  lines.push('R3OS DXDIAG')
+  row('version', `r3OS 98 · app ${input.appVersion}`)
   row('build', input.buildId ?? 'unknown')
   row('chain', `${input.chain.name} (${input.chain.id})`)
   row('block', input.block.number == null ? 'unknown' : input.block.number.toString())

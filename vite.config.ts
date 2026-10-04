@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 /**
  * Link previews (X, Telegram, Discord) need an absolute og:image URL. Set VITE_SITE_URL (e.g.
- * https://r3tardos.xyz); on Vercel the production domain is used automatically. Otherwise the path stays
+ * https://r3os.example); on Vercel the production domain is used automatically. Otherwise the path stays
  * relative, which still works for most previewers. Public URL only: never a secret.
  */
 const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {}

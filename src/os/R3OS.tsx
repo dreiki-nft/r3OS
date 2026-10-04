@@ -64,7 +64,7 @@ const stormActiveSnapshot = () => getBlockSnapshot().storm
 const stormIdSnapshot = () => getBlockSnapshot().stormId
 const stormStartSnapshot = () => getBlockSnapshot().stormStart
 
-export function R3tardOS() {
+export function R3OS() {
   const windows = useSyncExternalStore(subscribeWindows, getWindows)
   // The shell only cares when storm state changes. Subscribing to the whole block snapshot
   // made the entire desktop/window tree reconcile ~3x per second for no visual benefit.

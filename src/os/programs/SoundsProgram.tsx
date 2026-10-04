@@ -36,7 +36,7 @@ export function SoundsProgram() {
       <Tabs tabs={['Sounds']} active="Sounds" onChange={() => {}} />
       <ListBox label="Sound events">
         <div role="treeitem" className="list-root">
-          r3tardOS
+          r3OS
         </div>
         {rows.map((r) => (
           <button

@@ -1,5 +1,5 @@
 /**
- * Power-on sequence, like a 1998 PC: a BIOS screen that checks the real chain, then the r3tardOS splash, then
+ * Power-on sequence, like a 1998 PC: a BIOS screen that checks the real chain, then the r3OS splash, then
  * the desktop. Pure rules and text live here (unit-tested); BootScreen.tsx draws them.
  */
 
@@ -123,7 +123,7 @@ export function postLines(facts: PostFacts): string[] {
         ? `${(facts.blockMs / 1_000).toFixed(2)} s per block`
         : 'measuring…'
   return [
-    'r3tardOS BIOS v4.98  (C) 1998-2026 r3tards',
+    'r3OS BIOS v4.98  (C) 1998-2026 r3OS',
     '',
     `${dots('Processor')} parallel EVM · MonadBFT`,
     `${dots('Memory test')} 8192K OK`,

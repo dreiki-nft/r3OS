@@ -51,7 +51,7 @@ const reducedMotion = () =>
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
- * Power-on: BIOS lines (real chain facts), the r3tardOS 98 splash, then the desktop. Once per tab session,
+ * Power-on: BIOS lines (real chain facts), the r3OS 98 splash, then the desktop. Once per tab session,
  * input can skip the cosmetic POST, but the splash still honors critical readiness / the hard cap.
  * DEL opens "SETUP" (DXDIAG) after startup. It only reads the app's shared block stream.
  */
@@ -192,7 +192,7 @@ export function BootScreen() {
     <div
       className={`boot-screen phase-${phase}`}
       role="presentation"
-      aria-label="r3tardOS is starting"
+      aria-label="r3OS is starting"
       onPointerDown={() => {
         skipped.current = true
         setPhase((current) => {
@@ -214,9 +214,9 @@ export function BootScreen() {
               <img src="/os/brand/logo.png" alt="" width={168} height={168} />
               <div>
                 <b>
-                  r3tardOS<sup>98</sup>
+                  r3OS<sup>98</sup>
                 </b>
-                <span>a shared computer on Monad</span>
+                <span>an operating system for Monad</span>
               </div>
             </div>
             <div className="boot-prefetch" aria-live="off">

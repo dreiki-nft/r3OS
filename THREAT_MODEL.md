@@ -2,7 +2,7 @@
 
 This is the contract-boundary threat model, maintained through Phase LAUNCH. Items that still need real chain data are classified in the **Launch status of open items** section and tracked operationally in [`docs/PRE_MAINNET_CHECKLIST.md`](docs/PRE_MAINNET_CHECKLIST.md). A passing local Monad-mode test is not treated as testnet or mainnet evidence; items that have been exercised on a real network are called out explicitly.
 
-> **Frontend retirement note:** this document intentionally covers deployed and retained contracts even when their dedicated r3tardOS window is retired. A retired UI does not erase an onchain attack surface, recovery path or historical invariant. The current active interface boundary is listed in `README.md` and `docs/TECHNICAL.md`.
+> **Frontend retirement note:** this document intentionally covers deployed and retained contracts even when their dedicated r3OS window is retired. A retired UI does not erase an onchain attack surface, recovery path or historical invariant. The current active interface boundary is listed in `README.md` and `docs/TECHNICAL.md`.
 
 ## Core freeze
 

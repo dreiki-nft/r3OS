@@ -1,6 +1,6 @@
 # Operator Record
 
-`R3tardsOperatorRecord` is an adminless, composable history primitive for r3tardOS. It does not award anything, compute a score, rank addresses or copy activity counters into new state. It reads objective facts from the contracts that already own them and stores only when a fact was first **observed** plus a prospective bitmap of paint seasons observed after the recorder exists.
+`R3tardsOperatorRecord` is an adminless, composable history primitive for r3OS. It does not award anything, compute a score, rank addresses or copy activity counters into new state. It reads objective facts from the contracts that already own them and stores only when a fact was first **observed** plus a prospective bitmap of paint seasons observed after the recorder exists.
 
 The frontend registers it under the Paint experiment name `operator-record`.
 
@@ -150,4 +150,4 @@ Stable semantics are worth more than infinite extensibility: a v1 record read in
 
 - `record()` with every source live and all 16 bits new: about 658,000 gas (16 fresh words dominate). Later records that add nothing only rewrite the header word.
 - `facts()` makes one gas-capped staticcall per source view (PAINT uses `painterStats` once plus `daysPainted`).
-- `firstSeenBlock` ignores MONAD CARD: holding the identity card is not r3tardOS use.
+- `firstSeenBlock` ignores MONAD CARD: holding the identity card is not r3OS use.

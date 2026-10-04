@@ -155,7 +155,7 @@ export function Assistant() {
           playSound('text')
         }}
       >
-        <SafeImage src="/os/brand/assistant.webp" alt="r3tards assistant" width={104} height={104} />
+        <SafeImage src="/os/brand/assistant.webp" alt="r3OS assistant" width={104} height={104} />
       </button>
       {balloons.length === 0 && <div className="assistant-bubble">{text}</div>}
     </aside>

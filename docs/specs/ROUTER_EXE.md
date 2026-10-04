@@ -1,6 +1,6 @@
 # ROUTER.EXE
 
-ROUTER.EXE is a read-only execution-routing laboratory for r3tardOS. It demonstrates MRC-17-style propAMM quoting inside one EVM execution without moving user assets. The lab compares adapter quotes at one block state, isolates every quote in an always-reverting child frame, and returns diagnostics to an `eth_call` caller.
+ROUTER.EXE is a read-only execution-routing laboratory for r3OS. It demonstrates MRC-17-style propAMM quoting inside one EVM execution without moving user assets. The lab compares adapter quotes at one block state, isolates every quote in an always-reverting child frame, and returns diagnostics to an `eth_call` caller.
 
 ## MRC-17 revision
 

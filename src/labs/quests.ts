@@ -69,7 +69,7 @@ export const QUEST_HOW: Readonly<Record<string, { program: string; label: string
 
 export type QuestGroup = 'canvas' | 'around'
 
-/** Quests that read the Paint core are "on the canvas"; everything else is "around r3tardOS". */
+/** Quests that read the Paint core are "on the canvas"; everything else is "around r3OS". */
 export function questGroup(conditions: readonly { target: string }[], paintAddress?: string): QuestGroup {
   if (!paintAddress || !conditions.length) return 'around'
   const paint = paintAddress.toLowerCase()
@@ -78,5 +78,5 @@ export function questGroup(conditions: readonly { target: string }[], paintAddre
 
 export const QUEST_GROUP_TITLES: Record<QuestGroup, string> = {
   canvas: 'ON THE CANVAS',
-  around: 'AROUND r3tardOS',
+  around: 'AROUND r3OS',
 }

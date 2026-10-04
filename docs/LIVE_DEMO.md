@@ -1,6 +1,6 @@
 # Live Mode demo
 
-Live Mode is the hero path for the Metropolis demo. The point is not that r3tardOS can submit a transaction. The point is that a fully onchain shared canvas on Monad can feel continuous enough for two people to draw together.
+Live Mode is the hero path for the Metropolis demo. The point is not that r3OS can submit a transaction. The point is that a fully onchain shared canvas on Monad can feel continuous enough for two people to draw together.
 
 ## What to show
 
@@ -23,15 +23,17 @@ Use two independent browser profiles or two devices, with different wallets, bot
    - `paint-preflight`;
    - `tx-receipt` / `tx-total`;
    - `ui-settle`;
-   - `remote-paint · websocket event → canvas store` and `remote-paint · websocket event → rendered canvas` on the observing browser.
+   - `paint-stream · websocket Paint event → canvas store`;
+   - `remote-paint · websocket event → rendered canvas` on the observing browser.
 
 ## What each proof means
 
 - **burner-sign** is local signing time. It should normally be around a millisecond because no wallet extension is involved per stroke.
 - **burner-broadcast** is the browser handing one signed raw transaction to the action RPC pool. Redundant broadcast uses the same serialized transaction/hash; it is not multiple blockchain transactions.
 - **tx-receipt** is how long this browser waited after RPC acceptance until it held a receipt.
-- **ui-settle** is how long r3tardOS took to apply its own receipt logs to the canvas after this browser observed inclusion.
-- **remote-paint** reports websocket-event → shared-store apply and websocket-event → the actual canvas draw effect completing. Both begin when this browser receives the live WebSocket event. On Monad, standard `logs` subscriptions fire at the proposed/speculative stage, so these rows measure local observing-browser propagation only; canonical reconciliation follows and neither row is labelled chain finality or end-to-end network latency.
+- **ui-settle** is how long r3OS took to apply its own receipt logs to the canvas after this browser observed inclusion.
+- **paint-stream** reports WebSocket `Painted` event → shared-store apply for every fresh paint event this browser observes, including transactions originated by this browser. It measures the generic event-stream ingestion path, not specifically remote collaboration.
+- **remote-paint** reports WebSocket event → the actual canvas draw effect completing only when the observed `Painted` event belongs to another wallet. On Monad, standard `logs` subscriptions fire at the proposed/speculative stage, so this measures local observing-browser propagation only; canonical reconciliation follows and it is not labelled chain finality or end-to-end network latency.
 - **X-ray commit states** come from one shared `monadLogs` feed started during boot when the RPC exposes it, so X-ray can be opened after the stroke without inventing missing states. A normal transaction receipt is shown separately and is never silently relabelled as `Finalized`.
 
 ## Recording choreography
@@ -46,7 +48,7 @@ Recommended sequence:
 4. paint `B` or a second shape on B;
 5. let it land on A;
 6. click A's **X-ray** proof and show the transaction hash / explorer link;
-7. open DXDIAG Performance and show the local-sign, broadcast, receipt, UI-settle and remote-paint rows;
+7. open DXDIAG Performance and show the local-sign, broadcast, receipt, UI-settle, paint-stream and remote-paint rows;
 8. return to the two canvases for the final shot.
 
 Keep claims literal. Receipt timing is receipt timing, not finality. Standard live log subscriptions may be speculative. Monad commitment timing is shown only when the RPC actually supplies `Proposed`, `Voted` or `Finalized` notifications.

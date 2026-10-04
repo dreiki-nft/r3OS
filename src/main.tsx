@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { R3tardOS } from './os/R3tardOS'
+import { R3OS } from './os/R3OS'
 import { startBlockClock } from './chain/blocks'
 import { initWalletDiscovery } from './chain/wallet'
 import { startBootPrefetch } from './os/bootPrefetch'
@@ -14,6 +14,6 @@ void startBootPrefetch()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <R3tardOS />
+    <R3OS />
   </StrictMode>,
 )

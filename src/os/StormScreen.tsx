@@ -12,7 +12,7 @@ export function StormScreen({ start, onDismiss }: { start: bigint; onDismiss: ()
   return (
     <button className="storm-screen" onClick={onDismiss}>
       <div>
-        <h1>r3tardOS</h1>
+        <h1>r3OS</h1>
         <p>
           A DF1 storm has started at block {start.toString()}. For the next 600 blocks (about 3 minutes) every
           fresh pixel can glitch at 200%.

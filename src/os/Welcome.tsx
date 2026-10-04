@@ -116,9 +116,9 @@ export function Welcome() {
 
   if (!account) {
     return (
-      <aside className="welcome raised" aria-label="Try r3tardOS">
+      <aside className="welcome raised" aria-label="Try r3OS">
         <header>
-          <b>try r3tardOS</b>
+          <b>try r3OS</b>
           <button className="welcome-close" aria-label="Close getting started" onClick={close}>
             ×
           </button>

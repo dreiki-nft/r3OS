@@ -364,7 +364,7 @@ export function QuestsProgram() {
         <section className="quest-list sunken">
           {defs.map((quest, index) => {
             if (retired(quest)) return null
-            // Group header ("ON THE CANVAS" / "AROUND r3tardOS") when the group changes.
+            // Group header ("ON THE CANVAS" / "AROUND r3OS") when the group changes.
             const group: QuestGroup = questGroup(quest.conditions, config.paintAddress)
             const previous = defs
               .slice(0, index)

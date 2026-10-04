@@ -137,7 +137,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   // That keeps the first no-popup stroke from paying a cold nonce round trip.
   const nonceWarm = resetBurnerNonce(burner.address).catch(() => undefined)
   if (loadBurner(owner)?.address.toLowerCase() !== burner.address.toLowerCase()) {
-    throw new Error('this browser blocked burner storage. allow site data for r3tardOS and try again.')
+    throw new Error('this browser blocked burner storage. allow site data for r3OS and try again.')
   }
 
   // Start every independent preflight immediately. A brand-new burner cannot already have a
@@ -280,7 +280,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
     })
   } catch (error) {
     // A just-funded start gets one quiet recovery only. The first failed attempt is intentionally silent so
-    // users do not hear two error sounds while r3tardOS is still recovering internally. If the provider
+    // users do not hear two error sounds while r3OS is still recovering internally. If the provider
     // cluster is still settling, wait two additional blocks beyond the first barrier, fully re-estimate,
     // refresh uncached fees, then make one final normal attempt.
     if (!retryFreshFundingStart(error, value > 0n) || fundingBlock == null) throw error

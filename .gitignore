@@ -32,6 +32,7 @@ launch-doctor-*.json
 /PATCH_NOTES.txt
 /APPLY.txt
 /APPLY_PHASE6_CLEANUP.sh
+/APPLY_R3OS_REBRAND.sh
 /DELETIONS.txt
 /README.txt
 /REVIEW_WITH_CLAUDE.md

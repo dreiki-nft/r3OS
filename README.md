@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="public/og.jpg" alt="r3tardOS 98: a Windows 98 desktop around a shared onchain pixel canvas" width="720">
+  <img src="public/og.jpg" alt="r3OS 98: a Windows 98 desktop around a shared onchain pixel canvas" width="720">
 </p>
 
-<h1 align="center">r3tardOS</h1>
+<h1 align="center">r3OS</h1>
 
 <p align="center">
-  <b>A shared onchain computer for the r3tards community, disguised as Windows 98.</b><br>
+  <b>An operating system for the world computer, disguised as Windows 98.</b><br>
   One 256 × 256 canvas. Every committed stroke is a Monad transaction.
 </p>
 
@@ -24,11 +24,13 @@
 
 ## What this is
 
-r3tardOS boots into a Windows 98-style desktop wrapped around one shared **256 × 256, 16-colour canvas on Monad**. Anyone can watch the canvas and explore the system without a wallet. Connect only when you want to write onchain.
+r3OS boots into a Windows 98-style desktop wrapped around one shared **256 × 256, 16-colour canvas on Monad**. Anyone can watch the canvas and explore the system without a wallet. Connect only when you want to write onchain.
 
 Paint is the center of the project: draw locally, commit pixels as a transaction, watch other painters' live onchain strokes appear and reconcile, then save a moment of the shared canvas as an immutable frame NFT. Frames can become mix CDs, finales can enter a candle auction, and Block Camera turns the block itself into an onchain artifact.
 
 There is **no app backend or database**. The frontend is static and reads contracts, logs and block data directly from Monad RPCs.
+
+**Naming:** `r3OS` is the product and interface. Existing testnet contracts keep their deployed `R3tards*` / `r3tards paint` identifiers, and the r3tards NFT remains an optional holder-integration surface. Those onchain names are compatibility/history, not the product name.
 
 ### Hackathon thesis
 
@@ -191,11 +193,9 @@ Browser security matters because Live Mode intentionally holds an EOA key locall
 - Monad testnet engineering build is active.
 - Performance / boot-prefetch work is complete and measured locally in DXDIAG.
 - Cold-user / judge-path and repository-hygiene work is complete.
-- Live Mode hero UI, one-flow wallet handoff, two-browser remote proof, explorer/X-ray proof and demo choreography are implemented; final two-browser rehearsal is still required before recording.
-- Next is mainnet rehearsal, real community activity, final metrics, recording and submission.
+- Live Mode hero UI, one-flow wallet handoff, two-browser remote proof, explorer/X-ray proof and demo choreography are implemented and validated on testnet.
+- Phase 7 is complete. Next is mainnet rehearsal, real community activity, final metrics, recording and submission.
 
 ## Credits
 
 Built solo by **dreiki**, with Claude and ChatGPT used as coding assistants. Art, palette and r3tards characters by dreiki.
-
-*just a bunch of r3tards on the monad blockchain.*

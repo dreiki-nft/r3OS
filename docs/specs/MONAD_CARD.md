@@ -1,6 +1,6 @@
 # Monad Card / CARD.DRV
 
-Phase MONAD CARD plugs the official Monad Card into r3tardOS as a hardware identity device without modifying the card contract. `R3tardsCardMemory` is a separate, ownerless driver: every card id addresses one raw 4 KiB storage page and only the card's current `ownerOf(cardId)` may write it.
+Phase MONAD CARD plugs the official Monad Card into r3OS as a hardware identity device without modifying the card contract. `R3tardsCardMemory` is a separate, ownerless driver: every card id addresses one raw 4 KiB storage page and only the card's current `ownerOf(cardId)` may write it.
 
 The driver is registered in the Paint experiment registry as `card-drv`. The frontend program is `CARDMEM.EXE`. PAGE.EXE, Kernel Debugger, Block Camera, Monad Hardware, the Painter Pass and Quests all consume the same driver/page state.
 
@@ -136,7 +136,7 @@ CARDMEM.EXE is the structured EEPROM programmer.
 
 It provides:
 
-- a generic r3tardOS cartridge drawing, not official Monad Card artwork;
+- a generic r3OS cartridge drawing, not official Monad Card artwork;
 - capacity, used/free bytes, writes, page, slot, owner and last-write block;
 - label and message ASCII editors;
 - a 32×32 palette icon editor;

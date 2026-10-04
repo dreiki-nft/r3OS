@@ -511,7 +511,7 @@ async function onSubscriptionLogs(logs: readonly unknown[]) {
     if (key && appliedLogKeys.has(key)) return false
     return decodeCoreLog(log)?.eventName === 'Painted'
   })
-  const stopRemote = freshPaint ? startPerf('remote-paint', 'websocket event → canvas store') : undefined
+  const stopRemote = freshPaint ? startPerf('paint-stream', 'websocket Paint event → canvas store') : undefined
   try {
     const needsReload = await applyDeliveredLogs(typed, { observedAt, source: 'websocket' })
     if (needsReload) await loadCanvas()
