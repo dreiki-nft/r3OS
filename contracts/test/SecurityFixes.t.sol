@@ -210,11 +210,11 @@ contract SecurityFixesTest is Test {
         R3OSLabs labs = new R3OSLabs(address(paint), alice);
         GarbageLab garbage = new GarbageLab();
         vm.prank(alice);
-        uint256 experimentId = paint.addExperiment(address(garbage), "sleepwalker", "");
+        uint256 experimentId = paint.addExperiment(address(garbage), "malformed-lab", "");
         uint256 tokenId = garbage.mintInto(labs, alice, experimentId);
 
         bytes memory json = _decodeDataUri(labs.tokenURI(tokenId));
-        assertTrue(_contains(json, bytes('"name":"r3OS labs dream #1"')));
+        assertTrue(_contains(json, bytes('"name":"r3OS labs artifact #1"')));
         assertTrue(_contains(json, bytes('"description":"an onchain r3OS labs artifact on monad."')));
     }
 

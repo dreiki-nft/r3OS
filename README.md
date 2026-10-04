@@ -209,7 +209,7 @@ Browser security matters because Live Mode intentionally holds an EOA key locall
 - Performance / boot-prefetch work is complete and measured locally in DXDIAG.
 - Cold-user / judge-path and repository-hygiene work is complete.
 - Live Mode hero UI, one-flow wallet handoff, two-browser remote proof, explorer/X-ray proof and demo choreography are implemented and validated on testnet.
-- Phase 7.6 submission-surface cleanup is complete: discontinued experiments are omitted from fresh-mainnet source/deploy/ABI/docs.
+- Phase 7.6 submission-surface cleanup omits discontinued experiments from fresh-mainnet source/deploy/ABI/docs while preserving historical compatibility readers.
 - Next is Phase 8: mainnet rehearsal, real community activity, final metrics, recording and submission.
 
 ## Credits

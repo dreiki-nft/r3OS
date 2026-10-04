@@ -156,7 +156,8 @@ contract OperatorRecordTest is Test {
         vm.prank(alice);
         cardMemory.write(77, 1, cardWord);
 
-        (mask, uint256 answered) = record.usedMask(alice);
+        uint256 answered;
+        (mask, answered) = record.usedMask(alice);
         uint256[10] memory active = [uint256(0), 1, 2, 3, 8, 10, 11, 13, 14, 15];
         for (uint256 i; i < active.length; ++i) assertTrue(_bit(mask, active[i]));
         uint256[6] memory legacy = [uint256(4), 5, 6, 7, 9, 12];

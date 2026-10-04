@@ -32,7 +32,7 @@ for (const [exportName, relativeArtifact] of contracts) {
   }
   const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'))
   if (!Array.isArray(artifact.abi)) throw new Error(`${relativeArtifact} has no ABI array`)
-  sections.push(`export const ${exportName} = ${JSON.stringify(artifact.abi, null, 2)} as const`, '')
+  sections.push(`export const ${exportName} = ${JSON.stringify(artifact.abi, null, 2)} as const`)
 }
 
 fs.mkdirSync(path.dirname(outPath), { recursive: true })

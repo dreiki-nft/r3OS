@@ -300,10 +300,8 @@ contract R3OSLabs is ERC721, ERC2981, Ownable2Step {
     }
 
     function _fallbackKind(string memory labName) private pure returns (string memory) {
-        bytes32 hash = keccak256(bytes(labName));
-        if (hash == keccak256(bytes("cd-burner"))) return "CD";
-        string memory title = _titleCase(labName);
-        return bytes(title).length == 0 ? "Lab" : title;
+        if (keccak256(bytes(labName)) == keccak256(bytes("cd-burner"))) return "CD";
+        return "Artifact";
     }
 
     /// @dev "finale auction" -> "Finale Auction", "cd-burner" -> "CD Burner".

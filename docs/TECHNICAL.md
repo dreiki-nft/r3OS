@@ -353,10 +353,6 @@ Monad charges from the submitted **gas limit**, not merely gas used, including r
 | exact DF1 renderer, default / arbitrary stored outline | `< 10M / < 10M` |
 | opted-in timelapse via core `tokenURI` | succeeds under a `30M` call |
 | outline set/append tx | `< 30M / tx` |
-| Fork `forkFrame` / `forkFork` | `< 2.3M / < 1.6M` |
-| Fork paint, 64 px one row / 32 rows | `< 250k / < 250k` |
-| Labs `tokenURI`, Fork / Fork `stamp` | `< 2M / < 25k` |
-| Brush `catchBrush` / verify 1 region / verify 4 regions / `stamp` | `< 160k / < 250k / < 400k / < 20k` |
 | Finale auction `list` / bid / settle(43 bids) / withdraw | `< 300k / < 250k / < 350k / < 100k` |
 | Quest claim, 1 core condition / 4 stamp conditions / `stamp` | `< 160k / < 250k / < 25k` |
 | CD Burner `burnCD`, 12 tracks / Labs `tokenURI` | `< 6M / < 8M` |

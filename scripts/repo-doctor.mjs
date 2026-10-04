@@ -65,6 +65,26 @@ const deadFiles = [
   'src/os/programs/Placeholder.tsx',
 ]
 
+const requiredSubmissionFiles = [
+  'contracts/src/R3OSPaint.sol',
+  'contracts/src/R3OSPainterPass.sol',
+  'contracts/src/R3OSLabs.sol',
+  'contracts/src/monadhw/R3OSPageExe.sol',
+  'contracts/src/monadhw/R3OSBlockCamera.sol',
+  'contracts/src/monadcard/R3OSCardMemory.sol',
+  'contracts/src/operator/R3OSOperatorRecord.sol',
+  'contracts/src/operator/R3OSSystemEvent.sol',
+  'contracts/src/router/R3OSRouterLab.sol',
+  'contracts/script/Deploy.s.sol',
+  'contracts/script/DeployMonadCard.s.sol',
+  'contracts/script/DeployMonadHW.s.sol',
+  'contracts/script/DeployOperator.s.sol',
+  'contracts/script/DeployRouterLab.s.sol',
+  'docs/PRE_MAINNET_CHECKLIST.md',
+  'docs/specs/ROUTER_LAB.md',
+  'docs/specs/MONAD_CARD.md',
+]
+
 const removedSubmissionFiles = [
   'contracts/src/interfaces/IR3OSSleepwalkerCore.sol',
   'contracts/src/labs/R3OSBrushes.sol',
@@ -134,6 +154,9 @@ for (const file of deadFiles) {
 for (const file of removedSubmissionFiles) {
   if (existsSync(resolve(root, file))) problems.push(`pruned submission artifact still present: ${file}`)
 }
+for (const file of requiredSubmissionFiles) {
+  if (!existsSync(resolve(root, file))) problems.push(`required submission dependency missing: ${file}`)
+}
 for (const file of legacyContractSources) {
   if (existsSync(resolve(root, file))) problems.push(`legacy pre-mainnet contract source still present: ${file}`)
 }
@@ -162,6 +185,32 @@ if (existsSync(resolve(root, legacyShellPath))) problems.push(`legacy shell comp
 
 for (const placeholder of ['LIVE_APP_URL', 'DEMO_VIDEO_URL', 'MAINNET_ADDRESSES']) {
   if (readme.includes(placeholder)) problems.push(`README placeholder: ${placeholder}`)
+}
+
+const deployEnv = read('contracts/.env.example')
+for (const [name, value] of [
+  ['BASE_PIXELS_PER_HOUR', '512'],
+  ['PIXELS_PER_ACTIVE_DAY', '32'],
+  ['MAX_PIXELS_PER_HOUR', '2048'],
+  ['MIN_PIXELS_FOR_ACTIVE_DAY', '16'],
+  ['HOLDER_PIXELS_PER_DAY', '512'],
+]) {
+  if (!new RegExp(`^${name}=${value}$`, 'm').test(deployEnv)) {
+    problems.push(`contracts/.env.example launch budget mismatch: ${name} must be ${value}`)
+  }
+}
+if (!/^FINAL_OWNER=/m.test(deployEnv)) problems.push('contracts/.env.example missing FINAL_OWNER')
+
+const abiExporter = read('scripts/export-abi.mjs')
+for (const id of [
+  'R3OS_PAGE_EXE_ABI',
+  'R3OS_BLOCK_CAMERA_ABI',
+  'R3OS_CARD_MEMORY_ABI',
+  'R3OS_OPERATOR_RECORD_ABI',
+  'R3OS_SYSTEM_EVENT_ABI',
+  'R3OS_ROUTER_LAB_ABI',
+]) {
+  if (!abiExporter.includes(id)) problems.push(`active backend ABI missing from exporter: ${id}`)
 }
 
 const programs = read('src/os/programs.ts')

@@ -6,11 +6,10 @@ export type Tool = 'pencil' | 'brush' | 'fill' | 'picker' | 'line' | 'rect' | 'e
 type Shape = 'line' | 'rect' | 'ellipse'
 
 type ToolEntry = {
-  id: Tool | 'dna'
+  id: Tool
   label: string
   icon?: IconName
   shape?: Shape
-  disabled?: boolean
 }
 
 function ShapeIcon({ shape }: { shape: Shape }) {
@@ -56,17 +55,15 @@ export function Toolbox({
         <button
           key={entry.id}
           className={`tool raised ${tool === entry.id ? 'chosen' : ''}`}
-          title={entry.disabled ? 'arrives with the Block DNA program' : entry.label}
+          title={entry.label}
           aria-label={entry.label}
-          disabled={entry.disabled}
           onClick={() => {
-            if (entry.id === 'dna') return
             playSound('select')
             onTool(entry.id)
           }}
         >
           {entry.icon ? (
-            <Icon name={entry.icon} size={24} colour={entry.id === 'dna' ? '#C864AA' : undefined} />
+            <Icon name={entry.icon} size={24} />
           ) : (
             <ShapeIcon shape={entry.shape!} />
           )}
