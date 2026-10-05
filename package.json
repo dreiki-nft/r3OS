@@ -16,6 +16,11 @@
     "generated:check": "npm run outline:export && npm run abi:export && git diff --exit-code -- src/lib/generated/outline.ts src/lib/generated/abi.ts",
     "check": "npm run repo:doctor && npm run contracts:build && npm run contracts:test && npm run test:web && npm run generated:check && npm run build",
     "test:web": "vitest run --maxWorkers=8",
+    "test:torture": "vitest run --maxWorkers=4 src/torture",
+    "test:torture:rpc": "vitest run --maxWorkers=2 src/torture/rpc.torture.test.ts",
+    "test:torture:ws": "vitest run --maxWorkers=2 src/torture/ws.torture.test.ts",
+    "test:torture:recovery": "vitest run --maxWorkers=2 src/torture/recovery.torture.test.ts",
+    "test:torture:stress": "vitest run --maxWorkers=2 src/torture/stress.torture.test.ts",
     "launch:doctor": "node scripts/launch-doctor.mjs"
   },
   "dependencies": {
