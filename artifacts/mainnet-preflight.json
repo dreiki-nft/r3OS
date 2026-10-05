@@ -1,18 +1,18 @@
 {
   "schema": "r3os-mainnet-preflight/v1",
-  "generatedAt": "2026-10-05T20:35:56.544Z",
+  "generatedAt": "2026-10-05T22:44:54.681Z",
   "rpcUrlStored": false,
   "manifestHash": "0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1",
   "chainId": 143,
   "finalized": {
-    "number": "110849066",
-    "hash": "0xc58c0b08846f0faf0206a81970ba08b5b9719c3493f2c83c5bed40da901c6d04",
-    "timestamp": "1791232554"
+    "number": "110874701",
+    "hash": "0x0ec5a115e2d7d8dda5363224d05c921d312f413ac30ebf87381b155a1166e93a",
+    "timestamp": "1791240292"
   },
   "latest": {
-    "number": "110849068",
-    "hash": "0x01c6813f44a487eb5b0270b17cfebedda085062dd213e7430181d7f645103b53",
-    "timestamp": "1791232555",
+    "number": "110874703",
+    "hash": "0x6be61e6feef185cdec590ca2f47875fe25217b9d884b6b1cdfe832f4418a5a4f",
+    "timestamp": "1791240293",
     "baseFeePerGas": "100000000000"
   },
   "dependencies": {
@@ -46,11 +46,11 @@
     "address": "0xBcD78f76005B7515837af6b50c7C52BCf73822fb",
     "description": "MON / USD",
     "decimals": 8,
-    "roundId": "18446744073710158336",
-    "answer": "3126924",
-    "updatedAt": "1791232551",
-    "answeredInRound": "18446744073710158336",
-    "ageSecondsAtFinalized": 3,
+    "roundId": "18446744073710158517",
+    "answer": "3142814",
+    "updatedAt": "1791240263",
+    "answeredInRound": "18446744073710158517",
+    "ageSecondsAtFinalized": 29,
     "configuredMaxAgeSeconds": 4200
   },
   "deployer": {
@@ -70,13 +70,13 @@
       "id": "finalized-anchor",
       "status": "OK",
       "detail": "finalized block/hash available",
-      "value": "110849066:0xc58c0b08846f0faf0206a81970ba08b5b9719c3493f2c83c5bed40da901c6d04"
+      "value": "110874701:0x0ec5a115e2d7d8dda5363224d05c921d312f413ac30ebf87381b155a1166e93a"
     },
     {
       "id": "latest-head",
       "status": "OK",
       "detail": "latest head available",
-      "value": "110849068"
+      "value": "110874703"
     },
     {
       "id": "commitment-order",
@@ -129,7 +129,7 @@
       "id": "oracle:answer",
       "status": "OK",
       "detail": "positive feed answer",
-      "value": "3126924"
+      "value": "3142814"
     },
     {
       "id": "oracle:round",
@@ -139,14 +139,14 @@
     {
       "id": "oracle:freshness",
       "status": "OK",
-      "detail": "feed age 3s <= configured max 4200s",
-      "value": 3
+      "detail": "feed age 29s <= configured max 4200s",
+      "value": 29
     },
     {
       "id": "season-start",
       "status": "OK",
-      "detail": "season start lead 51845s",
-      "value": 51845
+      "detail": "season start lead 44107s",
+      "value": 44107
     },
     {
       "id": "deployer-balance",

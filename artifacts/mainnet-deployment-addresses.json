@@ -1,0 +1,59 @@
+{
+  "schema": "r3os-mainnet-deployment-addresses/v1",
+  "chainId": 143,
+  "generatedAt": "2026-10-05T23:24:42.217Z",
+  "broadcastFilesRead": [
+    "Deploy.s.sol/143/run-latest.json"
+  ],
+  "complete": false,
+  "missing": [
+    "R3OSCardMemory",
+    "R3OSPageExe",
+    "R3OSBlockCamera",
+    "R3OSOperatorRecord",
+    "R3OSSystemEvent",
+    "R3OSRouterLab"
+  ],
+  "contracts": {
+    "R3OSPaint": {
+      "address": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "source": "src/R3OSPaint.sol:R3OSPaint"
+    },
+    "R3OSLabs": {
+      "address": "0xe6b3b17e3b1827fe02183f496e84331ebe74751c",
+      "source": "src/R3OSLabs.sol:R3OSLabs"
+    },
+    "DiffRenderer": {
+      "address": "0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7",
+      "source": "src/renderers/DiffRenderer.sol:DiffRenderer"
+    },
+    "SeasonTimelapseRenderer": {
+      "address": "0x8c91d7a829569ebf1dfc671f6cf328911813b78d",
+      "source": "src/renderers/SeasonTimelapseRenderer.sol:SeasonTimelapseRenderer"
+    },
+    "DF1Renderer": {
+      "address": "0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0",
+      "source": "src/renderers/DF1Renderer.sol:DF1Renderer"
+    },
+    "R3OSPainterPass": {
+      "address": "0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103",
+      "source": "src/R3OSPainterPass.sol:R3OSPainterPass"
+    },
+    "R3OSFinaleAuction": {
+      "address": "0x3d3154db1b32724a82ac9ec3f1811808558b9ef8",
+      "source": "src/labs/R3OSFinaleAuction.sol:R3OSFinaleAuction"
+    },
+    "R3OSQuests": {
+      "address": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "source": "src/labs/R3OSQuests.sol:R3OSQuests"
+    },
+    "R3OSRecycleBin": {
+      "address": "0x02234e30dac8bed319f30fb1ec123da8bf71a2eb",
+      "source": "src/labs/R3OSRecycleBin.sol:R3OSRecycleBin"
+    },
+    "R3OSCDBurner": {
+      "address": "0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd",
+      "source": "src/labs/R3OSCDBurner.sol:R3OSCDBurner"
+    }
+  }
+}
