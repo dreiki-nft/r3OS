@@ -37,7 +37,8 @@
     ],
     "walletRpcUrl": "REPLACE_AFTER_9B",
     "wsUrl": "REPLACE_AFTER_9B",
-    "explorerUrl": "REPLACE_AFTER_9B"
+    "explorerUrl": "REPLACE_AFTER_9B",
+    "fastlaneAcceleratorUrl": ""
   },
   "confirmMainnet": false,
   "reviewed": false

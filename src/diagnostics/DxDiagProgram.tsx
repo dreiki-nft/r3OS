@@ -163,6 +163,18 @@ export function DxDiagProgram() {
                 source="config"
               />
               <Row
+                label="FastLane accelerator"
+                value={d.rpc.fastlaneAcceleratorConfigured ? 'configured · optional' : 'disabled'}
+                source="config"
+              />
+              {d.rpc.bootPacketSource && (
+                <Row
+                  label="Boot Packet"
+                  value={`${d.rpc.bootPacketSource}${d.rpc.bootPacketMs == null ? '' : ` · ${d.rpc.bootPacketMs.toFixed(0)} ms`}`}
+                  source="measured"
+                />
+              )}
+              <Row
                 label="Multicall3"
                 value={
                   !d.rpc.multicallConfigured

@@ -40,6 +40,8 @@ export interface BootPacketSnapshot {
   renderersFrozen?: boolean
   experimentsFrozen?: boolean
   complete: boolean
+  source?: 'accelerator' | 'public'
+  acceleratorAttempted?: boolean
 }
 
 const FUNCTION_KEYS = {
@@ -206,15 +208,16 @@ async function sendChunk(
   url: string,
   batch: readonly RpcRequest[],
   timeoutMs: number,
+  allowSplit: boolean,
 ): Promise<{ responses: RpcResponse[]; httpRequests: number }> {
   try {
     return { responses: await postBatch(url, batch, timeoutMs), httpRequests: 1 }
   } catch (error) {
-    if (batch.length <= 1) throw error
+    if (!allowSplit || batch.length <= 1) throw error
     const middle = Math.ceil(batch.length / 2)
     const [left, right] = await Promise.all([
-      sendChunk(url, batch.slice(0, middle), timeoutMs),
-      sendChunk(url, batch.slice(middle), timeoutMs),
+      sendChunk(url, batch.slice(0, middle), timeoutMs, allowSplit),
+      sendChunk(url, batch.slice(middle), timeoutMs, allowSplit),
     ])
     return {
       responses: [...left.responses, ...right.responses],
@@ -230,11 +233,13 @@ export async function fetchBootPacketUsing(
     multicallAddress?: Address
     batchSize?: number
     timeoutMs?: number
+    allowBatchSplit?: boolean
   } = {},
 ) {
   const entries = buildBootPacketRequests(options.paintAddress, options.multicallAddress)
   const batchSize = Math.max(1, Math.floor(options.batchSize ?? 10))
   const timeoutMs = Math.max(200, Math.floor(options.timeoutMs ?? 900))
+  const allowBatchSplit = options.allowBatchSplit ?? true
   const chunks: typeof entries[] = []
   for (let offset = 0; offset < entries.length; offset += batchSize) {
     chunks.push(entries.slice(offset, offset + batchSize))
@@ -248,6 +253,7 @@ export async function fetchBootPacketUsing(
         url,
         chunk.map((entry) => entry.request),
         timeoutMs,
+        allowBatchSplit,
       ),
     })),
   )
@@ -263,6 +269,66 @@ export async function fetchBootPacketUsing(
   )
 }
 
+
+export async function fetchPreferredBootPacketUsing(options: {
+  publicUrl: string
+  acceleratorUrl?: string
+  expectedChainId: number
+  paintAddress?: Address
+  multicallAddress?: Address
+  batchSize?: number
+  publicTimeoutMs?: number
+  acceleratorTimeoutMs?: number
+}) {
+  const started = now()
+  const common = {
+    paintAddress: options.paintAddress,
+    multicallAddress: options.multicallAddress,
+  }
+  const acceleratorEnabled = Boolean(options.acceleratorUrl) && options.expectedChainId === 143
+  let acceleratorAttempted = false
+
+  if (acceleratorEnabled) {
+    acceleratorAttempted = true
+    try {
+      // The Worker intentionally accepts one exact ten-member Boot Packet, independent of
+      // whatever smaller batch size a public provider may require.
+      const accelerated = await fetchBootPacketUsing(options.acceleratorUrl!, {
+        ...common,
+        batchSize: 10,
+        timeoutMs: options.acceleratorTimeoutMs ?? 650,
+        // The Worker exposes one exact Boot Packet operation. Any Worker/upstream failure
+        // should fall through to direct public RPC immediately, not recursively retry the
+        // same edge endpoint as smaller batches (especially on 429/rate-limit responses).
+        allowBatchSplit: false,
+      })
+      if (accelerated.chainId !== options.expectedChainId) throw new Error('BOOT_PACKET_CHAIN_MISMATCH')
+      if (!accelerated.complete) throw new Error('BOOT_PACKET_INCOMPLETE')
+      return {
+        ...accelerated,
+        elapsedMs: now() - started,
+        source: 'accelerator' as const,
+        acceleratorAttempted,
+      }
+    } catch {
+      // Optional only. Public direct RPC remains the fallback and canonical browser path.
+    }
+  }
+
+  const direct = await fetchBootPacketUsing(options.publicUrl, {
+    ...common,
+    batchSize: options.batchSize,
+    timeoutMs: options.publicTimeoutMs ?? 900,
+  })
+  if (direct.chainId !== options.expectedChainId) throw new Error('BOOT_PACKET_CHAIN_MISMATCH')
+  return {
+    ...direct,
+    elapsedMs: now() - started,
+    source: 'public' as const,
+    acceleratorAttempted,
+  }
+}
+
 /**
  * Mainnet startup packet: one bounded burst of independent JSON-RPC reads on the primary browser-safe lane.
  * Failure is intentionally non-fatal; the existing fallback/publicClient paths remain authoritative.
@@ -272,13 +338,16 @@ export function prefetchBootPacket(force = false): Promise<BootPacketSnapshot | 
   if (inflight && !force) return inflight
   if (config.demo || !config.rpcUrl || config.rpcBatchSize <= 0) return Promise.resolve(undefined)
 
-  const pending = fetchBootPacketUsing(config.rpcUrl, {
+  const pending = fetchPreferredBootPacketUsing({
+    publicUrl: config.rpcUrl,
+    acceleratorUrl: config.fastlaneAcceleratorUrl || undefined,
+    expectedChainId: config.chainId,
     paintAddress: config.paintAddress,
     multicallAddress: config.multicall3Address,
     batchSize: config.rpcBatchSize,
+    acceleratorTimeoutMs: config.fastlaneAcceleratorTimeoutMs,
   })
     .then((value) => {
-      if (value.chainId !== config.chainId) throw new Error('BOOT_PACKET_CHAIN_MISMATCH')
       snapshot = value
       recordPerf('boot-prefetch', 'boot-packet', value.elapsedMs)
       return value

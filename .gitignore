@@ -44,3 +44,8 @@ launch-doctor-*.json
 /artifacts/local-acceptance-gates.json
 /artifacts/fastlane-capability.json
 /artifacts/priority-benchmark.json
+
+# Cloudflare Worker local secrets
+**/.dev.vars*
+**/wrangler.jsonc
+!**/wrangler.jsonc.example

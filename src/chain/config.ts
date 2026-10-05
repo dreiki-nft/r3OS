@@ -7,6 +7,8 @@ export interface AppConfig {
   logsRange: number
   rpcRps: number
   rpcBatchSize: number
+  fastlaneAcceleratorUrl: string
+  fastlaneAcceleratorTimeoutMs: number
   deployBlock: bigint
   wsUrl: string
   walletRpcUrl: string
@@ -60,6 +62,8 @@ export const config: Readonly<AppConfig> = Object.freeze({
   logsRange: positiveInt('VITE_LOGS_RANGE', 100),
   rpcRps: positiveInt('VITE_RPC_RPS', 12),
   rpcBatchSize: positiveInt('VITE_RPC_BATCH_SIZE', 10, true),
+  fastlaneAcceleratorUrl: chainId === 143 ? env('VITE_FASTLANE_ACCELERATOR_URL') : '',
+  fastlaneAcceleratorTimeoutMs: positiveInt('VITE_FASTLANE_ACCELERATOR_TIMEOUT_MS', 650),
   deployBlock: nonNegativeBigInt('VITE_DEPLOY_BLOCK'),
   wsUrl: env('VITE_WS_URL'),
   walletRpcUrl: env('VITE_WALLET_RPC_URL'),

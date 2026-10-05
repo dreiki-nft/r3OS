@@ -442,7 +442,7 @@ export function startBootPrefetch() {
         await Promise.all([readCoreConstants(), readCoreStatus().catch(() => undefined)])
         patchTask('contracts', {
           detail: `${Object.values(value.labs).filter(Boolean).length} drivers${
-            packet ? ` · boot packet ${packet.memberCount} ops/${packet.httpRequests} req` : ''
+            packet ? ` · boot packet ${packet.memberCount} ops/${packet.httpRequests} req/${packet.source ?? 'public'}` : ''
           }`,
         })
       }),

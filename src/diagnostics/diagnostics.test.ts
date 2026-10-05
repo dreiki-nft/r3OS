@@ -15,7 +15,7 @@ function input(overrides: Partial<DxDiagInput> = {}): DxDiagInput {
     chain: { id: 143, name: 'Monad' },
     block: { number: 109_483_102n, mode: 'live', blockTimeMs: 400 },
     deployBlock: 100n,
-    rpc: { httpEndpoints: 2, wsConfigured: true, multicallConfigured: true, multicallPresent: true },
+    rpc: { httpEndpoints: 2, wsConfigured: true, multicallConfigured: true, multicallPresent: true, fastlaneAcceleratorConfigured: true, bootPacketSource: 'accelerator', bootPacketMs: 182 },
     contracts: {
       paint: '0x0000000000000000000000000000000000001000',
       r3tards: '0x0000000000000000000000000000000000001001',
@@ -57,6 +57,8 @@ describe('DXDIAG report model', () => {
     expect(a).toContain('block: 109483102')
     expect(a).toContain('block mode: live (websocket)')
     expect(a).toContain('multicall: present')
+    expect(a).toContain('fastlane accelerator: configured (optional)')
+    expect(a).toContain('boot packet: accelerator · 182 ms')
     expect(a).toContain('block camera: installed')
     expect(a).toContain('card.drv: not installed')
     expect(a).not.toContain('ROUTER')

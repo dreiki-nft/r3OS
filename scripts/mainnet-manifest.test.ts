@@ -30,6 +30,7 @@ const input = () => ({
     walletRpcUrl: 'https://rpc.monad.xyz',
     wsUrl: 'wss://rpc.monad.xyz',
     explorerUrl: 'https://monadvision.com',
+    fastlaneAcceleratorUrl: 'https://r3os-fastlane.example/v1/boot-rpc',
   },
   confirmMainnet: true,
 })
@@ -46,6 +47,8 @@ describe('mainnet deployment manifest', () => {
     expect(markdown).toContain('Do not let the final owner accept Paint ownership before Monad Hardware registration completes.')
     expect(markdown).toContain('IRREVERSIBLE ADMIN GATE')
     expect(markdown).toContain('IRREVERSIBLE FREEZE GATE')
+    expect(markdown).toContain('https://r3os-fastlane.example/v1/boot-rpc')
+    expect(markdown).toContain('FastLane Enterprise credential is never browser-visible')
   })
 
   it('fails closed on chain, partner, budget, freeze-policy and RPC drift', () => {

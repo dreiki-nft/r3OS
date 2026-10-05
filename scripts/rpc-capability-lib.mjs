@@ -69,9 +69,12 @@ function request(id, method, params = []) {
   return { jsonrpc: '2.0', id, method, params }
 }
 
+export function normalizeRpcResponseItems(body) {
+  return Array.isArray(body) ? body : body ? [body] : []
+}
+
 function responseById(body) {
-  const items = Array.isArray(body) ? body : body ? [body] : []
-  return new Map(items.map((item) => [item?.id, item]))
+  return new Map(normalizeRpcResponseItems(body).map((item) => [item?.id, item]))
 }
 
 function rpcResult(row) {
@@ -145,7 +148,9 @@ export async function probeRpcCapability({
     const size = Math.max(1, Math.min(100, Number(requested) || 1))
     const payload = Array.from({ length: size }, () => request(nextId++, 'eth_blockNumber'))
     const row = await rpcPost(url, payload, origin)
-    const items = Array.isArray(row.body) ? row.body : []
+    // Some JSON-RPC servers normalize a one-member batch into a single response object.
+    // Count that as a successful one-member request instead of reporting a fake batch failure.
+    const items = normalizeRpcResponseItems(row.body)
     batchBenchmarks.push({
       size,
       ms: row.ms,

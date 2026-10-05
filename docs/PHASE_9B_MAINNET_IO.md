@@ -1,75 +1,108 @@
 # Phase 9B — Mainnet I/O
 
-Status: first implementation slice. No deployment or transaction has been executed by these changes.
+Status: FastLane topology resolved; optional stateless Worker accelerator implemented. No Worker deployment, mainnet deployment or transaction benchmark has been executed by these repository changes.
 
-## Provider policy
+## Final FastLane policy
 
-The browser architecture remains:
+FastLane support confirmed directly on 2026-10-05 that the Enterprise RPC URL should not be exposed in a frontend and that placing FastLane behind a Cloudflare Worker is a normal/recommended pattern for their apps and dashboards.
 
-`browser → Monad RPC / WebSocket → contracts / storage / logs`
+Therefore the production topology is:
 
-FastLane Enterprise is eligible to become one browser RPC lane only if the provider explicitly confirms that the issued credential may be exposed in browser code. CORS support is necessary but is not permission to publish a credential. A secret/server-only credential must not be placed in any `VITE_` variable and must not be routed through an app-owned proxy merely to preserve FastLane.
-
-Public FastLane material inspected during this phase confirms that FastLane operates Monad RPC infrastructure, but it does not establish the browser-exposure policy for the user's Enterprise credential. Until that account-specific policy is confirmed, production browser integration is intentionally blocked.
-
-Local capability command:
-
-```bash
-FASTLANE_RPC_URL="$YOUR_LOCAL_VALUE" npm run rpc:probe:fastlane
+```text
+browser
+  ├─ direct public Monad RPC / WebSocket → Monad
+  └─ optional r3OS Cloudflare Worker → FastLane Enterprise → Monad
 ```
 
-Do not paste the URL/token into chat. The command writes `artifacts/fastlane-capability.json` without storing the endpoint URL or any credential-derived fingerprint.
+The Worker is acceleration only:
 
-If FastLane explicitly confirms the issued credential is browser-public, rerun locally with:
+- no database
+- no canonical application state
+- no wallet/session state
+- no signing or private keys
+- no transaction submission
+- no admin actions
+- no exclusive event delivery
+- no correctness dependency
 
-```bash
-FASTLANE_BROWSER_POLICY=public-browser FASTLANE_RPC_URL="$YOUR_LOCAL_VALUE" npm run rpc:probe:fastlane
-```
+If the Worker is missing, rate-limited or unhealthy, r3OS continues through direct public Monad RPC/WebSocket. Losing the Worker may make startup slower; it must not make the application incorrect or unavailable.
 
-Only `ELIGIBLE_AS_BROWSER_RPC_LANE` is sufficient to consider putting that endpoint into the public browser configuration.
+The FastLane credential remains a Cloudflare secret and never appears in a `VITE_` variable. Cloudflare's current documentation says sensitive API tokens should be stored as Worker secrets rather than normal variables, and its native rate-limit binding can enforce application-side limits without a separate database.
 
-## What the capability probe measures
+Sources:
 
-Read-only only:
+- https://developers.cloudflare.com/workers/configuration/secrets/
+- https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
 
-- chain ID
-- `web3_clientVersion`
-- finalized-block availability
-- `eth_maxPriorityFeePerGas`
-- `eth_feeHistory`
-- browser CORS preflight/POST headers
-- cold request timing
-- three warm sequential request timings
-- JSON-RPC batch sizes 1 / 5 / 20 by default
+## FastLane measurement
 
-Each batch member is conservatively counted as an RPC operation. The probe makes no claim that a 20-member HTTP batch consumes one provider rate-limit unit.
+The local Enterprise probe measured Monad Mainnet chain ID 143 / `Monad/0.16.4` with approximately:
 
-## Mainnet Boot Packet
+- cold `eth_chainId`: 560 ms
+- warm sequential calls: 166–172 ms
+- five-member batch: 166 ms
+- twenty-member batch: 173 ms
 
-The browser now starts one bounded batch packet on the primary configured read-safe RPC lane during boot. The initial packet contains ten independent members:
+The 1-member benchmark originally appeared unsupported because the provider normalized the one-member batch into a single JSON-RPC object rather than an array. The capability probe now normalizes either response shape so it does not report a false batch failure.
+
+Batch members continue to be conservatively counted individually for provider accounting.
+
+## Worker surface
+
+The Worker lives in `edge/fastlane-worker/` and intentionally does **not** implement a generic JSON-RPC proxy.
+
+Public routes:
+
+- `GET /health`
+- `POST /v1/boot-rpc`
+
+`/v1/boot-rpc` accepts only the exact ten-member r3OS Boot Packet shape:
 
 1. `eth_chainId`
 2. `eth_blockNumber`
 3. `web3_clientVersion`
 4. Paint `eth_getCode`
 5. Multicall3 `eth_getCode`
-6. Paint `painterPass()`
-7. Paint `R3TARDS()`
-8. Paint `experimentCount()`
-9. Paint `renderersFrozen()`
-10. Paint `experimentsFrozen()`
+6–10. five no-argument `eth_call`s against the configured Paint address
 
-The packet is useful state, not synthetic warming traffic. Its decoded registry/status values seed the normal production caches so those reads are not immediately repeated.
+The Worker additionally enforces:
 
-The configured `VITE_RPC_BATCH_SIZE` remains the maximum packet size. If a provider rejects a large batch, the packet recursively splits; if the packet fails entirely, normal viem fallback reads continue. It therefore does not become a new single point of failure.
+- exact Paint and Multicall target addresses
+- `latest` block tags for this low-latency startup packet
+- allowed browser origins
+- 16 KiB body cap
+- unique JSON-RPC IDs
+- native Cloudflare rate-limit binding
+- no caching
+- no raw transaction path
+- no arbitrary contract target
 
-The WebSocket transport is also opened opportunistically during boot. Action RPC probing remains independent and still warms/ranks every configured action endpoint.
+The checked-in Wrangler file is an example only and contains no FastLane credential. The Worker fails closed if its rate-limit binding or FastLane secret is missing.
 
-## Why JSON-RPC batch instead of a giant Multicall3
+## Browser integration
 
-Monad's current performance guide recommends concurrent `eth_call`s and notes that RPC batch members can execute in parallel, while Multicall executes its internal calls serially. r3OS still uses Multicall3 for many bounded homogeneous reads; the Boot Packet is specifically for independent startup calls where removing both round-trip waterfalls and serialized EVM aggregation is useful.
+The only new browser-visible value is:
 
-Current official public-mainnet batch limits are provider-specific, including limits of 100, 10, or 1 depending on the endpoint. The runtime therefore does not assume one universal batch size.
+```text
+VITE_FASTLANE_ACCELERATOR_URL=https://<worker-host>/v1/boot-rpc
+```
+
+It is active only on chain 143. Testnet ignores it even if accidentally configured.
+
+Boot behavior:
+
+1. Try the optional accelerator with a short timeout.
+2. Require a complete chain-143 Boot Packet.
+3. On any accelerator error, malformed/incomplete packet, CORS rejection or rate limit, fall back to the direct public RPC Boot Packet.
+4. Existing viem/public-provider reads remain authoritative and continue independently.
+
+Boot diagnostics label the source as `accelerator` or `public`.
+
+## Why JSON-RPC batch
+
+Monad's performance guidance recommends concurrent `eth_call`s and notes that JSON-RPC batch members can execute in parallel, while Multicall executes its internal calls serially. The Boot Packet is specifically for independent startup reads where removing both round-trip waterfalls and serialized EVM aggregation is useful.
+
+Current public mainnet providers expose different batch capabilities, so direct-public fallback retains recursive batch splitting rather than assuming one universal limit.
 
 Sources:
 
@@ -79,43 +112,29 @@ Sources:
 
 ## Method-aware routing
 
-Not added yet.
+Still not added.
 
-The existing action pool already maintains health/latency EWMA, cooldowns, freshness penalties, hedged latency-sensitive reads, multi-endpoint raw-transaction broadcast and receipt hedging. Adding method-specific scores before measuring FastLane and the final mainnet providers would create complexity without evidence.
-
-The provider capability measurements and later mainnet action measurements will determine whether `eth_estimateGas`, fee reads, receipt reads or broadcast paths benefit from separate rankings.
+The existing action pool already maintains health/latency EWMA, cooldowns, freshness penalties, hedged latency-sensitive reads, multi-endpoint raw-transaction broadcast and receipt hedging. The FastLane Worker currently accelerates only the measured Boot Packet path. Adding a generic method router would increase complexity and quota exposure without evidence that it improves the application.
 
 ## Priority-fee benchmark
 
-`npm run benchmark:priority` is read-only by default. It reads current mainnet fee data and prints the 0 / 1 / 2 / 5 gwei priority matrix with exact 21,000-gas self-transfer envelopes.
+`npm run benchmark:priority` remains read-only by default.
 
-Monad currently documents:
+Current plan snapshot observed:
 
-- gas charged = transaction gas limit
-- EIP-1559 priority fee contributes to transaction ordering
-- default client ordering is descending total gas price
-- `eth_maxPriorityFeePerGas` currently returns a temporary hardcoded 2 gwei suggestion
+- initial base fee: 100 gwei
+- `eth_maxPriorityFeePerGas`: 2 gwei
+- matrix: 0 / 1 / 2 / 5 gwei
 
-Therefore the benchmark measures actual observed behavior rather than treating 2 gwei or a premium RPC tier as magic priority.
+Monad currently documents that the transaction gas limit is charged and that priority fee participates in transaction ordering. The current 2 gwei RPC suggestion is not treated as proof that 2 gwei is optimal.
 
-Real sends are intentionally gated and have not been executed. Transaction mode requires all of:
+No priority benchmark transaction has been sent. Transaction mode remains gated by explicit mainnet-spend confirmation and should not run until the user approves that exact step.
 
-```bash
-PRIORITY_BENCH_PRIVATE_KEY=... \
-PRIORITY_BENCH_CONFIRM=YES_MAINNET_SPEND \
-npm run benchmark:priority -- --send
-```
+## Remaining 9B work
 
-Every sample is a zero-value self-transfer with exactly 21,000 gas. The script waits until that sample is canonically finalized before sending the next priority level, preventing same-account nonce ordering from trivially invalidating the comparison. This still remains an empirical launch-time sample, not a network guarantee.
-
-No transaction benchmark should be run until the user explicitly approves that mainnet-spend step.
-
-## Remaining 9B work after local capability results
-
-1. Run the FastLane capability probe locally without sharing its endpoint.
-2. Resolve provider credential policy from FastLane's account documentation/support.
-3. Benchmark Boot Packet/public provider combinations on mainnet.
-4. Decide whether FastLane joins `VITE_RPC_URLS`; if not, retain direct public providers.
-5. Measure method-specific action behavior before deciding whether method-aware scoring is justified.
-6. Execute the priority-fee transaction matrix only after explicit approval.
-7. Consider fixed gas envelopes for known r3OS actions only after mainnet simulation distributions prove conservative limits.
+1. Run the full local acceptance gates for this Worker/fallback patch.
+2. Create the Cloudflare Worker only after reviewing its origin, rate limit, Paint address and secret setup.
+3. Measure Worker Boot Packet latency from the production browser and compare with direct-public fallback.
+4. Decide whether any additional read-heavy endpoint deserves acceleration based on measurements, not architectural enthusiasm.
+5. Run the small 0/1/2/5 gwei transaction matrix only after explicit mainnet-spend approval.
+6. Consider fixed gas envelopes only after mainnet simulations prove conservative bounds for each known action.

@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import packageJson from '../../package.json'
 import { getBlockSnapshot } from '../chain/blocks'
+import { getBootPacketSnapshot } from '../chain/bootPacket'
 import { publicClient } from '../chain/clients'
 import { chainName, config } from '../chain/config'
 import { discoverContracts, getCachedContracts, getCachedCoreStatus, readCoreStatus } from '../chain/contracts'
@@ -157,6 +158,9 @@ export async function loadDxDiag(
       wsConfigured: Boolean(config.wsUrl),
       multicallConfigured: Boolean(config.multicall3Address),
       multicallPresent,
+      fastlaneAcceleratorConfigured: Boolean(config.fastlaneAcceleratorUrl),
+      bootPacketSource: getBootPacketSnapshot()?.source,
+      bootPacketMs: getBootPacketSnapshot()?.elapsedMs,
     },
     rpcStats: { windowSeconds: 10, counts: rpcCounts, totals: rpcTotals },
     contracts: {

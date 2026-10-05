@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "r3os-fastlane-accelerator",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-05",
+  "vars": {
+    "R3OS_ALLOWED_ORIGINS": "https://YOUR_R3OS_DOMAIN.example,http://localhost:5173",
+    "R3OS_PAINT_ADDRESS": "0x0000000000000000000000000000000000000000",
+    "R3OS_MULTICALL3_ADDRESS": "0xcA11bde05977b3631167028862bE2a173976CA11"
+  },
+  "secrets": {
+    "required": ["FASTLANE_RPC_URL"]
+  },
+  "ratelimits": [
+    {
+      "name": "RPC_RATE_LIMITER",
+      "namespace_id": "900901",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ]
+}

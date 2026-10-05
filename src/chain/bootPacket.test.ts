@@ -6,6 +6,7 @@ import {
   buildBootPacketRequests,
   decodeBootPacket,
   fetchBootPacketUsing,
+  fetchPreferredBootPacketUsing,
 } from './bootPacket'
 
 const paint = '0x00000000000000000000000000000000000000aa' as Address
@@ -15,6 +16,27 @@ const r3tards = '0x0000000000000000000000000000000000000008' as Address
 
 function encoded(functionName: string, result: unknown): Hex {
   return encodeFunctionResult({ abi: R3OS_PAINT_ABI, functionName: functionName as never, result: result as never })
+}
+
+function completeResponses(body: Array<{ id: number }>) {
+  const entries = buildBootPacketRequests(paint, multicall)
+  const keyById = new Map(entries.map((entry) => [entry.request.id, entry.key]))
+  const resultFor = (key: string) => {
+    switch (key) {
+      case 'chainId': return '0x8f'
+      case 'blockNumber': return '0x1234'
+      case 'clientVersion': return 'Monad/test'
+      case 'paintCode': return '0x6001'
+      case 'multicallCode': return '0x6002'
+      case 'painterPass': return encoded('painterPass', pass)
+      case 'r3tards': return encoded('R3TARDS', r3tards)
+      case 'experimentCount': return encoded('experimentCount', 2n)
+      case 'renderersFrozen': return encoded('renderersFrozen', false)
+      case 'experimentsFrozen': return encoded('experimentsFrozen', false)
+      default: return '0x'
+    }
+  }
+  return body.map((member) => ({ jsonrpc: '2.0', id: member.id, result: resultFor(keyById.get(member.id) ?? '') }))
 }
 
 afterEach(() => {
@@ -114,4 +136,75 @@ describe('boot packet', () => {
     expect(value.complete).toBe(true)
     expect(value.httpRequests).toBeGreaterThan(1)
   })
+
+  it('prefers the optional accelerator when it returns a complete mainnet packet', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      urls.push(String(url))
+      const body = JSON.parse(String(init?.body)) as Array<{ id: number }>
+      return Response.json(completeResponses(body))
+    }))
+
+    const value = await fetchPreferredBootPacketUsing({
+      publicUrl: 'https://public.invalid',
+      acceleratorUrl: 'https://edge.invalid/v1/boot-rpc',
+      expectedChainId: 143,
+      paintAddress: paint,
+      multicallAddress: multicall,
+      batchSize: 10,
+    })
+
+    expect(value.source).toBe('accelerator')
+    expect(value.acceleratorAttempted).toBe(true)
+    expect(urls).toEqual(['https://edge.invalid/v1/boot-rpc'])
+  })
+
+  it('falls back to direct public RPC when the optional accelerator fails', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      urls.push(String(url))
+      if (String(url).includes('edge.invalid')) return new Response('rate limited', { status: 429 })
+      const body = JSON.parse(String(init?.body)) as Array<{ id: number }>
+      return Response.json(completeResponses(body))
+    }))
+
+    const value = await fetchPreferredBootPacketUsing({
+      publicUrl: 'https://public.invalid',
+      acceleratorUrl: 'https://edge.invalid/v1/boot-rpc',
+      expectedChainId: 143,
+      paintAddress: paint,
+      multicallAddress: multicall,
+      batchSize: 10,
+    })
+
+    expect(value.source).toBe('public')
+    expect(value.acceleratorAttempted).toBe(true)
+    expect(urls).toEqual(['https://edge.invalid/v1/boot-rpc', 'https://public.invalid'])
+  })
+
+  it('never enables the accelerator on a non-mainnet chain', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      urls.push(String(url))
+      const body = JSON.parse(String(init?.body)) as Array<{ id: number }>
+      const responses = completeResponses(body).map((row) =>
+        row.id === 1 ? { ...row, result: '0x279f' } : row,
+      )
+      return Response.json(responses)
+    }))
+
+    const value = await fetchPreferredBootPacketUsing({
+      publicUrl: 'https://testnet-public.invalid',
+      acceleratorUrl: 'https://edge.invalid/v1/boot-rpc',
+      expectedChainId: 10143,
+      paintAddress: paint,
+      multicallAddress: multicall,
+      batchSize: 10,
+    })
+
+    expect(value.source).toBe('public')
+    expect(value.acceleratorAttempted).toBe(false)
+    expect(urls).toEqual(['https://testnet-public.invalid'])
+  })
+
 })

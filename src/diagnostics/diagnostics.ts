@@ -31,6 +31,9 @@ export interface DxDiagInput {
     wsConfigured: boolean
     multicallConfigured: boolean
     multicallPresent?: boolean
+    fastlaneAcceleratorConfigured?: boolean
+    bootPacketSource?: 'accelerator' | 'public'
+    bootPacketMs?: number
   }
   /** Local method counts only; no endpoint URLs, request bodies, accounts or keys are recorded. */
   rpcStats?: { windowSeconds: number; counts: Record<string, number>; totals: Record<string, number> }
@@ -116,6 +119,8 @@ export function formatReport(input: DxDiagInput, secrets: readonly string[] = []
   lines.push('RPC')
   row('http endpoints', input.rpc.httpEndpoints)
   row('ws configured', yesNo(input.rpc.wsConfigured))
+  row('fastlane accelerator', input.rpc.fastlaneAcceleratorConfigured ? 'configured (optional)' : 'disabled')
+  if (input.rpc.bootPacketSource) row('boot packet', `${input.rpc.bootPacketSource}${input.rpc.bootPacketMs == null ? '' : ` · ${input.rpc.bootPacketMs.toFixed(0)} ms`}`)
   row('block mode', blockModeLabel(input.block.mode))
   row(
     'multicall',

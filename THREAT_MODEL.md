@@ -203,3 +203,8 @@ Results are only as honest and complete as the RPC state used for the `eth_call`
 MRC-17's guarantee is sensitive to caller and state. The lab uses itself as `msg.sender` for quote and execution preview so the two paths share caller semantics, but an observed preview is still not a later execution. Liquidity, oracle state, proposer ordering and venue dependencies can change by the next block. A displayed quote or QUOTE SCOPE result must therefore never be presented as a future-block guarantee.
 
 The transaction-forwarding information shown in Monad Hardware is documentation/research context, not an execution guarantee. Monad's local-mempool forwarding reduces the resemblance to Ethereum's global public mempool, but the RPC operator and upcoming leaders see transactions before inclusion. Historical measurements of sandwich activity describe observed attacker behavior in the study window, not impossibility.
+
+
+## Optional FastLane edge accelerator
+
+The Phase 9B Cloudflare Worker is not a canonical backend. It is an optional stateless read accelerator for one bounded startup packet. The Enterprise FastLane URL is a Worker secret, never a browser variable. The Worker exposes no transaction submission or signing surface and fails closed if origin/rate-limit/target validation is not configured. Direct public Monad RPC/WebSocket remains available when the Worker is absent or unhealthy.

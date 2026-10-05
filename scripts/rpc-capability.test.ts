@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { browserDecision, normalizePolicy } from './rpc-capability-lib.mjs'
+import { browserDecision, normalizePolicy, normalizeRpcResponseItems } from './rpc-capability-lib.mjs'
 
 describe('RPC browser policy', () => {
   it('never treats CORS alone as permission to expose a credential', () => {
@@ -23,4 +23,12 @@ describe('RPC browser policy', () => {
     )
     expect(normalizePolicy('something-creative')).toBe('unverified')
   })
+
+  it('normalizes a provider one-member batch object without reporting a fake zero-response batch', () => {
+    const one = { jsonrpc: '2.0', id: 1, result: '0x1234' }
+    expect(normalizeRpcResponseItems(one)).toEqual([one])
+    expect(normalizeRpcResponseItems([one])).toEqual([one])
+    expect(normalizeRpcResponseItems(undefined)).toEqual([])
+  })
+
 })

@@ -30,6 +30,8 @@ Paint is the center of the project: draw locally, commit pixels as a transaction
 
 Core state and application logic do not depend on an app-owned backend or database. The frontend is static and reads contracts, logs and block data directly from Monad RPCs; optional third-party discovery services may enrich NFT discovery without becoming protocol state.
 
+On mainnet, r3OS can optionally use a **stateless FastLane read accelerator** behind a Cloudflare Worker for the bounded startup Boot Packet. It stores no canonical state and signs nothing; direct public Monad RPC/WebSocket remains the fallback and correctness path if the Worker is unavailable.
+
 **Naming:** `r3OS` is the product and interface. The historical testnet deployment keeps its deployed `R3tards*` contract names and `r3tards paint` EIP-712 domain for compatibility. Current mainnet source uses `R3OS*`, `r3OS paint`, `r3OS painter pass` and `r3OS labs`. The actual **r3tards** NFT collection keeps its real collection name and remains the primary holder-integration surface.
 
 A few deterministic storage/hash salts still contain historical `r3tards.*` strings on purpose. They are protocol layout keys, not public branding, and remain unchanged to preserve deterministic derivations.

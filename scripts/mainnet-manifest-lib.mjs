@@ -123,6 +123,7 @@ export function validateManifestInput(input) {
     validatePublicUrl(errors, 'frontend.walletRpcUrl', input.frontend.walletRpcUrl)
     validatePublicUrl(errors, 'frontend.wsUrl', input.frontend.wsUrl, { websocket: true })
     validatePublicUrl(errors, 'frontend.explorerUrl', input.frontend.explorerUrl)
+    if (input.frontend.fastlaneAcceleratorUrl) validatePublicUrl(errors, 'frontend.fastlaneAcceleratorUrl', input.frontend.fastlaneAcceleratorUrl)
   }
 
   if (input.confirmMainnet !== true) errors.push('confirmMainnet must be true in the reviewed manifest input')
@@ -195,8 +196,9 @@ export function formatManifestMarkdown(input, manifestHash) {
     `- Wallet/action RPC: ${code(f.walletRpcUrl)}`,
     `- WebSocket: ${code(f.wsUrl)}`,
     `- Explorer: ${code(f.explorerUrl)}`,
+    `- Optional stateless FastLane accelerator: ${f.fastlaneAcceleratorUrl ? code(f.fastlaneAcceleratorUrl) : 'disabled'}`,
     '',
-    'FastLane, if later approved by 9B as browser-safe, is just another lane. This manifest does not claim RPC-tier transaction priority.',
+    'The FastLane Enterprise credential is never browser-visible. If configured, only the public Cloudflare Worker route appears here. Direct public Monad RPC remains the fallback/canonical browser path, and this manifest makes no RPC-tier transaction-priority claim.',
     '',
     '## System Event configuration',
     '',
