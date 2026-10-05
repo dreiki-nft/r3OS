@@ -1,0 +1,44 @@
+{
+  "schema": "r3os-mainnet-deployment/v1",
+  "chainId": 143,
+  "deployer": "0x1111111111111111111111111111111111111111",
+  "finalOwner": "0x2222222222222222222222222222222222222222",
+  "tokenZeroRecipient": "0x3333333333333333333333333333333333333333",
+  "royaltyReceiver": "0x3333333333333333333333333333333333333333",
+  "r3tards": "0x200723A706de0013316E5cd8EBa2b3f53DD90c29",
+  "partners": {
+    "skrumpeys": "0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0",
+    "monadCards": "0x0000CA12D5c07085022eBC74867157449919Fd67"
+  },
+  "seasonStart": 1800000000,
+  "budgets": {
+    "basePixelsPerHour": 512,
+    "pixelsPerActiveDay": 32,
+    "maxPixelsPerHour": 2048,
+    "minPixelsForActiveDay": 16,
+    "holderPixelsPerDay": 512,
+    "skrumpeysPixelsPerDay": 128,
+    "monadCardPixelsPerDay": 128
+  },
+  "labBaseUri": "",
+  "systemEvent": {
+    "monUsdFeed": "0xBcD78f76005B7515837af6b50c7C52BCf73822fb",
+    "triggerMilliUsd": 333,
+    "maxAgeSeconds": 0
+  },
+  "freezeIntentions": {
+    "renderers": "freeze-after-acceptance",
+    "experiments": "keep-open"
+  },
+  "frontend": {
+    "rpcUrls": [
+      "REPLACE_AFTER_9B",
+      "REPLACE_AFTER_9B"
+    ],
+    "walletRpcUrl": "REPLACE_AFTER_9B",
+    "wsUrl": "REPLACE_AFTER_9B",
+    "explorerUrl": "REPLACE_AFTER_9B"
+  },
+  "confirmMainnet": false,
+  "reviewed": false
+}

@@ -132,3 +132,23 @@ finalized launch certification
          ↓
 Flight Recorder / R3OS_MAINNET_GENESIS evidence marker
 ```
+
+## Machine-validated manifest
+
+Phase 9A adds a fail-closed manifest generator so the final plan is derived from reviewed inputs instead of hand-edited prose:
+
+```bash
+npm run mainnet:manifest -- --input <reviewed-json>
+```
+
+Template: `docs/MAINNET_DEPLOYMENT_INPUT.example.json`. The checked-in template is intentionally non-executable (`reviewed=false`, `CONFIRM_MAINNET=false`, unresolved 9B RPC/WS values, no accepted oracle max-age); copy it to a local launch input and fill/review every field before the generator will pass.
+
+Outputs:
+
+- `artifacts/mainnet-deployment-manifest.json`
+- `artifacts/mainnet-deployment-manifest.sha256`
+- `artifacts/MAINNET_DEPLOYMENT_PLAN.md`
+
+The generator rejects chain drift, partner-address drift, Paint-budget drift, an experiments-freeze policy that contradicts the reviewed launch policy, missing public RPC/WS configuration, and a missing `CONFIRM_MAINNET=true` intent. It never queries RPC or broadcasts anything.
+
+The checked-in source test also asserts the safety-critical script facts behind the order: CARD.DRV constructs Card Memory before Hardware consumes that immutable address; Hardware directly calls owner-only Paint registry functions; and core ownership transfer remains `Ownable2Step`.

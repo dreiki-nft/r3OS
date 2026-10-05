@@ -2,7 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { formatFlightRecordText, makeFlightRecord } from './flight-recorder-lib.mjs'
+import { assembleFlightRecord, formatFlightRecordText, makeFlightRecord } from './flight-recorder-lib.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const argv = process.argv.slice(2)
@@ -14,27 +14,32 @@ const valueOf = (name, fallback) => {
 }
 
 if (argv.includes('--help') || argv.includes('-h')) {
-  console.log(`r3OS mainnet flight recorder\n\nusage:\n  node scripts/flight-recorder.mjs --input <json> [--out-dir artifacts]\n\nThe input must be human-reviewed launch evidence. This tool never queries RPC, signs, or sends transactions.\nIt writes deterministic mainnet-launch.json, mainnet-launch.txt and mainnet-launch.sha256.`)
+  console.log(`r3OS mainnet flight recorder\n\npreferred usage:\n  node scripts/flight-recorder.mjs \\\n    --input <base-json> \\\n    --doctor <finalized-launch-doctor.json> \\\n    --manifest <mainnet-deployment-manifest.json> \\\n    --acceptance <local-acceptance-gates.json> \\\n    [--out-dir artifacts]\n\nThe tool assembles chain evidence from Launch Doctor rather than asking a human to retype addresses/hashes.\nIt never queries RPC, signs, or sends transactions.`)
   process.exit(0)
 }
 
+function readJson(path, label) {
+  if (!path) throw new Error(`missing ${label}`)
+  try {
+    return JSON.parse(readFileSync(resolve(root, path), 'utf8'))
+  } catch (error) {
+    throw new Error(`unable to read ${label}: ${error?.message ?? error}`)
+  }
+}
+
 const inputPath = valueOf('--input')
+const doctorPath = valueOf('--doctor')
+const manifestPath = valueOf('--manifest')
+const acceptancePath = valueOf('--acceptance')
 const outDir = resolve(root, valueOf('--out-dir', 'artifacts'))
-if (!inputPath) {
-  console.error('missing --input (use --help)')
-  process.exit(2)
-}
-
-let input
-try {
-  input = JSON.parse(readFileSync(resolve(root, inputPath), 'utf8'))
-} catch (error) {
-  console.error(`unable to read input JSON: ${error?.message ?? error}`)
-  process.exit(2)
-}
 
 try {
-  const { record, json, hash } = makeFlightRecord(input)
+  const baseInput = readJson(inputPath, '--input JSON')
+  const doctor = readJson(doctorPath, '--doctor JSON')
+  const manifest = readJson(manifestPath, '--manifest JSON')
+  const acceptance = readJson(acceptancePath, '--acceptance JSON')
+  const assembled = assembleFlightRecord({ baseInput, doctor, manifest, acceptance })
+  const { record, json, hash } = makeFlightRecord(assembled)
   mkdirSync(outDir, { recursive: true })
   writeFileSync(resolve(outDir, 'mainnet-launch.json'), json)
   writeFileSync(resolve(outDir, 'mainnet-launch.txt'), formatFlightRecordText(record, hash))

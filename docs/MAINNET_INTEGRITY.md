@@ -70,3 +70,57 @@ npm run flight:record -- --input artifacts/mainnet-launch-input.json
 ```
 
 The recorder validates chain ID 143, a finalized block/hash, at least one contract entry and a green finalized Launch Doctor result. It does not query RPC, sign, or send transactions.
+
+## Structured finalized evidence
+
+Launch Doctor JSON now includes a structured `evidence` object in addition to the human report. The evidence is gathered at the same finalized anchor and includes, where available:
+
+- all 16 intended launch contract addresses and deployed-code hashes;
+- active Paint registry entries and their code hashes;
+- renderer entries and hashes;
+- Paint/Labs/Pass/Quests owner and pending-owner state;
+- renderer/experiment freeze state;
+- Paint schedule/budget configuration;
+- partner code/hash/budget checks.
+
+This prevents the Flight Recorder from relying on hand-copied addresses or hashes.
+
+## Local acceptance artifact
+
+Run:
+
+```bash
+npm run launch:gates
+```
+
+It executes the non-RPC launch gates and records their exit status in `artifacts/local-acceptance-gates.json`. It does not install dependencies or modify package files.
+
+## Final Flight Recorder assembly
+
+The preferred Phase 9 path is:
+
+```bash
+# 1. Generate the reviewed deployment plan before any broadcast.
+npm run mainnet:manifest -- --input <reviewed-deployment-input.json>
+
+# 2. After accepted deployment and ownership state, capture a finalized Doctor report.
+RPC_URL="$MONAD_RPC_URL" \
+EXPECTED_CHAIN_ID=143 \
+PAINT_ADDRESS=<paint> \
+EXPECTED_OWNER=<final-owner> \
+npm run launch:doctor -- --json > artifacts/launch-doctor-finalized.json
+
+# 3. Capture local regression/build evidence.
+npm run launch:gates
+
+# 4. Only after mainnet acceptance, assemble the canonical Flight Recorder.
+npm run flight:record -- \
+  --input <base-flight-input.json> \
+  --doctor artifacts/launch-doctor-finalized.json \
+  --manifest artifacts/mainnet-deployment-manifest.json \
+  --acceptance artifacts/local-acceptance-gates.json
+```
+
+The recorder fails closed if any intended launch contract or code hash is missing, if the finalized Doctor anchor differs, if required local gates are red, if ownership is not finalized to the reviewed final owner, if required registry entries are missing, if test-only Router mocks are active, if partner evidence is incomplete, or if finalized freeze state contradicts the reviewed manifest.
+
+`R3OS_MAINNET_GENESIS` remains an evidence label over the deterministic recorder hash. It is not emitted onchain by `R3OSSystemEvent`.

@@ -430,6 +430,7 @@ export function toJson(result, { secrets = [] } = {}) {
       commitment: result.commitment ?? null,
       block: result.block == null ? null : String(result.block),
       blockHash: result.blockHash ?? null,
+      evidence: result.evidence ?? {},
       sections: result.sections,
       external: result.external,
       summary: result.summary,
@@ -467,6 +468,7 @@ export async function runDoctor({
   now = Date.now(),
 }) {
   const report = createReport()
+  const evidence = { contracts: {}, partners: {}, ownership: {}, registry: [], renderers: [], configuration: {} }
   const safe = async (fn) => {
     try {
       const value = await fn()
@@ -480,6 +482,11 @@ export async function runDoctor({
     const result = await safe(() => reader.code(address))
     if (!result.ok) return undefined
     return Boolean(result.value && result.value !== '0x')
+  }
+  const codeHashOf = async (address) => {
+    if (!address || isZero(address)) return undefined
+    const result = await safe(() => reader.codeHash(address))
+    return result.ok ? result.value : undefined
   }
   const addr = (result) => (result.ok && typeof result.value === 'string' ? result.value : undefined)
   const codeStatus = (present) =>
@@ -509,6 +516,9 @@ export async function runDoctor({
   const blockResult = await safe(() => reader.block())
   const block = blockResult.ok ? blockResult.value : undefined
   const finalizedCertification = block?.commitment === 'finalized'
+  evidence.finalizedReference = block
+    ? { blockNumber: String(block.number), blockHash: block.hash ?? null, commitment: block.commitment ?? null, timestamp: String(block.timestamp) }
+    : null
   report.add(
     'Finalized certification block',
     block && finalizedCertification ? STATUS.OK : chainId === 143 ? STATUS.FAIL : STATUS.UNKNOWN,
@@ -556,7 +566,7 @@ export async function runDoctor({
     codeStatus(paintCode),
     `${short(paint)} · ${paintCode ? 'code' : paintCode === false ? 'NO CODE' : 'unreadable'}`,
   )
-  if (paintCode !== true) return finish(report, { chainId, chainName, block, expectedChain })
+  if (paintCode !== true) return finish(report, { chainId, chainName, block, expectedChain, evidence })
   const P = (fragment, args) => read(paint, fragment, args)
   const [
     owner,
@@ -640,6 +650,17 @@ export async function runDoctor({
       : `base ${basePixelsPerHour.value}/h · +${pixelsPerActiveDay.value}/day · cap ${maxPixelsPerHour.value}/h · r3tard +${holderPixelsPerDay.value}/day`,
     badBudget.length ? `unexpected: ${badBudget.map(([label, result, expected]) => `${label}=${result.value} expected ${expected}`).join(', ')}` : '',
   )
+  evidence.configuration = {
+    r3tards: addr(r3tards) ?? null,
+    painterPass: passAddress ?? null,
+    seasonStart: seasonStart.ok ? String(seasonStart.value) : null,
+    seasonLength: seasonLength.ok ? String(seasonLength.value) : null,
+    currentSeason: season.ok ? String(season.value) : null,
+    tokenZeroOwner: tokenZero.ok ? tokenZero.value : null,
+    royaltyReceiver: royaltyReceiver.ok ? royaltyReceiver.value : null,
+    royaltyBps: royaltyBps.ok ? String(royaltyBps.value) : null,
+    budgets: Object.fromEntries(budgetReads.map(([label, result]) => [label, result.ok ? String(result.value) : null])),
+  }
 
   if (chainId === 143) {
     const [skrumpeys, monadCards, skrumpeysPx, monadCardPx] = await Promise.all([
@@ -669,6 +690,13 @@ export async function runDoctor({
           ? `expected ${short(partner.expectedAddress)} · +${partner.expectedPixels} px/day${code === false ? ' · NO CODE' : ''}`
           : '',
       )
+      evidence.partners[partner.label === 'Skrumpeys bonus' ? 'skrumpeys' : 'monadCards'] = {
+        address: configured ?? null,
+        pixelsPerDay: partner.pixels.ok ? String(partner.pixels.value) : null,
+        codePresent: code ?? null,
+        codeHash: configured ? (await codeHashOf(configured)) ?? null : null,
+        matchesExpected: readable && code != null ? matches : null,
+      }
     }
   }
   report.add(
@@ -723,13 +751,16 @@ export async function runDoctor({
       const address = value.experiment ?? value[0]
       const name = boundString(value.name ?? value[1], 48)
       const retired = Boolean(value.retired ?? value[3])
+      const entryHasCode = isZero(address) ? false : await hasCode(address)
+      const entryCodeHash = entryHasCode ? await codeHashOf(address) : undefined
       entries.push({
         id: i,
         name,
         address,
         uri: boundString(value.uri ?? value[2], 80),
         retired,
-        hasCode: isZero(address) ? false : await hasCode(address),
+        hasCode: entryHasCode,
+        codeHash: entryCodeHash,
       })
     }
   }
@@ -820,11 +851,13 @@ export async function runDoctor({
       `${short(entry.address)}${entry.retired ? ' · retired' : ''}${entry.hasCode === false && !isZero(entry.address) ? ' · NO CODE' : ''}`,
     )
   }
+  evidence.registry = entries.map((entry) => ({ id: entry.id, name: entry.name, address: entry.address, uri: entry.uri ?? '', retired: entry.retired, codePresent: entry.hasCode ?? null, codeHash: entry.codeHash ?? null }))
   const lab = (name) => registry.resolved[name]?.address
 
   // ---- RENDERERS
   report.section('RENDERERS')
   const rendererNames = []
+  const rendererEvidence = []
   let rendererUnreadable = 0
   if (renderers.ok) {
     for (let i = 0; i < Number(renderers.value) && i < 64; i++) {
@@ -843,6 +876,8 @@ export async function runDoctor({
       rendererNames.push(name)
       const builtin = i === 0 && isZero(address)
       const code = builtin ? true : await hasCode(address)
+      const rendererCodeHash = builtin ? undefined : code ? await codeHashOf(address) : undefined
+      rendererEvidence.push({ id: i, name, address, builtIn: builtin, codePresent: code ?? null, codeHash: rendererCodeHash ?? null })
       report.add(
         `Renderer #${i} ${name}`,
         builtin ? STATUS.OK : codeStatus(code),
@@ -850,6 +885,7 @@ export async function runDoctor({
       )
     }
   }
+  evidence.renderers = rendererEvidence
   const readiness = rendererReadiness({
     names: rendererNames,
     frozen: rFrozen.ok && rFrozen.value,
@@ -883,8 +919,11 @@ export async function runDoctor({
       read(address, 'function owner() view returns (address)'),
       read(address, 'function pendingOwner() view returns (address)'),
     ])
-    const result = ownershipCheck({ owner: addr(o), pendingOwner: addr(p), expected: expectedOwner })
-    if (addr(o)) owners.push(addr(o))
+    const ownerAddress = addr(o)
+    const pendingOwnerAddress = addr(p)
+    const result = ownershipCheck({ owner: ownerAddress, pendingOwner: pendingOwnerAddress, expected: expectedOwner })
+    evidence.ownership[label] = { owner: ownerAddress ?? null, pendingOwner: pendingOwnerAddress ?? null, expectedOwner: expectedOwner ?? null, status: result.status }
+    if (ownerAddress) owners.push(ownerAddress)
     report.add(`${label} owner`, result.status, result.value, result.detail)
   }
   if (!expectedOwner && owners.length > 1 && new Set(owners.map((o) => o.toLowerCase())).size > 1) {
@@ -1403,14 +1442,46 @@ export async function runDoctor({
       : '',
   )
 
-  return finish(report, { chainId, chainName, block, expectedChain })
+  const addContractEvidence = async (name, address) => {
+    if (!address || isZero(address)) return
+    evidence.contracts[name] = { address, codeHash: (await codeHashOf(address)) ?? null }
+  }
+  await addContractEvidence('R3OSPaint', paint)
+  await addContractEvidence('R3OSPainterPass', passAddress)
+  await addContractEvidence('R3OSLabs', labsAddress)
+  const experimentContractNames = {
+    'finale auction': 'R3OSFinaleAuction',
+    quests: 'R3OSQuests',
+    'recycle-bin': 'R3OSRecycleBin',
+    'cd-burner': 'R3OSCDBurner',
+    'card-drv': 'R3OSCardMemory',
+    'page-exe': 'R3OSPageExe',
+    'block-camera': 'R3OSBlockCamera',
+    'operator-record': 'R3OSOperatorRecord',
+    'system-event': 'R3OSSystemEvent',
+    'router-lab': 'R3OSRouterLab',
+  }
+  for (const [registryName, contractName] of Object.entries(experimentContractNames)) {
+    await addContractEvidence(contractName, lab(registryName))
+  }
+  const rendererContractNames = { diff: 'DiffRenderer', 'season timelapse': 'SeasonTimelapseRenderer', df1: 'DF1Renderer' }
+  for (const renderer of rendererEvidence) {
+    const contractName = rendererContractNames[renderer.name]
+    if (contractName) await addContractEvidence(contractName, renderer.address)
+  }
+  evidence.freezeStates = {
+    renderersFrozen: rFrozen.ok ? Boolean(rFrozen.value) : null,
+    experimentsFrozen: eFrozen.ok ? Boolean(eFrozen.value) : null,
+  }
+
+  return finish(report, { chainId, chainName, block, expectedChain, evidence })
 }
 
 /** Valid secp256r1 vector (same as src/chain/monadHardware.ts). Returns 32-byte 1 when verified. */
 export const P256_VECTOR =
   '0x84620b4976eefe556d558a13e176b421238988a31fef4ec774cfe5e5e7ad479fe0c14450794f14eb78eabf357b55e7ad08de3bb2e8eb2982a4856328dacf27707bc0d2c6db0305dde670ef690dd4e9bbee8f4e5ba831a0c678997e5b58ee1b0f471c3e758c4904285bba7e53118ed0f524adeb0757d25bd2f8e7b0d76dfa714cdd520f7aca8a8b917acc37f51de8f0c9bbe3ad858382e702dc25a12d09f7a858'
 
-function finish(report, { chainId, chainName, block, expectedChain }) {
+function finish(report, { chainId, chainName, block, expectedChain, evidence = {} }) {
   const checks = allChecks(report)
   const summary = summarize(checks)
   return {
@@ -1423,6 +1494,7 @@ function finish(report, { chainId, chainName, block, expectedChain }) {
     commitment: block?.commitment ?? null,
     block: block ? block.number : null,
     blockHash: block?.hash ?? null,
+    evidence,
     sections: report.sections,
     external: EXTERNAL_CHECKS,
     summary,

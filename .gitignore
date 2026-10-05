@@ -39,3 +39,6 @@ launch-doctor-*.json
 /REVIEW_WITH_CLAUDE.md
 /CLAUDE_*_REVIEW.md
 /ddd
+
+# Local launch-gate capture is embedded into the final Flight Recorder; do not commit transient runs.
+/artifacts/local-acceptance-gates.json
