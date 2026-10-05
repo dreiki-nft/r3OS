@@ -23,7 +23,7 @@ vi.mock('./clients', () => ({
   },
 }))
 vi.mock('./config', () => ({
-  config: { paintAddress: '0x00000000000000000000000000000000000000aa', labs: {} },
+  config: { chainId: 143, paintAddress: '0x00000000000000000000000000000000000000aa', labs: {} },
 }))
 
 afterEach(() => {
@@ -66,5 +66,63 @@ describe('discoverContracts', () => {
     await discoverContracts()
     await discoverContracts(true)
     expect(calls.filter((name) => name === 'experimentCount')).toHaveLength(3)
+  })
+
+  it('consumes the Boot Packet registry/status seed instead of repeating those startup calls', async () => {
+    const boot = await import('./bootPacket')
+    boot.__setBootPacketForTests({
+      at: Date.now(),
+      elapsedMs: 175,
+      memberCount: 10,
+      httpRequests: 1,
+      paintAddress: '0x00000000000000000000000000000000000000aa',
+      chainId: 143,
+      blockNumber: 123n,
+      clientVersion: 'Monad/test',
+      paintCode: '0x6001',
+      painterPass: '0x0000000000000000000000000000000000000009',
+      r3tards: '0x0000000000000000000000000000000000000008',
+      experimentCount: 2,
+      renderersFrozen: false,
+      experimentsFrozen: true,
+      complete: true,
+    })
+    const { discoverContracts, readCoreStatus } = await import('./contracts')
+    const value = await discoverContracts()
+    const status = await readCoreStatus()
+    expect(value.experimentCount).toBe(2)
+    expect(status).toEqual({ renderersFrozen: false, experimentsFrozen: true })
+    expect(calls).not.toContain('painterPass')
+    expect(calls).not.toContain('R3TARDS')
+    expect(calls).not.toContain('experimentCount')
+    expect(calls).not.toContain('renderersFrozen')
+    expect(calls).not.toContain('experimentsFrozen')
+    expect(calls.filter((name) => name === 'experimentInfo')).toHaveLength(2)
+  })
+
+  it('ignores a stale Boot Packet instead of pinning old mutable registry state', async () => {
+    const boot = await import('./bootPacket')
+    boot.__setBootPacketForTests({
+      at: Date.now() - 60_000,
+      elapsedMs: 175,
+      memberCount: 10,
+      httpRequests: 1,
+      paintAddress: '0x00000000000000000000000000000000000000aa',
+      chainId: 143,
+      blockNumber: 123n,
+      clientVersion: 'Monad/test',
+      paintCode: '0x6001',
+      painterPass: '0x0000000000000000000000000000000000000009',
+      r3tards: '0x0000000000000000000000000000000000000008',
+      experimentCount: 2,
+      renderersFrozen: false,
+      experimentsFrozen: true,
+      complete: true,
+    })
+    const { discoverContracts } = await import('./contracts')
+    const value = await discoverContracts()
+    expect(value.experimentCount).toBe(3)
+    expect(calls).toContain('experimentCount')
+    expect(calls.filter((name) => name === 'experimentInfo')).toHaveLength(3)
   })
 })

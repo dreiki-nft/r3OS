@@ -103,3 +103,20 @@ export const wsClient = config.wsUrl
       cacheTime: 0,
     })
   : undefined
+
+let realtimeWarm: Promise<void> | undefined
+
+/** Open the configured realtime socket during boot without making it a readiness dependency. */
+export function warmRealtimeConnection() {
+  if (!wsClient) return Promise.resolve()
+  if (realtimeWarm) return realtimeWarm
+  const pending = wsClient
+    .getBlockNumber({ cacheTime: 0 })
+    .then(() => undefined)
+    .catch(() => undefined)
+    .finally(() => {
+      if (realtimeWarm === pending) realtimeWarm = undefined
+    })
+  realtimeWarm = pending
+  return pending
+}

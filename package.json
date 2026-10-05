@@ -25,7 +25,9 @@
     "mainnet:manifest": "node scripts/mainnet-manifest.mjs",
     "launch:gates": "node scripts/acceptance-gates.mjs",
     "test:speculation": "vitest run --maxWorkers=2 src/chain/speculation.integrity.test.ts src/chain/monadLogs.test.ts src/paint/canvasStore.test.ts",
-    "flight:record": "node scripts/flight-recorder.mjs"
+    "flight:record": "node scripts/flight-recorder.mjs",
+    "rpc:probe:fastlane": "node scripts/rpc-capability-probe.mjs",
+    "benchmark:priority": "node scripts/priority-benchmark.mjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",

@@ -42,3 +42,5 @@ launch-doctor-*.json
 
 # Local launch-gate capture is embedded into the final Flight Recorder; do not commit transient runs.
 /artifacts/local-acceptance-gates.json
+/artifacts/fastlane-capability.json
+/artifacts/priority-benchmark.json

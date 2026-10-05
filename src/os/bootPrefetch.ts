@@ -1,6 +1,8 @@
 import type { Address } from 'viem'
 import { getActionRpcSnapshot, probeActionRpcs } from '../chain/actionRpc'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
+import { prefetchBootPacket } from '../chain/bootPacket'
+import { warmRealtimeConnection } from '../chain/clients'
 import { discoverContracts, readCoreConstants, readCoreStatus } from '../chain/contracts'
 import { readPainterProfile } from '../chain/painterProfile'
 import { startMonadTraceFeed } from '../chain/monadLogs'
@@ -67,6 +69,7 @@ let bootCriticalSettled = false
 const accountWarmInflight = new Map<string, Promise<number[]>>()
 const accountWarmCache = new Map<string, { frames: number[]; at: number }>()
 const ACCOUNT_WARM_FRESH_MS = 8_000
+const BOOT_PACKET_HEAD_START_MS = 250
 
 const now = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
 
@@ -117,6 +120,23 @@ export function subscribeBootPrefetch(listener: Listener) {
 
 export function getBootPrefetchSnapshot() {
   return snapshot
+}
+
+async function waitForBootPacketHeadStart<T>(
+  pending: Promise<T>,
+  timeoutMs = BOOT_PACKET_HEAD_START_MS,
+) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      pending,
+      new Promise<undefined>((resolve) => {
+        timer = setTimeout(() => resolve(undefined), timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
 }
 
 async function runTask(id: string, metric: string, work: () => Promise<void>) {
@@ -380,6 +400,10 @@ export function startBootPrefetch() {
 
   started = (async () => {
     const readLimit = createLimiter(2)
+    // Kick transport setup before the visible boot tasks start competing for the same first RTT.
+    // The packet is advisory: if it fails, the existing viem fallback/read paths continue unchanged.
+    const bootPacket = prefetchBootPacket().catch(() => undefined)
+    void warmRealtimeConnection()
     let optionalOwner: Address | undefined
     let optionalFrames: number[] = []
 
@@ -409,6 +433,7 @@ export function startBootPrefetch() {
     })
     const contracts = runTask('contracts', 'boot-chain-contracts', () =>
       readLimit(async () => {
+        const packet = await waitForBootPacketHeadStart(bootPacket)
         const value = await discoverContracts()
         const traceAddresses = [value.paint, value.pass, ...Object.values(value.labs)].filter(
           (address): address is Address => Boolean(address),
@@ -416,7 +441,9 @@ export function startBootPrefetch() {
         void startMonadTraceFeed(traceAddresses)
         await Promise.all([readCoreConstants(), readCoreStatus().catch(() => undefined)])
         patchTask('contracts', {
-          detail: `${Object.values(value.labs).filter(Boolean).length} drivers`,
+          detail: `${Object.values(value.labs).filter(Boolean).length} drivers${
+            packet ? ` · boot packet ${packet.memberCount} ops/${packet.httpRequests} req` : ''
+          }`,
         })
       }),
     )

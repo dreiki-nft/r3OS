@@ -3,6 +3,7 @@ import { publicClient } from './clients'
 import { config } from './config'
 import { readMany } from './readMany'
 import { R3OS_PAINT_ABI } from '../lib/generated/abi'
+import { getBootPacketSnapshot } from './bootPacket'
 
 export interface ContractAddresses {
   paint?: Address
@@ -23,6 +24,19 @@ let constantsPromise: Promise<typeof demoConstants> | undefined
 let coreStatusCache: { value?: CoreStatus; fetchedAt: number; promise?: Promise<CoreStatus> } = { fetchedAt: 0 }
 const CORE_STATUS_FRESH_MS = 8_000
 
+function bootSeedForPaint(paint: Address) {
+  const seed = getBootPacketSnapshot()
+  if (
+    !seed ||
+    Date.now() - seed.at > CORE_STATUS_FRESH_MS ||
+    seed.chainId !== config.chainId ||
+    seed.paintAddress?.toLowerCase() !== paint.toLowerCase()
+  ) {
+    return undefined
+  }
+  return seed
+}
+
 /**
  * The registry is read once and shared: concurrent callers (every window that needs an address) join the
  * same in-flight read instead of each re-reading every experiment. A failed read is not cached.
@@ -34,7 +48,7 @@ export function getCachedContracts() {
 export function discoverContracts(force = false): Promise<ContractAddresses> {
   if (cached && !force) return Promise.resolve(cached)
   if (inflight && !force) return inflight
-  const read = readRegistry().then((value) => {
+  const read = readRegistry(force).then((value) => {
     cached = value
     return value
   })
@@ -50,20 +64,33 @@ export function discoverContracts(force = false): Promise<ContractAddresses> {
   return read
 }
 
-async function readRegistry(): Promise<ContractAddresses> {
+async function readRegistry(force = false): Promise<ContractAddresses> {
   if (!publicClient || !config.paintAddress) {
     return { paint: config.paintAddress, labs: { ...config.labs } }
   }
 
   const paint = config.paintAddress
-  const [pass, r3tards, count] = (await readMany(
-    [
-      { address: paint, abi: R3OS_PAINT_ABI, functionName: 'painterPass' },
-      { address: paint, abi: R3OS_PAINT_ABI, functionName: 'R3TARDS' },
-      { address: paint, abi: R3OS_PAINT_ABI, functionName: 'experimentCount' },
-    ],
-    { allowFailure: false },
-  )) as [Address, Address, bigint]
+  const seed = force ? undefined : bootSeedForPaint(paint)
+  let pass: Address
+  let r3tards: Address
+  let count: bigint
+  if (seed?.painterPass && seed.r3tards && seed.experimentCount != null) {
+    pass = seed.painterPass
+    r3tards = seed.r3tards
+    count = BigInt(seed.experimentCount)
+  } else {
+    const registry = (await readMany(
+      [
+        { address: paint, abi: R3OS_PAINT_ABI, functionName: 'painterPass' },
+        { address: paint, abi: R3OS_PAINT_ABI, functionName: 'R3TARDS' },
+        { address: paint, abi: R3OS_PAINT_ABI, functionName: 'experimentCount' },
+      ],
+      { allowFailure: false },
+    )) as [Address, Address, bigint]
+    pass = registry[0]
+    r3tards = registry[1]
+    count = registry[2]
+  }
 
   const labs: Record<string, Address | undefined> = { ...config.labs }
   const infos = (await readMany(
@@ -144,6 +171,15 @@ export function getCachedCoreStatus() {
 
 export function readCoreStatus(force = false): Promise<CoreStatus> {
   if (!publicClient || !config.paintAddress) return Promise.reject(new Error('CORE_STATUS_UNAVAILABLE'))
+  if (!force && !coreStatusCache.value) {
+    const seed = bootSeedForPaint(config.paintAddress)
+    if (seed?.renderersFrozen != null && seed.experimentsFrozen != null) {
+      coreStatusCache = {
+        value: { renderersFrozen: seed.renderersFrozen, experimentsFrozen: seed.experimentsFrozen },
+        fetchedAt: seed.at,
+      }
+    }
+  }
   if (!force && coreStatusCache.value && Date.now() - coreStatusCache.fetchedAt < CORE_STATUS_FRESH_MS) {
     return Promise.resolve(coreStatusCache.value)
   }
