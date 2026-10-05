@@ -5,6 +5,8 @@ import {
   coreDryRunArgs,
   formatFoundryEnv,
   foundryEnvFromManifest,
+  hasStaleBuildArtifactsWarning,
+  parseFoundryDryRunSummary,
   redactSecrets,
 } from './mainnet-rehearse-lib.mjs'
 
@@ -55,8 +57,34 @@ describe('mainnet rehearsal safety', () => {
     const args = coreDryRunArgs()
     expect(args).not.toContain('--broadcast')
     expect(args).not.toContain('--resume')
+    expect(args).not.toContain('--root')
     expect(() => assertDryRunArgsSafe(args)).not.toThrow()
     expect(() => assertDryRunArgsSafe([...args, '--broadcast'])).toThrow(/never contain/)
     expect(redactSecrets('rpc=https://secret.example/key', ['https://secret.example/key'])).toBe('rpc=<REDACTED_RPC_URL>')
+  })
+
+  it('fails closed on stale build artifacts and records Monad gas evidence', () => {
+    const sample = `
+Estimated max fee per gas: 205 gwei
+Estimated base fee per gas: 100 gwei
+Estimated max priority fee per gas: 5 gwei
+Estimated total gas used for script: 54467082
+Estimated amount required: 11.16575181 MON
+### Transaction 1 ###
+gasLimit             23661866
+### Transaction 2 ###
+gasLimit             4606635
+`
+    expect(hasStaleBuildArtifactsWarning(sample)).toBe(false)
+    expect(hasStaleBuildArtifactsWarning(`${sample}\nWarning: Detected artifacts built from source files that no longer exist.`)).toBe(true)
+    expect(parseFoundryDryRunSummary(sample)).toEqual({
+      transactionCount: 2,
+      estimatedGasLimitTotal: 54467082,
+      maxTransactionGasLimit: 23661866,
+      estimatedMaxFeePerGasGwei: 205,
+      estimatedBaseFeePerGasGwei: 100,
+      estimatedPriorityFeePerGasGwei: 5,
+      estimatedMaxAmountRequiredMon: 11.16575181,
+    })
   })
 })

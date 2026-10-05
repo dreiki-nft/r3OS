@@ -1,0 +1,23 @@
+{
+  "schema": "r3os-mainnet-rehearsal/v1",
+  "generatedAt": "2026-10-05T20:37:15.570Z",
+  "manifestHash": "0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1",
+  "rpcUrlStored": false,
+  "approvalFlagsArmed": false,
+  "broadcastArgsPresent": false,
+  "preflight": "PASS",
+  "foundryClean": "PASS",
+  "staleBuildArtifactsDetected": false,
+  "transactionGasLimitOk": true,
+  "foundry": {
+    "transactionCount": 29,
+    "estimatedGasLimitTotal": 54467082,
+    "maxTransactionGasLimit": 23661866,
+    "estimatedMaxFeePerGasGwei": 202.5,
+    "estimatedBaseFeePerGasGwei": 100,
+    "estimatedPriorityFeePerGasGwei": 2.5,
+    "estimatedMaxAmountRequiredMon": 11.029584105
+  },
+  "coreDryRun": "PASS",
+  "readyForDeploymentReview": true
+}

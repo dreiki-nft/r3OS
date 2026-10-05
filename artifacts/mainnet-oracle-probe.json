@@ -1,0 +1,36 @@
+{
+  "schema": "r3os-mainnet-oracle-probe/v1",
+  "generatedAt": "2026-10-05T19:59:42.470Z",
+  "rpcUrlStored": false,
+  "feed": "0xBcD78f76005B7515837af6b50c7C52BCf73822fb",
+  "chainId": 143,
+  "finalized": {
+    "number": "110841863",
+    "hash": "0x28b5bd56a4c5729c849c888f4699d8a87509467f02e5ecab3333986c241f4c24",
+    "timestamp": "1791230379"
+  },
+  "oracle": {
+    "description": "MON / USD",
+    "decimals": 8,
+    "roundId": "18446744073710158295",
+    "answer": "3145600",
+    "updatedAt": "1791230359",
+    "answeredInRound": "18446744073710158295",
+    "ageSecondsAtFinalized": 20
+  },
+  "checks": {
+    "chain143": true,
+    "finalizedAnchor": true,
+    "codePresent": true,
+    "description": true,
+    "decimals": true,
+    "positiveAnswer": true,
+    "round": true,
+    "nonFutureUpdate": true
+  },
+  "pass": true,
+  "policy": {
+    "automaticMaxAgeRecommendation": null,
+    "note": "Do not derive MON_FEED_MAX_AGE from one sample. Compare observed age with the published Chainlink heartbeat/deviation policy and leave safety margin for update/finality timing."
+  }
+}

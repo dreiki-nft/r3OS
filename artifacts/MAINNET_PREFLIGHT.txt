@@ -1,0 +1,29 @@
+# r3OS mainnet preflight
+
+READ ONLY. A green preflight is not authorization to broadcast.
+
+manifest: 0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1
+chain: 143
+finalized: 110849066 0xc58c0b08846f0faf0206a81970ba08b5b9719c3493f2c83c5bed40da901c6d04
+deployer balance: 1941.988883934145215783 MON
+
+[OK] chain-id: Monad Mainnet (143)
+[OK] finalized-anchor: finalized block/hash available (110849066:0xc58c0b08846f0faf0206a81970ba08b5b9719c3493f2c83c5bed40da901c6d04)
+[OK] latest-head: latest head available (110849068)
+[OK] commitment-order: latest height must not trail finalized height
+[OK] code:r3tards: code present at finalized anchor (0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0)
+[OK] code:skrumpeys: code present at finalized anchor (0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0)
+[OK] code:monadCards: code present at finalized anchor (0x2faf21182b03b1d522272109ff927da7ce93b6abae731dc036749a9e6ac56dbb)
+[OK] code:monUsdFeed: code present at finalized anchor (0xbd6f524cdc4268b6bd1bb6f77a8821faeea9c52ee9e0afa0b6d948ce82c966c2)
+[OK] code:multicall3: code present at finalized anchor (0xd5c15df687b16f2ff992fc8d767b4216323184a2bbc6ee2f9c398c318e770891)
+[OK] oracle:description: feed description matches (MON / USD)
+[OK] oracle:decimals: feed decimals match (8)
+[OK] oracle:answer: positive feed answer (3126924)
+[OK] oracle:round: answeredInRound must cover roundId
+[OK] oracle:freshness: feed age 3s <= configured max 4200s (3)
+[OK] season-start: season start lead 51845s (51845)
+[OK] deployer-balance: deployer has MON balance; exact deployment affordability still depends on dry-run gas limits (1941.988883934145215783)
+[WARN] priority-fee-suggestion: RPC priority-fee suggestion is evidence only, not a launch policy or inclusion guarantee (2000000000)
+
+result: READY FOR HUMAN DEPLOYMENT APPROVAL
+

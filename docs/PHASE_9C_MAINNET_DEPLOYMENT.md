@@ -28,13 +28,13 @@ The exact order is:
 5. Operator / System Event `DeployOperator.s.sol`;
 6. Router Lab `DeployRouterLab.s.sol`;
 7. pre-acceptance Finalized Launch Doctor;
-8. ownership acceptance;
+8. ownership acceptance only if `FINAL_OWNER != DEPLOYER`; otherwise skip it entirely;
 9. optional renderer freeze, only if the reviewed manifest says so;
-10. post-acceptance Finalized Launch Doctor;
+10. post-ownership-state Finalized Launch Doctor;
 11. Phase 9D independent-provider canary / split-brain acceptance;
 12. Flight Recorder and `R3OS_MAINNET_GENESIS` evidence hash.
 
-CARD.DRV must precede Monad Hardware because Block Camera stores `CARD_MEMORY` immutably. Ownership acceptance must remain after all owner-only Paint registration. Experiments stay open under the reviewed launch policy.
+CARD.DRV must precede Monad Hardware because Block Camera stores `CARD_MEMORY` immutably. Any ownership handoff must remain after all owner-only Paint registration. When `FINAL_OWNER == DEPLOYER`, no handoff exists and `AcceptOwnership.s.sol` is not part of the live transaction path. Experiments stay open under the reviewed launch policy.
 
 ## 3. Probe the MON/USD feed, then prepare local inputs
 
@@ -125,7 +125,7 @@ A green result says `READY FOR HUMAN DEPLOYMENT APPROVAL`. It does not broadcast
 
 ## 7. Guarded core rehearsal
 
-The preferred pre-deployment path is one disarmed command. It regenerates the PLAN_ONLY manifest, runs the Finalized preflight, derives Foundry variables from that same manifest, and simulates the core deployment without `--broadcast` or `--resume`:
+The preferred pre-deployment path is one disarmed command. It regenerates the PLAN_ONLY manifest, runs the Finalized preflight, cleans the local deploy-profile Foundry artifacts, derives Foundry variables from that same manifest, and simulates the core deployment without `--broadcast` or `--resume`:
 
 ```bash
 read -rsp "Monad Mainnet RPC URL: " RPC_URL
@@ -135,7 +135,7 @@ npm run mainnet:rehearse -- --input docs/MAINNET_DEPLOYMENT_INPUT.local.json
 unset RPC_URL
 ```
 
-The rehearsal **refuses to run** if `CONFIRM_MAINNET`, `CONFIRM_ACCEPT_OWNERSHIP`, or `CONFIRM_FREEZE_RENDERERS` is armed in the shell. It also forces those flags false for child processes and redacts the exact RPC URL from captured output.
+The rehearsal **refuses to run** if `CONFIRM_MAINNET`, `CONFIRM_ACCEPT_OWNERSHIP`, or `CONFIRM_FREEZE_RENDERERS` is armed in the shell. It also forces those flags false for child processes, runs `FOUNDRY_PROFILE=deploy forge clean` before simulation, redacts the exact RPC URL from captured output, fails closed if stale source artifacts still appear, and records the simulated transaction count/gas-limit evidence in `mainnet-rehearsal.json`.
 
 Outputs include:
 
@@ -148,7 +148,8 @@ The command can only rehearse the core before deployment. Later add-ons depend o
 For manual diagnosis, the equivalent core simulation remains:
 
 ```bash
-FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --root contracts --rpc-url "$RPC_URL" -vvvv
+(cd contracts && FOUNDRY_PROFILE=deploy forge clean)
+(cd contracts && FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" -vvvv)
 ```
 
 After core is eventually broadcast, collect its public addresses before dry-running add-ons:
@@ -173,10 +174,10 @@ set +a
 Then dry-run each add-on in order:
 
 ```bash
-FOUNDRY_PROFILE=deploy forge script script/DeployMonadCard.s.sol:DeployMonadCard --root contracts --rpc-url "$RPC_URL" -vvvv
-FOUNDRY_PROFILE=deploy forge script script/DeployMonadHW.s.sol:DeployMonadHW --root contracts --rpc-url "$RPC_URL" -vvvv
-FOUNDRY_PROFILE=deploy forge script script/DeployOperator.s.sol:DeployOperator --root contracts --rpc-url "$RPC_URL" -vvvv
-FOUNDRY_PROFILE=deploy forge script script/DeployRouterLab.s.sol:DeployRouterLab --root contracts --rpc-url "$RPC_URL" -vvvv
+(cd contracts && FOUNDRY_PROFILE=deploy forge script script/DeployMonadCard.s.sol:DeployMonadCard --rpc-url "$RPC_URL" -vvvv)
+(cd contracts && FOUNDRY_PROFILE=deploy forge script script/DeployMonadHW.s.sol:DeployMonadHW --rpc-url "$RPC_URL" -vvvv)
+(cd contracts && FOUNDRY_PROFILE=deploy forge script script/DeployOperator.s.sol:DeployOperator --rpc-url "$RPC_URL" -vvvv)
+(cd contracts && FOUNDRY_PROFILE=deploy forge script script/DeployRouterLab.s.sol:DeployRouterLab --rpc-url "$RPC_URL" -vvvv)
 ```
 
 The chain-143 scripts fail closed if critical predecessor contracts, ownership, immutable inputs, partner addresses, budgets, or registry sources are wrong.
@@ -231,10 +232,12 @@ Record the verified MonadVision page for each production address. Constructor-be
 
 ## 10. STOP — ownership acceptance
 
-Dry-run the helper first:
+If `FINAL_OWNER == DEPLOYER`, **skip this entire section**. Ownership is already final and there is no `acceptOwnership()` transaction to send. Do not arm `CONFIRM_ACCEPT_OWNERSHIP` merely to make a no-op helper run.
+
+If `FINAL_OWNER != DEPLOYER`, dry-run the helper first:
 
 ```bash
-FOUNDRY_PROFILE=deploy forge script script/AcceptOwnership.s.sol:AcceptOwnership --root contracts --rpc-url "$RPC_URL" -vvvv
+(cd contracts && FOUNDRY_PROFILE=deploy forge script script/AcceptOwnership.s.sol:AcceptOwnership --rpc-url "$RPC_URL" -vvvv)
 ```
 
 If `FINAL_OWNER` is an EOA, an actual mainnet broadcast requires both exact-step shell flags:
@@ -255,7 +258,7 @@ Experiments remain open. Renderer freeze is optional and only applies if the rev
 Dry-run:
 
 ```bash
-FOUNDRY_PROFILE=deploy forge script script/FreezeRenderers.s.sol:FreezeRenderers --root contracts --rpc-url "$RPC_URL" -vvvv
+(cd contracts && FOUNDRY_PROFILE=deploy forge script script/FreezeRenderers.s.sol:FreezeRenderers --rpc-url "$RPC_URL" -vvvv)
 ```
 
 An EOA broadcast requires both `CONFIRM_MAINNET=true` and `CONFIRM_FREEZE_RENDERERS=true`. A Safe/contract owner receives target + calldata instead.

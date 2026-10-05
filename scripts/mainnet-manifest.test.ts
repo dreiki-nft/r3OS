@@ -109,6 +109,15 @@ describe('mainnet deployment manifest', () => {
     expect(freeze).toContain('experiment registry must remain open')
   })
 
+  it('marks ownership acceptance not applicable when FINAL_OWNER already equals deployer', () => {
+    const sameOwner = input()
+    sameOwner.finalOwner = sameOwner.deployer
+    const { markdown } = makeManifest(sameOwner)
+    expect(markdown).toContain('`FINAL_OWNER == DEPLOYER`; ownership is already final')
+    expect(markdown).toContain('do not run `AcceptOwnership.s.sol`')
+    expect(markdown).not.toContain('| 7 | Ownership acceptance | `AcceptOwnership.s.sol:AcceptOwnership`')
+  })
+
   it('produces a stable canonical manifest hash', () => {
     const a = input()
     const b = { ...a, frontend: { ...a.frontend }, partners: { ...a.partners }, budgets: { ...a.budgets } }

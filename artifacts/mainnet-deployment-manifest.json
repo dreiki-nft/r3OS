@@ -1,0 +1,113 @@
+{
+  "approvalState": "PLAN_ONLY",
+  "budgets": {
+    "basePixelsPerHour": 512,
+    "holderPixelsPerDay": 512,
+    "maxPixelsPerHour": 2048,
+    "minPixelsForActiveDay": 16,
+    "monadCardPixelsPerDay": 128,
+    "pixelsPerActiveDay": 32,
+    "skrumpeysPixelsPerDay": 128
+  },
+  "chainId": 143,
+  "deployer": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "deploymentOrder": [
+    {
+      "approval": "READ_ONLY",
+      "command": "npm run mainnet:preflight",
+      "id": "preflight",
+      "order": 0
+    },
+    {
+      "approval": "DEPLOYMENT",
+      "id": "core",
+      "order": 1,
+      "script": "Deploy.s.sol:Deploy"
+    },
+    {
+      "approval": "DEPLOYMENT",
+      "id": "card",
+      "order": 2,
+      "script": "DeployMonadCard.s.sol:DeployMonadCard"
+    },
+    {
+      "approval": "DEPLOYMENT",
+      "id": "hardware",
+      "order": 3,
+      "script": "DeployMonadHW.s.sol:DeployMonadHW"
+    },
+    {
+      "approval": "DEPLOYMENT",
+      "id": "operator",
+      "order": 4,
+      "script": "DeployOperator.s.sol:DeployOperator"
+    },
+    {
+      "approval": "DEPLOYMENT",
+      "id": "router",
+      "order": 5,
+      "script": "DeployRouterLab.s.sol:DeployRouterLab"
+    },
+    {
+      "approval": "READ_ONLY",
+      "command": "npm run launch:doctor",
+      "id": "preaccept-doctor",
+      "order": 6
+    },
+    {
+      "approval": "IRREVERSIBLE_ADMIN",
+      "id": "accept-ownership",
+      "order": 7,
+      "script": "AcceptOwnership.s.sol:AcceptOwnership"
+    },
+    {
+      "approval": "IRREVERSIBLE_FREEZE",
+      "id": "optional-freezes",
+      "order": 8,
+      "script": "FreezeRenderers.s.sol:FreezeRenderers"
+    },
+    {
+      "approval": "READ_ONLY",
+      "command": "npm run launch:doctor",
+      "id": "postaccept-doctor",
+      "order": 9
+    },
+    {
+      "approval": "EVIDENCE_ONLY",
+      "command": "npm run flight:record",
+      "id": "flight-recorder",
+      "order": 10
+    }
+  ],
+  "finalOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "freezeIntentions": {
+    "experiments": "keep-open",
+    "renderers": "freeze-after-acceptance"
+  },
+  "frontend": {
+    "explorerUrl": "https://monadvision.com",
+    "fastlaneAcceleratorUrl": "",
+    "rpcUrls": [
+      "https://rpc.monad.xyz",
+      "https://rpc1.monad.xyz"
+    ],
+    "walletRpcUrl": "https://rpc.monad.xyz",
+    "wsUrl": "wss://rpc.monad.xyz"
+  },
+  "labBaseUri": "",
+  "partners": {
+    "monadCards": "0x0000CA12D5c07085022eBC74867157449919Fd67",
+    "skrumpeys": "0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0"
+  },
+  "r3tards": "0x200723A706de0013316E5cd8EBa2b3f53DD90c29",
+  "reviewed": true,
+  "royaltyReceiver": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "schema": "r3os-mainnet-deployment/v2",
+  "seasonStart": 1791284400,
+  "systemEvent": {
+    "maxAgeSeconds": 4200,
+    "monUsdFeed": "0xBcD78f76005B7515837af6b50c7C52BCf73822fb",
+    "triggerMilliUsd": 333
+  },
+  "tokenZeroRecipient": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA"
+}

@@ -60,8 +60,6 @@ export function coreDryRunArgs() {
   return [
     'script',
     'script/Deploy.s.sol:Deploy',
-    '--root',
-    'contracts',
     '--rpc-url',
     '__RPC_URL__',
     '-vvvv',
@@ -72,6 +70,28 @@ export function assertDryRunArgsSafe(args) {
   const lowered = args.map((value) => String(value).toLowerCase())
   if (lowered.includes('--broadcast') || lowered.includes('--resume')) {
     throw new Error('rehearsal command must never contain --broadcast or --resume')
+  }
+}
+
+export function hasStaleBuildArtifactsWarning(text) {
+  return /detected artifacts built from source files that no longer exist/i.test(String(text ?? ''))
+}
+
+export function parseFoundryDryRunSummary(text) {
+  const source = String(text ?? '')
+  const firstNumber = (pattern) => {
+    const match = source.match(pattern)
+    return match ? Number(match[1]) : null
+  }
+  const gasLimits = [...source.matchAll(/^gasLimit\s+(\d+)$/gim)].map((match) => Number(match[1]))
+  return {
+    transactionCount: [...source.matchAll(/### Transaction\s+\d+\s+###/g)].length,
+    estimatedGasLimitTotal: firstNumber(/Estimated total gas used for script:\s*(\d+)/i),
+    maxTransactionGasLimit: gasLimits.length ? Math.max(...gasLimits) : null,
+    estimatedMaxFeePerGasGwei: firstNumber(/Estimated max fee per gas:\s*([0-9.]+)\s*gwei/i),
+    estimatedBaseFeePerGasGwei: firstNumber(/Estimated base fee per gas:\s*([0-9.]+)\s*gwei/i),
+    estimatedPriorityFeePerGasGwei: firstNumber(/Estimated max priority fee per gas:\s*([0-9.]+)\s*gwei/i),
+    estimatedMaxAmountRequiredMon: firstNumber(/Estimated amount required:\s*([0-9.]+)\s*MON/i),
   }
 }
 

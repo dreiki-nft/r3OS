@@ -1,0 +1,25 @@
+# r3OS MON/USD oracle probe
+
+READ ONLY. This does not choose a deployment freshness policy automatically.
+
+feed: 0xBcD78f76005B7515837af6b50c7C52BCf73822fb
+chain: 143
+finalized: 110841863 0x28b5bd56a4c5729c849c888f4699d8a87509467f02e5ecab3333986c241f4c24
+description: MON / USD
+decimals: 8
+round: 18446744073710158295
+updatedAt: 1791230359
+age at finalized anchor: 20s
+
+[OK] chain 143
+[OK] finalized anchor
+[OK] feed code
+[OK] MON / USD description
+[OK] 8 decimals
+[OK] positive answer
+[OK] round validity
+[OK] update timestamp
+
+POLICY: do not use this single observed age as the max-age setting. Check the published feed heartbeat/deviation policy and include timing margin.
+result: PROBE GREEN
+

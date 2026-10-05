@@ -1,0 +1,170 @@
+{
+  "schema": "r3os-mainnet-preflight/v1",
+  "generatedAt": "2026-10-05T20:35:56.544Z",
+  "rpcUrlStored": false,
+  "manifestHash": "0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1",
+  "chainId": 143,
+  "finalized": {
+    "number": "110849066",
+    "hash": "0xc58c0b08846f0faf0206a81970ba08b5b9719c3493f2c83c5bed40da901c6d04",
+    "timestamp": "1791232554"
+  },
+  "latest": {
+    "number": "110849068",
+    "hash": "0x01c6813f44a487eb5b0270b17cfebedda085062dd213e7430181d7f645103b53",
+    "timestamp": "1791232555",
+    "baseFeePerGas": "100000000000"
+  },
+  "dependencies": {
+    "r3tards": {
+      "address": "0x200723A706de0013316E5cd8EBa2b3f53DD90c29",
+      "codeHash": "0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0",
+      "codePresent": true
+    },
+    "skrumpeys": {
+      "address": "0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0",
+      "codeHash": "0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0",
+      "codePresent": true
+    },
+    "monadCards": {
+      "address": "0x0000CA12D5c07085022eBC74867157449919Fd67",
+      "codeHash": "0x2faf21182b03b1d522272109ff927da7ce93b6abae731dc036749a9e6ac56dbb",
+      "codePresent": true
+    },
+    "monUsdFeed": {
+      "address": "0xBcD78f76005B7515837af6b50c7C52BCf73822fb",
+      "codeHash": "0xbd6f524cdc4268b6bd1bb6f77a8821faeea9c52ee9e0afa0b6d948ce82c966c2",
+      "codePresent": true
+    },
+    "multicall3": {
+      "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
+      "codeHash": "0xd5c15df687b16f2ff992fc8d767b4216323184a2bbc6ee2f9c398c318e770891",
+      "codePresent": true
+    }
+  },
+  "oracle": {
+    "address": "0xBcD78f76005B7515837af6b50c7C52BCf73822fb",
+    "description": "MON / USD",
+    "decimals": 8,
+    "roundId": "18446744073710158336",
+    "answer": "3126924",
+    "updatedAt": "1791232551",
+    "answeredInRound": "18446744073710158336",
+    "ageSecondsAtFinalized": 3,
+    "configuredMaxAgeSeconds": 4200
+  },
+  "deployer": {
+    "address": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+    "balanceWei": "1941988883934145215783",
+    "balanceMon": "1941.988883934145215783"
+  },
+  "priorityFeeWei": "2000000000",
+  "checks": [
+    {
+      "id": "chain-id",
+      "status": "OK",
+      "detail": "Monad Mainnet",
+      "value": 143
+    },
+    {
+      "id": "finalized-anchor",
+      "status": "OK",
+      "detail": "finalized block/hash available",
+      "value": "110849066:0xc58c0b08846f0faf0206a81970ba08b5b9719c3493f2c83c5bed40da901c6d04"
+    },
+    {
+      "id": "latest-head",
+      "status": "OK",
+      "detail": "latest head available",
+      "value": "110849068"
+    },
+    {
+      "id": "commitment-order",
+      "status": "OK",
+      "detail": "latest height must not trail finalized height"
+    },
+    {
+      "id": "code:r3tards",
+      "status": "OK",
+      "detail": "code present at finalized anchor",
+      "value": "0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0"
+    },
+    {
+      "id": "code:skrumpeys",
+      "status": "OK",
+      "detail": "code present at finalized anchor",
+      "value": "0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0"
+    },
+    {
+      "id": "code:monadCards",
+      "status": "OK",
+      "detail": "code present at finalized anchor",
+      "value": "0x2faf21182b03b1d522272109ff927da7ce93b6abae731dc036749a9e6ac56dbb"
+    },
+    {
+      "id": "code:monUsdFeed",
+      "status": "OK",
+      "detail": "code present at finalized anchor",
+      "value": "0xbd6f524cdc4268b6bd1bb6f77a8821faeea9c52ee9e0afa0b6d948ce82c966c2"
+    },
+    {
+      "id": "code:multicall3",
+      "status": "OK",
+      "detail": "code present at finalized anchor",
+      "value": "0xd5c15df687b16f2ff992fc8d767b4216323184a2bbc6ee2f9c398c318e770891"
+    },
+    {
+      "id": "oracle:description",
+      "status": "OK",
+      "detail": "feed description matches",
+      "value": "MON / USD"
+    },
+    {
+      "id": "oracle:decimals",
+      "status": "OK",
+      "detail": "feed decimals match",
+      "value": 8
+    },
+    {
+      "id": "oracle:answer",
+      "status": "OK",
+      "detail": "positive feed answer",
+      "value": "3126924"
+    },
+    {
+      "id": "oracle:round",
+      "status": "OK",
+      "detail": "answeredInRound must cover roundId"
+    },
+    {
+      "id": "oracle:freshness",
+      "status": "OK",
+      "detail": "feed age 3s <= configured max 4200s",
+      "value": 3
+    },
+    {
+      "id": "season-start",
+      "status": "OK",
+      "detail": "season start lead 51845s",
+      "value": 51845
+    },
+    {
+      "id": "deployer-balance",
+      "status": "OK",
+      "detail": "deployer has MON balance; exact deployment affordability still depends on dry-run gas limits",
+      "value": "1941.988883934145215783"
+    },
+    {
+      "id": "priority-fee-suggestion",
+      "status": "WARN",
+      "detail": "RPC priority-fee suggestion is evidence only, not a launch policy or inclusion guarantee",
+      "value": "2000000000"
+    }
+  ],
+  "summary": {
+    "OK": 16,
+    "WARN": 1,
+    "FAIL": 0
+  },
+  "readyForDeploymentApproval": true
+}

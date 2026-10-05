@@ -159,6 +159,19 @@ export function formatManifestMarkdown(input, manifestHash) {
   const b = input.budgets
   const f = input.frontend
   const s = input.systemEvent
+  const ownershipTransferRequired = !sameAddress(input.deployer, input.finalOwner)
+  const ownershipStep = ownershipTransferRequired
+    ? `| 7 | Ownership acceptance | ${code('AcceptOwnership.s.sol:AcceptOwnership')} | Paint, Labs, Pass, Quests | **IRREVERSIBLE ADMIN GATE** |`
+    : '| 7 | Ownership acceptance | not required | `FINAL_OWNER == DEPLOYER`; ownership is already final | NOT APPLICABLE |'
+  const ownershipInvariant = ownershipTransferRequired
+    ? '**Do not let the final owner accept Paint ownership before Monad Hardware registration completes.** `DeployMonadHW.s.sol` calls `Paint.addExperiment(...)` directly and has no Safe-calldata fallback. CARD.DRV also precedes Hardware because Block Camera stores `CARD_MEMORY` immutably in its constructor.'
+    : '**No ownership handoff is scheduled for this manifest.** `FINAL_OWNER == DEPLOYER`, so keep the deployer as owner through every add-on registration and do not invoke `AcceptOwnership.s.sol`. CARD.DRV still precedes Hardware because Block Camera stores `CARD_MEMORY` immutably in its constructor.'
+  const finalOwnerNote = ownershipTransferRequired
+    ? 'Ownable2Step target; do not accept early'
+    : 'same as deployer; no Ownable2Step acceptance transaction is required'
+  const ownershipStop = ownershipTransferRequired
+    ? '2. **STOP before final-owner `acceptOwnership()` calls.** Re-run the pre-acceptance finalized Launch Doctor first.'
+    : '2. **Ownership acceptance is not applicable for this manifest.** `FINAL_OWNER == DEPLOYER`; do not run `AcceptOwnership.s.sol`.'
   const lines = [
     '# r3OS Mainnet Deployment Plan',
     '',
@@ -222,14 +235,14 @@ export function formatManifestMarkdown(input, manifestHash) {
     `| 4 | Operator/System Event | ${code('DeployOperator.s.sol:DeployOperator')} | R3OSOperatorRecord + R3OSSystemEvent | **DEPLOYMENT** |`,
     `| 5 | Router Lab | ${code('DeployRouterLab.s.sol:DeployRouterLab')} | R3OSRouterLab | **DEPLOYMENT** |`,
     `| 6 | Pre-acceptance certification | ${code('npm run launch:doctor')} | Finalized, read-only checks | READ ONLY |`,
-    `| 7 | Ownership acceptance | ${code('AcceptOwnership.s.sol:AcceptOwnership')} | Paint, Labs, Pass, Quests | **IRREVERSIBLE ADMIN GATE** |`,
+    ownershipStep,
     `| 8 | Optional renderer freeze | ${code('FreezeRenderers.s.sol:FreezeRenderers')} | renderers only; experiments remain open | **IRREVERSIBLE FREEZE GATE** |`,
     `| 9 | Post-acceptance certification | ${code('npm run launch:doctor')} | Finalized acceptance state | READ ONLY |`,
     `| 10 | Flight Recorder | ${code('npm run flight:record')} | deterministic accepted launch artifact/hash | EVIDENCE ONLY |`,
     '',
     '### Ordering invariant that must not be violated',
     '',
-    '**Do not let the final owner accept Paint ownership before Monad Hardware registration completes.** `DeployMonadHW.s.sol` calls `Paint.addExperiment(...)` directly and has no Safe-calldata fallback. CARD.DRV also precedes Hardware because Block Camera stores `CARD_MEMORY` immutably in its constructor.',
+    ownershipInvariant,
     '',
     '## Constructor / immutable map',
     '',
@@ -246,7 +259,7 @@ export function formatManifestMarkdown(input, manifestHash) {
     `- ${code('R3OSCardMemory')}: (${addr(input.partners.monadCards)})`,
     `- ${code('R3OSPageExe')}: ()`,
     `- ${code('R3OSBlockCamera')}: (Paint, Labs, CardMemory)`,
-    `- ${code('R3OSOperatorRecord')}: sources resolved from the live reviewed Paint registry before ownership acceptance`,
+    `- ${code('R3OSOperatorRecord')}: sources resolved from the live reviewed Paint registry before any ownership handoff`,
     `- ${code('R3OSSystemEvent')}: (${addr(s.monUsdFeed)}, ${s.triggerMilliUsd}, ${s.maxAgeSeconds})`,
     `- ${code('R3OSRouterLab')}: ()`,
     '',
@@ -273,7 +286,7 @@ export function formatManifestMarkdown(input, manifestHash) {
     envRow('SEASON_START', String(input.seasonStart)),
     envRow('TOKEN_ZERO_RECIPIENT', input.tokenZeroRecipient),
     envRow('ROYALTY_RECEIVER', input.royaltyReceiver),
-    envRow('FINAL_OWNER', input.finalOwner, 'Ownable2Step target; do not accept early'),
+    envRow('FINAL_OWNER', input.finalOwner, finalOwnerNote),
     envRow('BASE_PIXELS_PER_HOUR', String(b.basePixelsPerHour)),
     envRow('PIXELS_PER_ACTIVE_DAY', String(b.pixelsPerActiveDay)),
     envRow('MAX_PIXELS_PER_HOUR', String(b.maxPixelsPerHour)),
@@ -306,7 +319,7 @@ export function formatManifestMarkdown(input, manifestHash) {
     'RPC_URL=... npm run mainnet:preflight -- --input <reviewed-json>',
     '',
     '# dry-run scripts are allowed without CONFIRM_MAINNET because the guard checks Foundry context:',
-    'FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --root contracts --rpc-url "$RPC_URL" -vvvv',
+    '(cd contracts && FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" -vvvv)',
     '',
     '# after each successful deployment stage, derive addresses from Foundry broadcast artifacts:',
     'npm run mainnet:collect-addresses',
@@ -322,7 +335,7 @@ export function formatManifestMarkdown(input, manifestHash) {
     '## Mandatory STOP gates',
     '',
     '1. **STOP before the first mainnet deployment broadcast.** Human approval is required at that exact step. The stored manifest remains `PLAN_ONLY`; only then set `CONFIRM_MAINNET=true` in the executing shell.',
-    '2. **STOP before final-owner `acceptOwnership()` calls.** Re-run the pre-acceptance finalized Launch Doctor first.',
+    ownershipStop,
     '3. **STOP before any freeze.** A freeze is optional and irreversible.',
     '4. **STOP before treating a Flight Recorder hash as canonical launch evidence.** Post-acceptance finalized certification and 9D split-brain/canary acceptance must pass first.',
     '',
