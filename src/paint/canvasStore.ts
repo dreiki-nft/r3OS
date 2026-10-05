@@ -61,6 +61,20 @@ export interface ActivityFeedSnapshot {
   items: readonly CanvasActivity[]
 }
 
+/**
+ * Read the Painted event's spent-unit field without letting an ABI/name mismatch crash receipt settlement.
+ * The deployed R3OSPaint event names this field `unitsSpent`; `units` is accepted only as a legacy/client alias.
+ */
+export function paintedUnitsFromArgs(args: Record<string, unknown>): bigint | undefined {
+  const raw = args.unitsSpent ?? args.units
+  if (raw == null) return undefined
+  try {
+    return BigInt(raw as bigint)
+  } catch {
+    return undefined
+  }
+}
+
 type CoreLog = {
   blockNumber: bigint
   logIndex?: number | null
@@ -346,12 +360,13 @@ async function applyDeliveredLogs(
         canvasChanged = true
       }
       if (profileWebsocket) applyMs += perfNow() - applyStarted
+      const units = paintedUnitsFromArgs(args)
       emitActivity({
         ...common,
         owner,
         ...(sender && sender.toLowerCase() !== owner.toLowerCase() ? { sessionKey: sender } : {}),
         runs: args.runs as Hex,
-        units: BigInt(args.units as bigint),
+        ...(units != null ? { units } : {}),
         regionsMask: Number(args.regionsMask ?? 0),
       })
     } else if (eventName === 'FaceChanged') {

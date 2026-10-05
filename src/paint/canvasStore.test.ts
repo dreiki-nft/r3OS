@@ -5,6 +5,7 @@ import {
   clearMatchingInFlight,
   createSerialQueue,
   logSetsDiffer,
+  paintedUnitsFromArgs,
   reloadOnSpeculativeMismatch,
   receiptCoreLogs,
   tileNeedsFetch,
@@ -13,6 +14,12 @@ import {
 } from './canvasStore'
 
 describe('canvas store helpers', () => {
+  it('reads Painted unitsSpent without crashing on missing or legacy field names', () => {
+    expect(paintedUnitsFromArgs({ unitsSpent: 17n })).toBe(17n)
+    expect(paintedUnitsFromArgs({ units: 9n })).toBe(9n)
+    expect(paintedUnitsFromArgs({})).toBeUndefined()
+  })
+
   it('chunks log ranges at 1,000 blocks', () => {
     expect(chunkBlockRanges(1n, 2_501n, 1_000)).toEqual([
       { fromBlock: 1n, toBlock: 1_000n },
