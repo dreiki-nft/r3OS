@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Script, console} from "forge-std/Script.sol";
+import {console} from "forge-std/Script.sol";
+import {R3OSMainnetScript} from "./lib/R3OSMainnetScript.sol";
 import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {R3OSOperatorRecord} from "../src/operator/R3OSOperatorRecord.sol";
 import {R3OSSystemEvent, IAggregatorV3} from "../src/operator/R3OSSystemEvent.sol";
@@ -9,7 +10,7 @@ import {R3OSSystemEvent, IAggregatorV3} from "../src/operator/R3OSSystemEvent.so
 /// @notice Add-on deployment for the operator record and permanent system-event latch.
 /// @dev Operator Record v1 keeps legacy source slots for testnet/history compatibility. Fresh r3OS mainnet
 ///      deployments intentionally pass zero for retired subsystems instead of deploying dead applications.
-contract DeployOperator is Script {
+contract DeployOperator is R3OSMainnetScript {
     struct Resolved {
         address quests;
         address auction;
@@ -21,16 +22,26 @@ contract DeployOperator is Script {
 
     function run() external {
         R3OSPaint paint = R3OSPaint(vm.envAddress("PAINT_ADDRESS"));
+        address deployer = vm.envOr("DEPLOYER_ADDRESS", address(0));
         address feed = vm.envAddress("MON_USD_FEED");
         uint256 thresholdMilliUsd = vm.envOr("MON_PRICE_TRIGGER_MILLI_USD", uint256(333));
-        // Mainnet must choose this explicitly after checking the live feed heartbeat; never inherit the
+        // Mainnet must choose this explicitly after checking the live feed update policy/freshness; never inherit the
         // permissive local/testnet default by accident.
         uint256 maxAge = block.chainid == 143
             ? vm.envUint("MON_FEED_MAX_AGE")
             : vm.envOr("MON_FEED_MAX_AGE", uint256(90_000));
 
+        _requireMainnetBroadcastApproval();
+        if (block.chainid == 143) {
+            require(deployer != address(0), "mainnet DEPLOYER_ADDRESS missing");
+            require(address(paint).code.length != 0, "Paint has no code");
+            require(paint.owner() == deployer, "mainnet Paint owner must still be deployer");
+            require(paint.painterPass() != address(0) && paint.painterPass().code.length != 0, "Painter Pass missing");
+        }
+
         Resolved memory resolved = _resolve(paint);
         _logResolved(paint, resolved);
+        if (block.chainid == 143) _requireResolved(resolved);
         _checkFeed(feed);
 
         R3OSOperatorRecord.Sources memory sources = R3OSOperatorRecord.Sources({
@@ -50,7 +61,8 @@ contract DeployOperator is Script {
             cardMemory: resolved.cardMemory
         });
 
-        vm.startBroadcast();
+        if (deployer == address(0)) vm.startBroadcast();
+        else vm.startBroadcast(deployer);
         R3OSOperatorRecord record = new R3OSOperatorRecord(sources);
         R3OSSystemEvent systemEvent = new R3OSSystemEvent(feed, thresholdMilliUsd, maxAge);
         (, address broadcaster,) = vm.readCallers();
@@ -96,6 +108,15 @@ contract DeployOperator is Script {
             else if (name == keccak256("page-exe")) out.pageExe = info.experiment;
             else if (name == keccak256("card-drv")) out.cardMemory = info.experiment;
         }
+    }
+
+    function _requireResolved(Resolved memory r) private view {
+        require(r.quests != address(0) && r.quests.code.length != 0, "quests missing");
+        require(r.auction != address(0) && r.auction.code.length != 0, "finale auction missing");
+        require(r.recycleBin != address(0) && r.recycleBin.code.length != 0, "recycle-bin missing");
+        require(r.blockCamera != address(0) && r.blockCamera.code.length != 0, "block-camera missing");
+        require(r.pageExe != address(0) && r.pageExe.code.length != 0, "page-exe missing");
+        require(r.cardMemory != address(0) && r.cardMemory.code.length != 0, "card-drv missing");
     }
 
     function _checkFeed(address feed) private view {

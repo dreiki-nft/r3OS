@@ -60,29 +60,25 @@ Partner checks use a 50,000-gas-capped `balanceOf(owner)` static probe with a fi
 
 ## Ownership
 
-`R3OSPaint`, `R3OSPainterPass` and `R3OSQuests` use `Ownable2Step`. Paint ownership is deliberately narrow: future outlines, append/freeze renderer registry, add/retire experiment entries, and one-time official Pass binding. There is no privileged pixel writer.
+`R3OSPaint`, `R3OSLabs`, `R3OSPainterPass` and `R3OSQuests` use `Ownable2Step`. Paint ownership is deliberately narrow: future outlines, append/freeze renderer registry, add/retire experiment entries, and one-time official Pass binding. There is no privileged pixel writer.
 
 Painter Pass ownership can append view-only stamp sources only. Quests ownership can append display-only quests but cannot edit or revoke existing definitions/completions. Finale Auction, Recycle Bin, CD Burner, PAGE.EXE, Block Camera, CARD.DRV and Router Lab do not gain any Paint write privilege from registration.
 
 ## Canonical deployment
 
-Copy `contracts/.env.example` to `contracts/.env` and load it into your shell. The scripts do not read a raw private key.
+Phase 9C uses a plan → read-only preflight → dry-run → explicit broadcast-approval workflow. The full mainnet procedure lives in `../docs/PHASE_9C_MAINNET_DEPLOYMENT.md`.
 
-Ledger example:
+Copy `contracts/.env.example` to `contracts/.env` and load values locally. No raw private key belongs in that file. Use a hardware wallet or local Foundry keystore for signing.
 
-```bash
-cd contracts && FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --ledger
-```
+Every production script inherits the same chain-143 guard: Foundry dry-runs are allowed without `CONFIRM_MAINNET`, while actual `--broadcast` / `--resume` requires `CONFIRM_MAINNET=true` in the executing shell. That flag is deliberately not part of the persistent deployment manifest.
 
-Keystore example:
+The core script deploys Paint, Labs, Painter Pass, three renderers, Finale Auction, Quests, Recycle Bin and CD Burner. It registers **4** core Lab experiments, **2** initial Pass stamp sources and **7** day-one quests. `DeployMonadCard.s.sol` then adds CARD.DRV, the `MONAD CARD` Pass stamp and the `CARD CARRIER` quest. `DeployMonadHW.s.sol` adds PAGE.EXE and Block Camera. `DeployOperator.s.sol` adds Operator Record/System Event with retired v1 source slots set to zero. Router Lab is deployed last before ownership acceptance.
 
-```bash
-cd contracts && FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --rpc-url "$MONAD_TESTNET_RPC_URL" --broadcast --verify --account <keystore-name>
-```
+Chain 143 adds fail-closed script checks for the official r3tards/Monad Card/oracle identities, reviewed Paint budget constants, predecessor bytecode/wiring, deployer ownership and immutable source completeness. Do not accept Paint ownership until all owner-only registry additions are complete.
 
-The broadcaster must equal `DEPLOYER_ADDRESS`. `TOKEN_ZERO_RECIPIENT`, `ROYALTY_RECEIVER` and `FINAL_OWNER` default to it and may differ. Chain 143 requires `CONFIRM_MAINNET=true` after rehearsal.
+After each real deployment stage, `npm run mainnet:collect-addresses` reads Foundry's local chain-143 broadcast artifacts and regenerates public address handoff files. This avoids manual address transcription between add-on scripts.
 
-The core script now deploys Paint, Labs, Painter Pass, three renderers, Finale Auction, Quests, Recycle Bin and CD Burner. It registers **4** core Lab experiments, **2** initial Pass stamp sources and **7** day-one quests. `DeployMonadCard.s.sol` later adds CARD.DRV, the `MONAD CARD` Pass stamp and the `CARD CARRIER` quest. `DeployMonadHW.s.sol` adds PAGE.EXE and Block Camera. `DeployOperator.s.sol` adds Operator Record/System Event with retired v1 source slots set to zero. Router Lab is deployed separately for Explore Monad.
+`AcceptOwnership.s.sol` and `FreezeRenderers.s.sol` are separate approval-gated helpers. If `FINAL_OWNER` is a Safe/contract, they output target + calldata instead of pretending a contract address can sign a Foundry broadcast.
 
 Every deployment uses `vm.deployCode`, so script runtime does not embed all creation bytecode. `DeployGas.t.sol` guards each production deployment/wiring transaction under the existing 25M regression ceiling.
 

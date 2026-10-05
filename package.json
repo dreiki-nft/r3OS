@@ -27,7 +27,9 @@
     "test:speculation": "vitest run --maxWorkers=2 src/chain/speculation.integrity.test.ts src/chain/monadLogs.test.ts src/paint/canvasStore.test.ts",
     "flight:record": "node scripts/flight-recorder.mjs",
     "rpc:probe:fastlane": "node scripts/rpc-capability-probe.mjs",
-    "benchmark:priority": "node scripts/priority-benchmark.mjs"
+    "benchmark:priority": "node scripts/priority-benchmark.mjs",
+    "mainnet:preflight": "node scripts/mainnet-preflight.mjs",
+    "mainnet:collect-addresses": "node scripts/deployment-addresses.mjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",

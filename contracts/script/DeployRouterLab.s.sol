@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Script, console} from "forge-std/Script.sol";
+import {console} from "forge-std/Script.sol";
+import {R3OSMainnetScript} from "./lib/R3OSMainnetScript.sol";
 import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {R3OSRouterLab} from "../src/router/R3OSRouterLab.sol";
 import {
@@ -19,12 +20,22 @@ import {
 import {MockVenueDirectory} from "../test/MockVenueDirectory.sol";
 
 /// @notice Add-on deployment for the read-only MRC-17 routing lab.
-contract DeployRouterLab is Script {
+contract DeployRouterLab is R3OSMainnetScript {
     function run() external {
         R3OSPaint paint = R3OSPaint(vm.envAddress("PAINT_ADDRESS"));
+        address deployer = vm.envOr("DEPLOYER_ADDRESS", address(0));
         bool deployMocks = block.chainid != 143 && vm.envOr("DEPLOY_MOCK_VENUES", true);
 
-        vm.startBroadcast();
+        _requireMainnetBroadcastApproval();
+        if (block.chainid == 143) {
+            require(deployer != address(0), "mainnet DEPLOYER_ADDRESS missing");
+            require(address(paint).code.length != 0, "Paint has no code");
+            require(paint.owner() == deployer, "mainnet Paint owner must still be deployer");
+            require(!deployMocks, "mainnet mock venues forbidden");
+        }
+
+        if (deployer == address(0)) vm.startBroadcast();
+        else vm.startBroadcast(deployer);
         R3OSRouterLab lab = new R3OSRouterLab();
         MockVenueDirectory directory;
         if (deployMocks) directory = _deployMocks();

@@ -1,21 +1,38 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Script, console} from "forge-std/Script.sol";
+import {console} from "forge-std/Script.sol";
+import {R3OSMainnetScript} from "./lib/R3OSMainnetScript.sol";
 import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
 import {R3OSQuests} from "../src/labs/R3OSQuests.sol";
 import {R3OSCardMemory} from "../src/monadcard/R3OSCardMemory.sol";
 
 /// @notice Deploy CARD.DRV, then configure Paint, Pass and Quests directly or emit Safe calldata.
-contract DeployMonadCard is Script {
+contract DeployMonadCard is R3OSMainnetScript {
     function run() external {
         address cardAddress = vm.envAddress("MONAD_CARD_ADDRESS");
         R3OSPaint paint = R3OSPaint(vm.envAddress("PAINT_ADDRESS"));
         R3OSPainterPass pass = R3OSPainterPass(vm.envAddress("PASS_ADDRESS"));
         R3OSQuests quests = R3OSQuests(vm.envAddress("QUESTS_ADDRESS"));
+        address deployer = vm.envOr("DEPLOYER_ADDRESS", address(0));
 
-        vm.startBroadcast();
+        _requireMainnetBroadcastApproval();
+        if (block.chainid == 143) {
+            require(deployer != address(0), "mainnet DEPLOYER_ADDRESS missing");
+            require(address(paint).code.length != 0, "Paint has no code");
+            require(address(pass).code.length != 0, "Pass has no code");
+            require(address(quests).code.length != 0, "Quests has no code");
+            require(paint.owner() == deployer, "mainnet Paint owner must still be deployer");
+            require(pass.owner() == deployer, "mainnet Pass owner must still be deployer");
+            require(quests.owner() == deployer, "mainnet Quests owner must still be deployer");
+            require(paint.painterPass() == address(pass), "Paint/Pass mismatch");
+            require(address(pass.PAINT()) == address(paint), "Pass/Paint mismatch");
+            require(address(quests.PAINT()) == address(paint), "Quests/Paint mismatch");
+        }
+
+        if (deployer == address(0)) vm.startBroadcast();
+        else vm.startBroadcast(deployer);
         R3OSCardMemory cardMemory = new R3OSCardMemory(cardAddress);
         (, address broadcaster,) = vm.readCallers();
 

@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto'
 
-export const MAINNET_MANIFEST_SCHEMA = 'r3os-mainnet-deployment/v1'
+export const MAINNET_MANIFEST_SCHEMA = 'r3os-mainnet-deployment/v2'
 export const MAINNET_CHAIN_ID = 143
 export const OFFICIAL_MAINNET = Object.freeze({
   r3tards: '0x200723A706de0013316E5cd8EBa2b3f53DD90c29',
   skrumpeys: '0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0',
   monadCards: '0x0000CA12D5c07085022eBC74867157449919Fd67',
   monUsdFeed: '0xBcD78f76005B7515837af6b50c7C52BCf73822fb',
+  multicall3: '0xcA11bde05977b3631167028862bE2a173976CA11',
 })
 export const EXPECTED_MAINNET_BUDGETS = Object.freeze({
   basePixelsPerHour: 512,
@@ -19,6 +20,7 @@ export const EXPECTED_MAINNET_BUDGETS = Object.freeze({
 })
 
 export const DEPLOYMENT_STEPS = Object.freeze([
+  Object.freeze({ id: 'preflight', order: 0, command: 'npm run mainnet:preflight', approval: 'READ_ONLY', creates: [] }),
   Object.freeze({ id: 'core', order: 1, script: 'Deploy.s.sol:Deploy', approval: 'DEPLOYMENT', creates: [
     'R3OSPaint', 'R3OSLabs', 'DiffRenderer', 'SeasonTimelapseRenderer', 'DF1Renderer',
     'R3OSPainterPass', 'R3OSFinaleAuction', 'R3OSQuests', 'R3OSRecycleBin', 'R3OSCDBurner',
@@ -28,8 +30,8 @@ export const DEPLOYMENT_STEPS = Object.freeze([
   Object.freeze({ id: 'operator', order: 4, script: 'DeployOperator.s.sol:DeployOperator', approval: 'DEPLOYMENT', creates: ['R3OSOperatorRecord', 'R3OSSystemEvent'] }),
   Object.freeze({ id: 'router', order: 5, script: 'DeployRouterLab.s.sol:DeployRouterLab', approval: 'DEPLOYMENT', creates: ['R3OSRouterLab'] }),
   Object.freeze({ id: 'preaccept-doctor', order: 6, command: 'npm run launch:doctor', approval: 'READ_ONLY' }),
-  Object.freeze({ id: 'accept-ownership', order: 7, approval: 'IRREVERSIBLE_ADMIN', creates: [] }),
-  Object.freeze({ id: 'optional-freezes', order: 8, approval: 'IRREVERSIBLE_FREEZE', creates: [] }),
+  Object.freeze({ id: 'accept-ownership', order: 7, script: 'AcceptOwnership.s.sol:AcceptOwnership', approval: 'IRREVERSIBLE_ADMIN', creates: [] }),
+  Object.freeze({ id: 'optional-freezes', order: 8, script: 'FreezeRenderers.s.sol:FreezeRenderers', approval: 'IRREVERSIBLE_FREEZE', creates: [] }),
   Object.freeze({ id: 'postaccept-doctor', order: 9, command: 'npm run launch:doctor', approval: 'READ_ONLY' }),
   Object.freeze({ id: 'flight-recorder', order: 10, command: 'npm run flight:record', approval: 'EVIDENCE_ONLY' }),
 ])
@@ -80,6 +82,8 @@ export function validateManifestInput(input) {
   if (!plainObject(input)) return ['input must be a JSON object']
   if (input.schema !== MAINNET_MANIFEST_SCHEMA) errors.push(`schema must be ${MAINNET_MANIFEST_SCHEMA}`)
   if (input.reviewed !== true) errors.push('reviewed must be true after human review of every manifest field')
+  if (input.approvalState !== 'PLAN_ONLY') errors.push('approvalState must be PLAN_ONLY; broadcast approval is never stored in the manifest')
+  if ('confirmMainnet' in input) errors.push('confirmMainnet must not be stored in the manifest; set CONFIRM_MAINNET=true only at the exact approved broadcast step')
   if (Number(input.chainId) !== MAINNET_CHAIN_ID) errors.push('chainId must be 143')
 
   for (const key of ['deployer', 'finalOwner', 'tokenZeroRecipient', 'royaltyReceiver']) addressField(errors, input, key)
@@ -103,7 +107,7 @@ export function validateManifestInput(input) {
   else {
     addressField(errors, input.systemEvent, 'monUsdFeed', { official: OFFICIAL_MAINNET.monUsdFeed })
     if (!positiveInteger(input.systemEvent.triggerMilliUsd)) errors.push('systemEvent.triggerMilliUsd must be a positive integer')
-    if (!positiveInteger(input.systemEvent.maxAgeSeconds)) errors.push('systemEvent.maxAgeSeconds must be a positive integer chosen after checking the live feed heartbeat')
+    if (!positiveInteger(input.systemEvent.maxAgeSeconds)) errors.push('systemEvent.maxAgeSeconds must be a positive integer chosen after checking the live feed update policy/freshness')
   }
 
   if (!plainObject(input.freezeIntentions)) errors.push('freezeIntentions is required')
@@ -126,7 +130,6 @@ export function validateManifestInput(input) {
     if (input.frontend.fastlaneAcceleratorUrl) validatePublicUrl(errors, 'frontend.fastlaneAcceleratorUrl', input.frontend.fastlaneAcceleratorUrl)
   }
 
-  if (input.confirmMainnet !== true) errors.push('confirmMainnet must be true in the reviewed manifest input')
   if (typeof input.labBaseUri !== 'string') errors.push('labBaseUri must be a string (blank is allowed)')
   return errors
 }
@@ -163,6 +166,7 @@ export function formatManifestMarkdown(input, manifestHash) {
     '',
     `Manifest schema: ${code(input.schema)}`,
     `Human-reviewed input: **${yes(input.reviewed)}**`,
+    `Approval state: **${input.approvalState}**`,
     `Manifest SHA-256: ${code(manifestHash)}`,
     `Chain: Monad Mainnet (${code(String(input.chainId))})`,
     '',
@@ -205,20 +209,21 @@ export function formatManifestMarkdown(input, manifestHash) {
     `- MON/USD feed: ${addr(s.monUsdFeed)}`,
     `- Trigger: ${code(String(s.triggerMilliUsd))} milli-USD`,
     `- Max age: ${code(String(s.maxAgeSeconds))} seconds`,
-    '- `MON_FEED_MAX_AGE` must be chosen from the live mainnet feed heartbeat immediately before deployment.',
+    '- `MON_FEED_MAX_AGE` must be chosen from the live mainnet feed update policy/freshness immediately before deployment.',
     '',
     '## Exact deployment sequence',
     '',
     '| # | Step | Command/script | Creates / action | Approval class |',
     '|---:|---|---|---|---|',
+    `| 0 | Preflight | ${code('npm run mainnet:preflight')} | Finalized dependency/oracle/season checks | READ ONLY |`,
     `| 1 | Core | ${code('Deploy.s.sol:Deploy')} | R3OSPaint, R3OSLabs, renderers, Pass, Finale, Quests, Recycle, CDBurner | **DEPLOYMENT** |`,
     `| 2 | CARD.DRV | ${code('DeployMonadCard.s.sol:DeployMonadCard')} | R3OSCardMemory + Paint/Pass/Quest registration | **DEPLOYMENT** |`,
     `| 3 | Monad Hardware | ${code('DeployMonadHW.s.sol:DeployMonadHW')} | R3OSPageExe + R3OSBlockCamera + owner-only Paint registration | **DEPLOYMENT** |`,
     `| 4 | Operator/System Event | ${code('DeployOperator.s.sol:DeployOperator')} | R3OSOperatorRecord + R3OSSystemEvent | **DEPLOYMENT** |`,
     `| 5 | Router Lab | ${code('DeployRouterLab.s.sol:DeployRouterLab')} | R3OSRouterLab | **DEPLOYMENT** |`,
     `| 6 | Pre-acceptance certification | ${code('npm run launch:doctor')} | Finalized, read-only checks | READ ONLY |`,
-    `| 7 | Ownership acceptance | ${code('acceptOwnership()')} | Paint, Labs, Pass, Quests | **IRREVERSIBLE ADMIN GATE** |`,
-    `| 8 | Optional freezes | ${code('freezeRenderers()')} / ${code('freezeExperiments()')} | only if reviewed intent says so | **IRREVERSIBLE FREEZE GATE** |`,
+    `| 7 | Ownership acceptance | ${code('AcceptOwnership.s.sol:AcceptOwnership')} | Paint, Labs, Pass, Quests | **IRREVERSIBLE ADMIN GATE** |`,
+    `| 8 | Optional renderer freeze | ${code('FreezeRenderers.s.sol:FreezeRenderers')} | renderers only; experiments remain open | **IRREVERSIBLE FREEZE GATE** |`,
     `| 9 | Post-acceptance certification | ${code('npm run launch:doctor')} | Finalized acceptance state | READ ONLY |`,
     `| 10 | Flight Recorder | ${code('npm run flight:record')} | deterministic accepted launch artifact/hash | EVIDENCE ONLY |`,
     '',
@@ -241,7 +246,7 @@ export function formatManifestMarkdown(input, manifestHash) {
     `- ${code('R3OSCardMemory')}: (${addr(input.partners.monadCards)})`,
     `- ${code('R3OSPageExe')}: ()`,
     `- ${code('R3OSBlockCamera')}: (Paint, Labs, CardMemory)`,
-    `- ${code('R3OSOperatorRecord')}: sources resolved from the accepted Paint registry`,
+    `- ${code('R3OSOperatorRecord')}: sources resolved from the live reviewed Paint registry before ownership acceptance`,
     `- ${code('R3OSSystemEvent')}: (${addr(s.monUsdFeed)}, ${s.triggerMilliUsd}, ${s.maxAgeSeconds})`,
     `- ${code('R3OSRouterLab')}: ()`,
     '',
@@ -275,11 +280,11 @@ export function formatManifestMarkdown(input, manifestHash) {
     envRow('MIN_PIXELS_FOR_ACTIVE_DAY', String(b.minPixelsForActiveDay)),
     envRow('HOLDER_PIXELS_PER_DAY', String(b.holderPixelsPerDay)),
     envRow('LAB_BASE_URI', input.labBaseUri),
-    envRow('CONFIRM_MAINNET', yes(input.confirmMainnet), '**mainnet broadcast guard**'),
+    '| `CONFIRM_MAINNET` | **NOT STORED** | set `true` only in the shell at the exact approved `--broadcast` / `--resume` step |',
     envRow('MONAD_CARD_ADDRESS', input.partners.monadCards),
     envRow('MON_USD_FEED', s.monUsdFeed),
     envRow('MON_PRICE_TRIGGER_MILLI_USD', String(s.triggerMilliUsd)),
-    envRow('MON_FEED_MAX_AGE', String(s.maxAgeSeconds), 'must be re-confirmed against live heartbeat'),
+    envRow('MON_FEED_MAX_AGE', String(s.maxAgeSeconds), 'must be re-confirmed against live update policy/freshness'),
     '',
     'Add-on scripts also require the addresses emitted by earlier steps (`PAINT_ADDRESS`, `PASS_ADDRESS`, `QUESTS_ADDRESS`, `LABS_ADDRESS`, `CARD_MEMORY_ADDRESS`). Populate them only from the reviewed deployment outputs.',
     '',
@@ -297,13 +302,26 @@ export function formatManifestMarkdown(input, manifestHash) {
     'npm run contracts:test',
     'git diff --check',
     '',
-    '# after deployment, with a local RPC_URL and no secret on argv:',
+    '# read-only preflight before approval/broadcast:',
+    'RPC_URL=... npm run mainnet:preflight -- --input <reviewed-json>',
+    '',
+    '# dry-run scripts are allowed without CONFIRM_MAINNET because the guard checks Foundry context:',
+    'FOUNDRY_PROFILE=deploy forge script script/Deploy.s.sol:Deploy --root contracts --rpc-url "$RPC_URL" -vvvv',
+    '',
+    '# after each successful deployment stage, derive addresses from Foundry broadcast artifacts:',
+    'npm run mainnet:collect-addresses',
+    '',
+    '# finalized deployment certification with a local RPC_URL and no secret on argv:',
     'EXPECTED_CHAIN_ID=143 PAINT_ADDRESS=<paint> EXPECTED_OWNER=<finalOwner> npm run launch:doctor -- --json',
+    '',
+    '# source-verification command shape (run per deployed contract; keep verification separate from signing):',
+    'forge verify-contract <address> <source-path:ContractName> --chain 143 --verifier sourcify --verifier-url https://sourcify-api-monad.blockvision.org/ --watch',
+    '# confirm each verified address on https://monadvision.com/ before final acceptance.',
     '```',
     '',
     '## Mandatory STOP gates',
     '',
-    '1. **STOP before the first mainnet deployment broadcast.** Human approval is required at that exact step.',
+    '1. **STOP before the first mainnet deployment broadcast.** Human approval is required at that exact step. The stored manifest remains `PLAN_ONLY`; only then set `CONFIRM_MAINNET=true` in the executing shell.',
     '2. **STOP before final-owner `acceptOwnership()` calls.** Re-run the pre-acceptance finalized Launch Doctor first.',
     '3. **STOP before any freeze.** A freeze is optional and irreversible.',
     '4. **STOP before treating a Flight Recorder hash as canonical launch evidence.** Post-acceptance finalized certification and 9D split-brain/canary acceptance must pass first.',

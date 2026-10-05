@@ -209,6 +209,7 @@ Browser security matters because Live Mode intentionally holds an EOA key locall
 - Monad testnet build is active and the full local Solidity/frontend gate is green.
 - Live Mode, two-browser remote propagation, explorer/X-ray proof and local DXDIAG instrumentation are implemented and validated on testnet.
 - The mainnet source/deployment graph contains only contracts consumed by the current product; historical compatibility readers remain isolated to legacy testnet state.
+- Phase 9C deployment tooling is prepared but has not broadcast mainnet transactions. The exact-step runbook is [`docs/PHASE_9C_MAINNET_DEPLOYMENT.md`](docs/PHASE_9C_MAINNET_DEPLOYMENT.md).
 - Mainnet deployment addresses will replace the testnet table above when the release deployment is finalized.
 
 ## Credits

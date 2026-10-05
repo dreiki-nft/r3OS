@@ -1,25 +1,26 @@
 # Mainnet deployment topology
 
-This is the Phase 9A topology audit, not authorization to broadcast transactions.
+This is the Phase 9C deployment topology audit. It is **not authorization to broadcast transactions**.
 
-## Chain and approval boundary
+Target chain: Monad Mainnet (`143`). Canonical application state remains onchain; the deployment tooling does not introduce a database or canonical offchain service.
 
-Target chain: Monad Mainnet (`143`).
+## Approval boundary
 
-All deployment, ownership-acceptance, freeze and canonical launch-marker transactions remain behind an explicit human approval gate. Environment values must be supplied locally; secrets/private keys never belong in repository files or browser `VITE_` variables.
+Every production deployment script inherits `R3OSMainnetScript`.
 
-## Safest current deployment order
+- Foundry dry-run context is allowed without an approval flag.
+- Actual chain-143 `--broadcast` / `--resume` requires `CONFIRM_MAINNET=true` in the executing shell.
+- The reviewed manifest is permanently `PLAN_ONLY`; it cannot contain `confirmMainnet`.
+- Ownership acceptance and renderer freeze have separate exact-step approval flags.
+- Contract/Safe final owners receive target + calldata instead of being impersonated by `startBroadcast(address)`.
+
+Secrets/private keys never belong in repository files or browser `VITE_` variables.
+
+## Deployment order
 
 ### 0. Read-only preflight
 
-Before broadcasting anything:
-
-- run contract build/tests and frontend regression gates;
-- lock constructor inputs and final admin addresses in the deployment manifest;
-- confirm live code at the r3tards, Skrumpeys and Monad Cards partner addresses;
-- confirm the MON/USD oracle and heartbeat before choosing `MON_FEED_MAX_AGE`;
-- confirm the intended renderer/experiment freeze policy;
-- record expected artifact/bytecode identities.
+Run the full local gate, generate the reviewed manifest and execute `npm run mainnet:preflight`. Preflight uses a Finalized block for dependency/oracle checks and verifies chain 143, partner/dependency code, System Event oracle shape/freshness, season lead and deployer balance.
 
 ### 1. Core — `Deploy.s.sol`
 
@@ -36,112 +37,94 @@ Deploys and wires:
 - `R3OSRecycleBin`
 - `R3OSCDBurner`
 
-It also configures core experiments, stamp sources and day-one quests.
-
-If `FINAL_OWNER != deployer`, this script only **starts** the `Ownable2Step` transfers. Do not have `FINAL_OWNER` accept them yet.
+On chain 143 the script additionally locks the official r3tards address, the reviewed Paint budgets and a future season start. If `FINAL_OWNER != deployer`, this stage starts the four Ownable2Step transfers but does not accept them.
 
 ### 2. CARD.DRV — `DeployMonadCard.s.sol`
 
-Deploy `R3OSCardMemory`, then register it with Paint, Pass and Quests while the deployer is still owner. This step should precede Monad Hardware because `R3OSBlockCamera.CARD_MEMORY` is immutable.
+Deploy `R3OSCardMemory`, then register it with Paint, Pass and Quests while the deployer is still owner. Mainnet requires the predecessor code/wiring/ownership to match.
+
+This must precede Monad Hardware because `R3OSBlockCamera.CARD_MEMORY` is immutable.
 
 ### 3. Monad Hardware — `DeployMonadHW.s.sol`
 
-Deploy:
+Deploy and register:
 
 - `R3OSPageExe`
 - `R3OSBlockCamera`
 
-Register both with Paint and bind Block Camera's experiment id.
-
-**Ordering invariant:** the broadcaster must still be the active Paint owner. The current script has no Safe-calldata fallback for its owner-only registration calls.
+Mainnet refuses a zero/missing Card Memory and verifies that Card Memory points to the official Monad Cards collection.
 
 ### 4. Operator / System Event — `DeployOperator.s.sol`
 
-Resolve the already-registered core/Card/hardware sources, then deploy:
+Resolve the already-registered launch sources, then deploy:
 
 - `R3OSOperatorRecord`
 - `R3OSSystemEvent`
 
-On mainnet `MON_FEED_MAX_AGE` must be supplied explicitly. The script verifies the feed description/decimals before deployment. If Paint ownership has already moved, the script can emit Safe calldata for registry insertion, but keeping all add-ons before ownership acceptance is simpler and more auditable.
+Fresh mainnet refuses to construct Operator Record with missing quests, finale, recycle, Block Camera, PAGE.EXE or CARD.DRV sources. `MON_FEED_MAX_AGE` is mandatory and the feed identity is checked before deployment.
 
 ### 5. Router Lab — `DeployRouterLab.s.sol`
 
-Deploy `R3OSRouterLab` without test mocks on chain 143 and register it with Paint. This script can emit Safe calldata if needed, but the preferred launch order still completes registration before ownership acceptance.
+Deploy/register `R3OSRouterLab`. Test mock venues are forbidden on chain 143.
 
-### 6. Pre-acceptance Launch Doctor
+### 6. Pre-acceptance Finalized Launch Doctor
 
-Run Launch Doctor against Finalized state. Verify:
+Verify bytecode, immutable wiring, current/pending ownership, exact registry surface, Pass sources, Card/Hardware/Operator/Router links, System Event config, schedule and freeze state.
 
-- chain id and one finalized anchor;
-- bytecode presence;
-- immutable wiring;
-- current/pending owners;
-- registry entries;
-- Pass source capacity;
-- Card / Hardware / Operator / Router links;
-- System Event feed configuration;
-- schedule and freeze policy.
+### 7. Explicit ownership-acceptance gate — `AcceptOwnership.s.sol`
 
-Do not interpret a passing pre-acceptance doctor as final launch acceptance while ownership is still pending.
+Only after every owner-dependent registration is complete. The helper refuses an incomplete/wrong registry before any acceptance action.
 
-### 7. Explicit ownership-acceptance gate
+For an EOA final owner it can broadcast after the separate approval flag. For a Safe/contract final owner it outputs the four `acceptOwnership()` calls for the owner's normal execution path.
 
-Only after every owner-dependent add-on is complete and reviewed, obtain explicit approval for the intended final owner to call `acceptOwnership()` on:
+### 8. Optional renderer freeze — `FreezeRenderers.s.sol`
 
-- Paint
-- Labs
-- Painter Pass
-- Quests
-
-These are admin-state transitions, not routine deployment housekeeping.
-
-### 8. Optional irreversible freezes
-
-Renderer and/or experiment freeze actions, if chosen at all, require their own explicit approval after deployment verification. Current project policy intentionally leaves the experiment registry open.
+Renderer freeze is separately approved and optional. The experiment registry intentionally remains open under the reviewed Phase 9 launch policy.
 
 ### 9. Post-acceptance Finalized certification
 
-Run Launch Doctor again from Finalized state and, in 9D, the independent-provider canary/split-brain checks. Verify the intended owner/freeze state rather than merely the pending state.
+Run Launch Doctor again. Final owner/freeze state must match the reviewed intent.
 
-### 10. Flight Recorder and genesis evidence
+### 10. Phase 9D acceptance, Flight Recorder and genesis evidence
 
-Only after mainnet acceptance passes:
+Independent-provider split-brain checks and the mainnet canary still have to pass in 9D. Only after that should the deterministic Flight Recorder hash be treated as the `R3OS_MAINNET_GENESIS` evidence marker.
 
-1. populate the Flight Recorder input from verified facts;
-2. run `npm run flight:record -- --input <path>`;
-3. retain `artifacts/mainnet-launch.json`, `.txt` and `.sha256`;
-4. use the deterministic artifact hash as the `R3OS_MAINNET_GENESIS` evidence marker.
+`R3OSSystemEvent` is not a generic launch-marker registry and is not overloaded to store that hash.
 
-The existing `R3OSSystemEvent` contract is not a generic launch-marker registry and is not used to store this hash.
-
-## Known dependency graph
+## Dependency graph
 
 ```text
+read-only Finalized preflight
+          ↓
 Core
   ├─ CARD.DRV
   │    └─ Monad Hardware (Block Camera captures CARD_MEMORY immutably)
   ├─ Monad Hardware
-  ├─ Operator Record / System Event (resolves core + Card + hardware entries)
+  ├─ Operator Record / System Event (requires core + Card + hardware entries)
   └─ Router Lab
-         ↓
-all owner-dependent registration complete
-         ↓
-FINAL_OWNER acceptOwnership
-         ↓
-finalized launch certification
-         ↓
+          ↓
+collect 16/16 addresses from Foundry broadcast artifacts
+          ↓
+pre-acceptance Finalized Launch Doctor
+          ↓
+FINAL_OWNER ownership acceptance
+          ↓
+optional renderer freeze
+          ↓
+post-acceptance Finalized Launch Doctor
+          ↓
+9D canary + provider split-brain acceptance
+          ↓
 Flight Recorder / R3OS_MAINNET_GENESIS evidence marker
 ```
 
 ## Machine-validated manifest
 
-Phase 9A adds a fail-closed manifest generator so the final plan is derived from reviewed inputs instead of hand-edited prose:
+Generate from a reviewed local copy of `docs/MAINNET_DEPLOYMENT_INPUT.example.json`:
 
 ```bash
-npm run mainnet:manifest -- --input <reviewed-json>
+npm run mainnet:manifest -- --input docs/MAINNET_DEPLOYMENT_INPUT.local.json
 ```
-
-Template: `docs/MAINNET_DEPLOYMENT_INPUT.example.json`. The checked-in template is intentionally non-executable (`reviewed=false`, `CONFIRM_MAINNET=false`, unresolved 9B RPC/WS values, no accepted oracle max-age); copy it to a local launch input and fill/review every field before the generator will pass.
 
 Outputs:
 
@@ -149,6 +132,29 @@ Outputs:
 - `artifacts/mainnet-deployment-manifest.sha256`
 - `artifacts/MAINNET_DEPLOYMENT_PLAN.md`
 
-The generator rejects chain drift, partner-address drift, Paint-budget drift, an experiments-freeze policy that contradicts the reviewed launch policy, missing public RPC/WS configuration, and a missing `CONFIRM_MAINNET=true` intent. It never queries RPC or broadcasts anything.
+The generator rejects chain/partner/budget/freeze/RPC drift and any attempt to store `confirmMainnet` in the plan.
 
-The checked-in source test also asserts the safety-critical script facts behind the order: CARD.DRV constructs Card Memory before Hardware consumes that immutable address; Hardware directly calls owner-only Paint registry functions; and core ownership transfer remains `Ownable2Step`.
+## Read-only preflight
+
+```bash
+RPC_URL=... npm run mainnet:preflight -- --input docs/MAINNET_DEPLOYMENT_INPUT.local.json
+```
+
+Outputs:
+
+- `artifacts/mainnet-preflight.json`
+- `artifacts/MAINNET_PREFLIGHT.txt`
+
+The RPC URL is not recorded.
+
+## Broadcast-derived address handoff
+
+After every successful deployment stage:
+
+```bash
+npm run mainnet:collect-addresses
+```
+
+The collector reads only local Foundry chain-143 broadcast artifacts and produces public-address handoff files. It reports partial progress until all 16 production contracts are present and refuses conflicting addresses for the same contract name.
+
+Full step-by-step procedure: `docs/PHASE_9C_MAINNET_DEPLOYMENT.md`.

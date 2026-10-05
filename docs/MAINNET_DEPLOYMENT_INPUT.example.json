@@ -1,5 +1,6 @@
 {
-  "schema": "r3os-mainnet-deployment/v1",
+  "schema": "r3os-mainnet-deployment/v2",
+  "approvalState": "PLAN_ONLY",
   "chainId": 143,
   "deployer": "0x1111111111111111111111111111111111111111",
   "finalOwner": "0x2222222222222222222222222222222222222222",
@@ -32,14 +33,13 @@
   },
   "frontend": {
     "rpcUrls": [
-      "REPLACE_AFTER_9B",
-      "REPLACE_AFTER_9B"
+      "REPLACE_WITH_PUBLIC_MAINNET_RPC_A",
+      "REPLACE_WITH_PUBLIC_MAINNET_RPC_B"
     ],
-    "walletRpcUrl": "REPLACE_AFTER_9B",
-    "wsUrl": "REPLACE_AFTER_9B",
-    "explorerUrl": "REPLACE_AFTER_9B",
+    "walletRpcUrl": "REPLACE_WITH_PUBLIC_MAINNET_ACTION_RPC",
+    "wsUrl": "REPLACE_WITH_PUBLIC_MAINNET_WS",
+    "explorerUrl": "https://monadvision.com",
     "fastlaneAcceleratorUrl": ""
   },
-  "confirmMainnet": false,
   "reviewed": false
 }

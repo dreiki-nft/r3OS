@@ -85,6 +85,12 @@ const requiredSubmissionFiles = [
   'contracts/script/DeployMonadHW.s.sol',
   'contracts/script/DeployOperator.s.sol',
   'contracts/script/DeployRouterLab.s.sol',
+  'contracts/script/AcceptOwnership.s.sol',
+  'contracts/script/FreezeRenderers.s.sol',
+  'contracts/script/lib/R3OSMainnetScript.sol',
+  'scripts/mainnet-preflight.mjs',
+  'scripts/deployment-addresses.mjs',
+  'docs/PHASE_9C_MAINNET_DEPLOYMENT.md',
   'docs/specs/ROUTER_LAB.md',
   'docs/specs/MONAD_CARD.md',
 ]

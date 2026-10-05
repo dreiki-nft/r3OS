@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Script, console} from "forge-std/Script.sol";
+import {console} from "forge-std/Script.sol";
+import {R3OSMainnetScript} from "./lib/R3OSMainnetScript.sol";
 import {R3OSPaint} from "../src/R3OSPaint.sol";
 import {R3OSPainterPass} from "../src/R3OSPainterPass.sol";
 import {R3OSLabs} from "../src/R3OSLabs.sol";
@@ -15,7 +16,7 @@ import {R3OSCDBurner} from "../src/labs/R3OSCDBurner.sol";
 
 /// @notice Canonical r3OS core deployment.
 /// @dev The submission surface intentionally deploys only features that remain reachable in the product.
-contract Deploy is Script {
+contract Deploy is R3OSMainnetScript {
     uint256 private constant QUEST_MONTH_IN_ACTIVE_DAYS = 30;
     uint256 private constant QUEST_STORM_REGULAR_PAINTS = 50;
     uint256 private constant QUEST_LIVE_WIRE_SESSION_PAINTS = 500;
@@ -37,12 +38,20 @@ contract Deploy is Script {
         uint32 minPixelsForActiveDay = uint32(vm.envUint("MIN_PIXELS_FOR_ACTIVE_DAY"));
         uint32 holderPixelsPerDay = uint32(vm.envUint("HOLDER_PIXELS_PER_DAY"));
 
-        if (block.chainid == 143 && !vm.envOr("CONFIRM_MAINNET", false)) {
-            revert("mainnet blocked: deploy testnet first, then set CONFIRM_MAINNET=true");
-        }
+        _requireMainnetBroadcastApproval();
         require(tokenZeroRecipient != address(0), "token zero recipient is zero");
         require(royaltyReceiver != address(0), "royalty receiver is zero");
         require(finalOwner != address(0), "final owner is zero");
+        if (block.chainid == 143) {
+            require(r3tards == 0x200723A706de0013316E5cd8EBa2b3f53DD90c29, "wrong mainnet r3tards");
+            require(r3tards.code.length != 0, "mainnet r3tards has no code");
+            require(seasonStart > block.timestamp, "mainnet seasonStart must be future");
+            require(basePixelsPerHour == 512, "wrong mainnet base budget");
+            require(pixelsPerActiveDay == 32, "wrong mainnet active-day step");
+            require(maxPixelsPerHour == 2048, "wrong mainnet hour cap");
+            require(minPixelsForActiveDay == 16, "wrong mainnet active-day threshold");
+            require(holderPixelsPerDay == 512, "wrong mainnet holder budget");
+        }
 
         vm.startBroadcast(deployer);
 
