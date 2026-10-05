@@ -2,6 +2,14 @@ import { createPublicClient, defineChain, fallback, http, webSocket, type Addres
 import { config, chainName } from './config'
 import { rateLimited } from './rateLimit'
 import { startRpcStatsLogger, withRpcStats } from './rpcStats'
+import {
+  PUBLIC_RPC_RANK_INTERVAL_MS,
+  PUBLIC_RPC_RANK_SAMPLE_COUNT,
+  PUBLIC_RPC_RANK_TIMEOUT_MS,
+  PUBLIC_RPC_RANK_WEIGHTS,
+  PUBLIC_RPC_RETRY_COUNT,
+  PUBLIC_RPC_TIMEOUT_MS,
+} from './readRpcPolicy'
 
 export const appChain = defineChain({
   id: config.chainId,
@@ -32,14 +40,25 @@ export const appTransport = config.rpcUrls.length
         rateLimited(
           http(url, {
             batch,
-            retryCount: 3,
-            retryDelay: 400,
-            timeout: 15_000,
+            retryCount: PUBLIC_RPC_RETRY_COUNT,
+            timeout: PUBLIC_RPC_TIMEOUT_MS,
           }),
           config.rpcRps,
         ),
       ),
-      { rank: false, retryCount: 1 },
+      {
+        // A background/public read must not sit on one sick provider long enough to freeze a program.
+        // Rank slowly in the background, then fail over immediately on timeout/error. The custom ping is
+        // universally available on Monad and avoids relying on net_listening support.
+        rank: {
+          interval: PUBLIC_RPC_RANK_INTERVAL_MS,
+          sampleCount: PUBLIC_RPC_RANK_SAMPLE_COUNT,
+          timeout: PUBLIC_RPC_RANK_TIMEOUT_MS,
+          weights: PUBLIC_RPC_RANK_WEIGHTS,
+          ping: ({ transport }) => transport.request({ method: 'eth_blockNumber' }),
+        },
+        retryCount: 0,
+      },
     )
   : http('http://127.0.0.1:8545')
 

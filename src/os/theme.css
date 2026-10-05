@@ -1308,29 +1308,6 @@ button:disabled {
   white-space: nowrap;
 }
 
-.copy-progress {
-  position: absolute;
-  left: 50%;
-  top: 45%;
-  transform: translate(-50%, -50%);
-  z-index: 500;
-  background: var(--face);
-  padding: 15px;
-  width: 280px;
-}
-
-.flying-pixels {
-  letter-spacing: 14px;
-  color: var(--ok);
-  animation: fly 1s steps(4) infinite;
-}
-
-@keyframes fly {
-  50% {
-    padding-left: 20px;
-  }
-}
-
 .pass-tab {
   border: 1px solid var(--bevel-light);
   padding: 12px;

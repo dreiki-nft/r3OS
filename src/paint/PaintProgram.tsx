@@ -88,7 +88,6 @@ import { decayTileHeat, previewPaintCost, type TilePreviewState } from './cost'
 import { applyRedo, applyUndo } from './history'
 import { observedRegionUsage } from './livePreflight'
 import { PaletteBar } from './PaletteBar'
-import { SaveProgress } from './SaveProgress'
 import { bytesToRuns, runsToBytes, splitPaintRuns } from './split'
 import { drawStrokeSegment, protectOutline } from './strokes'
 import { Toolbox, type Tool } from './Toolbox'
@@ -167,7 +166,7 @@ export function PaintProgram() {
     return () => window.clearTimeout(timer)
   }, [lastPaint])
   const [autoPaint, setAutoPaint] = useState(true)
-  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null)
+  const [progress, setProgress] = useState<{ current: number; total: number; stopping?: boolean } | null>(null)
   const [box, setBox] = useState<{
     title: string
     message: string
@@ -1406,6 +1405,18 @@ export function PaintProgram() {
                   ? 'Switch to Monad'
                   : `Paint ${cost.pixels} px`}
             </Button>
+            {progress && progress.total > 1 && (
+              <Button
+                disabled={progress.stopping}
+                title="finish the current transaction, then stop sending the remaining chunks"
+                onClick={() => {
+                  cancelRef.current = true
+                  setProgress((current) => (current ? { ...current, stopping: true } : current))
+                }}
+              >
+                {progress.stopping ? 'Stopping…' : 'Stop remaining'}
+              </Button>
+            )}
           </div>
           <small className={isLive ? 'paint-live-hint active' : 'paint-live-hint'}>
             {isLive
@@ -1423,13 +1434,17 @@ export function PaintProgram() {
       <footer className="paint-status">
         <span>
           {busy ? (
-            txState === 'signing'
-              ? isLive
-                ? 'signing live paint…'
-                : 'confirm in wallet…'
-              : txState === 'sent'
-                ? 'sent · waiting for block…'
-                : 'painting…'
+            progress && progress.total > 1
+              ? progress.stopping
+                ? `stopping after chunk ${progress.current}/${progress.total}…`
+                : `sending chunk ${progress.current}/${progress.total}…`
+              : txState === 'signing'
+                ? isLive
+                  ? 'signing live paint…'
+                  : 'confirm in wallet…'
+                : txState === 'sent'
+                  ? 'sent · waiting for block…'
+                  : 'painting…'
           ) : lastPaint ? (
             <>
               {paintedText(lastPaint)} ·{' '}
@@ -1465,15 +1480,6 @@ export function PaintProgram() {
         </span>
         <span>block #{block.block}</span>
       </footer>
-      {progress && (
-        <SaveProgress
-          current={progress.current}
-          total={progress.total}
-          onCancel={() => {
-            cancelRef.current = true
-          }}
-        />
-      )}
       {walletDialog && (
         <MessageBox title={walletIntent === 'live' ? 'Go live · connect wallet' : 'Connect wallet'} defaultLabel="Cancel" onClose={() => setWalletDialog(false)}>
           <WalletChooser
