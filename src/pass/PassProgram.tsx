@@ -14,7 +14,7 @@ import { decodeJsonDataUri } from '../lib/dataUri'
 import { R3OS_PAINTER_PASS_ABI, R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { readPainterProfile } from '../chain/painterProfile'
 import { markProgramDataReady } from '../chain/perf'
-import { readPassIdentity } from './passData'
+import { readPassCoreIdentity, readPassIdentity } from './passData'
 import { clearAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
 import { openProgram } from '../os/programs'
@@ -123,14 +123,23 @@ export function PassProgram() {
 
   const loadIdentity = useCallback(async (force = false) => {
     if (!wallet.account) return
-    const identity = await readPassIdentity(wallet.account, force)
+    const owner = wallet.account
+    const identity = await readPassCoreIdentity(owner, force)
+    if (getWalletSnapshot().account?.toLowerCase() !== owner.toLowerCase()) return
     setPassAddress(identity.passAddress)
     setCollection(identity.collection)
     setPassId(identity.passId)
     setHasClaimed(identity.hasClaimed)
-    setIds(identity.holderIds)
-    setDisplayId(choosePassDisplay(identity.holderIds, readStoredDisplay(wallet.account)))
     setIdentityLoaded(true)
+  }, [wallet.account])
+
+  const loadHolderIdentity = useCallback(async (force = false) => {
+    if (!wallet.account) return
+    const owner = wallet.account
+    const identity = await readPassIdentity(owner, force)
+    if (getWalletSnapshot().account?.toLowerCase() !== owner.toLowerCase()) return
+    setIds(identity.holderIds)
+    setDisplayId(choosePassDisplay(identity.holderIds, readStoredDisplay(owner)))
   }, [wallet.account])
 
   const loadStats = useCallback(async (force = false) => {
@@ -152,7 +161,10 @@ export function PassProgram() {
   useEffect(() => {
     void loadIdentity()
     void loadStats()
-  }, [loadIdentity, loadStats])
+    // Holder-token discovery can be several RPC strategies on non-enumerable collections. Keep it warm,
+    // but do not make My Pass wait for it before the primary identity/stats UI is usable.
+    void loadHolderIdentity()
+  }, [loadIdentity, loadStats, loadHolderIdentity])
 
   useEffect(() => {
     if (!wallet.account || (identityLoaded && statsLoaded)) markProgramDataReady('pass')

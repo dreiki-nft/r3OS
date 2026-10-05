@@ -4,6 +4,7 @@ import { PALETTE } from '../lib/palette'
 import type { Point } from '../lib/paintEngine'
 import type { TilePreviewState } from './cost'
 import type { Box, Ping } from './presence'
+import { shouldRecordRemoteRender } from './renderPerf'
 
 interface CanvasViewProps {
   pixels: Uint8Array
@@ -58,7 +59,17 @@ export function CanvasView({
   const well = useRef<HTMLDivElement>(null)
   const renderedProbe = useRef<string | undefined>(undefined)
   const pendingPaintInputAt = useRef<number | undefined>(undefined)
+  const lastVisibilityChangeAt = useRef<number>(0)
   const perfNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
+
+  useEffect(() => {
+    lastVisibilityChangeAt.current = perfNow()
+    const changed = () => {
+      lastVisibilityChangeAt.current = perfNow()
+    }
+    document.addEventListener('visibilitychange', changed)
+    return () => document.removeEventListener('visibilitychange', changed)
+  }, [])
 
   useEffect(() => {
     const host = well.current
@@ -176,7 +187,11 @@ export function CanvasView({
 
     if (renderProbe && renderProbe.key !== renderedProbe.current) {
       renderedProbe.current = renderProbe.key
-      onRenderProbe?.(renderProbe.key, Math.max(0, renderedAt - renderProbe.observedAt))
+      // Background tabs can suspend canvas effects for many seconds. That is resume latency, not
+      // websocket → visible-canvas latency, so do not poison the active-tab propagation percentile.
+      if (shouldRecordRemoteRender(renderProbe.observedAt, lastVisibilityChangeAt.current, document.hidden)) {
+        onRenderProbe?.(renderProbe.key, Math.max(0, renderedAt - renderProbe.observedAt))
+      }
     }
   }, [
     pixels,

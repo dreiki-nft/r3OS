@@ -14,7 +14,7 @@ import { labsAddress, loadOwnedLabsSources, scanOwnedLabs } from '../frames/labs
 import { prefetchQuestData } from '../labs/questsData'
 import { readLabsToken } from '../labs/labsToken'
 import { getLiveSnapshot, setLiveOwner, subscribeLive } from '../live/liveStore'
-import { readPassIdentity } from '../pass/passData'
+import { readPassCoreIdentity, readPassIdentity } from '../pass/passData'
 import { startCanvasStore } from '../paint/canvasStore'
 import { preloadLaunchPrograms } from './programs'
 
@@ -331,6 +331,12 @@ async function warmAccountData(owner: Address) {
 
   let ownedFrames: number[] = []
   let holderCount = 0
+
+  // Warm the two small My Pass reads before launching ownership scans. If the user opens My Pass while
+  // account warming is still running, the visible program joins these promises instead of sitting behind
+  // frame/Labs/holder enumeration in the public-read queue.
+  await Promise.allSettled([readPassCoreIdentity(owner), readPainterProfile(owner)])
+
   const jobs = [
     limit(async () => {
       ownedFrames = await mineTokenIds(owner)
@@ -339,9 +345,6 @@ async function warmAccountData(owner: Address) {
     limit(async () => {
       const identity = await readPassIdentity(owner)
       holderCount = identity.holderIds.length
-    }),
-    limit(async () => {
-      await readPainterProfile(owner)
     }),
     limit(async () => {
       await prefetchQuestData(owner)
