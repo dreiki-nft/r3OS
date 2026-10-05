@@ -4,6 +4,8 @@ import { publicClient, wsClient } from '../chain/clients'
 import { readMany } from '../chain/readMany'
 import { config } from '../chain/config'
 import { getLogsWindow } from '../chain/logs'
+import { subscribeMonadLogNotifications, type MonadLogNotification } from '../chain/monadLogs'
+import { ProposalCommitmentTracker } from '../chain/speculation'
 export { chunkBlockRanges } from '../chain/logs'
 import { decodeCoreEventLog } from '../chain/coreLogs'
 import { demoConstants, readCoreConstants, seasonAtTimestamp } from '../chain/contracts'
@@ -76,6 +78,7 @@ export function paintedUnitsFromArgs(args: Record<string, unknown>): bigint | un
 }
 
 type CoreLog = {
+  blockHash?: Hex | null
   blockNumber: bigint
   logIndex?: number | null
   transactionHash?: Hex | null
@@ -101,6 +104,7 @@ const tileListeners = new Set<() => void>()
 const tileCache = new Map<number, TileCacheEntry>()
 let tileSnapshot: TileCacheSnapshot = { version: 0, map: tileCache }
 let unwatch: (() => void) | undefined
+let unwatchMonadNotifications: (() => void) | undefined
 let pollTimer: number | undefined
 let reconcileTimer: number | undefined
 let serial = Promise.resolve()
@@ -109,6 +113,7 @@ let startPromise: Promise<void> | undefined
 let constants = demoConstants
 let activityFeed: ActivityFeedSnapshot = { version: 0, items: [] }
 const appliedLogKeys = new Map<string, bigint>()
+const proposalCommitments = new ProposalCommitmentTracker()
 
 function emitCanvas() {
   for (const listener of canvasListeners) listener()
@@ -257,13 +262,20 @@ function outlineChange(eventName: string) {
   )
 }
 
-function coreLogKey(log: Pick<CoreLog, 'transactionHash' | 'logIndex'>) {
+export function canvasLogIdentity(log: {
+  blockHash?: Hex | null
+  transactionHash?: Hex | null
+  logIndex?: number | null
+}) {
   if (!log.transactionHash || log.logIndex == null) return undefined
-  return `${log.transactionHash.toLowerCase()}:${log.logIndex}`
+  const txLog = `${log.transactionHash.toLowerCase()}:${log.logIndex}`
+  // A transaction/log index pair is not enough to distinguish sibling Monad proposals.
+  // Prefer blockHash when the provider supplies it; receipts without one retain the legacy fallback.
+  return log.blockHash ? `${log.blockHash.toLowerCase()}:${txLog}` : txLog
 }
 
 function rememberLog(log: CoreLog) {
-  const key = coreLogKey(log)
+  const key = canvasLogIdentity(log)
   if (key) appliedLogKeys.set(key, log.blockNumber)
 }
 
@@ -300,7 +312,7 @@ async function seedCanonicalOverlap(latest: bigint) {
   })) as unknown as CoreLog[]
   pruneApplied(fromBlock)
   for (const log of logs) {
-    const key = coreLogKey(log)
+    const key = canvasLogIdentity(log)
     if (key) appliedLogKeys.set(key, log.blockNumber)
   }
 }
@@ -319,7 +331,7 @@ async function applyDeliveredLogs(
   const profileWebsocket = options.source === 'websocket'
   const perfNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
   for (const log of sortLogs(logs)) {
-    const key = coreLogKey(log)
+    const key = canvasLogIdentity(log)
     if (key && appliedLogKeys.has(key)) continue
     rememberLog(log)
     const decodeStarted = profileWebsocket ? perfNow() : 0
@@ -427,12 +439,11 @@ async function applyDeliveredLogs(
   return needsReload
 }
 
-export async function loadCanvasNow() {
+async function loadCanvasAt(block: bigint) {
   if (!publicClient || !config.paintAddress) {
     emitCanvas()
     return
   }
-  const block = await publicClient.getBlockNumber({ cacheTime: 0 })
   const season = (await publicClient.readContract({
     address: config.paintAddress,
     abi: R3OS_PAINT_ABI,
@@ -498,6 +509,21 @@ export async function loadCanvasNow() {
   emitCanvas()
 }
 
+export async function loadCanvasNow() {
+  if (!publicClient || !config.paintAddress) {
+    emitCanvas()
+    return
+  }
+  const block = await publicClient.getBlockNumber({ cacheTime: 0 })
+  await loadCanvasAt(block)
+}
+
+async function finalizedBlockNumber() {
+  if (!publicClient) return undefined
+  const block = await publicClient.getBlock({ blockTag: 'finalized' })
+  return block.number ?? undefined
+}
+
 export function loadCanvas() {
   return enqueue(loadCanvasNow)
 }
@@ -559,32 +585,58 @@ async function onSubscriptionLogs(logs: readonly unknown[]) {
   if (needsReload) await loadCanvas()
 }
 
-export async function reconcileSpeculativeNow() {
+async function reconcileSpeculativeNowImpl(targetFinalizedBlock?: bigint) {
   if (!publicClient || !config.paintAddress) return false
-  const latest = await publicClient.getBlockNumber({ cacheTime: 0 })
-  const fromBlock = snapshot.snapshotBlock > 32n ? snapshot.snapshotBlock - 32n : 0n
-  if (latest - fromBlock + 1n > BigInt(20 * config.logsRange)) {
-    await loadCanvasNow()
+  const finalized = targetFinalizedBlock ?? (await finalizedBlockNumber())
+  if (finalized == null) return false
+
+  // Reconcile only against finalized state. On Monad, `latest` may be Proposed and therefore
+  // cannot certify away a losing speculative proposal.
+  const anchor = snapshot.snapshotBlock < finalized ? snapshot.snapshotBlock : finalized
+  const fromBlock = anchor > 32n ? anchor - 32n : 0n
+  if (finalized - fromBlock + 1n > BigInt(20 * config.logsRange)) {
+    await loadCanvasAt(finalized)
+    await catchUpNow()
     return true
   }
   const logs = (await getLogsWindow({
     address: config.paintAddress,
     fromBlock,
-    toBlock: latest,
+    toBlock: finalized,
   })) as unknown as CoreLog[]
-  const canonical = logs.map(coreLogKey).filter((key): key is string => Boolean(key))
+  const canonical = logs.map(canvasLogIdentity).filter((key): key is string => Boolean(key))
   const applied = [...appliedLogKeys.entries()]
-    .filter(([, block]) => block >= fromBlock && block <= latest)
+    .filter(([, block]) => block >= fromBlock && block <= finalized)
     .map(([key]) => key)
-  if (await reloadOnSpeculativeMismatch(applied, canonical, loadCanvasNow)) {
+  if (
+    await reloadOnSpeculativeMismatch(applied, canonical, async () => {
+      await loadCanvasAt(finalized)
+      // Re-apply the post-finalized tail so low-latency UX can continue after the authoritative repair.
+      await catchUpNow()
+    })
+  ) {
     return true
-  }
-  if (latest > snapshot.snapshotBlock) {
-    snapshot = { ...snapshot, snapshotBlock: latest }
-    emitCanvas()
   }
   pruneApplied(fromBlock)
   return false
+}
+
+export function reconcileSpeculativeNow(targetFinalizedBlock?: bigint) {
+  return enqueue(() => reconcileSpeculativeNowImpl(targetFinalizedBlock))
+}
+
+function onMonadCanvasCommitment(notification: MonadLogNotification) {
+  const paint = config.paintAddress?.toLowerCase()
+  const relevantActivity = Boolean(paint && notification.log?.address?.toLowerCase() === paint)
+  const decision = proposalCommitments.observe({
+    blockId: notification.blockId,
+    blockNumber: notification.blockNumber,
+    commitState: notification.commitState,
+    relevantActivity,
+  })
+  if (decision.shouldReconcile && decision.blockNumber != null) {
+    void reconcileSpeculativeNow(decision.blockNumber).catch(() => undefined)
+  }
 }
 
 export function startCanvasStore() {
@@ -594,6 +646,8 @@ export function startCanvasStore() {
   const pending = (async () => {
     constants = await readCoreConstants().catch(() => demoConstants)
     await loadCanvas()
+    unwatchMonadNotifications?.()
+    unwatchMonadNotifications = subscribeMonadLogNotifications(onMonadCanvasCommitment)
     if (wsClient && config.paintAddress) {
       unwatch = wsClient.watchContractEvent({
         address: config.paintAddress,
@@ -628,6 +682,9 @@ function startPolling() {
 
 export function stopCanvasStore() {
   unwatch?.()
+  unwatchMonadNotifications?.()
+  unwatchMonadNotifications = undefined
+  proposalCommitments.reset()
   if (pollTimer) window.clearTimeout(pollTimer)
   if (reconcileTimer) window.clearInterval(reconcileTimer)
   started = false
@@ -682,6 +739,7 @@ export function receiptCoreLogs(
     if (!log.data || !log.topics || (expected && log.address.toLowerCase() !== expected)) return []
     return [
       {
+        blockHash: log.blockHash ?? undefined,
         blockNumber: log.blockNumber ?? receiptBlock,
         logIndex: log.logIndex == null ? null : Number(log.logIndex),
         transactionHash: log.transactionHash ?? undefined,

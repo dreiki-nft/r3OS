@@ -185,7 +185,12 @@ function healthy(chainId = 31337): Fixture {
 function readerFor(fixture: Fixture) {
   return {
     chainId: async () => fixture.chainId,
-    block: async () => ({ number: 123n, timestamp: 1_790_000_100n }),
+    block: async () => ({
+      number: 123n,
+      hash: `0x${'12'.repeat(32)}`,
+      timestamp: 1_790_000_100n,
+      commitment: 'finalized' as const,
+    }),
     code: async (address: string) => (fixture.code.has(address.toLowerCase()) ? '0x6000' : '0x'),
     codeHash: async (address: string) => `0x${address.slice(2).padStart(64, '0')}`,
     read: async (address: string, fragment: string, args: unknown[] = []) => {
@@ -356,7 +361,26 @@ describe('launch doctor: full run against fixtures', () => {
     expect(find(result, 'FREEZE READINESS', 'Experiments state').status).toBe('OK')
     expect(find(result, 'FREEZE READINESS', 'Renderers state').status).toBe('WARN')
     expect(find(result, 'QUESTS', 'CARD CARRIER').status).toBe('OK')
+    expect(find(result, 'CHAIN', 'Finalized certification block').status).toBe('OK')
     expect(find(result, 'CHAIN', 'EIP-2935 history behaviour').value).toBe('TESTNET CHECK REQUIRED')
+  })
+
+  it('fails closed on mainnet when the certification anchor is not Finalized', async () => {
+    const fixture = healthy(143)
+    const base = readerFor(fixture)
+    const result = await run(fixture, {
+      reader: {
+        ...base,
+        block: async () => ({
+          number: 123n,
+          hash: `0x${'34'.repeat(32)}`,
+          timestamp: 1_790_000_100n,
+          commitment: 'proposed',
+        }),
+      },
+    })
+    expect(find(result, 'CHAIN', 'Finalized certification block').status).toBe('FAIL')
+    expect(result.exitCode).toBe(1)
   })
 
   it('fails an Operator Record source that does not match the live registry', async () => {

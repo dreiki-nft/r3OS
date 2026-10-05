@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { Address, Log } from 'viem'
+import type { Address, Hex, Log } from 'viem'
 import {
+  canvasLogIdentity,
   chunkBlockRanges,
   clearMatchingInFlight,
   createSerialQueue,
@@ -69,6 +70,14 @@ describe('canvas store helpers', () => {
     expect(tileNeedsFetch(undefined, 101n)).toBe(true)
   })
 
+  it('keeps sibling-proposal logs distinct when block hashes differ', () => {
+    const transactionHash = `0x${'11'.repeat(32)}` as Hex
+    const common = { transactionHash, logIndex: 7 }
+    const proposalA = canvasLogIdentity({ ...common, blockHash: `0x${'aa'.repeat(32)}` as Hex })
+    const proposalB = canvasLogIdentity({ ...common, blockHash: `0x${'bb'.repeat(32)}` as Hex })
+    expect(proposalA).not.toBe(proposalB)
+  })
+
   it('detects a speculative log mismatch in the reconcile overlap', async () => {
     expect(logSetsDiffer(new Set(['0xaaa:1', '0xbbb:2']), new Set(['0xaaa:1', '0xccc:3']))).toBe(true)
     expect(logSetsDiffer(new Set(['0xaaa:1']), new Set(['0xaaa:1']))).toBe(false)
@@ -80,7 +89,6 @@ describe('canvas store helpers', () => {
     ).resolves.toBe(true)
     expect(reloads).toBe(1)
   })
-
 
   it('uses only Paint receipt logs and fills a missing receipt block', () => {
     const paint = '0x0000000000000000000000000000000000000001' as Address

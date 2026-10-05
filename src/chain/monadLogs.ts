@@ -2,11 +2,22 @@ import { hexToBigInt, type Address, type Hex } from 'viem'
 import { wsClient } from './clients'
 import { markTraceCommit, type CommitState } from './txTrace'
 
+export interface MonadObservedLog {
+  address?: Address
+  blockHash?: Hex
+  blockNumber?: bigint
+  data?: Hex
+  logIndex?: number
+  topics?: readonly Hex[]
+  transactionHash?: Hex
+}
+
 export interface MonadLogNotification {
   blockId?: Hex
   blockNumber?: bigint
   commitState: CommitState
   transactionHash?: Hex
+  log?: MonadObservedLog
 }
 
 interface SubscriptionHandle {
@@ -43,24 +54,73 @@ function blockId(value: unknown): Hex | undefined {
   return typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value) ? (value as Hex) : undefined
 }
 
+function hex(value: unknown): Hex | undefined {
+  return typeof value === 'string' && /^0x[0-9a-fA-F]*$/.test(value) ? (value as Hex) : undefined
+}
+
+function address(value: unknown): Address | undefined {
+  return typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value) ? (value as Address) : undefined
+}
+
+function logIndex(value: unknown): number | undefined {
+  const parsed = blockNumber(value)
+  if (parsed == null || parsed > BigInt(Number.MAX_SAFE_INTEGER)) return undefined
+  return Number(parsed)
+}
+
+function topics(value: unknown): readonly Hex[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const parsed = value.map(hex)
+  return parsed.every((topic): topic is Hex => Boolean(topic)) ? parsed : undefined
+}
+
+const notificationListeners = new Set<(notification: MonadLogNotification) => void>()
+
+export function subscribeMonadLogNotifications(listener: (notification: MonadLogNotification) => void) {
+  notificationListeners.add(listener)
+  return () => notificationListeners.delete(listener)
+}
+
+function emitMonadLogNotification(notification: MonadLogNotification) {
+  for (const listener of notificationListeners) listener(notification)
+}
+
 export function decodeMonadNotification(value: unknown): MonadLogNotification | undefined {
   let current = object(value)
-  for (let depth = 0; depth < 4 && current; depth++) {
+  for (let depth = 0; depth < 5 && current; depth++) {
     const commitState = current.commitState
-    const log = object(current.log)
-    const transactionHash = current.transactionHash ?? log?.transactionHash
+    const nestedLog = object(current.log)
+    const source = nestedLog ?? current
+    const transactionHash = hex(current.transactionHash ?? source.transactionHash)
     if (
-      (commitState === 'Proposed' ||
-        commitState === 'Voted' ||
-        commitState === 'Finalized' ||
-        commitState === 'Verified') &&
-      (transactionHash == null || (typeof transactionHash === 'string' && transactionHash.startsWith('0x')))
+      commitState === 'Proposed' ||
+      commitState === 'Voted' ||
+      commitState === 'Finalized' ||
+      commitState === 'Verified'
     ) {
+      const number = blockNumber(current.blockNumber ?? source.blockNumber)
+      const observedLog: MonadObservedLog = {
+        address: address(source.address),
+        blockHash: blockId(source.blockHash),
+        blockNumber: number,
+        data: hex(source.data),
+        logIndex: logIndex(source.logIndex),
+        topics: topics(source.topics),
+        transactionHash,
+      }
+      const hasLogPayload = Boolean(
+        observedLog.address ||
+          observedLog.blockHash ||
+          observedLog.data ||
+          observedLog.topics ||
+          observedLog.logIndex != null,
+      )
       return {
         blockId: blockId(current.blockId),
-        blockNumber: blockNumber(log?.blockNumber),
+        blockNumber: number,
         commitState,
-        transactionHash: transactionHash as Hex | undefined,
+        transactionHash,
+        ...(hasLogPayload ? { log: observedLog } : {}),
       }
     }
     current = object(current.result ?? current.data ?? current.params)
@@ -81,6 +141,7 @@ export async function subscribeMonadLogs(
     onData: (data) => {
       const notification = decodeMonadNotification(data)
       if (!notification) return
+      emitMonadLogNotification(notification)
       onNotification?.(notification)
       if (!notification.transactionHash) return
       markTraceCommit(notification.transactionHash, notification.commitState, notification.blockNumber)
@@ -224,4 +285,5 @@ export function __resetMonadTraceFeedForTests() {
   traceFeedFailures = 0
   traceFeedSnapshot = { version: 0, mode: 'idle' }
   traceFeedListeners.clear()
+  notificationListeners.clear()
 }

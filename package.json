@@ -21,7 +21,9 @@
     "test:torture:ws": "vitest run --maxWorkers=2 src/torture/ws.torture.test.ts",
     "test:torture:recovery": "vitest run --maxWorkers=2 src/torture/recovery.torture.test.ts",
     "test:torture:stress": "vitest run --maxWorkers=2 src/torture/stress.torture.test.ts",
-    "launch:doctor": "node scripts/launch-doctor.mjs"
+    "launch:doctor": "node scripts/launch-doctor.mjs",
+    "test:speculation": "vitest run --maxWorkers=2 src/chain/speculation.integrity.test.ts src/chain/monadLogs.test.ts src/paint/canvasStore.test.ts",
+    "flight:record": "node scripts/flight-recorder.mjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",

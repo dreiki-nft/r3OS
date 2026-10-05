@@ -50,6 +50,31 @@ describe('monadLogs decoder', () => {
     )
   })
 
+  it('decodes the current flat monadLogs payload including proposal identity and raw log data', () => {
+    const decoded = decodeMonadNotification({
+      params: {
+        result: {
+          blockId,
+          commitState: 'Proposed',
+          address: paint,
+          blockHash: `0x${'cd'.repeat(32)}`,
+          blockNumber: '0x2a',
+          data: '0x1234',
+          logIndex: '0x3',
+          topics: [`0x${'11'.repeat(32)}`],
+          transactionHash: hash,
+        },
+      },
+    })
+    expect(decoded).toMatchObject({
+      blockId,
+      blockNumber: 42n,
+      commitState: 'Proposed',
+      transactionHash: hash,
+      log: { address: paint, blockNumber: 42n, logIndex: 3, data: '0x1234' },
+    })
+  })
+
   it('does not recurse forever when a block number is missing', () => {
     expect(decodeMonadNotification({ commitState: 'Proposed', transactionHash: hash })).toEqual({
       blockId: undefined,
@@ -103,5 +128,4 @@ describe('monadLogs decoder', () => {
     expect(mocks.subscribe).toHaveBeenCalledTimes(2)
     expect(getMonadTraceFeedSnapshot().mode).toBe('live')
   })
-
 })

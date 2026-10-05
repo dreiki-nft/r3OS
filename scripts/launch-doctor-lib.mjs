@@ -394,7 +394,7 @@ export function formatHuman(result, { secrets = [] } = {}) {
   const width = 30
   const lines = [
     'r3OS LAUNCH DOCTOR',
-    `chain ${result.chain.id ?? '?'} (${result.chain.name}) · expected ${result.chain.expectedId ?? 'not specified'} · block ${result.block ?? '?'}`,
+    `chain ${result.chain.id ?? '?'} (${result.chain.name}) · expected ${result.chain.expectedId ?? 'not specified'} · ${result.commitment ?? 'unknown'} block ${result.block ?? '?'}`,
     'read-only: no transaction, signature or wallet access',
     '',
   ]
@@ -427,7 +427,9 @@ export function toJson(result, { secrets = [] } = {}) {
       tool: 'r3os-launch-doctor',
       readOnly: true,
       chain: result.chain,
+      commitment: result.commitment ?? null,
       block: result.block == null ? null : String(result.block),
+      blockHash: result.blockHash ?? null,
       sections: result.sections,
       external: result.external,
       summary: result.summary,
@@ -446,7 +448,7 @@ export function toJson(result, { secrets = [] } = {}) {
 /**
  * reader: {
  *   chainId(): Promise<number>
- *   block(): Promise<{ number: bigint, timestamp: bigint }>
+ *   block(): Promise<{ number: bigint, hash?: string, timestamp: bigint, commitment?: 'finalized' }>
  *   code(address): Promise<string | undefined>      // '0x' or undefined when empty
  *   codeHash(address): Promise<string | undefined>
  *   read(address, fragment, args?): Promise<any>     // fragment: 'function name(...) view returns (...)'
@@ -506,7 +508,13 @@ export async function runDoctor({
   const chainKnown = chainId != null
   const blockResult = await safe(() => reader.block())
   const block = blockResult.ok ? blockResult.value : undefined
-  report.add('Latest block', block ? STATUS.OK : STATUS.UNKNOWN, block ? String(block.number) : 'unreadable')
+  const finalizedCertification = block?.commitment === 'finalized'
+  report.add(
+    'Finalized certification block',
+    block && finalizedCertification ? STATUS.OK : chainId === 143 ? STATUS.FAIL : STATUS.UNKNOWN,
+    block ? `${block.number}${block.hash ? ` · ${short(block.hash)}` : ''}` : 'unreadable',
+    block && !finalizedCertification ? 'critical launch reads must be pinned to finalized state' : '',
+  )
   const live = chainId === 143 || chainId === 10143
   const multicallCode = await hasCode(OFFICIAL.multicall3)
   report.add(
@@ -1412,7 +1420,9 @@ function finish(report, { chainId, chainName, block, expectedChain }) {
       expectedId: expectedChain ?? null,
       matchesExpected: expectedChain == null || chainId == null ? null : chainId === expectedChain,
     },
+    commitment: block?.commitment ?? null,
     block: block ? block.number : null,
+    blockHash: block?.hash ?? null,
     sections: report.sections,
     external: EXTERNAL_CHECKS,
     summary,
@@ -1461,7 +1471,7 @@ export function parseArgs(argv, env = {}) {
   return out
 }
 
-export const HELP = `r3tards launch doctor: read-only deployment verification
+export const HELP = `r3OS launch doctor: finalized, read-only deployment verification
 
 usage (preferred: keep key-bearing RPC URLs out of argv):
   RPC_URL="$MONAD_RPC_URL" node scripts/launch-doctor.mjs \
@@ -1475,5 +1485,5 @@ usage (preferred: keep key-bearing RPC URLs out of argv):
 --expected-chain is the chain you INTEND to inspect (143 mainnet, 10143 testnet). a different
 actual chain is a FAIL; omitting it is a WARN. mainnet-only rules always follow the actual chain.
 
-never signs, sends transactions or requests a wallet. the RPC URL is never printed.
+all chain reads are pinned to one finalized block. never signs, sends transactions or requests a wallet. the RPC URL is never printed.
 exit code 1 when any check FAILs; WARN and UNKNOWN need manual review.`

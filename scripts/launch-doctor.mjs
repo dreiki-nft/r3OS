@@ -41,22 +41,37 @@ const abiFor = (fragment) => {
 }
 
 /** Read-only reader: getChainId, getBlock, getCode, eth_call. Nothing else is reachable from here. */
+let finalizedBlockPromise
+const finalizedBlock = () =>
+  (finalizedBlockPromise ??= client.getBlock({ blockTag: 'finalized' }).then((block) => {
+    if (block.number == null) throw new Error('finalized block has no number')
+    return block
+  }))
+
 const reader = {
   chainId: () => client.getChainId(),
   block: async () => {
-    const block = await client.getBlock()
-    return { number: block.number, timestamp: block.timestamp }
+    const block = await finalizedBlock()
+    return { number: block.number, hash: block.hash, timestamp: block.timestamp, commitment: 'finalized' }
   },
-  code: (address) => client.getCode({ address }),
+  code: async (address) => {
+    const block = await finalizedBlock()
+    return client.getCode({ address, blockNumber: block.number })
+  },
   codeHash: async (address) => {
-    const code = await client.getCode({ address })
+    const block = await finalizedBlock()
+    const code = await client.getCode({ address, blockNumber: block.number })
     return code && code !== '0x' ? keccak256(code) : undefined
   },
-  read: (address, fragment, args = []) => {
+  read: async (address, fragment, args = []) => {
+    const block = await finalizedBlock()
     const abi = abiFor(fragment)
-    return client.readContract({ address, abi, functionName: abi[0].name, args })
+    return client.readContract({ address, abi, functionName: abi[0].name, args, blockNumber: block.number })
   },
-  call: async (to, data) => (await client.call({ to, data })).data,
+  call: async (to, data) => {
+    const block = await finalizedBlock()
+    return (await client.call({ to, data, blockNumber: block.number })).data
+  },
 }
 
 function readJson(path) {
