@@ -49,3 +49,4 @@ launch-doctor-*.json
 **/.dev.vars*
 **/wrangler.jsonc
 !**/wrangler.jsonc.example
+docs/MAINNET_DEPLOYMENT_INPUT.local.json

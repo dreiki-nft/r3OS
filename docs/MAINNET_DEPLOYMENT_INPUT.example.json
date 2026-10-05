@@ -33,11 +33,11 @@
   },
   "frontend": {
     "rpcUrls": [
-      "REPLACE_WITH_PUBLIC_MAINNET_RPC_A",
-      "REPLACE_WITH_PUBLIC_MAINNET_RPC_B"
+      "https://rpc.monad.xyz",
+      "https://rpc1.monad.xyz"
     ],
-    "walletRpcUrl": "REPLACE_WITH_PUBLIC_MAINNET_ACTION_RPC",
-    "wsUrl": "REPLACE_WITH_PUBLIC_MAINNET_WS",
+    "walletRpcUrl": "https://rpc.monad.xyz",
+    "wsUrl": "wss://rpc.monad.xyz",
     "explorerUrl": "https://monadvision.com",
     "fastlaneAcceleratorUrl": ""
   },

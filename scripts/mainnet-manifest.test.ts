@@ -27,7 +27,7 @@ const input = () => ({
   systemEvent: { monUsdFeed: OFFICIAL_MAINNET.monUsdFeed, triggerMilliUsd: 333, maxAgeSeconds: 90 },
   freezeIntentions: { renderers: 'freeze-after-acceptance', experiments: 'keep-open' },
   frontend: {
-    rpcUrls: ['https://rpc.monad.xyz', 'https://rpc-mainnet.monadinfra.com'],
+    rpcUrls: ['https://rpc.monad.xyz', 'https://rpc1.monad.xyz'],
     walletRpcUrl: 'https://rpc.monad.xyz',
     wsUrl: 'wss://rpc.monad.xyz',
     explorerUrl: 'https://monadvision.com',
