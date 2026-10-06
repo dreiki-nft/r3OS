@@ -13,6 +13,14 @@ abstract contract R3OSMainnetScript is Script {
             || vm.isContext(VmSafe.ForgeContext.ScriptResume);
     }
 
+    function _isEip7702Delegation(address account) internal view returns (bool) {
+        bytes memory code = account.code;
+        return code.length == 23
+            && code[0] == bytes1(0xef)
+            && code[1] == bytes1(0x01)
+            && code[2] == bytes1(0x00);
+    }
+
     function _requireMainnetBroadcastApproval() internal view {
         if (block.chainid == 143 && _isBroadcastContext()) {
             require(vm.envOr("CONFIRM_MAINNET", false), "mainnet broadcast blocked: set CONFIRM_MAINNET=true after explicit approval");

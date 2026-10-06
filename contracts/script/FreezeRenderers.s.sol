@@ -27,7 +27,7 @@ contract FreezeRenderers is R3OSMainnetScript {
         require(paint.rendererCount() == 4, "unexpected renderer count");
         require(paint.experimentCount() == 10, "unexpected experiment count");
 
-        if (finalOwner.code.length != 0) {
+        if (finalOwner.code.length != 0 && !_isEip7702Delegation(finalOwner)) {
             console.log("FINAL_OWNER is a contract; execute this call through its normal multisig/account flow");
             console.log("R3OSPaint", address(paint));
             console.log("calldata");

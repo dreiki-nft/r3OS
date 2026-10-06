@@ -73,7 +73,7 @@ contract AcceptOwnership is R3OSMainnetScript {
             return;
         }
 
-        if (finalOwner.code.length != 0) {
+        if (finalOwner.code.length != 0 && !_isEip7702Delegation(finalOwner)) {
             bytes memory callData = abi.encodeWithSignature("acceptOwnership()");
             console.log("FINAL_OWNER is a contract; DO NOT impersonate it with startBroadcast(address)");
             for (uint256 i; i < targets.length; ++i) {
