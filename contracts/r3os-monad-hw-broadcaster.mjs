@@ -490,7 +490,22 @@ async function finalAssertions() {
   if (pageCode === '0x' || verifyPageCode === '0x') die('final PageExe code missing')
   if (cameraCode === '0x' || verifyCameraCode === '0x') die('final BlockCamera code missing')
   if (experimentCount !== 7n) die(`final experimentCount=${experimentCount}, expected 7`)
-  for (let i = 0; i < 5; i++) await assertPostStep(i)
+
+  // Final-state verification must assert the *current* state, not replay historical
+  // per-step invariants. In particular, step 2 correctly required BlockCamera to be
+  // unbound before tx5, while the completed deployment must be bound to experiment 6.
+  const [paint, labs, cardMemory, experimentId] = await Promise.all([
+    callContract(rpcUrl, BLOCK_CAMERA, cameraAbi, 'PAINT'),
+    callContract(rpcUrl, BLOCK_CAMERA, cameraAbi, 'LABS'),
+    callContract(rpcUrl, BLOCK_CAMERA, cameraAbi, 'CARD_MEMORY'),
+    callContract(rpcUrl, BLOCK_CAMERA, cameraAbi, 'experimentId'),
+  ])
+  if (lower(paint) !== lower(PAINT) || lower(labs) !== lower(LABS) || lower(cardMemory) !== lower(CARD_MEMORY)) {
+    die(`final BlockCamera immutable links mismatch: Paint=${paint}, Labs=${labs}, CardMemory=${cardMemory}`)
+  }
+  if (experimentId !== 6n) die(`final BlockCamera experimentId=${experimentId}, expected 6`)
+  await assertExperiment(5, PAGE_EXE, 'page-exe')
+  await assertExperiment(6, BLOCK_CAMERA, 'block-camera')
 }
 
 async function prepareStep(t, index) {
