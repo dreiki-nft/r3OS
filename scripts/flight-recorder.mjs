@@ -14,7 +14,13 @@ const valueOf = (name, fallback) => {
 }
 
 if (argv.includes('--help') || argv.includes('-h')) {
-  console.log(`r3OS mainnet flight recorder\n\npreferred usage:\n  node scripts/flight-recorder.mjs \\\n    --input <base-json> \\\n    --doctor <finalized-launch-doctor.json> \\\n    --manifest <mainnet-deployment-manifest.json> \\\n    --acceptance <local-acceptance-gates.json> \\\n    [--out-dir artifacts]\n\nThe tool assembles chain evidence from Launch Doctor rather than asking a human to retype addresses/hashes.\nIt never queries RPC, signs, or sends transactions.`)
+  console.log(`r3OS mainnet flight recorder\n\npreferred usage:\n  node scripts/flight-recorder.mjs \\
+    --input <base-json> \\
+    --doctor <finalized-launch-doctor.json> \\
+    --manifest <mainnet-deployment-manifest.json> \\
+    --acceptance <local-acceptance-gates.json> \\
+    --canary <mainnet-canary.json> \\
+    [--out-dir artifacts]\n\nThe tool assembles chain evidence from Launch Doctor and the Phase 9D canary rather than asking a human to retype addresses/hashes.\nIt never queries RPC, signs, or sends transactions.`)
   process.exit(0)
 }
 
@@ -31,6 +37,7 @@ const inputPath = valueOf('--input')
 const doctorPath = valueOf('--doctor')
 const manifestPath = valueOf('--manifest')
 const acceptancePath = valueOf('--acceptance')
+const canaryPath = valueOf('--canary')
 const outDir = resolve(root, valueOf('--out-dir', 'artifacts'))
 
 try {
@@ -38,7 +45,8 @@ try {
   const doctor = readJson(doctorPath, '--doctor JSON')
   const manifest = readJson(manifestPath, '--manifest JSON')
   const acceptance = readJson(acceptancePath, '--acceptance JSON')
-  const assembled = assembleFlightRecord({ baseInput, doctor, manifest, acceptance })
+  const canary = readJson(canaryPath, '--canary JSON')
+  const assembled = assembleFlightRecord({ baseInput, doctor, manifest, acceptance, canary })
   const { record, json, hash } = makeFlightRecord(assembled)
   mkdirSync(outDir, { recursive: true })
   writeFileSync(resolve(outDir, 'mainnet-launch.json'), json)

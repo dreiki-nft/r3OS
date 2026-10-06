@@ -22,6 +22,7 @@
     "test:torture:recovery": "vitest run --maxWorkers=2 src/torture/recovery.torture.test.ts",
     "test:torture:stress": "vitest run --maxWorkers=2 src/torture/stress.torture.test.ts",
     "launch:doctor": "node scripts/launch-doctor.mjs",
+    "launch:canary": "node scripts/launch-canary.mjs",
     "mainnet:manifest": "node scripts/mainnet-manifest.mjs",
     "launch:gates": "node scripts/acceptance-gates.mjs",
     "test:speculation": "vitest run --maxWorkers=2 src/chain/speculation.integrity.test.ts src/chain/monadLogs.test.ts src/paint/canvasStore.test.ts",

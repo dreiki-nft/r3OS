@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 import { validateAcceptanceGates } from './acceptance-gates-lib.mjs'
+import { validateMainnetCanary } from './launch-canary-lib.mjs'
+import { MAINNET_MANIFEST_SCHEMA } from './mainnet-manifest-lib.mjs'
 
 export const FLIGHT_RECORDER_SCHEMA = 'r3os-mainnet-launch/v1'
 export const GENESIS_LABEL = 'R3OS_MAINNET_GENESIS'
@@ -67,14 +69,15 @@ export function validateDoctorEvidence(doctor) {
   return errors
 }
 
-export function assembleFlightRecord({ baseInput, doctor, manifest, acceptance }) {
+export function assembleFlightRecord({ baseInput, doctor, manifest, acceptance, canary }) {
   const doctorErrors = validateDoctorEvidence(doctor)
   const gateErrors = validateAcceptanceGates(acceptance)
-  const errors = [...doctorErrors, ...gateErrors]
+  const canaryErrors = validateMainnetCanary(canary, { requireTransaction: true })
+  const errors = [...doctorErrors, ...gateErrors, ...canaryErrors.map((error) => `mainnet canary: ${error}`)]
   if (!plainObject(baseInput)) errors.push('base flight input must be an object')
   if (!plainObject(manifest)) errors.push('deployment manifest JSON is required')
   else {
-    if (manifest.schema !== 'r3os-mainnet-deployment/v1') errors.push('deployment manifest schema is invalid')
+    if (manifest.schema !== MAINNET_MANIFEST_SCHEMA) errors.push('deployment manifest schema is invalid')
     if (Number(manifest.chainId) !== 143) errors.push('deployment manifest chainId must be 143')
   }
   if (errors.length) {
@@ -114,6 +117,7 @@ export function assembleFlightRecord({ baseInput, doctor, manifest, acceptance }
         blockHash: doctor.blockHash,
       },
       localAcceptance: acceptance,
+      mainnetCanary: canary,
     },
   })
 }
@@ -162,10 +166,12 @@ export function validateFlightRecord(input) {
 
   const localErrors = validateAcceptanceGates(input.gates?.localAcceptance)
   errors.push(...localErrors.map((error) => `gates.localAcceptance: ${error}`))
+  const canaryErrors = validateMainnetCanary(input.gates?.mainnetCanary, { requireTransaction: true })
+  errors.push(...canaryErrors.map((error) => `gates.mainnetCanary: ${error}`))
 
   if (!plainObject(input.deploymentManifest)) errors.push('deploymentManifest is required')
   else {
-    if (input.deploymentManifest.schema !== 'r3os-mainnet-deployment/v1') errors.push('deploymentManifest.schema is invalid')
+    if (input.deploymentManifest.schema !== MAINNET_MANIFEST_SCHEMA) errors.push('deploymentManifest.schema is invalid')
     if (!BYTES32.test(String(input.deploymentManifest.sha256 ?? ''))) errors.push('deploymentManifest.sha256 must be bytes32')
   }
 
@@ -235,6 +241,7 @@ export function formatFlightRecordText(record, hash) {
     `summary: ${JSON.stringify(record.gates.launchDoctor.summary ?? {})}`,
     '',
     `local acceptance: ${record.gates.localAcceptance.allGreen ? 'GREEN' : 'FAILED'}`,
+    `mainnet canary: ${record.gates.mainnetCanary.exitCode === 0 ? 'GREEN' : 'FAILED'} · tx ${record.gates.mainnetCanary.transaction?.hash ?? 'none'}`,
     '',
     'The SHA-256 hash above is over the canonical mainnet-launch.json bytes.',
     'The existing R3OSSystemEvent contract is not a generic hash registry; do not overload it with this marker.',

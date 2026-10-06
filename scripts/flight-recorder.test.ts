@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ACCEPTANCE_GATES_SCHEMA, REQUIRED_LOCAL_GATES } from './acceptance-gates-lib.mjs'
+import { MAINNET_CANARY_SCHEMA } from './launch-canary-lib.mjs'
+import { MAINNET_MANIFEST_SCHEMA } from './mainnet-manifest-lib.mjs'
 import {
   EXPECTED_LAUNCH_CONTRACTS,
   FLIGHT_RECORDER_SCHEMA,
@@ -25,8 +27,37 @@ const acceptance = () => ({
   allGreen: true,
   gates: Object.fromEntries(REQUIRED_LOCAL_GATES.map((name) => [name, { command: name, exitCode: 0 }])),
 })
+const canary = () => ({
+  schema: MAINNET_CANARY_SCHEMA,
+  mode: 'transaction',
+  readOnly: false,
+  chainId: 143,
+  providers: {
+    primary: { evidenceHash: hash(880) },
+    secondary: { evidenceHash: hash(880) },
+  },
+  splitBrain: { status: 'OK', sharedBlockNumber: '123455', sharedBlockHash: hash(776) },
+  operationalReads: { budgetMatch: true, canaryHourlyBudgetSufficient: true, partnerBudgetMatch: true, passPointerMatch: true, pageMatch: true, primary: { pageHash: hash(879) } },
+  websocket: { connected: true, newHeadObserved: true, monadLogsSubscribed: true },
+  transaction: {
+    executed: true,
+    hash: hash(881),
+    receiptStatus: 'success',
+    paintEventObserved: true,
+    proposedObserved: true,
+    votedObserved: true,
+    finalizedObserved: true,
+    primaryFinalized: true,
+    secondaryFinalized: true,
+    secondProviderReceipt: true,
+    secondProviderCanonicalBlock: true,
+    visualStateRestored: true,
+  },
+  summary: { OK: 14, WARN: 0, FAIL: 0 },
+  exitCode: 0,
+})
 const manifest = () => ({
-  schema: 'r3os-mainnet-deployment/v1',
+  schema: MAINNET_MANIFEST_SCHEMA,
   chainId: 143,
   finalOwner: FINAL_OWNER,
   freezeIntentions: { renderers: 'freeze-after-acceptance', experiments: 'keep-open' },
@@ -60,7 +91,7 @@ const base = () => ({
   build: { gitIdentifier: 'local-supplied-id' },
   deployment: { note: 'accepted mainnet deployment' },
 })
-const assembled = () => assembleFlightRecord({ baseInput: base(), doctor: doctor(), manifest: manifest(), acceptance: acceptance() })
+const assembled = () => assembleFlightRecord({ baseInput: base(), doctor: doctor(), manifest: manifest(), acceptance: acceptance(), canary: canary() })
 
 describe('mainnet flight recorder', () => {
   it('canonicalizes object keys deterministically', () => {
@@ -81,15 +112,19 @@ describe('mainnet flight recorder', () => {
   it('produces the same genesis hash regardless of base-input key insertion order', () => {
     const a = base()
     const b = { deployment: a.deployment, build: a.build, chainId: a.chainId, genesisLabel: a.genesisLabel, schema: a.schema }
-    const one = assembleFlightRecord({ baseInput: a, doctor: doctor(), manifest: manifest(), acceptance: acceptance() })
-    const two = assembleFlightRecord({ baseInput: b, doctor: doctor(), manifest: manifest(), acceptance: acceptance() })
+    const one = assembleFlightRecord({ baseInput: a, doctor: doctor(), manifest: manifest(), acceptance: acceptance(), canary: canary() })
+    const two = assembleFlightRecord({ baseInput: b, doctor: doctor(), manifest: manifest(), acceptance: acceptance(), canary: canary() })
     expect(makeFlightRecord(one).hash).toBe(makeFlightRecord(two).hash)
   })
 
   it('fails closed when finalized evidence, local gates or code hashes are incomplete', () => {
     const badDoctor = doctor()
     badDoctor.commitment = 'proposed'
-    expect(() => assembleFlightRecord({ baseInput: base(), doctor: badDoctor, manifest: manifest(), acceptance: acceptance() })).toThrow(/commitment must be finalized/)
+    expect(() => assembleFlightRecord({ baseInput: base(), doctor: badDoctor, manifest: manifest(), acceptance: acceptance(), canary: canary() })).toThrow(/commitment must be finalized/)
+
+    const badCanary = canary()
+    badCanary.transaction.finalizedObserved = false
+    expect(() => assembleFlightRecord({ baseInput: base(), doctor: doctor(), manifest: manifest(), acceptance: acceptance(), canary: badCanary })).toThrow(/mainnet canary/)
 
     const record = assembled()
     record.contracts.R3OSPaint.codeHash = null
