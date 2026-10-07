@@ -4,6 +4,7 @@ import { actionEndpointClients } from './clients'
 export interface ActionRpcClient {
   getBlockNumber(args?: { cacheTime?: number }): Promise<bigint>
   estimateFeesPerGas(): Promise<unknown>
+  estimateGas(args: unknown): Promise<bigint>
   estimateContractGas(args: unknown): Promise<bigint>
   simulateContract(args: unknown): Promise<unknown>
   getBalance(args: { address: Hex }): Promise<bigint>

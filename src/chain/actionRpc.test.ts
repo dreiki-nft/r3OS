@@ -14,6 +14,7 @@ function client(overrides: Partial<ActionRpcClient> = {}): ActionRpcClient {
   return {
     getBlockNumber: vi.fn().mockResolvedValue(10n),
     estimateFeesPerGas: vi.fn().mockResolvedValue({ maxFeePerGas: 1n }),
+    estimateGas: vi.fn().mockResolvedValue(21_000n),
     estimateContractGas: vi.fn().mockResolvedValue(100_000n),
     simulateContract: vi.fn().mockResolvedValue({}),
     getBalance: vi.fn().mockResolvedValue(1n),

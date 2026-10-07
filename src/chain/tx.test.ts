@@ -4,6 +4,7 @@ import type { Address } from 'viem'
 const mocks = vi.hoisted(() => ({
   block: 10n,
   simulateContract: vi.fn(),
+  estimateGas: vi.fn(),
   estimateContractGas: vi.fn(),
   estimateFeesPerGas: vi.fn(),
   getBlockNumber: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock('./clients', () => ({
 vi.mock('./actionRpc', () => {
   const client = {
     simulateContract: mocks.simulateContract,
+    estimateGas: mocks.estimateGas,
     estimateContractGas: mocks.estimateContractGas,
     estimateFeesPerGas: mocks.estimateFeesPerGas,
     getBlockNumber: mocks.getBlockNumber,
@@ -85,6 +87,7 @@ describe('transaction pipeline', () => {
     __resetFeeCacheForTests()
     mocks.block = 10n
     mocks.simulateContract.mockResolvedValue({ request: { address, abi, functionName: 'ping', account } })
+    mocks.estimateGas.mockResolvedValue(21_212n)
     mocks.estimateContractGas.mockResolvedValue(100_000n)
     mocks.estimateFeesPerGas.mockResolvedValue({ maxFeePerGas: 20n, maxPriorityFeePerGas: 3n })
     mocks.getBlockNumber.mockResolvedValue(10n)
@@ -108,6 +111,39 @@ describe('transaction pipeline', () => {
     expect(result.gasLimit).toBe(110_000n)
     expect(mocks.estimateContractGas).toHaveBeenCalledTimes(1)
     expect(mocks.simulateContract).not.toHaveBeenCalled()
+  })
+
+  it('estimates native transfer gas for executable recipients instead of assuming 21k', async () => {
+    const destination = '0x00000000000000000000000000000000000000d1' as Address
+    const result = await quoteAction({
+      type: 'transfer',
+      kind: 'estimate',
+      to: destination,
+      functionName: 'transfer',
+      account,
+      value: 1n,
+      signer: 'burner',
+    })
+    expect(result.gasLimit).toBe(23_334n)
+    expect(mocks.estimateGas).toHaveBeenCalledWith({
+      account: '0x00000000000000000000000000000000000000c1',
+      to: destination,
+      value: 1n,
+    })
+  })
+
+  it('keeps an exact 21k quote for legacy EOA recipients', async () => {
+    mocks.estimateGas.mockResolvedValueOnce(21_000n)
+    const destination = '0x00000000000000000000000000000000000000d1' as Address
+    const result = await quoteAction({
+      type: 'transfer',
+      kind: 'estimate',
+      to: destination,
+      functionName: 'transfer',
+      account,
+      value: 1n,
+    })
+    expect(result.gasLimit).toBe(21_000n)
   })
 
   it('refreshes fee caps without re-estimating a validated gas limit', async () => {

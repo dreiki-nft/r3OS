@@ -211,6 +211,7 @@ export function HardwareProfiles() {
 
   async function endSession() {
     if (!wallet.account || !live.burner || !config.paintAddress || !publicClient) return
+    const account = wallet.account
     setEnding(true)
     endWorkRef.current = true
     setError('')
@@ -224,7 +225,7 @@ export function HardwareProfiles() {
           abi: R3OS_PAINT_ABI,
           functionName: 'revokeSession',
           args: [live.burner.address],
-          account: wallet.account,
+          account,
           action: 'end live session',
         })
         await sendAction({
@@ -233,7 +234,7 @@ export function HardwareProfiles() {
           abi: R3OS_PAINT_ABI,
           functionName: 'revokeSession',
           args: [live.burner.address],
-          account: wallet.account,
+          account,
           quote: revokeQuote,
           confirmHigherCost,
           action: 'end live session',
@@ -242,36 +243,57 @@ export function HardwareProfiles() {
 
       setEndProgress('2 of 3 · sweeping leftover MON…')
       const balance = await publicClient.getBalance({ address: live.burner.address })
-      const feeProbe = await quoteAction({
-        type: 'transfer',
-        kind: 'estimate',
-        to: wallet.account,
-        functionName: 'transfer',
-        account: wallet.account,
-        signer: 'burner',
-        value: 0n,
-        action: 'sweep burner',
-      })
-      const value = sweepAmount(balance, feeProbe.maxFeePerGas)
-      if (value > 0n) {
-        const sweepQuote = { ...feeProbe, gasLimit: 21_000n }
-        await sendAction({
-          type: 'transfer',
-          kind: 'estimate',
-          to: wallet.account,
-          functionName: 'transfer',
-          account: wallet.account,
-          signer: 'burner',
-          value,
-          quote: sweepQuote,
-          confirmHigherCost,
-          action: 'sweep burner',
-        })
+      if (balance > 0n) {
+        const quoteSweep = (value: bigint) =>
+          quoteAction({
+            type: 'transfer',
+            kind: 'estimate',
+            to: account,
+            functionName: 'transfer',
+            account,
+            signer: 'burner',
+            value,
+            action: 'sweep burner',
+          })
+
+        // Probe with a non-zero transfer so executable/EIP-7702 recipients are priced as an
+        // actual value transfer. Then quote the candidate sweep itself before signing. Never
+        // assume a recipient is a legacy 21k EOA.
+        const probeQuote = await quoteSweep(1n)
+        let value = sweepAmount(balance, probeQuote.gasLimit, probeQuote.maxFeePerGas)
+        if (value > 0n) {
+          let sweepQuote = await quoteSweep(value)
+          let safeValue = sweepAmount(balance, sweepQuote.gasLimit, sweepQuote.maxFeePerGas)
+
+          // If the recipient's gas requirement changes with msg.value, shrink to the newly safe
+          // amount and quote that value once more. We never increase the candidate after quoting.
+          if (safeValue < value && safeValue > 0n) {
+            value = safeValue
+            sweepQuote = await quoteSweep(value)
+            safeValue = sweepAmount(balance, sweepQuote.gasLimit, sweepQuote.maxFeePerGas)
+          }
+          value = safeValue < value ? safeValue : value
+
+          if (value > 0n) {
+            await sendAction({
+              type: 'transfer',
+              kind: 'estimate',
+              to: account,
+              functionName: 'transfer',
+              account,
+              signer: 'burner',
+              value,
+              quote: sweepQuote,
+              confirmHigherCost,
+              action: 'sweep burner',
+            })
+          }
+        }
       }
 
       setEndProgress('3 of 3 · removing local key…')
-      deleteBurner(wallet.account)
-      await refreshLiveStatus(wallet.account)
+      deleteBurner(account)
+      await refreshLiveStatus(account)
       endWorkRef.current = false
       setEnding(false)
       setEndProgress('')

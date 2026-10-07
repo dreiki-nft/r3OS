@@ -190,7 +190,16 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
   let gasLimitPromise: Promise<bigint>
 
   if (isTransfer(opts)) {
-    gasLimitPromise = Promise.resolve(21_000n)
+    // A native MON transfer is not necessarily a 21k EOA transfer anymore. EIP-7702 and
+    // contract-wallet recipients can execute code on receipt, so estimate against the actual
+    // sender / recipient / value and keep the normal safety margin.
+    gasLimitPromise = actionRpcHedgedRequest((client) =>
+      client.estimateGas({
+        account: sender,
+        to: opts.to,
+        value: opts.value ?? 0n,
+      }),
+    ).then((estimate) => (estimate === 21_000n ? estimate : gasLimitFor(opts.kind, estimate)))
   } else {
     const base = contractBase(opts, sender)
     // estimateContractGas already executes the transaction and surfaces reverts. Running a
@@ -236,8 +245,8 @@ async function sendWithWallet(opts: ActionOptions, quote: ActionQuote, sender: A
   const wallet = getWalletSnapshot().client
   if (!wallet) throw new Error('DEMO_MODE')
 
-  // quoteAction already executed this call with eth_estimateGas (or a fixed-gas dry-run), and
-  // usableQuote refreshes quotes older than 20 blocks. Do not execute the contract a second time
+  // quoteAction already validated the action with gas estimation, and usableQuote refreshes
+  // quotes older than 20 blocks. Do not execute the contract a second time
   // between the user's click and eth_sendTransaction: that extra RPC was directly delaying the
   // wallet popup. The wallet still gets the exact calldata and the exact gas/fee caps we showed.
   const data = isTransfer(opts)

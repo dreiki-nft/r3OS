@@ -60,10 +60,11 @@ describe('live session typed data', () => {
     expect(paintEip712Name(31_337)).toBe('r3OS paint')
   })
 
-  it('sweeps only the balance left after a 21k gas transfer', () => {
-    expect(sweepAmount(100_000n, 2n)).toBe(58_000n)
-    expect(sweepAmount(42_000n, 2n)).toBe(0n)
-    expect(sweepAmount(10_000n, 2n)).toBe(0n)
+  it('sweeps only the balance left after the quoted recipient-aware gas reserve', () => {
+    expect(sweepAmount(100_000n, 21_000n, 2n)).toBe(58_000n)
+    expect(sweepAmount(100_000n, 23_334n, 2n)).toBe(53_332n)
+    expect(sweepAmount(46_668n, 23_334n, 2n)).toBe(0n)
+    expect(sweepAmount(10_000n, 23_334n, 2n)).toBe(0n)
   })
 
   it('advances locally observed session usage without exceeding the session cap', () => {

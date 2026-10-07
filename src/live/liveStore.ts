@@ -285,8 +285,8 @@ export function formatBurnerBalance(balance = snapshot.balance) {
   return `${Number(formatEther(balance)).toFixed(2)} MON`
 }
 
-export function sweepAmount(balance: bigint, maxFeePerGas: bigint) {
-  const gas = 21_000n * maxFeePerGas
+export function sweepAmount(balance: bigint, gasLimit: bigint, maxFeePerGas: bigint) {
+  const gas = gasLimit * maxFeePerGas
   return balance > gas ? balance - gas : 0n
 }
 
