@@ -53,6 +53,42 @@ This is an **offline evidence consistency check, not fresh independent blockchai
 - The doctor's one **UNKNOWN** is the documented EIP-2935 historical/testnet semantics check. It is not a failure and should not be quietly represented as 107 OK.
 - Automated tests do not constitute a professional third-party security audit.
 
+## Post-acceptance EIP-7702 Live Mode recovery
+
+On October 7, 2026, post-acceptance production use exposed a frontend-only compatibility issue in Live Mode's native-MON burner sweep. This incident did **not** modify or require redeployment of any production contract and is intentionally recorded separately from the immutable Phase 9D acceptance evidence above.
+
+The affected sweep recipient was an EIP-7702 delegated account. Monad returned executable account code beginning with `0xef0100`, while the frontend's legacy native-transfer path assumed every MON transfer required exactly `21,000` gas.
+
+A read-only `eth_estimateGas` probe against the actual burner, recipient and native transfer measured:
+
+- legacy hardcoded limit: `21,000` gas
+- actual recipient estimate: `21,212` gas
+
+Two production sweep attempts therefore exhausted their complete hardcoded gas limits and reverted:
+
+- [failed sweep #1](https://monadvision.com/tx/0x8f05351300fe6c529f122e02180bd9480257a6a44cd3b51d26a8369a21933b2c) — nonce `2`, gas limit `21,000`, gas used `21,000`, status failed
+- [failed sweep #2](https://monadvision.com/tx/0x28acbdabb9de50fc24d46fa622e60b20708ff1d0f8fb76f296c0d31934274ce6) — nonce `3`, gas limit `21,000`, gas used `21,000`, status failed
+
+The frontend was patched so native transfers use recipient-aware `eth_estimateGas` rather than universally assuming `21,000` gas. Live Mode now reserves the quoted gas requirement when calculating the recoverable burner balance. Regression coverage was added for executable/EIP-7702 recipients while preserving the normal `21,000` path for ordinary EOAs.
+
+Post-fix local validation reported:
+
+- production build: PASS
+- frontend tests: **507/507 PASS** across **112/112** test files
+- speculation suite: **18/18 PASS**
+- torture suite: **15/15 PASS**
+- repository doctor: PASS
+- `git diff --check`: PASS
+
+The patched production frontend then successfully recovered the burner balance:
+
+- burner: `0x3eF384DF7dDd523fBfA268E20a2128eA3A038cCA`
+- [successful patched sweep](https://monadvision.com/tx/0xe9ac9f4ea4c7f24d34bce54d5a17d0eeba91a9ab14bd964a2522aed61eefb508)
+- burner balance before recovery: `0.966982294 MON`
+- burner balance after recovery: `0.000466680 MON`
+
+This is post-acceptance operational evidence. It must not be interpreted as changing the Phase 9D accepted source commit, deployment addresses, canonical evidence hashes, renderer freeze state, experiment-registry policy, or System Event state.
+
 ## Historical materials are deliberately preserved
 
 `artifacts/mainnet-deployment-addresses.json` in the original accepted source snapshot is an earlier, incomplete **v1** recovery-stage artifact. The final authoritative **v2** address record for submission is published here. Historical broadcast journals, recovery reports, incomplete snapshots and previous checks are **not deleted, normalized, or overwritten**.
