@@ -1,0 +1,1099 @@
+{
+  "tool": "r3os-launch-doctor",
+  "readOnly": true,
+  "chain": {
+    "id": 143,
+    "name": "mainnet",
+    "expectedId": 143,
+    "matchesExpected": true
+  },
+  "commitment": "finalized",
+  "block": "111045783",
+  "blockHash": "0x1a333ec173b4f667ec9d36269b458501b70b446c68744ca31e2998352dada3bd",
+  "evidence": {
+    "contracts": {
+      "R3OSPaint": {
+        "address": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+        "codeHash": "0xc40c4469d67070ba66c55eae78d04d37fa2c5c6ebf07d7edd7046dee61e36b7c"
+      },
+      "R3OSPainterPass": {
+        "address": "0xb2D2D7681F451D9C69eD5eF2A0ed0B6b6494F103",
+        "codeHash": "0x65b39769372780d032dd9429c7fba0de7385701b9fae028b6cbcaa9e03312fde"
+      },
+      "R3OSLabs": {
+        "address": "0xe6b3b17e3B1827FE02183F496e84331EBE74751C",
+        "codeHash": "0xa66ed11b399194a0f840e49b71ca46240153098e89d93b79fb9ecfe737a79211"
+      },
+      "R3OSFinaleAuction": {
+        "address": "0x3D3154dB1B32724a82Ac9eC3f1811808558b9EF8",
+        "codeHash": "0xc3bd8f2d6402af12d5d4b6b2133061ad30c7592070d6444a42c435490de8150e"
+      },
+      "R3OSQuests": {
+        "address": "0x4398f022d7700cf5541Ac59D2Ff83f1A8a30a6f1",
+        "codeHash": "0xd24dedecd70890f36a85a4ffda4beb01520363594f26291637031d50be90c241"
+      },
+      "R3OSRecycleBin": {
+        "address": "0x02234e30daC8Bed319F30FB1Ec123da8bf71A2eb",
+        "codeHash": "0x1d5df4c77709d5f2b828cfa5e12305e8ea1019f1a0cdbad62fa33d7da1f01274"
+      },
+      "R3OSCDBurner": {
+        "address": "0x5556B0ef2ffA3a970C852362EE69313C08f5B1cd",
+        "codeHash": "0x2ec086f9b05b8f6de5fdbbdc450db134340de28412ee4887e77c2b516a18ecdd"
+      },
+      "R3OSCardMemory": {
+        "address": "0x3D871B434736939748ea1BD08C06c1E8750506ec",
+        "codeHash": "0x876819b510c668b68f49943c1f2d98cb6944e28f377588eb0b854c9baa72814c"
+      },
+      "R3OSPageExe": {
+        "address": "0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb",
+        "codeHash": "0x23523c9eb0fed67e6035e5262b43da39daec6bd770f8636dc2a2467436cd9043"
+      },
+      "R3OSBlockCamera": {
+        "address": "0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430",
+        "codeHash": "0xea123d625899b994dc2bae8a757775fca0ebf567c8f0116c74c36531b9992cd9"
+      },
+      "R3OSOperatorRecord": {
+        "address": "0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E",
+        "codeHash": "0x41c0def91219e14a93ba129c5e5d54feeafab674b4b4aa65d7bdf24e71a0a1f3"
+      },
+      "R3OSSystemEvent": {
+        "address": "0xB93A2b18437A1f169D39D81aAD19b074D6292066",
+        "codeHash": "0x5e4a9f7a63afdb9d4b80f74d0eb9d6e9afb3d1aaf4b76b774def5d976f2be774"
+      },
+      "R3OSRouterLab": {
+        "address": "0x1206cD64b805fA612C49DC0296c8813248428661",
+        "codeHash": "0x99d68ecbf0161ddbf750b1f04846b0b40a46027d01cecf1a27e0497a129bb4de"
+      },
+      "DiffRenderer": {
+        "address": "0x5D2Dcd25D5E847770F6e8a7BFBDF1Df4F6E454F7",
+        "codeHash": "0xba8f20c57e96b169d754bad2d5f2cdebed680e379e590701aa9e7becf0ae95e1"
+      },
+      "SeasonTimelapseRenderer": {
+        "address": "0x8C91D7A829569Ebf1DFC671F6cf328911813b78d",
+        "codeHash": "0x26903054f85fdd8af8721c3d89ea7d46546e98128f836aa7d703acabebba3dbb"
+      },
+      "DF1Renderer": {
+        "address": "0x6eC2027e5B2493f2ECc5882BecE14B31197C3ce0",
+        "codeHash": "0x2bb0b873f32cc542682ce65ffa2624bf287543356b7d0c3857edfcdae2ae6f64"
+      }
+    },
+    "partners": {
+      "skrumpeys": {
+        "address": "0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0",
+        "pixelsPerDay": "128",
+        "codePresent": true,
+        "codeHash": "0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0",
+        "matchesExpected": true
+      },
+      "monadCards": {
+        "address": "0x0000CA12D5c07085022eBC74867157449919Fd67",
+        "pixelsPerDay": "128",
+        "codePresent": true,
+        "codeHash": "0x2faf21182b03b1d522272109ff927da7ce93b6abae731dc036749a9e6ac56dbb",
+        "matchesExpected": true
+      }
+    },
+    "ownership": {
+      "Paint": {
+        "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "pendingOwner": "0x0000000000000000000000000000000000000000",
+        "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "status": "OK"
+      },
+      "Labs": {
+        "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "pendingOwner": "0x0000000000000000000000000000000000000000",
+        "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "status": "OK"
+      },
+      "Painter Pass": {
+        "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "pendingOwner": "0x0000000000000000000000000000000000000000",
+        "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "status": "OK"
+      },
+      "Quests": {
+        "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "pendingOwner": "0x0000000000000000000000000000000000000000",
+        "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+        "status": "OK"
+      }
+    },
+    "registry": [
+      {
+        "id": 0,
+        "name": "finale auction",
+        "address": "0x3D3154dB1B32724a82Ac9eC3f1811808558b9EF8",
+        "uri": "/finale-auction",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0xc3bd8f2d6402af12d5d4b6b2133061ad30c7592070d6444a42c435490de8150e"
+      },
+      {
+        "id": 1,
+        "name": "quests",
+        "address": "0x4398f022d7700cf5541Ac59D2Ff83f1A8a30a6f1",
+        "uri": "/quests",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0xd24dedecd70890f36a85a4ffda4beb01520363594f26291637031d50be90c241"
+      },
+      {
+        "id": 2,
+        "name": "recycle-bin",
+        "address": "0x02234e30daC8Bed319F30FB1Ec123da8bf71A2eb",
+        "uri": "/recycle-bin",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0x1d5df4c77709d5f2b828cfa5e12305e8ea1019f1a0cdbad62fa33d7da1f01274"
+      },
+      {
+        "id": 3,
+        "name": "cd-burner",
+        "address": "0x5556B0ef2ffA3a970C852362EE69313C08f5B1cd",
+        "uri": "/cd-burner",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0x2ec086f9b05b8f6de5fdbbdc450db134340de28412ee4887e77c2b516a18ecdd"
+      },
+      {
+        "id": 4,
+        "name": "card-drv",
+        "address": "0x3D871B434736939748ea1BD08C06c1E8750506ec",
+        "uri": "",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0x876819b510c668b68f49943c1f2d98cb6944e28f377588eb0b854c9baa72814c"
+      },
+      {
+        "id": 5,
+        "name": "page-exe",
+        "address": "0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb",
+        "uri": "",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0x23523c9eb0fed67e6035e5262b43da39daec6bd770f8636dc2a2467436cd9043"
+      },
+      {
+        "id": 6,
+        "name": "block-camera",
+        "address": "0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430",
+        "uri": "",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0xea123d625899b994dc2bae8a757775fca0ebf567c8f0116c74c36531b9992cd9"
+      },
+      {
+        "id": 7,
+        "name": "operator-record",
+        "address": "0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E",
+        "uri": "",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0x41c0def91219e14a93ba129c5e5d54feeafab674b4b4aa65d7bdf24e71a0a1f3"
+      },
+      {
+        "id": 8,
+        "name": "system-event",
+        "address": "0xB93A2b18437A1f169D39D81aAD19b074D6292066",
+        "uri": "",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0x5e4a9f7a63afdb9d4b80f74d0eb9d6e9afb3d1aaf4b76b774def5d976f2be774"
+      },
+      {
+        "id": 9,
+        "name": "router-lab",
+        "address": "0x1206cD64b805fA612C49DC0296c8813248428661",
+        "uri": "",
+        "retired": false,
+        "codePresent": true,
+        "codeHash": "0x99d68ecbf0161ddbf750b1f04846b0b40a46027d01cecf1a27e0497a129bb4de"
+      }
+    ],
+    "renderers": [
+      {
+        "id": 0,
+        "name": "built-in",
+        "address": "0x0000000000000000000000000000000000000000",
+        "builtIn": true,
+        "codePresent": true,
+        "codeHash": null
+      },
+      {
+        "id": 1,
+        "name": "diff",
+        "address": "0x5D2Dcd25D5E847770F6e8a7BFBDF1Df4F6E454F7",
+        "builtIn": false,
+        "codePresent": true,
+        "codeHash": "0xba8f20c57e96b169d754bad2d5f2cdebed680e379e590701aa9e7becf0ae95e1"
+      },
+      {
+        "id": 2,
+        "name": "season timelapse",
+        "address": "0x8C91D7A829569Ebf1DFC671F6cf328911813b78d",
+        "builtIn": false,
+        "codePresent": true,
+        "codeHash": "0x26903054f85fdd8af8721c3d89ea7d46546e98128f836aa7d703acabebba3dbb"
+      },
+      {
+        "id": 3,
+        "name": "df1",
+        "address": "0x6eC2027e5B2493f2ECc5882BecE14B31197C3ce0",
+        "builtIn": false,
+        "codePresent": true,
+        "codeHash": "0x2bb0b873f32cc542682ce65ffa2624bf287543356b7d0c3857edfcdae2ae6f64"
+      }
+    ],
+    "configuration": {
+      "r3tards": "0x200723A706de0013316E5cd8EBa2b3f53DD90c29",
+      "painterPass": "0xb2D2D7681F451D9C69eD5eF2A0ed0B6b6494F103",
+      "seasonStart": "1791284400",
+      "seasonLength": "2592000",
+      "currentSeason": "0",
+      "tokenZeroOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "royaltyReceiver": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "royaltyBps": "500",
+      "budgets": {
+        "base/hour": "512",
+        "active-day step": "32",
+        "hour cap": "2048",
+        "active-day threshold": "16",
+        "r3tard/day": "512"
+      }
+    },
+    "finalizedReference": {
+      "blockNumber": "111045783",
+      "blockHash": "0x1a333ec173b4f667ec9d36269b458501b70b446c68744ca31e2998352dada3bd",
+      "commitment": "finalized",
+      "timestamp": "1791292035"
+    },
+    "freezeStates": {
+      "renderersFrozen": true,
+      "experimentsFrozen": false
+    }
+  },
+  "sections": [
+    {
+      "name": "CHAIN",
+      "checks": [
+        {
+          "label": "Actual chain",
+          "status": "OK",
+          "value": "143 (mainnet)",
+          "detail": ""
+        },
+        {
+          "label": "Expected chain",
+          "status": "INFO",
+          "value": "143",
+          "detail": ""
+        },
+        {
+          "label": "Chain match",
+          "status": "OK",
+          "value": "143 = expected",
+          "detail": ""
+        },
+        {
+          "label": "Finalized certification block",
+          "status": "OK",
+          "value": "111045783 · 0x1a333ec173b4f667ec9d36269b458501b70b446c68744ca31e2998352dada3bd",
+          "detail": ""
+        },
+        {
+          "label": "Multicall3 (canonical)",
+          "status": "OK",
+          "value": "code present",
+          "detail": ""
+        },
+        {
+          "label": "EIP-2935 contract",
+          "status": "OK",
+          "value": "code present",
+          "detail": ""
+        },
+        {
+          "label": "EIP-2935 history behaviour",
+          "status": "UNKNOWN",
+          "value": "TESTNET CHECK REQUIRED",
+          "detail": "code presence does not prove historical hashes are correct"
+        }
+      ]
+    },
+    {
+      "name": "CORE",
+      "checks": [
+        {
+          "label": "Paint",
+          "status": "OK",
+          "value": "0x5102…87b3 · code",
+          "detail": ""
+        },
+        {
+          "label": "R3TARDS collection",
+          "status": "OK",
+          "value": "0x2007…0c29",
+          "detail": ""
+        },
+        {
+          "label": "Painter Pass pointer",
+          "status": "OK",
+          "value": "0xb2D2…F103",
+          "detail": ""
+        },
+        {
+          "label": "Current season",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        },
+        {
+          "label": "Season config",
+          "status": "OK",
+          "value": "start 2026-10-06T11:00:00.000Z · length 2592000s",
+          "detail": ""
+        },
+        {
+          "label": "Pixel budgets",
+          "status": "OK",
+          "value": "base 512/h · +32/day · cap 2048/h · r3tard +512/day",
+          "detail": ""
+        },
+        {
+          "label": "Skrumpeys bonus",
+          "status": "OK",
+          "value": "0xB0DA…D2c0 · +128 px/day",
+          "detail": ""
+        },
+        {
+          "label": "Monad Cards bonus",
+          "status": "OK",
+          "value": "0x0000…Fd67 · +128 px/day",
+          "detail": ""
+        },
+        {
+          "label": "Token #0",
+          "status": "OK",
+          "value": "owner 0x40Ea…47fA",
+          "detail": ""
+        },
+        {
+          "label": "Royalty (Paint)",
+          "status": "OK",
+          "value": "0x40Ea…47fA · 5%",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "REGISTRY",
+      "checks": [
+        {
+          "label": "Experiments",
+          "status": "OK",
+          "value": "10 entries · 10 active",
+          "detail": ""
+        },
+        {
+          "label": "Missing expected",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        },
+        {
+          "label": "Expected but retired",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        },
+        {
+          "label": "Duplicate active names",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        },
+        {
+          "label": "Duplicate active addresses",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        },
+        {
+          "label": "Active zero addresses",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        },
+        {
+          "label": "Active without code",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        },
+        {
+          "label": "#0 finale auction",
+          "status": "INFO",
+          "value": "0x3D31…9EF8",
+          "detail": ""
+        },
+        {
+          "label": "#1 quests",
+          "status": "INFO",
+          "value": "0x4398…a6f1",
+          "detail": ""
+        },
+        {
+          "label": "#2 recycle-bin",
+          "status": "INFO",
+          "value": "0x0223…A2eb",
+          "detail": ""
+        },
+        {
+          "label": "#3 cd-burner",
+          "status": "INFO",
+          "value": "0x5556…B1cd",
+          "detail": ""
+        },
+        {
+          "label": "#4 card-drv",
+          "status": "INFO",
+          "value": "0x3D87…06ec",
+          "detail": ""
+        },
+        {
+          "label": "#5 page-exe",
+          "status": "INFO",
+          "value": "0xD618…15Bb",
+          "detail": ""
+        },
+        {
+          "label": "#6 block-camera",
+          "status": "INFO",
+          "value": "0x1f3d…c430",
+          "detail": ""
+        },
+        {
+          "label": "#7 operator-record",
+          "status": "INFO",
+          "value": "0xEd7c…5A6E",
+          "detail": ""
+        },
+        {
+          "label": "#8 system-event",
+          "status": "INFO",
+          "value": "0xB93A…2066",
+          "detail": ""
+        },
+        {
+          "label": "#9 router-lab",
+          "status": "INFO",
+          "value": "0x1206…8661",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "RENDERERS",
+      "checks": [
+        {
+          "label": "Renderer #0 built-in",
+          "status": "OK",
+          "value": "built-in (core)",
+          "detail": ""
+        },
+        {
+          "label": "Renderer #1 diff",
+          "status": "OK",
+          "value": "0x5D2D…54F7",
+          "detail": ""
+        },
+        {
+          "label": "Renderer #2 season timelapse",
+          "status": "OK",
+          "value": "0x8C91…b78d",
+          "detail": ""
+        },
+        {
+          "label": "Renderer #3 df1",
+          "status": "OK",
+          "value": "0x6eC2…3ce0",
+          "detail": ""
+        },
+        {
+          "label": "Expected renderers",
+          "status": "OK",
+          "value": "COMPLETE",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "OWNERSHIP",
+      "checks": [
+        {
+          "label": "Paint owner",
+          "status": "OK",
+          "value": "0x40Ea…47fA",
+          "detail": ""
+        },
+        {
+          "label": "Labs owner",
+          "status": "OK",
+          "value": "0x40Ea…47fA",
+          "detail": ""
+        },
+        {
+          "label": "Painter Pass owner",
+          "status": "OK",
+          "value": "0x40Ea…47fA",
+          "detail": ""
+        },
+        {
+          "label": "Quests owner",
+          "status": "OK",
+          "value": "0x40Ea…47fA",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "WIRING",
+      "checks": [
+        {
+          "label": "Labs → Paint",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "Pass → Paint",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "Quests → Paint",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "Royalty (Labs)",
+          "status": "OK",
+          "value": "0x40Ea…47fA · 5%",
+          "detail": ""
+        },
+        {
+          "label": "cd-burner → Paint",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "cd-burner → Labs",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "block-camera → Paint",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "block-camera → Labs",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "finale auction → Paint",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "recycle-bin → Paint",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "recycle-bin experiment id",
+          "status": "OK",
+          "value": "#2",
+          "detail": ""
+        },
+        {
+          "label": "cd-burner experiment id",
+          "status": "OK",
+          "value": "#3",
+          "detail": ""
+        },
+        {
+          "label": "block-camera experiment id",
+          "status": "OK",
+          "value": "#6",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "PASS",
+      "checks": [
+        {
+          "label": "Pass contract",
+          "status": "OK",
+          "value": "0xb2D2…F103",
+          "detail": ""
+        },
+        {
+          "label": "Source #0 (pin 6)",
+          "status": "OK",
+          "value": "quests",
+          "detail": ""
+        },
+        {
+          "label": "Source #1 (pin 7)",
+          "status": "OK",
+          "value": "recycle-bin",
+          "detail": ""
+        },
+        {
+          "label": "Source #2 (pin 8)",
+          "status": "OK",
+          "value": "card-drv",
+          "detail": ""
+        },
+        {
+          "label": "Source order",
+          "status": "OK",
+          "value": "matches deploy order",
+          "detail": ""
+        },
+        {
+          "label": "Built-in pins",
+          "status": "OK",
+          "value": "6",
+          "detail": ""
+        },
+        {
+          "label": "External sources",
+          "status": "OK",
+          "value": "3",
+          "detail": ""
+        },
+        {
+          "label": "Visual pins used",
+          "status": "OK",
+          "value": "9 / 16",
+          "detail": ""
+        },
+        {
+          "label": "Visual pins remaining",
+          "status": "OK",
+          "value": "7",
+          "detail": "last 2 reserved by policy"
+        }
+      ]
+    },
+    {
+      "name": "QUESTS",
+      "checks": [
+        {
+          "label": "Quest count",
+          "status": "OK",
+          "value": "8",
+          "detail": ""
+        },
+        {
+          "label": "CARD CARRIER",
+          "status": "OK",
+          "value": "quest #7 · card ≥ 1 and 143 px",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "CARD.DRV",
+      "checks": [
+        {
+          "label": "Monad Card",
+          "status": "OK",
+          "value": "official 0x0000…Fd67",
+          "detail": ""
+        },
+        {
+          "label": "Format version",
+          "status": "OK",
+          "value": "1",
+          "detail": ""
+        },
+        {
+          "label": "CARD BUS W24–W27",
+          "status": "OK",
+          "value": "RESERVED BY SPEC",
+          "detail": "no current feature consumes these words"
+        }
+      ]
+    },
+    {
+      "name": "MONAD HARDWARE",
+      "checks": [
+        {
+          "label": "page-exe",
+          "status": "OK",
+          "value": "0xD618…15Bb",
+          "detail": ""
+        },
+        {
+          "label": "block-camera",
+          "status": "OK",
+          "value": "0x1f3d…c430",
+          "detail": ""
+        },
+        {
+          "label": "Block Camera → CARD_MEMORY",
+          "status": "OK",
+          "value": "match",
+          "detail": ""
+        },
+        {
+          "label": "Staking device 0x1000",
+          "status": "OK",
+          "value": "responds",
+          "detail": "presence probe only; semantics need testnet"
+        },
+        {
+          "label": "Reserve device 0x1001",
+          "status": "OK",
+          "value": "responds",
+          "detail": "presence probe only; semantics need testnet"
+        },
+        {
+          "label": "P256 0x0100",
+          "status": "OK",
+          "value": "responds",
+          "detail": "presence probe only; semantics need testnet"
+        },
+        {
+          "label": "History code",
+          "status": "OK",
+          "value": "present",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "OPERATOR",
+      "checks": [
+        {
+          "label": "Subsystem ABI",
+          "status": "OK",
+          "value": "v1 · 16 · identity bit 15",
+          "detail": "v1 is fixed; extensions get their own contract"
+        },
+        {
+          "label": "→ PAINT",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ PASS",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ QUESTS",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ AUCTION",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ RECYCLE_BIN",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ PAGE_EXE",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ BLOCK_CAMERA",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ CARD_MEMORY",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "→ MONAD_CARD",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        },
+        {
+          "label": "Sources",
+          "status": "OK",
+          "value": "MATCH",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "SYSTEM EVENT",
+      "checks": [
+        {
+          "label": "Feed",
+          "status": "OK",
+          "value": "official 0xBcD7…22fb",
+          "detail": ""
+        },
+        {
+          "label": "Feed code",
+          "status": "OK",
+          "value": "present",
+          "detail": ""
+        },
+        {
+          "label": "Feed description",
+          "status": "OK",
+          "value": "MON / USD",
+          "detail": ""
+        },
+        {
+          "label": "Feed decimals",
+          "status": "OK",
+          "value": "8 · event expects 8",
+          "detail": ""
+        },
+        {
+          "label": "Threshold",
+          "status": "OK",
+          "value": "$0.333",
+          "detail": ""
+        },
+        {
+          "label": "Max age",
+          "status": "OK",
+          "value": "4200s",
+          "detail": ""
+        },
+        {
+          "label": "Latest round",
+          "status": "OK",
+          "value": "$0.02907 · 2s old",
+          "detail": ""
+        },
+        {
+          "label": "State",
+          "status": "OK",
+          "value": "ARMED",
+          "detail": "this tool never calls activate()"
+        }
+      ]
+    },
+    {
+      "name": "ROUTER",
+      "checks": [
+        {
+          "label": "MRC revision",
+          "status": "OK",
+          "value": "MRC-17 DRAFT (MIPs#91 6e4f8633)",
+          "detail": ""
+        },
+        {
+          "label": "Limits",
+          "status": "OK",
+          "value": "8 venues · 50000–5000000 gas/frame",
+          "detail": ""
+        },
+        {
+          "label": "poe-mon-usdc",
+          "status": "OK",
+          "value": "0xa13F…99E1 · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "clober-mon-usdc",
+          "status": "OK",
+          "value": "0x438e…96D2 · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "metric-mon-usdc",
+          "status": "OK",
+          "value": "0x63f9…Ad3B · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "hanji-mon-usdc",
+          "status": "OK",
+          "value": "0xFAAE…8EB6 · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "thog-mon-usdc",
+          "status": "OK",
+          "value": "0x7c87…92eB · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "clober-weth-usdc",
+          "status": "OK",
+          "value": "0xb465…84Fb · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "metric-weth-usdc",
+          "status": "OK",
+          "value": "0x1925…e2Fa · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "hanji-weth-usdc",
+          "status": "OK",
+          "value": "0x6F34…6f84 · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "clober-wbtc-usdc",
+          "status": "OK",
+          "value": "0x8ec9…eF1a · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "metric-wbtc-usdc",
+          "status": "OK",
+          "value": "0xf4CD…93aA · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "hanji-cbbtc-usdc",
+          "status": "OK",
+          "value": "0xB565…c9c3 · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "hanji-mon-weth",
+          "status": "OK",
+          "value": "0x624E…643C · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "hanji-cbbtc-mon",
+          "status": "OK",
+          "value": "0xb84b…44B5 · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "hanji-cbbtc-weth",
+          "status": "OK",
+          "value": "0xB026…b705 · MATCH",
+          "detail": ""
+        },
+        {
+          "label": "Configured adapters",
+          "status": "OK",
+          "value": "14",
+          "detail": ""
+        },
+        {
+          "label": "Code hash mismatches",
+          "status": "OK",
+          "value": "0",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "RELEASES",
+      "checks": [
+        {
+          "label": "Scheduled programs",
+          "status": "OK",
+          "value": "none",
+          "detail": ""
+        },
+        {
+          "label": "Reveal-all",
+          "status": "INFO",
+          "value": "VITE_REVEAL_ALL=true (or dev mode) shows every program: testnet only",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "name": "FREEZE READINESS",
+      "checks": [
+        {
+          "label": "Renderers state",
+          "status": "OK",
+          "value": "FROZEN",
+          "detail": ""
+        },
+        {
+          "label": "Renderers expected entries",
+          "status": "OK",
+          "value": "COMPLETE",
+          "detail": ""
+        },
+        {
+          "label": "Experiments state",
+          "status": "OK",
+          "value": "NOT FROZEN · policy INTENTIONAL",
+          "detail": "reason: future discovery headroom; owner can still append/retire entries"
+        }
+      ]
+    }
+  ],
+  "external": [
+    {
+      "kind": "TESTNET REQUIRED",
+      "items": [
+        "block.coinbase semantics (frame \"Sealed by\")",
+        "EIP-2935 historical block-hash correctness and 8,191-block window",
+        "auction close-hash path and candle-start fallback",
+        "production gas limits from real distributions",
+        "public RPC soak: bounded getLogs, idle rates, ws → polling fallback"
+      ]
+    },
+    {
+      "kind": "MAINNET FORK REQUIRED",
+      "items": [
+        "official Monad Card behaviour (MonadCardFork)",
+        "real MRC-17 adapters and quote isolation (RouterLabFork)"
+      ]
+    },
+    {
+      "kind": "MAINNET ORACLE CHECK",
+      "items": [
+        "real MON/USD feed freshness, heartbeat and answer semantics"
+      ]
+    }
+  ],
+  "summary": {
+    "OK": 106,
+    "WARN": 0,
+    "FAIL": 0,
+    "UNKNOWN": 1
+  },
+  "exitCode": 0
+}

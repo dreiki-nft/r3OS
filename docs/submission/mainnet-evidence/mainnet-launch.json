@@ -1,0 +1,600 @@
+{
+  "build": {
+    "gitIdentifier": "42a17e62140d474d59922bb922599defac39d856"
+  },
+  "chainId": 143,
+  "configuration": {
+    "budgets": {
+      "active-day step": "32",
+      "active-day threshold": "16",
+      "base/hour": "512",
+      "hour cap": "2048",
+      "r3tard/day": "512"
+    },
+    "currentSeason": "0",
+    "painterPass": "0xb2D2D7681F451D9C69eD5eF2A0ed0B6b6494F103",
+    "r3tards": "0x200723A706de0013316E5cd8EBa2b3f53DD90c29",
+    "royaltyBps": "500",
+    "royaltyReceiver": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+    "seasonLength": "2592000",
+    "seasonStart": "1791284400",
+    "tokenZeroOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA"
+  },
+  "contracts": {
+    "DF1Renderer": {
+      "address": "0x6eC2027e5B2493f2ECc5882BecE14B31197C3ce0",
+      "codeHash": "0x2bb0b873f32cc542682ce65ffa2624bf287543356b7d0c3857edfcdae2ae6f64"
+    },
+    "DiffRenderer": {
+      "address": "0x5D2Dcd25D5E847770F6e8a7BFBDF1Df4F6E454F7",
+      "codeHash": "0xba8f20c57e96b169d754bad2d5f2cdebed680e379e590701aa9e7becf0ae95e1"
+    },
+    "R3OSBlockCamera": {
+      "address": "0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430",
+      "codeHash": "0xea123d625899b994dc2bae8a757775fca0ebf567c8f0116c74c36531b9992cd9"
+    },
+    "R3OSCDBurner": {
+      "address": "0x5556B0ef2ffA3a970C852362EE69313C08f5B1cd",
+      "codeHash": "0x2ec086f9b05b8f6de5fdbbdc450db134340de28412ee4887e77c2b516a18ecdd"
+    },
+    "R3OSCardMemory": {
+      "address": "0x3D871B434736939748ea1BD08C06c1E8750506ec",
+      "codeHash": "0x876819b510c668b68f49943c1f2d98cb6944e28f377588eb0b854c9baa72814c"
+    },
+    "R3OSFinaleAuction": {
+      "address": "0x3D3154dB1B32724a82Ac9eC3f1811808558b9EF8",
+      "codeHash": "0xc3bd8f2d6402af12d5d4b6b2133061ad30c7592070d6444a42c435490de8150e"
+    },
+    "R3OSLabs": {
+      "address": "0xe6b3b17e3B1827FE02183F496e84331EBE74751C",
+      "codeHash": "0xa66ed11b399194a0f840e49b71ca46240153098e89d93b79fb9ecfe737a79211"
+    },
+    "R3OSOperatorRecord": {
+      "address": "0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E",
+      "codeHash": "0x41c0def91219e14a93ba129c5e5d54feeafab674b4b4aa65d7bdf24e71a0a1f3"
+    },
+    "R3OSPageExe": {
+      "address": "0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb",
+      "codeHash": "0x23523c9eb0fed67e6035e5262b43da39daec6bd770f8636dc2a2467436cd9043"
+    },
+    "R3OSPaint": {
+      "address": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "codeHash": "0xc40c4469d67070ba66c55eae78d04d37fa2c5c6ebf07d7edd7046dee61e36b7c"
+    },
+    "R3OSPainterPass": {
+      "address": "0xb2D2D7681F451D9C69eD5eF2A0ed0B6b6494F103",
+      "codeHash": "0x65b39769372780d032dd9429c7fba0de7385701b9fae028b6cbcaa9e03312fde"
+    },
+    "R3OSQuests": {
+      "address": "0x4398f022d7700cf5541Ac59D2Ff83f1A8a30a6f1",
+      "codeHash": "0xd24dedecd70890f36a85a4ffda4beb01520363594f26291637031d50be90c241"
+    },
+    "R3OSRecycleBin": {
+      "address": "0x02234e30daC8Bed319F30FB1Ec123da8bf71A2eb",
+      "codeHash": "0x1d5df4c77709d5f2b828cfa5e12305e8ea1019f1a0cdbad62fa33d7da1f01274"
+    },
+    "R3OSRouterLab": {
+      "address": "0x1206cD64b805fA612C49DC0296c8813248428661",
+      "codeHash": "0x99d68ecbf0161ddbf750b1f04846b0b40a46027d01cecf1a27e0497a129bb4de"
+    },
+    "R3OSSystemEvent": {
+      "address": "0xB93A2b18437A1f169D39D81aAD19b074D6292066",
+      "codeHash": "0x5e4a9f7a63afdb9d4b80f74d0eb9d6e9afb3d1aaf4b76b774def5d976f2be774"
+    },
+    "SeasonTimelapseRenderer": {
+      "address": "0x8C91D7A829569Ebf1DFC671F6cf328911813b78d",
+      "codeHash": "0x26903054f85fdd8af8721c3d89ea7d46546e98128f836aa7d703acabebba3dbb"
+    }
+  },
+  "deployment": {
+    "note": "human-reviewed accepted mainnet deployment"
+  },
+  "deploymentManifest": {
+    "finalOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+    "freezeIntentions": {
+      "experiments": "keep-open",
+      "renderers": "freeze-after-acceptance"
+    },
+    "schema": "r3os-mainnet-deployment/v2",
+    "sha256": "0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1"
+  },
+  "finalizedReference": {
+    "blockHash": "0x1a333ec173b4f667ec9d36269b458501b70b446c68744ca31e2998352dada3bd",
+    "blockNumber": "111045783"
+  },
+  "freezeStates": {
+    "experimentsFrozen": false,
+    "renderersFrozen": true
+  },
+  "gates": {
+    "launchDoctor": {
+      "blockHash": "0x1a333ec173b4f667ec9d36269b458501b70b446c68744ca31e2998352dada3bd",
+      "blockNumber": "111045783",
+      "commitment": "finalized",
+      "exitCode": 0,
+      "summary": {
+        "FAIL": 0,
+        "OK": 106,
+        "UNKNOWN": 1,
+        "WARN": 0
+      }
+    },
+    "localAcceptance": {
+      "allGreen": true,
+      "completedAt": "2026-10-06T13:08:54.755Z",
+      "gates": {
+        "build": {
+          "command": "npm run build",
+          "durationMs": 16776,
+          "exitCode": 0
+        },
+        "contractsBuild": {
+          "command": "npm run contracts:build",
+          "durationMs": 2546,
+          "exitCode": 0
+        },
+        "contractsTest": {
+          "command": "npm run contracts:test",
+          "durationMs": 11582,
+          "exitCode": 0
+        },
+        "diffCheck": {
+          "command": "git diff --check",
+          "durationMs": 107,
+          "exitCode": 0
+        },
+        "generated": {
+          "command": "npm run generated:check",
+          "durationMs": 1324,
+          "exitCode": 0
+        },
+        "repoDoctor": {
+          "command": "npm run repo:doctor",
+          "durationMs": 511,
+          "exitCode": 0
+        },
+        "speculation": {
+          "command": "npm run test:speculation",
+          "durationMs": 2375,
+          "exitCode": 0
+        },
+        "torture": {
+          "command": "npm run test:torture",
+          "durationMs": 2727,
+          "exitCode": 0
+        },
+        "web": {
+          "command": "npm run test:web",
+          "durationMs": 15732,
+          "exitCode": 0
+        }
+      },
+      "schema": "r3os-local-acceptance/v1",
+      "startedAt": "2026-10-06T13:08:01.071Z"
+    },
+    "mainnetCanary": {
+      "chainId": 143,
+      "checks": [
+        {
+          "detail": "FAIL=0",
+          "name": "primary Launch Doctor",
+          "status": "OK"
+        },
+        {
+          "detail": "FAIL=0",
+          "name": "secondary Launch Doctor",
+          "status": "OK"
+        },
+        {
+          "detail": "MATCH",
+          "name": "provider deployment evidence",
+          "status": "OK"
+        },
+        {
+          "detail": "#111044975 0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7",
+          "name": "shared finalized canonical block",
+          "status": "OK"
+        },
+        {
+          "detail": "(0,0) region 0 pressure 0",
+          "name": "visually-idempotent Paint canary candidate",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "budgetOf cross-provider read",
+          "status": "OK"
+        },
+        {
+          "detail": "primary=512 secondary=512",
+          "name": "canary hourly budget >= 2 units",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "partnerBudgetOf cross-provider read",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "Painter Pass -> Paint read",
+          "status": "OK"
+        },
+        {
+          "detail": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3",
+          "name": "PAGE.EXE readPage cross-provider read",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "WebSocket newHeads",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "WebSocket monadLogs subscription",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "canary transaction receipt",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "Painted event",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "monadLogs Proposed",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "monadLogs Voted",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "monadLogs Finalized",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "transaction finalized on both providers",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "second-provider receipt",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "second-provider canonical block",
+          "status": "OK"
+        },
+        {
+          "detail": "",
+          "name": "canary visual state restored",
+          "status": "OK"
+        }
+      ],
+      "completedAt": "2026-10-06T13:04:23.247Z",
+      "exitCode": 0,
+      "mode": "transaction",
+      "operationalReads": {
+        "blockNumber": "111044975",
+        "budgetMatch": true,
+        "canaryHourlyBudgetSufficient": true,
+        "pageMatch": true,
+        "partnerBudgetMatch": true,
+        "passPointerMatch": true,
+        "primary": {
+          "budget": [
+            "512",
+            "0",
+            "512",
+            "512",
+            0
+          ],
+          "pageHash": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3",
+          "pageWords": 128,
+          "partnerBudget": [
+            false,
+            "0",
+            false,
+            "0"
+          ],
+          "passPaint": "0x5102DE3817aE16b3afaEb9D180130669A70787b3"
+        },
+        "secondary": {
+          "budget": [
+            "512",
+            "0",
+            "512",
+            "512",
+            0
+          ],
+          "pageHash": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3",
+          "pageWords": 128,
+          "partnerBudget": [
+            false,
+            "0",
+            false,
+            "0"
+          ],
+          "passPaint": "0x5102DE3817aE16b3afaEb9D180130669A70787b3"
+        }
+      },
+      "providers": {
+        "primary": {
+          "doctor": {
+            "blockHash": "0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7",
+            "blockNumber": "111044975",
+            "commitment": "finalized",
+            "exitCode": 0,
+            "summary": {
+              "FAIL": 0,
+              "OK": 106,
+              "UNKNOWN": 1,
+              "WARN": 0
+            }
+          },
+          "evidenceHash": "0xc271aaa3cb7490b35b0825534a4cf0f9fdc7db035b3183d2b2580ad2dcdf0256"
+        },
+        "secondary": {
+          "doctor": {
+            "blockHash": "0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7",
+            "blockNumber": "111044975",
+            "commitment": "finalized",
+            "exitCode": 0,
+            "summary": {
+              "FAIL": 0,
+              "OK": 106,
+              "UNKNOWN": 1,
+              "WARN": 0
+            }
+          },
+          "evidenceHash": "0xc271aaa3cb7490b35b0825534a4cf0f9fdc7db035b3183d2b2580ad2dcdf0256"
+        }
+      },
+      "readOnly": false,
+      "schema": "r3os-mainnet-canary/v1",
+      "splitBrain": {
+        "errors": [],
+        "finalizedHeightSkew": "0",
+        "primaryFinalized": "111044975",
+        "secondaryFinalized": "111044975",
+        "sharedBlockHash": "0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7",
+        "sharedBlockNumber": "111044975",
+        "status": "OK"
+      },
+      "startedAt": "2026-10-06T13:03:10.944Z",
+      "suggestedTransactionCanary": {
+        "behavior": "blank -> color -> blank in one transaction; final canvas image unchanged",
+        "blocksUntilNextStorm": "155025",
+        "color": 1,
+        "observedAtFinalizedBlock": "111044975",
+        "pixelsInBlock": "0",
+        "pressure": "0",
+        "region": 0,
+        "season": "0",
+        "stormAtObservedBlock": false,
+        "totalPaints": "0",
+        "x": 0,
+        "y": 0
+      },
+      "summary": {
+        "FAIL": 0,
+        "OK": 21,
+        "WARN": 0
+      },
+      "transaction": {
+        "blockHash": "0xccab854e257753da8e401d011ead6852a2b2c97db89da4b2da009aa6c739f71c",
+        "blockNumber": "111045205",
+        "canary": {
+          "color": 1,
+          "finalBackgroundColor": 0,
+          "finalVisibleColor": 0,
+          "x": 0,
+          "y": 0
+        },
+        "commitStates": [
+          "Proposed",
+          "Voted",
+          "Finalized",
+          "Verified"
+        ],
+        "executed": true,
+        "finalizedObserved": true,
+        "hash": "0x71821fedd32fbacd582d76fbb4a1ddd767e3590f6d779ea6131ad0f96221eb8c",
+        "paintEventObserved": true,
+        "primaryFinalized": true,
+        "proposedObserved": true,
+        "receiptStatus": "success",
+        "secondProviderCanonicalBlock": true,
+        "secondProviderReceipt": true,
+        "secondaryFinalized": true,
+        "visualStateRestored": true,
+        "votedObserved": true
+      },
+      "websocket": {
+        "connected": true,
+        "monadLogsSubscribed": true,
+        "newHeadObserved": true
+      }
+    }
+  },
+  "genesisLabel": "R3OS_MAINNET_GENESIS",
+  "ownership": {
+    "Labs": {
+      "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "status": "OK"
+    },
+    "Paint": {
+      "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "status": "OK"
+    },
+    "Painter Pass": {
+      "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "status": "OK"
+    },
+    "Quests": {
+      "expectedOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "owner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "pendingOwner": "0x0000000000000000000000000000000000000000",
+      "status": "OK"
+    }
+  },
+  "partners": {
+    "monadCards": {
+      "address": "0x0000CA12D5c07085022eBC74867157449919Fd67",
+      "codeHash": "0x2faf21182b03b1d522272109ff927da7ce93b6abae731dc036749a9e6ac56dbb",
+      "codePresent": true,
+      "matchesExpected": true,
+      "pixelsPerDay": "128"
+    },
+    "skrumpeys": {
+      "address": "0xB0DAD798C80e40Dd6b8E8545074C6a5B7B97D2c0",
+      "codeHash": "0x758f6462dcf7820514e1dc6696b88148a335671f90221a39f7db56e63a3fa7f0",
+      "codePresent": true,
+      "matchesExpected": true,
+      "pixelsPerDay": "128"
+    }
+  },
+  "registry": [
+    {
+      "address": "0x3D3154dB1B32724a82Ac9eC3f1811808558b9EF8",
+      "codeHash": "0xc3bd8f2d6402af12d5d4b6b2133061ad30c7592070d6444a42c435490de8150e",
+      "codePresent": true,
+      "id": 0,
+      "name": "finale auction",
+      "retired": false,
+      "uri": "/finale-auction"
+    },
+    {
+      "address": "0x4398f022d7700cf5541Ac59D2Ff83f1A8a30a6f1",
+      "codeHash": "0xd24dedecd70890f36a85a4ffda4beb01520363594f26291637031d50be90c241",
+      "codePresent": true,
+      "id": 1,
+      "name": "quests",
+      "retired": false,
+      "uri": "/quests"
+    },
+    {
+      "address": "0x02234e30daC8Bed319F30FB1Ec123da8bf71A2eb",
+      "codeHash": "0x1d5df4c77709d5f2b828cfa5e12305e8ea1019f1a0cdbad62fa33d7da1f01274",
+      "codePresent": true,
+      "id": 2,
+      "name": "recycle-bin",
+      "retired": false,
+      "uri": "/recycle-bin"
+    },
+    {
+      "address": "0x5556B0ef2ffA3a970C852362EE69313C08f5B1cd",
+      "codeHash": "0x2ec086f9b05b8f6de5fdbbdc450db134340de28412ee4887e77c2b516a18ecdd",
+      "codePresent": true,
+      "id": 3,
+      "name": "cd-burner",
+      "retired": false,
+      "uri": "/cd-burner"
+    },
+    {
+      "address": "0x3D871B434736939748ea1BD08C06c1E8750506ec",
+      "codeHash": "0x876819b510c668b68f49943c1f2d98cb6944e28f377588eb0b854c9baa72814c",
+      "codePresent": true,
+      "id": 4,
+      "name": "card-drv",
+      "retired": false,
+      "uri": ""
+    },
+    {
+      "address": "0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb",
+      "codeHash": "0x23523c9eb0fed67e6035e5262b43da39daec6bd770f8636dc2a2467436cd9043",
+      "codePresent": true,
+      "id": 5,
+      "name": "page-exe",
+      "retired": false,
+      "uri": ""
+    },
+    {
+      "address": "0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430",
+      "codeHash": "0xea123d625899b994dc2bae8a757775fca0ebf567c8f0116c74c36531b9992cd9",
+      "codePresent": true,
+      "id": 6,
+      "name": "block-camera",
+      "retired": false,
+      "uri": ""
+    },
+    {
+      "address": "0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E",
+      "codeHash": "0x41c0def91219e14a93ba129c5e5d54feeafab674b4b4aa65d7bdf24e71a0a1f3",
+      "codePresent": true,
+      "id": 7,
+      "name": "operator-record",
+      "retired": false,
+      "uri": ""
+    },
+    {
+      "address": "0xB93A2b18437A1f169D39D81aAD19b074D6292066",
+      "codeHash": "0x5e4a9f7a63afdb9d4b80f74d0eb9d6e9afb3d1aaf4b76b774def5d976f2be774",
+      "codePresent": true,
+      "id": 8,
+      "name": "system-event",
+      "retired": false,
+      "uri": ""
+    },
+    {
+      "address": "0x1206cD64b805fA612C49DC0296c8813248428661",
+      "codeHash": "0x99d68ecbf0161ddbf750b1f04846b0b40a46027d01cecf1a27e0497a129bb4de",
+      "codePresent": true,
+      "id": 9,
+      "name": "router-lab",
+      "retired": false,
+      "uri": ""
+    }
+  ],
+  "renderers": [
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "builtIn": true,
+      "codeHash": null,
+      "codePresent": true,
+      "id": 0,
+      "name": "built-in"
+    },
+    {
+      "address": "0x5D2Dcd25D5E847770F6e8a7BFBDF1Df4F6E454F7",
+      "builtIn": false,
+      "codeHash": "0xba8f20c57e96b169d754bad2d5f2cdebed680e379e590701aa9e7becf0ae95e1",
+      "codePresent": true,
+      "id": 1,
+      "name": "diff"
+    },
+    {
+      "address": "0x8C91D7A829569Ebf1DFC671F6cf328911813b78d",
+      "builtIn": false,
+      "codeHash": "0x26903054f85fdd8af8721c3d89ea7d46546e98128f836aa7d703acabebba3dbb",
+      "codePresent": true,
+      "id": 2,
+      "name": "season timelapse"
+    },
+    {
+      "address": "0x6eC2027e5B2493f2ECc5882BecE14B31197C3ce0",
+      "builtIn": false,
+      "codeHash": "0x2bb0b873f32cc542682ce65ffa2624bf287543356b7d0c3857edfcdae2ae6f64",
+      "codePresent": true,
+      "id": 3,
+      "name": "df1"
+    }
+  ],
+  "schema": "r3os-mainnet-launch/v1"
+}
