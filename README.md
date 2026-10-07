@@ -12,6 +12,7 @@
 <p align="center">
   <a href="#judge-path"><b>Judge path</b></a> ·
   <a href="#mainnet-deployment"><b>Mainnet contracts</b></a> ·
+  <a href="docs/submission/MAINNET_EVIDENCE.md"><b>Acceptance evidence</b></a> ·
   <a href="#run-it-locally"><b>Run locally</b></a> ·
   <a href="docs/TECHNICAL.md"><b>Technical reference</b></a> ·
   <a href="THREAT_MODEL.md"><b>Threat model</b></a>
@@ -75,7 +76,7 @@ The guide and its observable status indicators do **not** bypass wallet approval
 
 ### Mainnet holder budgets
 
-The planned launch configuration keeps participation open while giving collection holders extra daily room:
+The accepted mainnet configuration keeps participation open while giving collection holders extra daily room:
 
 | Holder state | Extra Paint budget | Accounting |
 | --- | ---: | --- |
@@ -137,7 +138,7 @@ The mainnet contract surface is intentionally limited to contracts consumed by t
 
 ## Mainnet deployment
 
-**Deployed and accepted on Monad mainnet (`chainId 143`).** Paint launched October 6, 2026 at 11:00 UTC (season start `1791284400`). The final accepted deployment's contract addresses are fixed; **all 16 contracts are deployed and source verified**.
+**Deployed and accepted on Monad mainnet (`chainId 143`).** Paint launched October 6, 2026 at 11:00 UTC (season start `1791284400`). The final accepted deployment's contract addresses are fixed; **all 16 contracts are deployed**, with source-verification evidence recorded at acceptance.
 
 | Contract | Mainnet address / explorer |
 | --- | --- |
@@ -161,6 +162,8 @@ The mainnet contract surface is intentionally limited to contracts consumed by t
 **Permanent/intended mainnet state:** Renderer registry frozen with built-in, Diff, Season Timelapse, and DF1. Experiment registry intentionally **not frozen** to preserve discovery headroom. `R3OSSystemEvent` is armed but **not activated**; its irreversible activation is not part of this demonstration or the genesis marker.
 
 ### Proof of mainnet acceptance
+
+**Canonical evidence and independent offline reproducibility:** [`docs/submission/MAINNET_EVIDENCE.md`](docs/submission/MAINNET_EVIDENCE.md). Run `node scripts/verify-mainnet-evidence.mjs` to check accepted evidence bytes and cross-file consistency. This is not a new live RPC audit or a professional security audit.
 
 - **Accepted source:** `42a17e62140d474d59922bb922599defac39d856` (Phase 9D deployment baseline; subsequent frontend-only changes are separate).
 - **Real Paint canary:** [`0x71821fedd32fbacd582d76fbb4a1ddd767e3590f6d779ea6131ad0f96221eb8c`](https://monadvision.com/tx/0x71821fedd32fbacd582d76fbb4a1ddd767e3590f6d779ea6131ad0f96221eb8c), block `111045205`. One real transaction painted pixel `(0,0)` blank → colour 1 → blank. The image returned to its initial state, but accounting and events advanced.
@@ -236,7 +239,7 @@ Browser security matters because Live Mode intentionally holds an EOA key locall
 
 ## Status
 
-- **Production accepted on Monad mainnet** October 6, 2026: 16/16 contracts deployed with matching verified source, renderer registry permanently frozen and experiments intentionally open.
+- **Production accepted on Monad mainnet** October 6, 2026: 16/16 contracts deployed, source-verification evidence recorded at acceptance, renderer registry permanently frozen and experiments intentionally open.
 - **Phase 9D passed** with a real canary, multi-provider checks, finalized Launch Doctor, deterministic Flight Recorder evidence and green accepted tests. No further mainnet deployment or irreversible admin action is planned for submission.
 - **Phase 9E `demo.exe`** adds a frontend-only judge guide. Its later frontend test counts belong to the subsequent presentation update and must not be retroactively attributed to the accepted deployment commit.
 - **Security:** the contracts are not professionally audited. Review the threat model and existing operational/Live Mode limitations rather than treating test counts as an audit.
