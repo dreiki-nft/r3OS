@@ -114,9 +114,15 @@ export function MonadHardwareProgram() {
   useEffect(() => {
     const onHash = () => {
       if (focusFromHash()) setTab(TABS[1])
+      else if (location.hash === '#/monad-hw' || location.hash.startsWith('#/monad-hw?')) setTab(TABS[0])
     }
+    const onJudgeExplore = () => setTab(TABS[0])
     window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
+    window.addEventListener('r3os:judge-explore', onJudgeExplore)
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      window.removeEventListener('r3os:judge-explore', onJudgeExplore)
+    }
   }, [])
   return (
     <div className="monadhw-program hardware-program">

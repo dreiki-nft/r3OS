@@ -1,0 +1,95 @@
+.judge-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 12px;
+  min-height: 100%;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.judge-heading,
+.judge-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.judge-heading {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.judge-heading strong {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.judge-connection {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  background: var(--field);
+  border: 1px solid var(--bevel-light-2);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.judge-mode h2 {
+  margin: 5px 0 0;
+  font-size: 16px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.judge-mode p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.judge-question {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.judge-detail {
+  color: var(--text);
+}
+
+.judge-cue {
+  padding: 9px;
+  border-left: 2px solid var(--accent);
+  background: var(--face-2);
+  color: var(--text-soft);
+}
+
+.judge-cue b {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.judge-observer {
+  display: grid;
+  gap: 6px;
+}
+
+.judge-observer small,
+.judge-legal {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.judge-footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--bevel-light-2);
+}
+
+.judge-legal {
+  text-align: center;
+}

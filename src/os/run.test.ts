@@ -26,6 +26,8 @@ describe('Run… parser', () => {
     expect(target('  PAINT  ').program).toBe('paint')
     expect(target('DxDiag.EXE').program).toBe('dxdiag')
     expect(target('bin.exe').program).toBe('bin')
+    expect(target('demo.exe')).toEqual({ program: 'demo' })
+    expect(target('DEMO')).toEqual({ program: 'demo' })
   })
 
   it('builds the operator and argument routes itself', () => {

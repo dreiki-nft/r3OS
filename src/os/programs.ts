@@ -1,6 +1,6 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import type { IconName } from './icons'
-import { bottomRightWindowPosition, getWindows, nextWindowPosition, openWindow } from './windows'
+import { bottomRightWindowPosition, clampRect, getWindows, nextWindowPosition, openWindow } from './windows'
 import { getReleaseSnapshot, isProgramAvailable, markProgramOpened, type ReleaseSnapshot } from './releases'
 import { isRetiredProgram } from './retired'
 import { markProgramOpen } from '../chain/perf'
@@ -21,10 +21,11 @@ export interface ProgramDef {
   alwaysOnTop?: boolean
   modal?: boolean
   controls?: WindowControls
-  placement?: 'cascade' | 'bottom-right'
+  placement?: 'cascade' | 'bottom-right' | 'top-left'
   pinToggle?: boolean
 }
 
+const JudgeMode = lazy(() => import('../demo/JudgeMode').then((m) => ({ default: m.JudgeMode })))
 const PaintProgram = lazy(() =>
   import('../paint/PaintProgram').then((module) => ({ default: module.PaintProgram })),
 )
@@ -83,6 +84,21 @@ const ImagingProgram = lazy(() =>
 )
 
 export const programs: ProgramDef[] = [
+  {
+    id: 'demo',
+    title: 'demo.exe · Judge Mode',
+    icon: 'computer',
+    colour: '#5FEDDF',
+    component: JudgeMode,
+    defaultSize: { width: 316, height: 650 },
+    minSize: { width: 280, height: 385 },
+    singleInstance: true,
+    hash: '#/demo',
+    hidden: true,
+    alwaysOnTop: true,
+    controls: 'min-close',
+    placement: 'top-left',
+  },
   {
     id: 'paint',
     title: 'Paint',
@@ -443,10 +459,12 @@ export function openProgram(id: string, updateHash = true, hashOverride?: string
   const rect =
     program.placement === 'bottom-right'
       ? bottomRightWindowPosition(program.defaultSize, program.minSize)
-      : nextWindowPosition(program.defaultSize, program.minSize)
+      : program.placement === 'top-left'
+        ? clampRect({ x: 8, y: 44, ...program.defaultSize }, undefined, undefined, program.minSize)
+        : nextWindowPosition(program.defaultSize, program.minSize)
   const alreadyOpen = getWindows().windows.some((win) => win.id === program.id)
   if (!alreadyOpen) markProgramOpen(program.id)
-  openWindow(program.id, rect, program.minSize, program.alwaysOnTop, program.placement !== 'bottom-right')
+  openWindow(program.id, rect, program.minSize, program.alwaysOnTop, program.placement === 'cascade' || !program.placement)
   const hash = hashOverride ?? program.hash
   // Paint is the home surface. Normal opens should not make it the next boot route; explicit deep links still work.
   const shouldUpdateHash = updateHash && (program.id !== 'paint' || hashOverride != null)

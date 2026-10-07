@@ -9,6 +9,7 @@ export type RunParse = { ok: true; target: RunTarget } | { ok: false; error: str
 
 /** command (or alias) → active program id. Retired UI programs are absent from this allowlist entirely. */
 export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
+  demo: 'demo',
   paint: 'paint',
   pass: 'pass',
   frames: 'frames',
@@ -34,7 +35,7 @@ export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
 const UINT256_MAX = (1n << 256n) - 1n
 const MAX_INPUT = 90 // "card " + the 78 digits of uint256 max fits
 
-export const RUN_EXAMPLES = 'paint · explore · camera · frame 12'
+export const RUN_EXAMPLES = 'demo.exe · paint · explore · camera'
 
 function notFound(input: string): RunParse {
   const shown = input.length > 40 ? `${input.slice(0, 39)}…` : input
