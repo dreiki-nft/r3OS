@@ -5,12 +5,13 @@
 <h1 align="center">r3OS</h1>
 
 <p align="center">
-  <b>An operating system for the world computer, disguised as Windows 98.</b><br>
-  One 256 × 256 canvas. Every committed stroke is a Monad transaction.
+  <b>An operating system for the world computer.</b><br>
+  A 256 × 256 shared canvas on Monad, where the blockchain participates in the interaction loop.
 </p>
 
 <p align="center">
-  <a href="#judge-path"><b>60-second path</b></a> ·
+  <a href="#judge-path"><b>Judge path</b></a> ·
+  <a href="#mainnet-deployment"><b>Mainnet contracts</b></a> ·
   <a href="#run-it-locally"><b>Run locally</b></a> ·
   <a href="docs/TECHNICAL.md"><b>Technical reference</b></a> ·
   <a href="THREAT_MODEL.md"><b>Threat model</b></a>
@@ -24,7 +25,7 @@
 
 ## What this is
 
-r3OS boots into a Windows 98-style desktop wrapped around one shared **256 × 256, 16-colour canvas on Monad**. Anyone can watch the canvas and explore the system without a wallet. Connect only when you want to write onchain.
+r3OS is an operating system for the world computer: a Windows 98-style desktop exploring what applications look like when **Monad itself is fast enough to participate directly in the interaction loop**. Its signature program is one shared **256 × 256, 16-colour onchain canvas**. Anyone can observe without a wallet; writing requires a wallet or an authorized Live Mode session.
 
 Paint is the center of the project: draw locally, commit pixels as a transaction, watch other painters' live onchain strokes appear and reconcile, then save a moment of the shared canvas as an immutable frame NFT. Frames can become mix CDs, finales can enter a candle auction, and Block Camera turns the block itself into an onchain artifact.
 
@@ -38,21 +39,24 @@ A few deterministic storage/hash salts still contain historical `r3tards.*` stri
 
 ### Hackathon thesis
 
-> **Monad is fast enough that fully onchain creative interaction can feel continuous instead of transaction-by-transaction.**
+> **r3OS deliberately places blockchain operations where conventional applications normally put local servers, databases, real-time services, and application backends.**
+>
+> The hypothesis is not just that Monad settles transactions quickly. It is that the chain can participate directly in the application interaction loop.
 
 Live Mode is the clearest demonstration. The owner authorizes a browser-held paint session key once; after that, strokes are signed locally and broadcast without a wallet popup per stroke. Receipt logs update the UI immediately after inclusion, then canonical chain reconciliation follows in the background. On Monad, a receipt or standard WebSocket log may still describe a proposed block; X-ray shows commitment-state progression separately when the RPC exposes it.
 
 ## Judge path
 
-A wallet is not required for the first impression.
+**Start without a wallet.** Launch the guide with **Run → `demo.exe`** (or `#/demo`). The guide organizes the existing programs; it does not simulate data, sign transactions or perform any chain writes.
 
-1. Let the boot screen finish. It is doing real work: network discovery, canvas state, program code and shared caches are warmed before the desktop appears.
-2. Open **Paint**. The Live strip shows the shared canvas, recent activity and whether live strokes are arriving over the websocket path.
-3. Connect only when you want to write, then press **Start Live Mode**. After the one-time session setup, draw again: each stroke is locally signed and sent without another wallet popup.
-4. Watch the proof in the same Paint window: your block/receipt, remote strokes from other browsers, **X-ray**, and direct explorer links.
-5. Open **DXDIAG.EXE → Performance** for local signing, broadcast, receipt, UI-settle and remote websocket-to-canvas measurements. No telemetry is uploaded.
-6. Open **Explore Monad**, then save a frame / burn a CD if you want the wider OS tour.
+1. **Thesis:** Read the direct architecture: browser → Monad RPC/WebSocket → contracts/storage/logs. No app-owned canonical backend or database.
+2. **Paint:** Open the shared canvas. Observe it without connecting; optionally connect to paint. In Live Mode, a browser-held paint session key is authorized once and signs subsequent strokes locally.
+3. **Remote observation:** An independent second browser profile can follow real `Painted` updates. Remote propagation is not finality.
+4. **X-Ray:** Inspect the real transaction lifecycle. Local response, protocol observation (`monadLogs`), receipt inclusion and `Finalized` are separate signals.
+5. **Explore Monad → Storage race:** Run the **read-only PAGE.EXE / MIP-8** 4 KiB-page comparison. It may or may not show a measurable page discount during a particular run; the interface reports observed results, not a fabricated outcome.
+6. **Conclusion:** The desktop is a UI for experimenting with Monad as a world computer, not a Windows clone or a blockchain-powered screenshot gallery.
 
+The guide and its observable status indicators do **not** bypass wallet approvals or cause transactions. See **DXDIAG.EXE** for optional local-only timing details rather than treating its values as network-wide benchmarks.
 
 ## What is onchain
 
@@ -131,18 +135,44 @@ A few implementation choices matter to the user experience:
 
 The mainnet contract surface is intentionally limited to contracts consumed by the current r3OS product. Discontinued experiments remain available through Git history rather than shipping in source, deployment wiring or generated ABIs. The historical testnet can still contain old registry entries, so a small compatibility policy hides them when the frontend points at that deployment.
 
-## Current testnet
+## Mainnet deployment
 
-| | |
+**Deployed and accepted on Monad mainnet (`chainId 143`).** Paint launched October 6, 2026 at 11:00 UTC (season start `1791284400`). The final accepted deployment's contract addresses are fixed; **all 16 contracts are deployed and source verified**.
+
+| Contract | Mainnet address / explorer |
 | --- | --- |
-| Chain | Monad Testnet (`10143`) |
-| Paint | [`0x032D5e1591DA2919A4aa5D24Ee9278bFE5F1CdA1`](https://testnet.monadvision.com/address/0x032D5e1591DA2919A4aa5D24Ee9278bFE5F1CdA1) |
-| r3tards mock | [`0x6F375D9DA0053A6fA80EC8bb09798B72468FD120`](https://testnet.monadvision.com/address/0x6F375D9DA0053A6fA80EC8bb09798B72468FD120) |
-| Painter Pass | [`0x9C2d367A0B7BaFC8d4fAaa4920D9543b42ae218a`](https://testnet.monadvision.com/address/0x9C2d367A0B7BaFC8d4fAaa4920D9543b42ae218a) |
-| Core deploy block | `67823235` |
-| Mainnet | **Not deployed yet** |
+| R3OSPaint | [`0x5102de3817ae16b3afaeb9d180130669a70787b3`](https://monadvision.com/address/0x5102de3817ae16b3afaeb9d180130669a70787b3) |
+| R3OSLabs | [`0xe6b3b17e3b1827fe02183f496e84331ebe74751c`](https://monadvision.com/address/0xe6b3b17e3b1827fe02183f496e84331ebe74751c) |
+| DiffRenderer | [`0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7`](https://monadvision.com/address/0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7) |
+| SeasonTimelapseRenderer | [`0x8c91d7a829569ebf1dfc671f6cf328911813b78d`](https://monadvision.com/address/0x8c91d7a829569ebf1dfc671f6cf328911813b78d) |
+| DF1Renderer | [`0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0`](https://monadvision.com/address/0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0) |
+| R3OSPainterPass | [`0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103`](https://monadvision.com/address/0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103) |
+| R3OSFinaleAuction | [`0x3d3154db1b32724a82ac9ec3f1811808558b9ef8`](https://monadvision.com/address/0x3d3154db1b32724a82ac9ec3f1811808558b9ef8) |
+| R3OSQuests | [`0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1`](https://monadvision.com/address/0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1) |
+| R3OSRecycleBin | [`0x02234e30dac8bed319f30fb1ec123da8bf71a2eb`](https://monadvision.com/address/0x02234e30dac8bed319f30fb1ec123da8bf71a2eb) |
+| R3OSCDBurner | [`0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd`](https://monadvision.com/address/0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd) |
+| R3OSCardMemory | [`0x3D871B434736939748ea1BD08C06c1E8750506ec`](https://monadvision.com/address/0x3D871B434736939748ea1BD08C06c1E8750506ec) |
+| R3OSPageExe | [`0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb`](https://monadvision.com/address/0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb) |
+| R3OSBlockCamera | [`0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430`](https://monadvision.com/address/0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430) |
+| R3OSOperatorRecord | [`0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E`](https://monadvision.com/address/0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E) |
+| R3OSSystemEvent | [`0xB93A2b18437A1f169D39D81aAD19b074D6292066`](https://monadvision.com/address/0xB93A2b18437A1f169D39D81aAD19b074D6292066) |
+| R3OSRouterLab | [`0x1206cD64b805fA612C49DC0296c8813248428661`](https://monadvision.com/address/0x1206cD64b805fA612C49DC0296c8813248428661) |
 
-Add-on addresses are discovered from the Paint registry at runtime. Mainnet will be the first deployment of the current Paint configuration.
+**Permanent/intended mainnet state:** Renderer registry frozen with built-in, Diff, Season Timelapse, and DF1. Experiment registry intentionally **not frozen** to preserve discovery headroom. `R3OSSystemEvent` is armed but **not activated**; its irreversible activation is not part of this demonstration or the genesis marker.
+
+### Proof of mainnet acceptance
+
+- **Accepted source:** `42a17e62140d474d59922bb922599defac39d856` (Phase 9D deployment baseline; subsequent frontend-only changes are separate).
+- **Real Paint canary:** [`0x71821fedd32fbacd582d76fbb4a1ddd767e3590f6d779ea6131ad0f96221eb8c`](https://monadvision.com/tx/0x71821fedd32fbacd582d76fbb4a1ddd767e3590f6d779ea6131ad0f96221eb8c), block `111045205`. One real transaction painted pixel `(0,0)` blank → colour 1 → blank. The image returned to its initial state, but accounting and events advanced.
+- **Canary checks:** **21 OK / 0 WARN / 0 FAIL**, including a successful receipt, `Painted`, observed `Proposed` → `Voted` → `Finalized` → `Verified`, and matching canonical transaction block evidence from independent providers.
+- **Final Launch Doctor:** finalized block `111045783` (hash `0x1a333ec173b4f667ec9d36269b458501b70b446c68744ca31e2998352dada3bd`), **106 OK / 0 WARN / 0 FAIL / 1 UNKNOWN**. The `UNKNOWN` concerns the documented EIP-2935 historical-behaviour/testnet semantic check, not a deployment failure.
+- **Accepted local gates:** 502/502 web tests, 241 passing Forge tests, three expected fork skips, plus passing builds, generated check, repo doctor, speculation, torture, and diff check.
+- **Deployment-manifest SHA-256:** `0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1`.
+- **Canonical genesis evidence:** `R3OS_MAINNET_GENESIS` = `0x6b07e83382d4f06d03620084b2b13205768f8b081e88c27661fee8c2d3a2a137`. This is a SHA-256 over canonical JSON evidence bytes, **not an onchain event**.
+
+Final acceptance evidence is preserved separately from older deployment and recovery journals. The existence of an older incomplete deployment-address artifact must not be mistaken for the finalized v2 deployment evidence.
+
+**Historical testnet:** chain `10143` and the legacy `R3tards*` contracts remain for compatibility and historical reference, not as the production deployment.
 
 ## Run it locally
 
@@ -154,7 +184,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-`.env.example` already contains the current **public Monad testnet** configuration, so a reviewer can boot the app without hunting for addresses or private credentials.
+The supplied `.env.example` intentionally contains **historical public Monad testnet values**, not production values. For a mainnet local run, change `.env.local` to chain `143`, public RPCs `https://rpc.monad.xyz` and `https://rpc2.monad.xyz`, WebSocket `wss://rpc.monad.xyz`, Paint `0x5102de3817ae16b3afaeb9d180130669a70787b3`, wallet RPC `https://rpc.monad.xyz` and explorer `https://monadvision.com`. Clear any old `VITE_RPC_URL`/`VITE_CONTRACT_ADDRESS` overrides and replace the testnet `VITE_DEPLOY_BLOCK` with the **actual** mainnet Paint deployment block from accepted chain evidence before booting. Never place secret RPC credentials or keys in any `VITE_` variable.
 
 Frontend gate:
 
@@ -175,7 +205,7 @@ npm run repo:doctor   # stale/dead files, broken docs links, placeholders, submi
 npm run test:web      # Vitest
 npm run build         # TypeScript + Vite production build
 npm run generated:check # generated outline + ABI must match source
-RPC_URL="$MONAD_TESTNET_RPC_URL" npm run -s launch:doctor -- --paint <address> --expected-chain 10143
+RPC_URL="https://rpc.monad.xyz" npm run -s launch:doctor -- --paint 0x5102de3817ae16b3afaeb9d180130669a70787b3 --expected-chain 143
 ```
 
 ## Repository map
@@ -206,11 +236,10 @@ Browser security matters because Live Mode intentionally holds an EOA key locall
 
 ## Status
 
-- Monad testnet build is active and the full local Solidity/frontend gate is green.
-- Live Mode, two-browser remote propagation, explorer/X-ray proof and local DXDIAG instrumentation are implemented and validated on testnet.
-- The mainnet source/deployment graph contains only contracts consumed by the current product; historical compatibility readers remain isolated to legacy testnet state.
-- Phase 9C deployment tooling is prepared but has not broadcast mainnet transactions. The exact-step runbook is [`docs/PHASE_9C_MAINNET_DEPLOYMENT.md`](docs/PHASE_9C_MAINNET_DEPLOYMENT.md).
-- Mainnet deployment addresses will replace the testnet table above when the release deployment is finalized.
+- **Production accepted on Monad mainnet** October 6, 2026: 16/16 contracts deployed with matching verified source, renderer registry permanently frozen and experiments intentionally open.
+- **Phase 9D passed** with a real canary, multi-provider checks, finalized Launch Doctor, deterministic Flight Recorder evidence and green accepted tests. No further mainnet deployment or irreversible admin action is planned for submission.
+- **Phase 9E `demo.exe`** adds a frontend-only judge guide. Its later frontend test counts belong to the subsequent presentation update and must not be retroactively attributed to the accepted deployment commit.
+- **Security:** the contracts are not professionally audited. Review the threat model and existing operational/Live Mode limitations rather than treating test counts as an audit.
 
 ## Credits
 
