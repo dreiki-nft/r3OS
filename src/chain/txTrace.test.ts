@@ -46,12 +46,35 @@ describe('transaction trace', () => {
       t: { sent: 2 },
     })
     markTraceCommit(hash, 'Proposed', 10n, 3)
-    markTraceReceipt(hash, { blockNumber: 10n, gasUsed: 80n, effectiveGasPrice: 2n }, 6)
+    markTraceReceipt(
+      hash,
+      { blockNumber: 10n, gasUsed: 80n, effectiveGasPrice: 2n, status: 'success' },
+      6,
+    )
     const trace = getTxTraceSnapshot().traces[0]
     expect(trace.t.voted).toBeUndefined()
     expect(trace.t.receipt).toBe(6)
     expect(trace.t.finalized).toBeUndefined()
     expect(trace.gasUsed).toBe(80n)
+    expect(trace.receiptStatus).toBe('success')
+  })
+
+  it('keeps reverted receipt status visible to diagnostics', () => {
+    recordTxTrace({
+      hash,
+      action: 'sweep burner',
+      signer: 'burner',
+      regions: [],
+      gasLimit: 21_000n,
+      maxFeePerGas: 2n,
+      t: { sent: 2 },
+    })
+    markTraceReceipt(
+      hash,
+      { blockNumber: 11n, gasUsed: 21_000n, effectiveGasPrice: 2n, status: 'reverted' },
+      7,
+    )
+    expect(getTxTraceSnapshot().traces[0].receiptStatus).toBe('reverted')
   })
 
   it('keeps an early Proposed notification until the trace is recorded', () => {

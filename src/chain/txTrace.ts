@@ -21,6 +21,7 @@ export interface TxTrace {
   blockNumber?: bigint
   gasUsed?: bigint
   effectiveGasPrice?: bigint
+  receiptStatus?: 'success' | 'reverted'
 }
 
 type Listener = () => void
@@ -104,7 +105,12 @@ export function markTraceCommit(hash: Hex, state: CommitState, blockNumber?: big
 
 export function markTraceReceipt(
   hash: Hex,
-  receipt: { blockNumber: bigint; gasUsed: bigint; effectiveGasPrice: bigint },
+  receipt: {
+    blockNumber: bigint
+    gasUsed: bigint
+    effectiveGasPrice: bigint
+    status?: 'success' | 'reverted'
+  },
   at = stamp(),
 ) {
   updateTxTrace(hash, (trace) => ({
@@ -112,6 +118,7 @@ export function markTraceReceipt(
     blockNumber: receipt.blockNumber,
     gasUsed: receipt.gasUsed,
     effectiveGasPrice: receipt.effectiveGasPrice,
+    receiptStatus: receipt.status ?? trace.receiptStatus,
     // A transaction receipt proves inclusion to this client. It is not silently relabelled as Monad
     // `Finalized`; that stage is filled only by an actual monadLogs Finalized notification.
     t: { ...trace.t, receipt: trace.t.receipt ?? at },

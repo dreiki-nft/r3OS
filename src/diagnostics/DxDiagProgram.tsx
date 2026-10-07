@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { screenSafeMessage } from '../chain/errors'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
+import { transactionExplorerUrl } from '../chain/explorer'
 import {
   clearPerf,
   formatPerfReport,
@@ -17,6 +18,7 @@ import {
   subscribeActionRpc,
 } from '../chain/actionRpc'
 import type { HardwareSource } from '../chain/monadHardware'
+import { getTxTraceSnapshot, subscribeTxTrace, type TxTrace } from '../chain/txTrace'
 import { closeWindow } from '../os/windows'
 import { playSound } from '../os/sound'
 import { Button } from '../os/ui/Button'
@@ -47,6 +49,32 @@ const yesNo = (value?: boolean) => (value == null ? 'unknown' : value ? 'yes' : 
 const deviceSource = (state: string): HardwareSource =>
   state === 'present' ? 'onchain' : state === 'absent' ? 'absent' : 'unknown'
 
+function shortHash(hash: string) {
+  return `${hash.slice(0, 10)}…${hash.slice(-8)}`
+}
+
+function txState(trace: TxTrace) {
+  if (trace.receiptStatus === 'reverted') return 'reverted'
+  if (trace.t.finalized != null) return 'finalized'
+  if (trace.t.voted != null) return 'voted'
+  if (trace.t.proposed != null) return 'proposed'
+  if (trace.t.receipt != null) return 'receipt'
+  return 'sent'
+}
+
+function formatTxReport(chainId: number, traces: readonly TxTrace[]) {
+  if (!traces.length) return 'ONCHAIN ACTIONS\nno transactions captured in this page session'
+  return [
+    'ONCHAIN ACTIONS',
+    'recent transaction hashes captured locally; newest first',
+    ...traces.slice(0, 10).map((trace) => {
+      const url = transactionExplorerUrl(trace.hash, chainId)
+      const block = trace.blockNumber == null ? '' : ` · block ${trace.blockNumber.toString()}`
+      return `${trace.action} · ${trace.signer} · ${txState(trace)}${block} · ${trace.hash}${url ? ` · ${url}` : ''}`
+    }),
+  ].join('\n')
+}
+
 async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text)
@@ -75,6 +103,7 @@ export function DxDiagProgram() {
   const perf = useSyncExternalStore(subscribePerf, getPerfSnapshot)
   const perfRows = useMemo(() => summarizePerf(perf.samples), [perf.version, perf.samples])
   const actionRpc = useSyncExternalStore(subscribeActionRpc, getActionRpcSnapshot)
+  const txTraces = useSyncExternalStore(subscribeTxTrace, getTxTraceSnapshot)
 
   const load = useCallback(async (force: boolean) => {
     setLoading(true)
@@ -112,7 +141,9 @@ export function DxDiagProgram() {
 
   const copy = async () => {
     if (!view) return
-    const ok = await copyText(`${formatReport(view)}\n\n${formatPerfReport(perf)}`)
+    const ok = await copyText(
+      `${formatReport(view)}\n\n${formatPerfReport(perf)}\n\n${formatTxReport(view.chain.id, txTraces.traces)}`,
+    )
     playSound(ok ? 'confirm' : 'error')
     setNote(ok ? 'report copied to the clipboard' : 'copy failed: select the report text manually')
   }
@@ -326,6 +357,48 @@ export function DxDiagProgram() {
               <p className="dxdiag-note">
                 Live Mode signs locally and redundantly broadcasts the same raw transaction to the configured HTTP
                 endpoints. Endpoint URLs are never shown here or copied into the report.
+              </p>
+            </GroupBox>
+            <GroupBox title="Recent onchain actions">
+              {txTraces.traces.length ? (
+                txTraces.traces.slice(0, 10).map((trace) => {
+                  const explorer = transactionExplorerUrl(trace.hash, d.chain.id)
+                  return (
+                    <Row
+                      key={trace.hash}
+                      label={`${trace.action} · ${trace.signer}`}
+                      value={
+                        <>
+                          {explorer ? (
+                            <a
+                              className="dxdiag-tx-link"
+                              href={explorer}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={trace.hash}
+                            >
+                              {shortHash(trace.hash)}
+                            </a>
+                          ) : (
+                            <code title={trace.hash}>{shortHash(trace.hash)}</code>
+                          )}
+                          <span className={`dxdiag-tx-state state-${txState(trace)}`}>{txState(trace)}</span>
+                          <span className="dxdiag-tx-block">
+                            {trace.blockNumber == null ? 'block pending' : `block #${trace.blockNumber.toString()}`}
+                          </span>
+                        </>
+                      }
+                      source={trace.t.receipt != null || trace.t.proposed != null ? 'onchain' : 'measured'}
+                    />
+                  )
+                })
+              ) : (
+                <p className="dxdiag-note">
+                  no onchain actions captured in this page session yet. Send an r3OS transaction and its hash appears here.
+                </p>
+              )}
+              <p className="dxdiag-note">
+                newest first · hashes are captured locally from r3OS actions · links open MonadVision in a new tab.
               </p>
             </GroupBox>
             <GroupBox title="Local action timings">

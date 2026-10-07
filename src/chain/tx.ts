@@ -361,6 +361,7 @@ export async function sendAction(opts: ActionOptions): Promise<ActionResult> {
       blockNumber: receipt.blockNumber,
       gasUsed: receipt.gasUsed,
       effectiveGasPrice: receipt.effectiveGasPrice,
+      status: receipt.status,
     })
     if (signer === 'wallet') {
       // The receipt is already final from the user's point of view. Do not hold the UI open

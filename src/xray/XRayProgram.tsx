@@ -2,6 +2,7 @@ import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { formatEther, type Address } from 'viem'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { config } from '../chain/config'
+import { transactionExplorerUrl } from '../chain/explorer'
 import { discoverContracts } from '../chain/contracts'
 import {
   getMonadTraceFeedSnapshot,
@@ -79,6 +80,7 @@ export function XRayProgram() {
     getMonadTraceFeedSnapshot,
   )
   const trace = traces.traces[0]
+  const traceExplorer = trace ? transactionExplorerUrl(trace.hash, config.chainId) : undefined
 
   useEffect(() => {
     if (commitFeed.mode !== 'idle') return
@@ -158,8 +160,8 @@ export function XRayProgram() {
                   : `receipt ${Math.round(elapsed(trace, trace.t.receipt) ?? 0)} ms`}
               </span>
               <span>{trace.signer === 'burner' ? 'browser session key' : 'wallet'}</span>
-              {config.explorerUrl && (
-                <a href={`${config.explorerUrl}/tx/${trace.hash}`} target="_blank" rel="noreferrer">
+              {traceExplorer && (
+                <a href={traceExplorer} target="_blank" rel="noreferrer">
                   Open in explorer
                 </a>
               )}

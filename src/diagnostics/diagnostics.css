@@ -111,3 +111,31 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+
+.dxdiag-tx-link {
+  color: var(--accent, #5feddf);
+  font-family: var(--font);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dxdiag-tx-link:focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: 2px;
+}
+
+.dxdiag-tx-state,
+.dxdiag-tx-block {
+  margin-left: 8px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dxdiag-tx-state.state-reverted {
+  color: #fec343;
+}
+
+.dxdiag-tx-state.state-finalized {
+  color: #5fedb0;
+}
