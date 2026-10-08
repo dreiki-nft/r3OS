@@ -34,6 +34,9 @@ describe('Run… parser', () => {
     expect(target('operator')).toEqual({ program: 'pass', hash: '#/pass?tab=Operator' })
     expect(target('frame 12')).toEqual({ program: 'frame-props', hash: '#/frame-props?token=12' })
     expect(target('auction 3')).toEqual({ program: 'auction', hash: '#/auction?auction=3' })
+    expect(target('tv')).toEqual({ program: 'paint', hash: '#/tv' })
+    expect(target('Broadcast.exe')).toEqual({ program: 'paint', hash: '#/tv' })
+    expect(rejected('tv 2')).toBe(true)
   })
 
   it('rejects bad arguments and bounds', () => {

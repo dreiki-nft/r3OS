@@ -1,0 +1,409 @@
+.tv {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 31vw, 560px);
+  background: #000;
+  color: var(--text);
+  font-family: var(--font);
+  overflow: hidden;
+}
+
+.tv.tv-no-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tv.tv-idle,
+.tv.tv-idle * {
+  cursor: none;
+}
+
+.tv-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 16px;
+}
+
+.tv-canvas {
+  position: relative;
+  width: min(calc(100vh - 32px), 100%);
+  aspect-ratio: 1;
+  box-shadow:
+    0 0 0 2px #232326,
+    0 0 60px rgba(95, 237, 223, 0.08);
+}
+
+.tv-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.tv-flashes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tv-flash {
+  position: absolute;
+  animation: tv-flash 4s ease-out forwards;
+}
+
+/* The ring sits a little outside the stroke so even a single pixel is easy to spot across a room. */
+.tv-flash::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 3px solid var(--c);
+  box-shadow:
+    0 0 18px var(--c),
+    inset 0 0 12px var(--c);
+}
+
+.tv-flash span {
+  position: absolute;
+  left: -8px;
+  bottom: calc(100% + 10px);
+  padding: 2px 6px;
+  background: var(--c);
+  color: #000;
+  font-size: clamp(11px, 1.5vh, 16px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tv-flash-below span {
+  bottom: auto;
+  top: calc(100% + 10px);
+}
+
+@keyframes tv-flash {
+  0% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  12% {
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.tv-panel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vh, 22px);
+  min-height: 0;
+  padding: clamp(14px, 2.4vh, 28px);
+  background: #0b0b0c;
+  border-left: 2px solid #232326;
+  overflow: hidden;
+}
+
+.tv-panel h2 {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: clamp(11px, 1.4vh, 15px);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tv-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: clamp(12px, 1.6vh, 18px);
+  color: var(--text-soft);
+}
+
+.tv-onair {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.tv-onair i {
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger);
+  animation: tv-blink 1.4s steps(1) infinite;
+}
+
+@keyframes tv-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.tv-now {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tv-now b {
+  color: var(--accent);
+  font-size: clamp(56px, 11vh, 140px);
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-now span {
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(16px, 2.6vh, 30px);
+}
+
+.tv-now small {
+  color: var(--text-muted);
+  font-size: clamp(11px, 1.4vh, 15px);
+}
+
+.tv-party dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.tv-party dl div {
+  padding: 8px;
+  background: #141416;
+}
+
+.tv-party dt {
+  color: var(--text-muted);
+  font-size: clamp(10px, 1.2vh, 13px);
+}
+
+.tv-party dd {
+  margin: 2px 0 0;
+  font-size: clamp(16px, 2.6vh, 30px);
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-prompt {
+  padding: clamp(10px, 1.6vh, 18px);
+  border: 2px dashed rgba(95, 237, 223, 0.5);
+}
+
+.tv-prompt-title {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--font-hand);
+  font-size: clamp(24px, 4.4vh, 52px);
+  line-height: 1.05;
+}
+
+.tv-prompt-hint {
+  margin: 6px 0 10px;
+  color: var(--text-soft);
+  font-size: clamp(12px, 1.7vh, 19px);
+}
+
+.tv-prompt-bar {
+  height: 4px;
+  background: #232326;
+}
+
+.tv-prompt-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.5s linear;
+}
+
+.tv-feed,
+.tv-top {
+  min-height: 0;
+}
+
+.tv-feed ol,
+.tv-top ol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: clamp(12px, 1.7vh, 19px);
+}
+
+.tv-feed li,
+.tv-top li {
+  display: grid;
+  grid-template-columns: 0.9em minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-top li {
+  grid-template-columns: 0.9em minmax(0, 1fr) auto;
+}
+
+.tv-feed li i,
+.tv-top li i {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.tv-feed li span:last-child {
+  min-width: 3ch;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.tv-feed-frame {
+  color: var(--warn);
+}
+
+.tv-feed-frame i {
+  border: 2px solid var(--warn);
+}
+
+.tv-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: clamp(12px, 1.7vh, 19px);
+}
+
+.tv-join {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: auto;
+}
+
+.tv-qr {
+  flex: none;
+  width: clamp(96px, 17vh, 220px);
+  height: auto;
+  shape-rendering: crispEdges;
+}
+
+.tv-join p {
+  margin: 0;
+}
+
+.tv-join p:first-child {
+  color: var(--text-muted);
+  font-size: clamp(12px, 1.6vh, 18px);
+}
+
+.tv-url {
+  color: #fff;
+  font-size: clamp(22px, 4vh, 46px);
+  font-weight: 700;
+}
+
+.tv-small,
+.tv-block {
+  display: block;
+  color: var(--text-muted);
+  font-size: clamp(11px, 1.4vh, 15px);
+}
+
+.tv-block b {
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-controls {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 10px;
+  background: rgba(11, 11, 12, 0.85);
+  border: 1px solid #232326;
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: opacity 0.3s;
+}
+
+.tv-controls button {
+  min-width: 30px;
+  height: 26px;
+  border: 1px solid #3d3d44;
+  background: #1b1b1e;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tv-controls button:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.tv-idle .tv-controls {
+  opacity: 0;
+}
+
+/* Portrait screens and phones: canvas on top, panel underneath. */
+@media (max-aspect-ratio: 1/1) {
+  .tv {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: auto;
+  }
+
+  .tv-canvas {
+    width: min(calc(100vw - 24px), 62vh);
+  }
+
+  .tv-stage {
+    padding: 12px;
+  }
+
+  .tv-panel {
+    border-left: 0;
+    border-top: 2px solid #232326;
+    overflow: visible;
+  }
+
+  .tv-party dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tv-controls span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-flash {
+    animation-name: tv-flash-calm;
+  }
+
+  .tv-onair i {
+    animation: none;
+  }
+
+  @keyframes tv-flash-calm {
+    0%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}

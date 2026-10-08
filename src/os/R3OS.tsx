@@ -1,4 +1,5 @@
 import {
+  lazy,
   Suspense,
   useEffect,
   useRef,
@@ -37,6 +38,7 @@ import { Window } from './Window'
 import { clampAllWindows, getWindows, resetWindows, sortWindowsForDisplay, subscribeWindows } from './windows'
 import { initSound } from './sound'
 import { markProgramMounted } from '../chain/perf'
+import { isTvRoute } from '../tv/tvModel'
 import {
   availableScheduledPrograms,
   consumeInstallAnnouncement,
@@ -44,6 +46,8 @@ import {
   initReleases,
   subscribeReleases,
 } from './releases'
+
+const TvView = lazy(() => import('../tv/TvView').then((module) => ({ default: module.TvView })))
 
 function ProgramLoading() {
   return <div className="program-loading">⌛ loading program…</div>
@@ -78,6 +82,13 @@ export function R3OS() {
   const [stormId, setStormId] = useState<bigint>()
   const [notInstalled, setNotInstalled] = useState<string>()
   const [shutdown, setShutdown] = useState(false)
+  const [tvOpen, setTvOpen] = useState(() => isTvRoute(location.hash))
+
+  useEffect(() => {
+    const onHashChange = () => setTvOpen(isTvRoute(location.hash))
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
 
   useEffect(() => {
     initSound()
@@ -259,8 +270,15 @@ export function R3OS() {
           onClose={() => setNotInstalled(undefined)}
         />
       )}
-      <ScreensaverOverlay />
+      {!tvOpen && <ScreensaverOverlay />}
       <BootScreen />
+      {tvOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <TvView />
+          </Suspense>
+        </ErrorBoundary>
+      )}
       {shutdown && (
         <MessageBox
           title="Shut Down"

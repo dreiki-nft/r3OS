@@ -34,6 +34,13 @@ export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   dxdiag: 'dxdiag',
 })
 
+/** Full-screen views that live over the desktop (Paint opens underneath, so Esc lands somewhere useful). */
+export const RUN_VIEWS: Readonly<Record<string, string>> = Object.freeze({
+  tv: '#/tv',
+  broadcast: '#/tv',
+  party: '#/tv',
+})
+
 const UINT256_MAX = (1n << 256n) - 1n
 const MAX_INPUT = 90 // "card " + the 78 digits of uint256 max fits
 
@@ -86,6 +93,8 @@ export function parseRunCommand(raw: string): RunParse {
   }
 
   if (arg != null) return notFound(input)
+  if (Object.prototype.hasOwnProperty.call(RUN_VIEWS, command))
+    return { ok: true, target: { program: 'paint', hash: RUN_VIEWS[command] } }
   const program = Object.prototype.hasOwnProperty.call(RUN_COMMANDS, command)
     ? RUN_COMMANDS[command]
     : undefined

@@ -169,7 +169,9 @@ export function PaintProgram() {
     return () => window.clearTimeout(timer)
   }, [lastPaint])
   const [autoPaint, setAutoPaint] = useState(true)
-  const [progress, setProgress] = useState<{ current: number; total: number; stopping?: boolean } | null>(null)
+  const [progress, setProgress] = useState<{ current: number; total: number; stopping?: boolean } | null>(
+    null,
+  )
   const [box, setBox] = useState<{
     title: string
     message: string
@@ -309,35 +311,39 @@ export function PaintProgram() {
     }
   }, [isLive])
 
-  const startLiveFor = useCallback(async (owner?: Address) => {
-    const account = owner ?? wallet.account
-    if (!account) {
-      setWalletIntent('live')
-      setWalletDialog(true)
-      return
-    }
-    if (isLive || liveStarting) return
-    // WalletChooser can hand us the newly connected account before React has rendered the new wallet snapshot.
-    // Point the Live store at it immediately so the successful startSession receipt can flip the UI to LIVE.
-    setLiveOwner(account)
-    setLiveStarting(true)
-    setLiveQuick({ phase: 'prepare', prompts: 2 })
-    try {
-      await startLiveQuick(account, setLiveQuick)
-      setAssistantTip('Live Mode is on. Strokes now land onchain without wallet popups. No Undo.')
-    } catch (caught) {
-      const friendly =
-        (caught as { friendly?: ReturnType<typeof friendlyError> }).friendly ?? friendlyError(caught, 'startSession')
-      setBox({
-        title: 'Live Mode',
-        message: friendly.message,
-        kind: friendly.rejected ? 'info' : 'error',
-      })
-      setLiveQuick(undefined)
-    } finally {
-      setLiveStarting(false)
-    }
-  }, [wallet.account, isLive, liveStarting])
+  const startLiveFor = useCallback(
+    async (owner?: Address) => {
+      const account = owner ?? wallet.account
+      if (!account) {
+        setWalletIntent('live')
+        setWalletDialog(true)
+        return
+      }
+      if (isLive || liveStarting) return
+      // WalletChooser can hand us the newly connected account before React has rendered the new wallet snapshot.
+      // Point the Live store at it immediately so the successful startSession receipt can flip the UI to LIVE.
+      setLiveOwner(account)
+      setLiveStarting(true)
+      setLiveQuick({ phase: 'prepare', prompts: 2 })
+      try {
+        await startLiveQuick(account, setLiveQuick)
+        setAssistantTip('Live Mode is on. Strokes now land onchain without wallet popups. No Undo.')
+      } catch (caught) {
+        const friendly =
+          (caught as { friendly?: ReturnType<typeof friendlyError> }).friendly ??
+          friendlyError(caught, 'startSession')
+        setBox({
+          title: 'Live Mode',
+          message: friendly.message,
+          kind: friendly.rejected ? 'info' : 'error',
+        })
+        setLiveQuick(undefined)
+      } finally {
+        setLiveStarting(false)
+      }
+    },
+    [wallet.account, isLive, liveStarting],
+  )
 
   const startLiveFromPaint = useCallback(() => startLiveFor(), [startLiveFor])
 
@@ -359,8 +365,10 @@ export function PaintProgram() {
   const remoteNow = Boolean(
     latestRemote && block.block >= latestRemote.block && block.block - latestRemote.block <= 50n,
   )
-  const lastExplorer = lastPaint?.hash && config.explorerUrl ? `${config.explorerUrl}/tx/${lastPaint.hash}` : undefined
-  const remoteExplorer = latestRemote?.tx && config.explorerUrl ? `${config.explorerUrl}/tx/${latestRemote.tx}` : undefined
+  const lastExplorer =
+    lastPaint?.hash && config.explorerUrl ? `${config.explorerUrl}/tx/${lastPaint.hash}` : undefined
+  const remoteExplorer =
+    latestRemote?.tx && config.explorerUrl ? `${config.explorerUrl}/tx/${latestRemote.tx}` : undefined
   const remoteRenderProbe =
     canvas.renderProbe && (!me || canvas.renderProbe.owner !== me)
       ? { key: canvas.renderProbe.key, observedAt: canvas.renderProbe.observedAt }
@@ -487,32 +495,35 @@ export function PaintProgram() {
     paintQuoteHexRef.current = undefined
     if (!wallet.account || !config.paintAddress || patch.pixelWrites === 0 || config.demo) return
     let cancelled = false
-    const timer = window.setTimeout(() => {
-      const quotePromise =
-        isLive && liveQuoteRef.current?.hex === patch.hex
-          ? liveQuoteRef.current.quote
-          : quoteAction({
-              kind: 'corePaint',
-              address: config.paintAddress!,
-              abi: R3OS_PAINT_ABI,
-              functionName: 'paint',
-              args: [patch.hex, stableHolderIds],
-              account: wallet.account!,
-              pixels: patch.pixelWrites,
-              signer: isLive ? 'burner' : 'wallet',
-            })
-      if (isLive) liveQuoteRef.current = { hex: patch.hex, quote: quotePromise }
-      void quotePromise
-        .then((quote) => {
-          if (!cancelled) {
-            paintQuoteHexRef.current = patch.hex
-            setPaintQuote(quote)
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setPaintQuote(undefined)
-        })
-    }, isLive ? 40 : 100)
+    const timer = window.setTimeout(
+      () => {
+        const quotePromise =
+          isLive && liveQuoteRef.current?.hex === patch.hex
+            ? liveQuoteRef.current.quote
+            : quoteAction({
+                kind: 'corePaint',
+                address: config.paintAddress!,
+                abi: R3OS_PAINT_ABI,
+                functionName: 'paint',
+                args: [patch.hex, stableHolderIds],
+                account: wallet.account!,
+                pixels: patch.pixelWrites,
+                signer: isLive ? 'burner' : 'wallet',
+              })
+        if (isLive) liveQuoteRef.current = { hex: patch.hex, quote: quotePromise }
+        void quotePromise
+          .then((quote) => {
+            if (!cancelled) {
+              paintQuoteHexRef.current = patch.hex
+              setPaintQuote(quote)
+            }
+          })
+          .catch(() => {
+            if (!cancelled) setPaintQuote(undefined)
+          })
+      },
+      isLive ? 40 : 100,
+    )
     return () => {
       cancelled = true
       window.clearTimeout(timer)
@@ -1101,13 +1112,17 @@ export function PaintProgram() {
         {
           label: 'Undo',
           disabled: isLive || !undoStack.length,
-          disabledReason: isLive ? 'Live Mode writes onchain immediately; paint over it instead' : 'nothing to undo',
+          disabledReason: isLive
+            ? 'Live Mode writes onchain immediately; paint over it instead'
+            : 'nothing to undo',
           action: undo,
         },
         {
           label: 'Redo',
           disabled: isLive || !redoStack.length,
-          disabledReason: isLive ? 'Live Mode writes onchain immediately; there is no redo history' : 'nothing to redo',
+          disabledReason: isLive
+            ? 'Live Mode writes onchain immediately; there is no redo history'
+            : 'nothing to redo',
           action: redo,
         },
         {
@@ -1126,6 +1141,7 @@ export function PaintProgram() {
         { label: `Show protected ${protectedView ? '✓' : ''}`, action: () => setProtected(!protectedView) },
         { label: `Wet paint & heat ${heatView ? '✓' : ''}`, action: () => setHeatView(!heatView) },
         { label: 'Monad X-ray…', action: () => openProgram('xray') },
+        { label: 'Broadcast to a screen (TV)', action: () => void (location.hash = '#/tv') },
       ],
     },
     {
@@ -1200,19 +1216,27 @@ export function PaintProgram() {
         <div className="paint-live-state">
           <span className="paint-live-beacon" aria-hidden="true" />
           <div>
-            <b>{guest ? 'GUEST WALLET' : isLive ? 'LIVE · ONCHAIN' : liveStarting ? 'STARTING LIVE MODE' : 'LIVE MODE'}</b>
+            <b>
+              {guest
+                ? 'GUEST WALLET'
+                : isLive
+                  ? 'LIVE · ONCHAIN'
+                  : liveStarting
+                    ? 'STARTING LIVE MODE'
+                    : 'LIVE MODE'}
+            </b>
             <small>
               {guest
                 ? 'every stroke is signed right here: no popups, real Monad transactions'
                 : isLive
-                ? `${liveTime} left · ${liveUnits.toLocaleString()} units · ${formatBurnerBalance(live.balance)}`
-                : liveStarting
-                  ? liveQuick?.phase === 'sign'
-                    ? 'confirm the session signature · it cannot move funds'
-                    : liveQuick?.phase === 'fund'
-                      ? 'fund the browser key once · 1 MON hard cap'
-                      : 'authorizing the browser paint session…'
-                  : 'authorize once · then paint without a wallet popup per stroke · no Undo'}
+                  ? `${liveTime} left · ${liveUnits.toLocaleString()} units · ${formatBurnerBalance(live.balance)}`
+                  : liveStarting
+                    ? liveQuick?.phase === 'sign'
+                      ? 'confirm the session signature · it cannot move funds'
+                      : liveQuick?.phase === 'fund'
+                        ? 'fund the browser key once · 1 MON hard cap'
+                        : 'authorizing the browser paint session…'
+                    : 'authorize once · then paint without a wallet popup per stroke · no Undo'}
             </small>
           </div>
         </div>
@@ -1222,9 +1246,13 @@ export function PaintProgram() {
               <b>YOU</b>
               <span>{paintedText(lastPaint)}</span>
               <span className="paint-proof-links">
-                <button className="link-button" onClick={() => void openProgram('xray')}>X-ray</button>
+                <button className="link-button" onClick={() => void openProgram('xray')}>
+                  X-ray
+                </button>
                 {lastExplorer && (
-                  <a href={lastExplorer} target="_blank" rel="noreferrer">explorer</a>
+                  <a href={lastExplorer} target="_blank" rel="noreferrer">
+                    explorer
+                  </a>
                 )}
               </span>
             </div>
@@ -1233,29 +1261,52 @@ export function PaintProgram() {
             <div className="paint-proof-line remote">
               <b>REMOTE</b>
               <span>
-                {short(latestRemote.owner)} · {latestRemote.pixels.toLocaleString('en-US')} px · block #{latestRemote.block.toString()}
+                {short(latestRemote.owner)} · {latestRemote.pixels.toLocaleString('en-US')} px · block #
+                {latestRemote.block.toString()}
               </span>
               {remoteExplorer && (
-                <a href={remoteExplorer} target="_blank" rel="noreferrer">tx</a>
+                <a href={remoteExplorer} target="_blank" rel="noreferrer">
+                  tx
+                </a>
               )}
             </div>
           )}
           {!lastPaint && !(remoteNow && latestRemote) && (
             <>
-              <b>{together.painters ? `${together.painters} PAINTER${together.painters === 1 ? '' : 'S'} RECENTLY` : 'SHARED CANVAS'}</b>
-              <span>{together.painters ? `${together.pixels.toLocaleString('en-US')} px in the last ${togetherWindow}` : 'waiting for the next live stroke'}</span>
-              <span>block #{block.block.toString()} · {block.mode === 'live' ? 'websocket live' : block.mode}</span>
+              <b>
+                {together.painters
+                  ? `${together.painters} PAINTER${together.painters === 1 ? '' : 'S'} RECENTLY`
+                  : 'SHARED CANVAS'}
+              </b>
+              <span>
+                {together.painters
+                  ? `${together.pixels.toLocaleString('en-US')} px in the last ${togetherWindow}`
+                  : 'waiting for the next live stroke'}
+              </span>
+              <span>
+                block #{block.block.toString()} · {block.mode === 'live' ? 'websocket live' : block.mode}
+              </span>
             </>
           )}
         </div>
-        {!guest && <Button
-          className={isLive ? 'paint-live-hero-button active' : 'paint-live-hero-button'}
-          disabled={liveStarting}
-          title={isLive ? 'manage or end the browser-held Live session' : 'Live Mode does not keep Undo history for sent strokes'}
-          onClick={() => void (isLive ? openProgram('pass', true, '#/pass?tab=Hardware%20Profiles') : startLiveFromPaint())}
-        >
-          {liveButtonLabel}
-        </Button>}
+        {!guest && (
+          <Button
+            className={isLive ? 'paint-live-hero-button active' : 'paint-live-hero-button'}
+            disabled={liveStarting}
+            title={
+              isLive
+                ? 'manage or end the browser-held Live session'
+                : 'Live Mode does not keep Undo history for sent strokes'
+            }
+            onClick={() =>
+              void (isLive
+                ? openProgram('pass', true, '#/pass?tab=Hardware%20Profiles')
+                : startLiveFromPaint())
+            }
+          >
+            {liveButtonLabel}
+          </Button>
+        )}
       </section>
       <div className="paint-main">
         <Toolbox tool={tool} onTool={setTool} size={size} onSize={setSize} />
@@ -1399,8 +1450,7 @@ export function PaintProgram() {
                 if (!wallet.account) {
                   setWalletIntent('paint')
                   setWalletDialog(true)
-                }
-                else if (!isLive && !walletOnCorrectChain()) void switchToMonad()
+                } else if (!isLive && !walletOnCorrectChain()) void switchToMonad()
                 else void paintChunks(false)
               }}
             >
@@ -1427,31 +1477,37 @@ export function PaintProgram() {
             {guest
               ? 'guest wallet · onchain immediately · no popups · no undo'
               : isLive
-              ? 'onchain immediately · no wallet popup per stroke · no undo'
-              : liveStarting
-                ? liveQuick?.phase === 'sign'
-                  ? 'confirm the session signature in your wallet'
-                  : liveQuick?.phase === 'fund'
-                    ? 'confirm burner gas funding once'
-                    : 'finishing setup…'
-                : 'quick start: usually 2 wallet prompts once · then none per stroke · no undo'}
+                ? 'onchain immediately · no wallet popup per stroke · no undo'
+                : liveStarting
+                  ? liveQuick?.phase === 'sign'
+                    ? 'confirm the session signature in your wallet'
+                    : liveQuick?.phase === 'fund'
+                      ? 'confirm burner gas funding once'
+                      : 'finishing setup…'
+                  : 'quick start: usually 2 wallet prompts once · then none per stroke · no undo'}
           </small>
         </div>
       </div>
       <footer className="paint-status">
         <span>
           {busy ? (
-            progress && progress.total > 1
-              ? progress.stopping
-                ? `stopping after chunk ${progress.current}/${progress.total}…`
-                : `sending chunk ${progress.current}/${progress.total}…`
-              : txState === 'signing'
-                ? isLive
-                  ? 'signing live paint…'
-                  : 'confirm in wallet…'
-                : txState === 'sent'
-                  ? 'sent · waiting for block…'
-                  : 'painting…'
+            progress && progress.total > 1 ? (
+              progress.stopping ? (
+                `stopping after chunk ${progress.current}/${progress.total}…`
+              ) : (
+                `sending chunk ${progress.current}/${progress.total}…`
+              )
+            ) : txState === 'signing' ? (
+              isLive ? (
+                'signing live paint…'
+              ) : (
+                'confirm in wallet…'
+              )
+            ) : txState === 'sent' ? (
+              'sent · waiting for block…'
+            ) : (
+              'painting…'
+            )
           ) : lastPaint ? (
             <>
               {paintedText(lastPaint)} ·{' '}
@@ -1488,7 +1544,11 @@ export function PaintProgram() {
         <span>block #{block.block}</span>
       </footer>
       {walletDialog && (
-        <MessageBox title={walletIntent === 'live' ? 'Go live · connect wallet' : 'Connect wallet'} defaultLabel="Cancel" onClose={() => setWalletDialog(false)}>
+        <MessageBox
+          title={walletIntent === 'live' ? 'Go live · connect wallet' : 'Connect wallet'}
+          defaultLabel="Cancel"
+          onClose={() => setWalletDialog(false)}
+        >
           <WalletChooser
             onClose={() => setWalletDialog(false)}
             onConnected={(account) => {
@@ -1501,7 +1561,10 @@ export function PaintProgram() {
         <div className="modal-shade">
           <div className="message-box window">
             <b>Holder quota</b>
-            <p>Enter r3tard token ids if automatic discovery is unavailable. Mainnet Skrumpeys and Monad Cards are detected automatically.</p>
+            <p>
+              Enter r3tard token ids if automatic discovery is unavailable. Mainnet Skrumpeys and Monad Cards
+              are detected automatically.
+            </p>
             <input
               value={manualIds}
               onChange={(event) => setManualIds(event.target.value)}
