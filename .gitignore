@@ -50,3 +50,6 @@ launch-doctor-*.json
 **/wrangler.jsonc
 !**/wrangler.jsonc.example
 docs/MAINNET_DEPLOYMENT_INPUT.local.json
+
+# Guest wallets for judges (private keys; never commit)
+guest-wallets*.local.json

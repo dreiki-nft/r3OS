@@ -8,6 +8,7 @@ import {
 } from 'viem'
 import { publicClient, walletChain } from './clients'
 import { config, chainName } from './config'
+import { captureGuestKey, createGuestProvider, forgetGuestKey, GUEST_ICON, GUEST_RDNS } from './guestWallet'
 
 export interface WalletChoice {
   info: { uuid: string; name: string; icon?: string; rdns?: string }
@@ -50,10 +51,26 @@ export function getWalletSnapshot() {
   return state
 }
 
+const isGuest = (choice: WalletChoice) => choice.info.rdns === GUEST_RDNS
+let guestNotice: Address | undefined
+
+/** True while the connected wallet is a judge's guest wallet. */
+export function usingGuestWallet() {
+  const guest = choices.get('r3os-guest')
+  return Boolean(guest && state.provider && guest.provider === state.provider)
+}
+
+/** The guest wallet that was just opened from a link, once (the desktop shows a note about it). */
+export function takeGuestNotice() {
+  const address = guestNotice
+  guestNotice = undefined
+  return address
+}
+
 export function walletChoices() {
-  return [...choices.values()].sort(
-    (a, b) => Number(!/metamask/i.test(a.info.name)) - Number(!/metamask/i.test(b.info.name)),
-  )
+  // A judge who opened a guest link sees the guest wallet first; otherwise MetaMask first.
+  const rank = (choice: WalletChoice) => (isGuest(choice) ? 0 : /metamask/i.test(choice.info.name) ? 1 : 2)
+  return [...choices.values()].sort((a, b) => rank(a) - rank(b))
 }
 
 export function buildAddChainParams(walletRpcUrl = config.walletRpcUrl) {
@@ -209,6 +226,29 @@ export function initWalletDiscovery() {
       provider: injected,
     })
   }
+  const guest = captureGuestKey()
+  if (guest) {
+    try {
+      const { address, provider } = createGuestProvider(guest.key)
+      const choice: WalletChoice = {
+        info: { uuid: 'r3os-guest', name: 'Guest wallet (judges)', icon: GUEST_ICON, rdns: GUEST_RDNS },
+        provider,
+      }
+      choices.set(choice.info.uuid, choice)
+      if (guest.fresh) {
+        // Opening a guest link is the consent: connect straight away and say what this wallet is.
+        void connectWallet(choice)
+          .then(() => {
+            guestNotice = address
+            window.dispatchEvent(new Event('r3os:guest-wallet'))
+          })
+          .catch(() => forgetGuestKey())
+        return
+      }
+    } catch {
+      forgetGuestKey()
+    }
+  }
   void restoreWallet(800)
 }
 
@@ -237,6 +277,11 @@ export async function switchToMonad() {
 }
 
 export function disconnectWallet() {
+  // Disconnecting a guest wallet also forgets its key for this tab.
+  if (usingGuestWallet()) {
+    forgetGuestKey()
+    choices.delete('r3os-guest')
+  }
   rememberWallet(undefined)
   detach(state.provider)
   state = {}

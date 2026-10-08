@@ -1,4 +1,5 @@
 // Pure helpers for scripts/community-stats.mjs (unit-tested; no network here).
+import { readFileSync } from 'node:fs'
 import { decodeEventLog, parseAbiItem } from 'viem'
 
 export const PAINTED = parseAbiItem(
@@ -39,7 +40,13 @@ export function parseArgs(argv) {
           .map((value) => value.trim())
           .filter(Boolean),
       )
-    else if (arg === '--json') out.json = true
+    else if (arg === '--exclude-file') {
+      // e.g. guest-wallets.local.json: every "address" field in the file is excluded.
+      const text = readFileSync(next(), 'utf8')
+      out.exclude.push(
+        ...(text.match(/"address":\s*"(0x[0-9a-fA-F]{40})"/g) ?? []).map((row) => row.slice(-43, -1)),
+      )
+    } else if (arg === '--json') out.json = true
     // Only the flag name is echoed, never its value (values can be RPC URLs with keys).
     else throw new Error(`unknown flag ${arg.split('=')[0]}`)
   }

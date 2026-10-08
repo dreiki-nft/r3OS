@@ -16,7 +16,7 @@ import { ScreensaverOverlay } from './ScreensaverOverlay'
 import { FirstRun } from './FirstRun'
 import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { initLiveNudge } from '../live/liveNudge'
-import { disconnectWallet } from '../chain/wallet'
+import { disconnectWallet, takeGuestNotice } from '../chain/wallet'
 import { Welcome } from './Welcome'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { startPresence } from '../paint/presence'
@@ -87,6 +87,25 @@ export function R3OS() {
     initActivity()
     window.addEventListener('resize', clampAllWindows)
     return () => window.removeEventListener('resize', clampAllWindows)
+  }, [])
+
+  useEffect(() => {
+    // A judge opened a private guest link: say what this wallet is, once.
+    const show = () => {
+      const address = takeGuestNotice()
+      if (!address) return
+      pushBalloon({
+        id: 'guest-wallet',
+        icon: 'key',
+        title: 'Guest wallet connected',
+        body: `${address.slice(0, 6)}…${address.slice(-4)} holds a little demo MON so you can paint right away. it's a throwaway wallet for judges: anything it paints counts under this guest address, not as a community painter.`,
+        sticky: true,
+        actions: [{ label: 'Open Paint', run: () => void openProgram('paint') }],
+      })
+    }
+    show()
+    window.addEventListener('r3os:guest-wallet', show)
+    return () => window.removeEventListener('r3os:guest-wallet', show)
   }, [])
 
   useEffect(() => {

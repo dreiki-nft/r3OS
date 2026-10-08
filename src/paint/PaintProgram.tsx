@@ -25,6 +25,7 @@ import {
   getWalletSnapshot,
   subscribeWallet,
   switchToMonad,
+  usingGuestWallet,
   walletOnCorrectChain,
 } from '../chain/wallet'
 import { R3OS_PAINT_ABI } from '../lib/generated/abi'
@@ -122,6 +123,8 @@ export function PaintProgram() {
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const tileSnapshot = useSyncExternalStore(subscribeTileCache, getTileCacheSnapshot)
   const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
+  // A judge's guest wallet signs locally with no popups, so the Live Mode offer is replaced by a note.
+  const guest = Boolean(wallet.account) && usingGuestWallet()
   const together = summarize(presence.strokes, block.block)
   const togetherWindow = windowLabel(PRESENCE_WINDOW_BLOCKS, block.blockTimeMs)
   const me = wallet.account?.toLowerCase()
@@ -1197,9 +1200,11 @@ export function PaintProgram() {
         <div className="paint-live-state">
           <span className="paint-live-beacon" aria-hidden="true" />
           <div>
-            <b>{isLive ? 'LIVE · ONCHAIN' : liveStarting ? 'STARTING LIVE MODE' : 'LIVE MODE'}</b>
+            <b>{guest ? 'GUEST WALLET' : isLive ? 'LIVE · ONCHAIN' : liveStarting ? 'STARTING LIVE MODE' : 'LIVE MODE'}</b>
             <small>
-              {isLive
+              {guest
+                ? 'every stroke is signed right here: no popups, real Monad transactions'
+                : isLive
                 ? `${liveTime} left · ${liveUnits.toLocaleString()} units · ${formatBurnerBalance(live.balance)}`
                 : liveStarting
                   ? liveQuick?.phase === 'sign'
@@ -1243,14 +1248,14 @@ export function PaintProgram() {
             </>
           )}
         </div>
-        <Button
+        {!guest && <Button
           className={isLive ? 'paint-live-hero-button active' : 'paint-live-hero-button'}
           disabled={liveStarting}
           title={isLive ? 'manage or end the browser-held Live session' : 'Live Mode does not keep Undo history for sent strokes'}
           onClick={() => void (isLive ? openProgram('pass', true, '#/pass?tab=Hardware%20Profiles') : startLiveFromPaint())}
         >
           {liveButtonLabel}
-        </Button>
+        </Button>}
       </section>
       <div className="paint-main">
         <Toolbox tool={tool} onTool={setTool} size={size} onSize={setSize} />
@@ -1418,8 +1423,10 @@ export function PaintProgram() {
               </Button>
             )}
           </div>
-          <small className={isLive ? 'paint-live-hint active' : 'paint-live-hint'}>
-            {isLive
+          <small className={isLive || guest ? 'paint-live-hint active' : 'paint-live-hint'}>
+            {guest
+              ? 'guest wallet · onchain immediately · no popups · no undo'
+              : isLive
               ? 'onchain immediately · no wallet popup per stroke · no undo'
               : liveStarting
                 ? liveQuick?.phase === 'sign'

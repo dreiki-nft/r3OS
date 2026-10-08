@@ -48,6 +48,8 @@ Open **[r3os.app](https://r3os.app/)** and choose **Run → `demo.exe`** (or go 
 6. **Made by a community:** Season Replay plays back every paint of the season, painter by painter.
 7. **The idea underneath:** why the chain can sit inside the interaction loop.
 
+**Judges:** the private part of the submission has a guest-wallet link. It opens r3os.app with a throwaway wallet holding a little MON, so you can paint on mainnet immediately, with no wallet setup and no popups.
+
 ## Community
 
 <!-- Season Replay GIF: node scripts/export-replay.mjs && node scripts/replay-gif.mjs, then add:

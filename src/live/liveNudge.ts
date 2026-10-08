@@ -1,4 +1,5 @@
 import { getTxTraceSnapshot, subscribeTxTrace, type TxTrace } from '../chain/txTrace'
+import { usingGuestWallet } from '../chain/wallet'
 import { pushBalloon } from '../os/balloons'
 import { isBooting, subscribeBooting } from '../os/bootState'
 import { isFirstRunOpen } from '../os/firstRunState'
@@ -62,6 +63,8 @@ export function initLiveNudge() {
   })
   stopTrace = subscribeTxTrace(() => {
     if (liveNudgeSuppressed(Date.now(), quietUntil, isBooting(), isFirstRunOpen())) return
+    // A guest wallet already signs without popups, so Live Mode has nothing to offer it.
+    if (usingGuestWallet()) return
     if (
       !shouldNudge({
         walletPaints: walletPaintsConfirmed(getTxTraceSnapshot().traces),
