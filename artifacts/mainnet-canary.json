@@ -1,0 +1,254 @@
+{
+  "schema": "r3os-mainnet-canary/v1",
+  "mode": "transaction",
+  "readOnly": false,
+  "chainId": 143,
+  "startedAt": "2026-10-06T13:03:10.944Z",
+  "completedAt": "2026-10-06T13:04:23.247Z",
+  "providers": {
+    "primary": {
+      "doctor": {
+        "blockNumber": "111044975",
+        "blockHash": "0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7",
+        "commitment": "finalized",
+        "summary": {
+          "OK": 106,
+          "WARN": 0,
+          "FAIL": 0,
+          "UNKNOWN": 1
+        },
+        "exitCode": 0
+      },
+      "evidenceHash": "0xc271aaa3cb7490b35b0825534a4cf0f9fdc7db035b3183d2b2580ad2dcdf0256"
+    },
+    "secondary": {
+      "doctor": {
+        "blockNumber": "111044975",
+        "blockHash": "0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7",
+        "commitment": "finalized",
+        "summary": {
+          "OK": 106,
+          "WARN": 0,
+          "FAIL": 0,
+          "UNKNOWN": 1
+        },
+        "exitCode": 0
+      },
+      "evidenceHash": "0xc271aaa3cb7490b35b0825534a4cf0f9fdc7db035b3183d2b2580ad2dcdf0256"
+    }
+  },
+  "splitBrain": {
+    "status": "OK",
+    "errors": [],
+    "sharedBlockNumber": "111044975",
+    "sharedBlockHash": "0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7",
+    "primaryFinalized": "111044975",
+    "secondaryFinalized": "111044975",
+    "finalizedHeightSkew": "0"
+  },
+  "operationalReads": {
+    "blockNumber": "111044975",
+    "primary": {
+      "budget": [
+        "512",
+        "0",
+        "512",
+        "512",
+        0
+      ],
+      "partnerBudget": [
+        false,
+        "0",
+        false,
+        "0"
+      ],
+      "passPaint": "0x5102DE3817aE16b3afaEb9D180130669A70787b3",
+      "pageHash": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3",
+      "pageWords": 128
+    },
+    "secondary": {
+      "budget": [
+        "512",
+        "0",
+        "512",
+        "512",
+        0
+      ],
+      "partnerBudget": [
+        false,
+        "0",
+        false,
+        "0"
+      ],
+      "passPaint": "0x5102DE3817aE16b3afaEb9D180130669A70787b3",
+      "pageHash": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3",
+      "pageWords": 128
+    },
+    "budgetMatch": true,
+    "canaryHourlyBudgetSufficient": true,
+    "partnerBudgetMatch": true,
+    "passPointerMatch": true,
+    "pageMatch": true
+  },
+  "websocket": {
+    "connected": true,
+    "newHeadObserved": true,
+    "monadLogsSubscribed": true
+  },
+  "suggestedTransactionCanary": {
+    "season": "0",
+    "x": 0,
+    "y": 0,
+    "color": 1,
+    "region": 0,
+    "pressure": "0",
+    "totalPaints": "0",
+    "pixelsInBlock": "0",
+    "observedAtFinalizedBlock": "111044975",
+    "stormAtObservedBlock": false,
+    "blocksUntilNextStorm": "155025",
+    "behavior": "blank -> color -> blank in one transaction; final canvas image unchanged"
+  },
+  "transaction": {
+    "executed": true,
+    "hash": "0x71821fedd32fbacd582d76fbb4a1ddd767e3590f6d779ea6131ad0f96221eb8c",
+    "blockNumber": "111045205",
+    "blockHash": "0xccab854e257753da8e401d011ead6852a2b2c97db89da4b2da009aa6c739f71c",
+    "receiptStatus": "success",
+    "paintEventObserved": true,
+    "commitStates": [
+      "Proposed",
+      "Voted",
+      "Finalized",
+      "Verified"
+    ],
+    "proposedObserved": true,
+    "votedObserved": true,
+    "finalizedObserved": true,
+    "primaryFinalized": true,
+    "secondaryFinalized": true,
+    "secondProviderReceipt": true,
+    "secondProviderCanonicalBlock": true,
+    "canary": {
+      "x": 0,
+      "y": 0,
+      "color": 1,
+      "finalBackgroundColor": 0,
+      "finalVisibleColor": 0
+    },
+    "visualStateRestored": true
+  },
+  "checks": [
+    {
+      "name": "primary Launch Doctor",
+      "status": "OK",
+      "detail": "FAIL=0"
+    },
+    {
+      "name": "secondary Launch Doctor",
+      "status": "OK",
+      "detail": "FAIL=0"
+    },
+    {
+      "name": "provider deployment evidence",
+      "status": "OK",
+      "detail": "MATCH"
+    },
+    {
+      "name": "shared finalized canonical block",
+      "status": "OK",
+      "detail": "#111044975 0x50aa541a509dcd3ab89167d78d786d347f8616027152c774ba59f1cee4fffff7"
+    },
+    {
+      "name": "visually-idempotent Paint canary candidate",
+      "status": "OK",
+      "detail": "(0,0) region 0 pressure 0"
+    },
+    {
+      "name": "budgetOf cross-provider read",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "canary hourly budget >= 2 units",
+      "status": "OK",
+      "detail": "primary=512 secondary=512"
+    },
+    {
+      "name": "partnerBudgetOf cross-provider read",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "Painter Pass -> Paint read",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "PAGE.EXE readPage cross-provider read",
+      "status": "OK",
+      "detail": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3"
+    },
+    {
+      "name": "WebSocket newHeads",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "WebSocket monadLogs subscription",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "canary transaction receipt",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "Painted event",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "monadLogs Proposed",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "monadLogs Voted",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "monadLogs Finalized",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "transaction finalized on both providers",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "second-provider receipt",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "second-provider canonical block",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "canary visual state restored",
+      "status": "OK",
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "OK": 21,
+    "WARN": 0,
+    "FAIL": 0
+  },
+  "exitCode": 0
+}

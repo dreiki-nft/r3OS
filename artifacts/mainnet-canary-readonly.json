@@ -1,0 +1,183 @@
+{
+  "schema": "r3os-mainnet-canary/v1",
+  "mode": "read-only",
+  "readOnly": true,
+  "chainId": 143,
+  "startedAt": "2026-10-06T12:53:41.122Z",
+  "completedAt": "2026-10-06T12:54:19.966Z",
+  "providers": {
+    "primary": {
+      "doctor": {
+        "blockNumber": "111043097",
+        "blockHash": "0x171854826cc00da0e008895873d9577572d04ca00a76a9b86cfae944adc5e20b",
+        "commitment": "finalized",
+        "summary": {
+          "OK": 106,
+          "WARN": 0,
+          "FAIL": 0,
+          "UNKNOWN": 1
+        },
+        "exitCode": 0
+      },
+      "evidenceHash": "0xc271aaa3cb7490b35b0825534a4cf0f9fdc7db035b3183d2b2580ad2dcdf0256"
+    },
+    "secondary": {
+      "doctor": {
+        "blockNumber": "111043100",
+        "blockHash": "0x5b2faf9e91e05b87b063d8d45f445fc2c323f43b15011e7db569ce947c2a1a98",
+        "commitment": "finalized",
+        "summary": {
+          "OK": 106,
+          "WARN": 0,
+          "FAIL": 0,
+          "UNKNOWN": 1
+        },
+        "exitCode": 0
+      },
+      "evidenceHash": "0xc271aaa3cb7490b35b0825534a4cf0f9fdc7db035b3183d2b2580ad2dcdf0256"
+    }
+  },
+  "splitBrain": {
+    "status": "OK",
+    "errors": [],
+    "sharedBlockNumber": "111043097",
+    "sharedBlockHash": "0x171854826cc00da0e008895873d9577572d04ca00a76a9b86cfae944adc5e20b",
+    "primaryFinalized": "111043097",
+    "secondaryFinalized": "111043100",
+    "finalizedHeightSkew": "3"
+  },
+  "operationalReads": {
+    "blockNumber": "111043097",
+    "primary": {
+      "budget": [
+        "512",
+        "0",
+        "512",
+        "512",
+        0
+      ],
+      "partnerBudget": [
+        false,
+        "0",
+        false,
+        "0"
+      ],
+      "passPaint": "0x5102DE3817aE16b3afaEb9D180130669A70787b3",
+      "pageHash": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3",
+      "pageWords": 128
+    },
+    "secondary": {
+      "budget": [
+        "512",
+        "0",
+        "512",
+        "512",
+        0
+      ],
+      "partnerBudget": [
+        false,
+        "0",
+        false,
+        "0"
+      ],
+      "passPaint": "0x5102DE3817aE16b3afaEb9D180130669A70787b3",
+      "pageHash": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3",
+      "pageWords": 128
+    },
+    "budgetMatch": true,
+    "canaryHourlyBudgetSufficient": true,
+    "partnerBudgetMatch": true,
+    "passPointerMatch": true,
+    "pageMatch": true
+  },
+  "websocket": {
+    "connected": true,
+    "newHeadObserved": true,
+    "monadLogsSubscribed": true
+  },
+  "suggestedTransactionCanary": {
+    "season": "0",
+    "x": 0,
+    "y": 0,
+    "color": 1,
+    "region": 0,
+    "pressure": "0",
+    "totalPaints": "0",
+    "pixelsInBlock": "0",
+    "observedAtFinalizedBlock": "111043097",
+    "stormAtObservedBlock": false,
+    "blocksUntilNextStorm": "156903",
+    "behavior": "blank -> color -> blank in one transaction; final canvas image unchanged"
+  },
+  "transaction": {
+    "executed": false
+  },
+  "checks": [
+    {
+      "name": "primary Launch Doctor",
+      "status": "OK",
+      "detail": "FAIL=0"
+    },
+    {
+      "name": "secondary Launch Doctor",
+      "status": "OK",
+      "detail": "FAIL=0"
+    },
+    {
+      "name": "provider deployment evidence",
+      "status": "OK",
+      "detail": "MATCH"
+    },
+    {
+      "name": "shared finalized canonical block",
+      "status": "OK",
+      "detail": "#111043097 0x171854826cc00da0e008895873d9577572d04ca00a76a9b86cfae944adc5e20b"
+    },
+    {
+      "name": "visually-idempotent Paint canary candidate",
+      "status": "OK",
+      "detail": "(0,0) region 0 pressure 0"
+    },
+    {
+      "name": "budgetOf cross-provider read",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "canary hourly budget >= 2 units",
+      "status": "OK",
+      "detail": "primary=512 secondary=512"
+    },
+    {
+      "name": "partnerBudgetOf cross-provider read",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "Painter Pass -> Paint read",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "PAGE.EXE readPage cross-provider read",
+      "status": "OK",
+      "detail": "0x9640d727b987ae934e3b0a17f7645c75674b7bc28c5c4167e2b92247627dbaf3"
+    },
+    {
+      "name": "WebSocket newHeads",
+      "status": "OK",
+      "detail": ""
+    },
+    {
+      "name": "WebSocket monadLogs subscription",
+      "status": "OK",
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "OK": 12,
+    "WARN": 0,
+    "FAIL": 0
+  },
+  "exitCode": 0
+}

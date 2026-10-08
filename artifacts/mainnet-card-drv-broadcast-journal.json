@@ -1,0 +1,62 @@
+{
+  "schema": "r3os-card-drv-broadcast/v1",
+  "rpcUrlStored": false,
+  "deployer": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "account": "r3os-deployer",
+  "cardMemory": "0x3D871B434736939748ea1BD08C06c1E8750506ec",
+  "monadCard": "0x0000CA12D5c07085022eBC74867157449919Fd67",
+  "maxFeePerGas": "205000000000",
+  "priorityFeePerGas": "2000000000",
+  "gasMarginPercent": 130,
+  "startedAt": "2026-10-05T23:51:31.325Z",
+  "entries": [
+    {
+      "index": 1,
+      "nonce": "204",
+      "to": null,
+      "reviewedGas": "1062076",
+      "estimateSubmission": "816981",
+      "estimateVerification": "816981",
+      "selectedGas": "1062076",
+      "preparedHash": "0x4098039ff4fba5b49e27e63968b496415e7c36af038d25e0b6b2ec7c37b6adbe",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:51:32.290Z",
+      "sentHash": "0x4098039ff4fba5b49e27e63968b496415e7c36af038d25e0b6b2ec7c37b6adbe",
+      "sentAt": "2026-10-05T23:51:32.471Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69c040c",
+        "contractAddress": "0x3d871b434736939748ea1bd08c06c1e8750506ec",
+        "gasUsed": "0x1034bc"
+      },
+      "finalizedAt": "2026-10-05T23:51:34.539Z",
+      "finalizedBlockObserved": "110887951",
+      "verificationFinalizedBlockObserved": "110887951",
+      "latestBlockObserved": "110887953"
+    },
+    {
+      "index": 2,
+      "nonce": "205",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "114228",
+      "estimateSubmission": "87868",
+      "estimateVerification": "87868",
+      "selectedGas": "114229",
+      "preparedHash": "0xb9bdc584a0d7d7ae7716687d33068cc923f179a9448ba49b3732944eba8f12f4",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:51:35.690Z",
+      "sentHash": "0xb9bdc584a0d7d7ae7716687d33068cc923f179a9448ba49b3732944eba8f12f4",
+      "sentAt": "2026-10-05T23:51:35.867Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69c0417",
+        "contractAddress": null,
+        "gasUsed": "0x1be35"
+      },
+      "finalizedAt": "2026-10-05T23:51:37.940Z",
+      "finalizedBlockObserved": "110887962",
+      "verificationFinalizedBlockObserved": "110887962",
+      "latestBlockObserved": "110887964"
+    }
+  ]
+}

@@ -1,59 +1,141 @@
 {
-  "schema": "r3os-mainnet-deployment-addresses/v1",
+  "schema": "r3os-mainnet-deployment-addresses/v2",
   "chainId": 143,
-  "generatedAt": "2026-10-05T23:24:42.217Z",
+  "generatedAt": "2026-10-06T02:01:38.000Z",
+  "evidenceModel": "foundry-artifacts+guarded-broadcaster-journals",
   "broadcastFilesRead": [
     "Deploy.s.sol/143/run-latest.json"
   ],
-  "complete": false,
-  "missing": [
-    "R3OSCardMemory",
-    "R3OSPageExe",
-    "R3OSBlockCamera",
-    "R3OSOperatorRecord",
-    "R3OSSystemEvent",
-    "R3OSRouterLab"
+  "journalFilesRead": [
+    "mainnet-core-broadcast-journal.json",
+    "mainnet-core-recovery-journal.json",
+    "mainnet-card-drv-broadcast-journal.json",
+    "mainnet-card-drv-recovery-journal.json",
+    "mainnet-monad-hw-broadcast-journal.json",
+    "mainnet-operator-system-event-broadcast-journal.json",
+    "mainnet-router-lab-broadcast-journal.json"
   ],
+  "coreCreatesVerifiedAgainstFinalizedReceipts": 10,
+  "complete": true,
+  "missing": [],
+  "deploymentStages": {
+    "core": {
+      "ok": true,
+      "mode": "recovered"
+    },
+    "cardDrv": {
+      "ok": true,
+      "mode": "recovered"
+    },
+    "monadHardware": {
+      "ok": true,
+      "mode": "finalized-postcheck-abort"
+    },
+    "operatorSystemEvent": {
+      "ok": true,
+      "mode": "complete"
+    },
+    "routerLab": {
+      "ok": true,
+      "mode": "complete"
+    }
+  },
   "contracts": {
     "R3OSPaint": {
       "address": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
-      "source": "src/R3OSPaint.sol:R3OSPaint"
+      "source": "src/R3OSPaint.sol:R3OSPaint",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "R3OSLabs": {
       "address": "0xe6b3b17e3b1827fe02183f496e84331ebe74751c",
-      "source": "src/R3OSLabs.sol:R3OSLabs"
+      "source": "src/R3OSLabs.sol:R3OSLabs",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "DiffRenderer": {
       "address": "0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7",
-      "source": "src/renderers/DiffRenderer.sol:DiffRenderer"
+      "source": "src/renderers/DiffRenderer.sol:DiffRenderer",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "SeasonTimelapseRenderer": {
       "address": "0x8c91d7a829569ebf1dfc671f6cf328911813b78d",
-      "source": "src/renderers/SeasonTimelapseRenderer.sol:SeasonTimelapseRenderer"
+      "source": "src/renderers/SeasonTimelapseRenderer.sol:SeasonTimelapseRenderer",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "DF1Renderer": {
       "address": "0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0",
-      "source": "src/renderers/DF1Renderer.sol:DF1Renderer"
+      "source": "src/renderers/DF1Renderer.sol:DF1Renderer",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "R3OSPainterPass": {
       "address": "0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103",
-      "source": "src/R3OSPainterPass.sol:R3OSPainterPass"
+      "source": "src/R3OSPainterPass.sol:R3OSPainterPass",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "R3OSFinaleAuction": {
       "address": "0x3d3154db1b32724a82ac9ec3f1811808558b9ef8",
-      "source": "src/labs/R3OSFinaleAuction.sol:R3OSFinaleAuction"
+      "source": "src/labs/R3OSFinaleAuction.sol:R3OSFinaleAuction",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "R3OSQuests": {
       "address": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
-      "source": "src/labs/R3OSQuests.sol:R3OSQuests"
+      "source": "src/labs/R3OSQuests.sol:R3OSQuests",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "R3OSRecycleBin": {
       "address": "0x02234e30dac8bed319f30fb1ec123da8bf71a2eb",
-      "source": "src/labs/R3OSRecycleBin.sol:R3OSRecycleBin"
+      "source": "src/labs/R3OSRecycleBin.sol:R3OSRecycleBin",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
     },
     "R3OSCDBurner": {
       "address": "0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd",
-      "source": "src/labs/R3OSCDBurner.sol:R3OSCDBurner"
+      "source": "src/labs/R3OSCDBurner.sol:R3OSCDBurner",
+      "evidence": "Deploy.s.sol/143/run-latest.json",
+      "evidenceKind": "foundry-artifact"
+    },
+    "R3OSCardMemory": {
+      "address": "0x3D871B434736939748ea1BD08C06c1E8750506ec",
+      "source": "src/monadcard/R3OSCardMemory.sol:R3OSCardMemory",
+      "evidence": "mainnet-card-drv-broadcast-journal.json",
+      "evidenceKind": "guarded-journal"
+    },
+    "R3OSPageExe": {
+      "address": "0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb",
+      "source": "src/monadhw/R3OSPageExe.sol:R3OSPageExe",
+      "evidence": "mainnet-monad-hw-broadcast-journal.json",
+      "evidenceKind": "guarded-journal"
+    },
+    "R3OSBlockCamera": {
+      "address": "0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430",
+      "source": "src/monadhw/R3OSBlockCamera.sol:R3OSBlockCamera",
+      "evidence": "mainnet-monad-hw-broadcast-journal.json",
+      "evidenceKind": "guarded-journal"
+    },
+    "R3OSOperatorRecord": {
+      "address": "0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E",
+      "source": "src/operator/R3OSOperatorRecord.sol:R3OSOperatorRecord",
+      "evidence": "mainnet-operator-system-event-broadcast-journal.json",
+      "evidenceKind": "guarded-journal"
+    },
+    "R3OSSystemEvent": {
+      "address": "0xB93A2b18437A1f169D39D81aAD19b074D6292066",
+      "source": "src/operator/R3OSSystemEvent.sol:R3OSSystemEvent",
+      "evidence": "mainnet-operator-system-event-broadcast-journal.json",
+      "evidenceKind": "guarded-journal"
+    },
+    "R3OSRouterLab": {
+      "address": "0x1206cD64b805fA612C49DC0296c8813248428661",
+      "source": "src/router/R3OSRouterLab.sol:R3OSRouterLab",
+      "evidence": "mainnet-router-lab-broadcast-journal.json",
+      "evidenceKind": "guarded-journal"
     }
   }
 }

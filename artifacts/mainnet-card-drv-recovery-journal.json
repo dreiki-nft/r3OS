@@ -1,0 +1,67 @@
+{
+  "schema": "r3os-card-drv-recovery/v1",
+  "rpcUrlStored": false,
+  "deployer": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "account": "r3os-deployer",
+  "cardMemory": "0x3D871B434736939748ea1BD08C06c1E8750506ec",
+  "incidentJournal": "mainnet-card-drv-broadcast-journal.json",
+  "maxFeePerGas": "205000000000",
+  "priorityFeePerGas": "2000000000",
+  "gasMarginPercent": 130,
+  "startedAt": "2026-10-06T00:04:36.341Z",
+  "entries": [
+    {
+      "index": 1,
+      "originalIndex": 3,
+      "nonce": "206",
+      "to": "0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103",
+      "reviewedGas": "117404",
+      "estimateSubmission": "85919",
+      "estimateVerification": "85919",
+      "selectedGas": "117404",
+      "preparedHash": "0x5bd0ef9bfddfea3b56a7bc44f95178029c05f6c68f1e06c22a40228d48befb2f",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-06T00:04:37.720Z",
+      "sentHash": "0x5bd0ef9bfddfea3b56a7bc44f95178029c05f6c68f1e06c22a40228d48befb2f",
+      "sentAt": "2026-10-06T00:04:37.895Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69c0e36",
+        "contractAddress": null,
+        "gasUsed": "0x1ca9c"
+      },
+      "finalizedAt": "2026-10-06T00:04:39.994Z",
+      "finalizedBlockObserved": "110890553",
+      "verificationFinalizedBlockObserved": "110890553",
+      "latestBlockObserved": "110890555"
+    },
+    {
+      "index": 2,
+      "originalIndex": 4,
+      "nonce": "207",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "268632",
+      "estimateSubmission": "206640",
+      "estimateVerification": "206640",
+      "selectedGas": "268632",
+      "preparedHash": "0x57279011888106785fed52123b56c0f1ccb21c881f87b0a28301c444a98c91eb",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-06T00:04:41.668Z",
+      "sentHash": "0x57279011888106785fed52123b56c0f1ccb21c881f87b0a28301c444a98c91eb",
+      "sentAt": "2026-10-06T00:04:41.843Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69c0e43",
+        "contractAddress": null,
+        "gasUsed": "0x41958"
+      },
+      "finalizedAt": "2026-10-06T00:04:43.927Z",
+      "finalizedBlockObserved": "110890566",
+      "verificationFinalizedBlockObserved": "110890566",
+      "latestBlockObserved": "110890568"
+    }
+  ],
+  "completedAt": "2026-10-06T00:04:45.140Z",
+  "state": "COMPLETE",
+  "finalNonce": "208"
+}

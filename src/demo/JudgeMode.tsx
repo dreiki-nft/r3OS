@@ -4,7 +4,7 @@ import { config } from '../chain/config'
 import { getMonadTraceFeedSnapshot, subscribeMonadTraceFeed } from '../chain/monadLogs'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
-import { closeWindow } from '../os/windows'
+import { closeWindow, focusWindow } from '../os/windows'
 import { JUDGE_STEPS, judgeStepProgram, moveJudgeStep, type JudgeStepIndex } from './judgeSteps'
 import './judgeGuide.css'
 
@@ -24,13 +24,11 @@ export function JudgeMode() {
     const program = judgeStepProgram(index)
     if (!program) return
     // Always use the existing program/window route. Never sign, quote, send or synthesize events.
-    if (program === 'monad-hw') {
-      if (openProgram('monad-hw', true, '#/monad-hw?experiment=storage-race')) {
-        window.dispatchEvent(new Event('r3os:judge-explore'))
-      }
-    } else {
-      openProgram(program, false)
-    }
+    openProgram(program, false)
+    // Desktop: keep the guide in front. Refocusing it on the next click would reorder the windows mid-click
+    // and swallow that click, so judges had to press Next twice. Phones show one full-screen window at a
+    // time, so there the opened program stays in front.
+    if (!matchMedia('(max-width: 640px)').matches) focusWindow('demo')
   }
 
   function navigate(direction: -1 | 1) {

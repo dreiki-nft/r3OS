@@ -1,0 +1,657 @@
+{
+  "schema": "r3os-core-recovery-broadcast/v1",
+  "manifestHash": "0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1",
+  "incidentTx": "0xea2e8f05ba2f00337975f8f40952cbed1d0c5673422443936c012bc225ada7b9",
+  "originalJournal": "mainnet-core-broadcast-journal.json",
+  "rpcUrlStored": false,
+  "deployer": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "account": "r3os-deployer",
+  "maxFeePerGas": "205000000000",
+  "priorityFeePerGas": "2000000000",
+  "gasMarginPercent": 130,
+  "startedAt": "2026-10-05T23:21:03.342Z",
+  "entries": [
+    {
+      "recoveryIndex": 1,
+      "kind": "recovery-batch",
+      "label": "RECOVER tx7+tx8: setPainterPass + addRenderer(diff)",
+      "sourceArtifactTxs": [
+        7,
+        8
+      ],
+      "nonce": "182",
+      "to": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+      "reviewedGas": "184763",
+      "estimateSubmission": "142125",
+      "estimateVerification": "142125",
+      "selectedGas": "184763",
+      "preparedHash": "0x4834eafa85c798323b517cc9e4b82c52bb61bd97541c7af953f491cb403a4552",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:04.134Z",
+      "sentHash": "0x4834eafa85c798323b517cc9e4b82c52bb61bd97541c7af953f491cb403a4552",
+      "sentAt": "2026-10-05T23:21:04.310Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bec67",
+        "contractAddress": null,
+        "gasUsed": "0x2d1bb"
+      },
+      "finalizedAt": "2026-10-05T23:21:06.386Z",
+      "finalizedBlockObserved": "110881898",
+      "verificationFinalizedBlockObserved": "110881898",
+      "latestBlockObserved": "110881900"
+    },
+    {
+      "recoveryIndex": 2,
+      "kind": "artifact",
+      "label": "artifact tx9",
+      "sourceArtifactTxs": [
+        9
+      ],
+      "nonce": "183",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "30823",
+      "estimateSubmission": "95181",
+      "estimateVerification": "95181",
+      "selectedGas": "123736",
+      "preparedHash": "0x959d691e3fa83b814c8de5bf51a936199316d938e3731d8aa96d522ad1afe953",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:07.503Z",
+      "sentHash": "0x959d691e3fa83b814c8de5bf51a936199316d938e3731d8aa96d522ad1afe953",
+      "sentAt": "2026-10-05T23:21:07.679Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bec72",
+        "contractAddress": null,
+        "gasUsed": "0x1e358"
+      },
+      "finalizedAt": "2026-10-05T23:21:09.176Z",
+      "finalizedBlockObserved": "110881908",
+      "verificationFinalizedBlockObserved": "110881908",
+      "latestBlockObserved": "110881910"
+    },
+    {
+      "recoveryIndex": 3,
+      "kind": "artifact",
+      "label": "artifact tx10",
+      "sourceArtifactTxs": [
+        10
+      ],
+      "nonce": "184",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "30182",
+      "estimateSubmission": "95024",
+      "estimateVerification": "95024",
+      "selectedGas": "123532",
+      "preparedHash": "0x0cfa0892c0df0f06e39fd09483821c05ccf7d22e0e64208c2fb1524f79fe7f66",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:10.293Z",
+      "sentHash": "0x0cfa0892c0df0f06e39fd09483821c05ccf7d22e0e64208c2fb1524f79fe7f66",
+      "sentAt": "2026-10-05T23:21:10.468Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bec7b",
+        "contractAddress": null,
+        "gasUsed": "0x1e28c"
+      },
+      "finalizedAt": "2026-10-05T23:21:11.959Z",
+      "finalizedBlockObserved": "110881917",
+      "verificationFinalizedBlockObserved": "110881917",
+      "latestBlockObserved": "110881919"
+    },
+    {
+      "recoveryIndex": 4,
+      "kind": "artifact",
+      "label": "artifact tx11",
+      "sourceArtifactTxs": [
+        11
+      ],
+      "nonce": "185",
+      "to": null,
+      "reviewedGas": "2221619",
+      "estimateSubmission": "1708938",
+      "estimateVerification": "1708938",
+      "selectedGas": "2221620",
+      "preparedHash": "0x7cc55a825f1481d980d9d734fdc7e8c671e790a279b1a86a43708952dec68a17",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:13.405Z",
+      "sentHash": "0x7cc55a825f1481d980d9d734fdc7e8c671e790a279b1a86a43708952dec68a17",
+      "sentAt": "2026-10-05T23:21:13.580Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bec85",
+        "contractAddress": "0x3d3154db1b32724a82ac9ec3f1811808558b9ef8",
+        "gasUsed": "0x21e634"
+      },
+      "finalizedAt": "2026-10-05T23:21:15.082Z",
+      "finalizedBlockObserved": "110881927",
+      "verificationFinalizedBlockObserved": "110881927",
+      "latestBlockObserved": "110881929"
+    },
+    {
+      "recoveryIndex": 5,
+      "kind": "artifact",
+      "label": "artifact tx12",
+      "sourceArtifactTxs": [
+        12
+      ],
+      "nonce": "186",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "32878",
+      "estimateSubmission": "122690",
+      "estimateVerification": "122690",
+      "selectedGas": "159497",
+      "preparedHash": "0x322f12d1273f884e886fc2e7b8b8be442fb20cdad8d68d6fdab5902100b80c22",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:16.040Z",
+      "sentHash": "0x322f12d1273f884e886fc2e7b8b8be442fb20cdad8d68d6fdab5902100b80c22",
+      "sentAt": "2026-10-05T23:21:16.218Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bec8e",
+        "contractAddress": null,
+        "gasUsed": "0x26f09"
+      },
+      "finalizedAt": "2026-10-05T23:21:18.280Z",
+      "finalizedBlockObserved": "110881938",
+      "verificationFinalizedBlockObserved": "110881937",
+      "latestBlockObserved": "110881939"
+    },
+    {
+      "recoveryIndex": 6,
+      "kind": "artifact",
+      "label": "artifact tx13",
+      "sourceArtifactTxs": [
+        13
+      ],
+      "nonce": "187",
+      "to": null,
+      "reviewedGas": "1707197",
+      "estimateSubmission": "1313229",
+      "estimateVerification": "1313229",
+      "selectedGas": "1707198",
+      "preparedHash": "0x2f8f58cac0cb94d75beaf23fa6f31e5d2240908542b2b488d1a3c8240885010c",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:19.422Z",
+      "sentHash": "0x2f8f58cac0cb94d75beaf23fa6f31e5d2240908542b2b488d1a3c8240885010c",
+      "sentAt": "2026-10-05T23:21:19.596Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bec99",
+        "contractAddress": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+        "gasUsed": "0x1a0cbe"
+      },
+      "finalizedAt": "2026-10-05T23:21:21.083Z",
+      "finalizedBlockObserved": "110881947",
+      "verificationFinalizedBlockObserved": "110881947",
+      "latestBlockObserved": "110881949"
+    },
+    {
+      "recoveryIndex": 7,
+      "kind": "artifact",
+      "label": "artifact tx14",
+      "sourceArtifactTxs": [
+        14
+      ],
+      "nonce": "188",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "32186",
+      "estimateSubmission": "105429",
+      "estimateVerification": "105429",
+      "selectedGas": "137058",
+      "preparedHash": "0x424fa6ed6c0e2ee54501af067a4e4a85fcabb8406848a5708daab213d6beef44",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:22.039Z",
+      "sentHash": "0x424fa6ed6c0e2ee54501af067a4e4a85fcabb8406848a5708daab213d6beef44",
+      "sentAt": "2026-10-05T23:21:22.215Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69beca2",
+        "contractAddress": null,
+        "gasUsed": "0x21762"
+      },
+      "finalizedAt": "2026-10-05T23:21:23.701Z",
+      "finalizedBlockObserved": "110881956",
+      "verificationFinalizedBlockObserved": "110881956",
+      "latestBlockObserved": "110881958"
+    },
+    {
+      "recoveryIndex": 8,
+      "kind": "artifact",
+      "label": "artifact tx15",
+      "sourceArtifactTxs": [
+        15
+      ],
+      "nonce": "189",
+      "to": "0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103",
+      "reviewedGas": "28730",
+      "estimateSubmission": "137122",
+      "estimateVerification": "137122",
+      "selectedGas": "178259",
+      "preparedHash": "0xe7d4ca6098867a928d91a34a1ea70593a488cd0c058d8bb5e3a7740448ec22cb",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:24.656Z",
+      "sentHash": "0xe7d4ca6098867a928d91a34a1ea70593a488cd0c058d8bb5e3a7740448ec22cb",
+      "sentAt": "2026-10-05T23:21:24.829Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becab",
+        "contractAddress": null,
+        "gasUsed": "0x2b853"
+      },
+      "finalizedAt": "2026-10-05T23:21:26.905Z",
+      "finalizedBlockObserved": "110881966",
+      "verificationFinalizedBlockObserved": "110881966",
+      "latestBlockObserved": "110881968"
+    },
+    {
+      "recoveryIndex": 9,
+      "kind": "artifact",
+      "label": "artifact tx16",
+      "sourceArtifactTxs": [
+        16
+      ],
+      "nonce": "190",
+      "to": null,
+      "reviewedGas": "1377928",
+      "estimateSubmission": "1059945",
+      "estimateVerification": "1059945",
+      "selectedGas": "1377929",
+      "preparedHash": "0x735a14c94a94db8e7b6def458ea999174604becf786ef9e39799cccbe3a3baa4",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:28.044Z",
+      "sentHash": "0x735a14c94a94db8e7b6def458ea999174604becf786ef9e39799cccbe3a3baa4",
+      "sentAt": "2026-10-05T23:21:28.220Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becb6",
+        "contractAddress": "0x02234e30dac8bed319f30fb1ec123da8bf71a2eb",
+        "gasUsed": "0x150689"
+      },
+      "finalizedAt": "2026-10-05T23:21:29.717Z",
+      "finalizedBlockObserved": "110881976",
+      "verificationFinalizedBlockObserved": "110881976",
+      "latestBlockObserved": "110881978"
+    },
+    {
+      "recoveryIndex": 10,
+      "kind": "artifact",
+      "label": "artifact tx17",
+      "sourceArtifactTxs": [
+        17
+      ],
+      "nonce": "191",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "32345",
+      "estimateSubmission": "105550",
+      "estimateVerification": "105550",
+      "selectedGas": "137215",
+      "preparedHash": "0x5992350af47d7b41f9465fea743cb1bd444aa11ce98f1ca8852b92f5deece4f1",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:30.670Z",
+      "sentHash": "0x5992350af47d7b41f9465fea743cb1bd444aa11ce98f1ca8852b92f5deece4f1",
+      "sentAt": "2026-10-05T23:21:30.846Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becbf",
+        "contractAddress": null,
+        "gasUsed": "0x217ff"
+      },
+      "finalizedAt": "2026-10-05T23:21:32.922Z",
+      "finalizedBlockObserved": "110881986",
+      "verificationFinalizedBlockObserved": "110881986",
+      "latestBlockObserved": "110881988"
+    },
+    {
+      "recoveryIndex": 11,
+      "kind": "artifact",
+      "label": "artifact tx18",
+      "sourceArtifactTxs": [
+        18
+      ],
+      "nonce": "192",
+      "to": "0x02234e30dac8bed319f30fb1ec123da8bf71a2eb",
+      "reviewedGas": "27998",
+      "estimateSubmission": "66088",
+      "estimateVerification": "66088",
+      "selectedGas": "85915",
+      "preparedHash": "0x80e5f562a2d3437c983e5b30346fb9f06097fe92777562d6801c8f3265332741",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:33.878Z",
+      "sentHash": "0x80e5f562a2d3437c983e5b30346fb9f06097fe92777562d6801c8f3265332741",
+      "sentAt": "2026-10-05T23:21:34.054Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becca",
+        "contractAddress": null,
+        "gasUsed": "0x14f9b"
+      },
+      "finalizedAt": "2026-10-05T23:21:36.138Z",
+      "finalizedBlockObserved": "110881997",
+      "verificationFinalizedBlockObserved": "110881997",
+      "latestBlockObserved": "110881999"
+    },
+    {
+      "recoveryIndex": 12,
+      "kind": "artifact",
+      "label": "artifact tx19",
+      "sourceArtifactTxs": [
+        19
+      ],
+      "nonce": "193",
+      "to": "0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103",
+      "reviewedGas": "28730",
+      "estimateSubmission": "85919",
+      "estimateVerification": "85919",
+      "selectedGas": "111695",
+      "preparedHash": "0x3e98f09e3eec82af541529a74987a52e23ac68997989ae5b90b549b279d404ce",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:37.090Z",
+      "sentHash": "0x3e98f09e3eec82af541529a74987a52e23ac68997989ae5b90b549b279d404ce",
+      "sentAt": "2026-10-05T23:21:37.265Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becd4",
+        "contractAddress": null,
+        "gasUsed": "0x1b44f"
+      },
+      "finalizedAt": "2026-10-05T23:21:38.753Z",
+      "finalizedBlockObserved": "110882006",
+      "verificationFinalizedBlockObserved": "110882006",
+      "latestBlockObserved": "110882008"
+    },
+    {
+      "recoveryIndex": 13,
+      "kind": "artifact",
+      "label": "artifact tx20",
+      "sourceArtifactTxs": [
+        20
+      ],
+      "nonce": "194",
+      "to": null,
+      "reviewedGas": "5594535",
+      "estimateSubmission": "4303489",
+      "estimateVerification": "4303489",
+      "selectedGas": "5594536",
+      "preparedHash": "0x7649f8af3e537a609016327d597f7145a854d8b2b810dde983541a7bad88119c",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:40.040Z",
+      "sentHash": "0x7649f8af3e537a609016327d597f7145a854d8b2b810dde983541a7bad88119c",
+      "sentAt": "2026-10-05T23:21:40.216Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becde",
+        "contractAddress": "0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd",
+        "gasUsed": "0x555da8"
+      },
+      "finalizedAt": "2026-10-05T23:21:42.274Z",
+      "finalizedBlockObserved": "110882017",
+      "verificationFinalizedBlockObserved": "110882017",
+      "latestBlockObserved": "110882019"
+    },
+    {
+      "recoveryIndex": 14,
+      "kind": "artifact",
+      "label": "artifact tx21",
+      "sourceArtifactTxs": [
+        21
+      ],
+      "nonce": "195",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "32281",
+      "estimateSubmission": "105502",
+      "estimateVerification": "105502",
+      "selectedGas": "137153",
+      "preparedHash": "0x4b189ab0e29190f9f84e2b05e46430e1ecd3fa65b0f533bfb2063baa815c9d0d",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:43.232Z",
+      "sentHash": "0x4b189ab0e29190f9f84e2b05e46430e1ecd3fa65b0f533bfb2063baa815c9d0d",
+      "sentAt": "2026-10-05T23:21:43.408Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bece9",
+        "contractAddress": null,
+        "gasUsed": "0x217c1"
+      },
+      "finalizedAt": "2026-10-05T23:21:45.470Z",
+      "finalizedBlockObserved": "110882028",
+      "verificationFinalizedBlockObserved": "110882028",
+      "latestBlockObserved": "110882030"
+    },
+    {
+      "recoveryIndex": 15,
+      "kind": "artifact",
+      "label": "artifact tx22",
+      "sourceArtifactTxs": [
+        22
+      ],
+      "nonce": "196",
+      "to": "0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd",
+      "reviewedGas": "27998",
+      "estimateSubmission": "66398",
+      "estimateVerification": "66398",
+      "selectedGas": "86318",
+      "preparedHash": "0x75ddde010ada1ff4dce6d38e66cf9e72a2cff8a64986efa1e827682a9ebf10df",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:46.446Z",
+      "sentHash": "0x75ddde010ada1ff4dce6d38e66cf9e72a2cff8a64986efa1e827682a9ebf10df",
+      "sentAt": "2026-10-05T23:21:46.621Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becf3",
+        "contractAddress": null,
+        "gasUsed": "0x1512e"
+      },
+      "finalizedAt": "2026-10-05T23:21:48.105Z",
+      "finalizedBlockObserved": "110882037",
+      "verificationFinalizedBlockObserved": "110882037",
+      "latestBlockObserved": "110882039"
+    },
+    {
+      "recoveryIndex": 16,
+      "kind": "artifact",
+      "label": "artifact tx23",
+      "sourceArtifactTxs": [
+        23
+      ],
+      "nonce": "197",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "34213",
+      "estimateSubmission": "163674",
+      "estimateVerification": "163674",
+      "selectedGas": "212777",
+      "preparedHash": "0xc7f5f7b7ee434d9db827dc7b07d9cbac60c385befeef953ad281f24ed24037c1",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:49.071Z",
+      "sentHash": "0xc7f5f7b7ee434d9db827dc7b07d9cbac60c385befeef953ad281f24ed24037c1",
+      "sentAt": "2026-10-05T23:21:49.246Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69becfc",
+        "contractAddress": null,
+        "gasUsed": "0x33f29"
+      },
+      "finalizedAt": "2026-10-05T23:21:51.325Z",
+      "finalizedBlockObserved": "110882047",
+      "verificationFinalizedBlockObserved": "110882047",
+      "latestBlockObserved": "110882049"
+    },
+    {
+      "recoveryIndex": 17,
+      "kind": "artifact",
+      "label": "artifact tx24",
+      "sourceArtifactTxs": [
+        24
+      ],
+      "nonce": "198",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "34308",
+      "estimateSubmission": "147322",
+      "estimateVerification": "147322",
+      "selectedGas": "191519",
+      "preparedHash": "0x7b09fc55ea210092aa541f39149f69a0da119e70738ac3c1ecabb7c8c5330f98",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:52.293Z",
+      "sentHash": "0x7b09fc55ea210092aa541f39149f69a0da119e70738ac3c1ecabb7c8c5330f98",
+      "sentAt": "2026-10-05T23:21:52.469Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bed07",
+        "contractAddress": null,
+        "gasUsed": "0x2ec1f"
+      },
+      "finalizedAt": "2026-10-05T23:21:54.542Z",
+      "finalizedBlockObserved": "110882058",
+      "verificationFinalizedBlockObserved": "110882057",
+      "latestBlockObserved": "110882059"
+    },
+    {
+      "recoveryIndex": 18,
+      "kind": "artifact",
+      "label": "artifact tx25",
+      "sourceArtifactTxs": [
+        25
+      ],
+      "nonce": "199",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "34260",
+      "estimateSubmission": "145792",
+      "estimateVerification": "145792",
+      "selectedGas": "189530",
+      "preparedHash": "0x219df75aad38903ab6bae1abc1c9847503421fb4e0dac246b69b7cd65b455378",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:55.505Z",
+      "sentHash": "0x219df75aad38903ab6bae1abc1c9847503421fb4e0dac246b69b7cd65b455378",
+      "sentAt": "2026-10-05T23:21:55.681Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bed11",
+        "contractAddress": null,
+        "gasUsed": "0x2e45a"
+      },
+      "finalizedAt": "2026-10-05T23:21:57.190Z",
+      "finalizedBlockObserved": "110882067",
+      "verificationFinalizedBlockObserved": "110882067",
+      "latestBlockObserved": "110882069"
+    },
+    {
+      "recoveryIndex": 19,
+      "kind": "artifact",
+      "label": "artifact tx26",
+      "sourceArtifactTxs": [
+        26
+      ],
+      "nonce": "200",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "34277",
+      "estimateSubmission": "146177",
+      "estimateVerification": "146177",
+      "selectedGas": "190031",
+      "preparedHash": "0x5dac6a4632cf8f0cfda14b4ad0eaa35df251cf699e993aceb4cfe91cb8524913",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:21:58.147Z",
+      "sentHash": "0x5dac6a4632cf8f0cfda14b4ad0eaa35df251cf699e993aceb4cfe91cb8524913",
+      "sentAt": "2026-10-05T23:21:58.322Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bed1a",
+        "contractAddress": null,
+        "gasUsed": "0x2e64f"
+      },
+      "finalizedAt": "2026-10-05T23:22:00.391Z",
+      "finalizedBlockObserved": "110882077",
+      "verificationFinalizedBlockObserved": "110882077",
+      "latestBlockObserved": "110882079"
+    },
+    {
+      "recoveryIndex": 20,
+      "kind": "artifact",
+      "label": "artifact tx27",
+      "sourceArtifactTxs": [
+        27
+      ],
+      "nonce": "201",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "34244",
+      "estimateSubmission": "145780",
+      "estimateVerification": "145780",
+      "selectedGas": "189514",
+      "preparedHash": "0xf5ba4d94b851971204a1790471b51360113759adf5961f1857c327e5a9686241",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:22:01.379Z",
+      "sentHash": "0xf5ba4d94b851971204a1790471b51360113759adf5961f1857c327e5a9686241",
+      "sentAt": "2026-10-05T23:22:01.555Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bed25",
+        "contractAddress": null,
+        "gasUsed": "0x2e44a"
+      },
+      "finalizedAt": "2026-10-05T23:22:03.634Z",
+      "finalizedBlockObserved": "110882088",
+      "verificationFinalizedBlockObserved": "110882088",
+      "latestBlockObserved": "110882090"
+    },
+    {
+      "recoveryIndex": 21,
+      "kind": "artifact",
+      "label": "artifact tx28",
+      "sourceArtifactTxs": [
+        28
+      ],
+      "nonce": "202",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "34213",
+      "estimateSubmission": "145756",
+      "estimateVerification": "145756",
+      "selectedGas": "189483",
+      "preparedHash": "0xecd99569cf1664f678c72dfe8e5e9c1b9817c000c19bb79b912cf386520fa068",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:22:04.585Z",
+      "sentHash": "0xecd99569cf1664f678c72dfe8e5e9c1b9817c000c19bb79b912cf386520fa068",
+      "sentAt": "2026-10-05T23:22:04.762Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bed2f",
+        "contractAddress": null,
+        "gasUsed": "0x2e42b"
+      },
+      "finalizedAt": "2026-10-05T23:22:06.246Z",
+      "finalizedBlockObserved": "110882097",
+      "verificationFinalizedBlockObserved": "110882097",
+      "latestBlockObserved": "110882099"
+    },
+    {
+      "recoveryIndex": 22,
+      "kind": "artifact",
+      "label": "artifact tx29",
+      "sourceArtifactTxs": [
+        29
+      ],
+      "nonce": "203",
+      "to": "0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1",
+      "reviewedGas": "34213",
+      "estimateSubmission": "145382",
+      "estimateVerification": "145382",
+      "selectedGas": "188997",
+      "preparedHash": "0xb54a712c1b935829abc4013c07227106781ce01815ddc91fe6cc60d8b8ada3b2",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T23:22:07.207Z",
+      "sentHash": "0xb54a712c1b935829abc4013c07227106781ce01815ddc91fe6cc60d8b8ada3b2",
+      "sentAt": "2026-10-05T23:22:07.384Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bed38",
+        "contractAddress": null,
+        "gasUsed": "0x2e245"
+      },
+      "finalizedAt": "2026-10-05T23:22:09.461Z",
+      "finalizedBlockObserved": "110882108",
+      "verificationFinalizedBlockObserved": "110882107",
+      "latestBlockObserved": "110882109"
+    }
+  ],
+  "completedAt": "2026-10-05T23:22:13.916Z",
+  "state": "COMPLETE",
+  "finalNonce": "204"
+}

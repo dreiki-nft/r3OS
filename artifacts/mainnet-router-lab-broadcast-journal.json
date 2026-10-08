@@ -1,0 +1,71 @@
+{
+  "schema": "r3os-router-lab-broadcast/v1",
+  "rpcUrlStored": false,
+  "deployer": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "account": "r3os-deployer",
+  "routerLab": "0x1206cD64b805fA612C49DC0296c8813248428661",
+  "initcodeHash": "0x09bd114d384b9e80abb414816d9fdfecc00bb32db037375036d98d1f4bca460c",
+  "maxFeePerGas": "205000000000",
+  "priorityFeePerGas": "2000000000",
+  "gasMarginPolicy": {
+    "createPercent": 150,
+    "callPercent": 175
+  },
+  "startedAt": "2026-10-06T01:11:26.454Z",
+  "entries": [
+    {
+      "index": 1,
+      "nonce": "217",
+      "label": "CREATE R3OSRouterLab",
+      "to": null,
+      "reviewedGas": "2147749",
+      "estimateSubmission": "1652115",
+      "estimateVerification": "1652115",
+      "selectedGas": "2478173",
+      "gasMarginPercent": 150,
+      "preparedHash": "0x04d6e7451b9f468e9cecd06cdbfab037642c31e242b63c95c414449ee69a001b",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-06T01:11:27.419Z",
+      "sentHash": "0x04d6e7451b9f468e9cecd06cdbfab037642c31e242b63c95c414449ee69a001b",
+      "sentAt": "2026-10-06T01:11:27.596Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69c4217",
+        "contractAddress": "0x1206cd64b805fa612c49dc0296c8813248428661",
+        "gasUsed": "0x25d05d"
+      },
+      "finalizedAt": "2026-10-06T01:11:29.086Z",
+      "finalizedBlockObserved": "110903833",
+      "verificationFinalizedBlockObserved": "110903833",
+      "latestBlockObserved": "110903835"
+    },
+    {
+      "index": 2,
+      "nonce": "218",
+      "label": "addExperiment(router-lab)",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "reviewedGas": "114259",
+      "estimateSubmission": "87892",
+      "estimateVerification": "87892",
+      "selectedGas": "153811",
+      "gasMarginPercent": 175,
+      "preparedHash": "0xf43093200627d6ae8add0acba7bd4e620e3bd60ad8f62d1d1bcfb51aeec5771f",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-06T01:11:32.975Z",
+      "sentHash": "0xf43093200627d6ae8add0acba7bd4e620e3bd60ad8f62d1d1bcfb51aeec5771f",
+      "sentAt": "2026-10-06T01:11:33.153Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69c422a",
+        "contractAddress": null,
+        "gasUsed": "0x258d3"
+      },
+      "finalizedAt": "2026-10-06T01:11:35.154Z",
+      "finalizedBlockObserved": "110903853",
+      "verificationFinalizedBlockObserved": "110903853",
+      "latestBlockObserved": "110903855"
+    }
+  ],
+  "state": "COMPLETE",
+  "completedAt": "2026-10-06T01:11:38.917Z"
+}

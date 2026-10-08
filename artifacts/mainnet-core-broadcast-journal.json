@@ -1,0 +1,155 @@
+{
+  "schema": "r3os-core-manual-broadcast/v1",
+  "manifestHash": "0x307580c4fc98f28cee605a5a5bd348f08a9f1eba71788bd26eaced86e0cf67f1",
+  "rpcUrlStored": false,
+  "deployer": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+  "account": "r3os-deployer",
+  "maxFeePerGas": "205000000000",
+  "priorityFeePerGas": "2000000000",
+  "startedAt": "2026-10-05T22:49:20.889Z",
+  "entries": [
+    {
+      "index": 1,
+      "nonce": "175",
+      "gas": "23661866",
+      "to": null,
+      "preparedHash": "0x412a9ef55f63ba24dd7f4ce235ef25f98c4abeb379a1c660db00318230e343eb",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T22:49:21.495Z",
+      "sentHash": "0x412a9ef55f63ba24dd7f4ce235ef25f98c4abeb379a1c660db00318230e343eb",
+      "sentAt": "2026-10-05T22:49:22.002Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bd3c9",
+        "contractAddress": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+        "gasUsed": "0x1690d2a"
+      },
+      "finalizedAt": "2026-10-05T22:49:24.100Z",
+      "finalizedBlockObserved": "110875596",
+      "verificationFinalizedBlockObserved": "110875596",
+      "latestBlockObserved": "110875598"
+    },
+    {
+      "index": 2,
+      "nonce": "176",
+      "gas": "4606635",
+      "to": null,
+      "preparedHash": "0x42ebdae3f8e0a8d6bfda0ad8e24dac07e5c13747b6159887cafc926359b894f0",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T22:49:24.863Z",
+      "sentHash": "0x42ebdae3f8e0a8d6bfda0ad8e24dac07e5c13747b6159887cafc926359b894f0",
+      "sentAt": "2026-10-05T22:49:25.217Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bd3d3",
+        "contractAddress": "0xe6b3b17e3b1827fe02183f496e84331ebe74751c",
+        "gasUsed": "0x464aab"
+      },
+      "finalizedAt": "2026-10-05T22:49:27.298Z",
+      "finalizedBlockObserved": "110875607",
+      "verificationFinalizedBlockObserved": "110875607",
+      "latestBlockObserved": "110875609"
+    },
+    {
+      "index": 3,
+      "nonce": "177",
+      "gas": "2392825",
+      "to": null,
+      "preparedHash": "0xbdf1b1dcdd6d868de515a08612f760965bf234c4920b72403561b8c4cbd0daf6",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T22:49:28.047Z",
+      "sentHash": "0xbdf1b1dcdd6d868de515a08612f760965bf234c4920b72403561b8c4cbd0daf6",
+      "sentAt": "2026-10-05T22:49:28.230Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bd3dd",
+        "contractAddress": "0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7",
+        "gasUsed": "0x2482f9"
+      },
+      "finalizedAt": "2026-10-05T22:49:30.320Z",
+      "finalizedBlockObserved": "110875617",
+      "verificationFinalizedBlockObserved": "110875617",
+      "latestBlockObserved": "110875619"
+    },
+    {
+      "index": 4,
+      "nonce": "178",
+      "gas": "2916669",
+      "to": null,
+      "preparedHash": "0xb1b1b29705c2e9248968de35aa425843fb42fac1c8245d0539ca6a2f196af3a3",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T22:49:31.071Z",
+      "sentHash": "0xb1b1b29705c2e9248968de35aa425843fb42fac1c8245d0539ca6a2f196af3a3",
+      "sentAt": "2026-10-05T22:49:31.254Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bd3e7",
+        "contractAddress": "0x8c91d7a829569ebf1dfc671f6cf328911813b78d",
+        "gasUsed": "0x2c813d"
+      },
+      "finalizedAt": "2026-10-05T22:49:32.753Z",
+      "finalizedBlockObserved": "110875625",
+      "verificationFinalizedBlockObserved": "110875625",
+      "latestBlockObserved": "110875627"
+    },
+    {
+      "index": 5,
+      "nonce": "179",
+      "gas": "3382233",
+      "to": null,
+      "preparedHash": "0x3302ada571436de5af6af620be742a40a398e0357ca31a7d47b72bbf6e7dd709",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T22:49:33.507Z",
+      "sentHash": "0x3302ada571436de5af6af620be742a40a398e0357ca31a7d47b72bbf6e7dd709",
+      "sentAt": "2026-10-05T22:49:33.689Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bd3ef",
+        "contractAddress": "0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0",
+        "gasUsed": "0x339bd9"
+      },
+      "finalizedAt": "2026-10-05T22:49:35.187Z",
+      "finalizedBlockObserved": "110875633",
+      "verificationFinalizedBlockObserved": "110875633",
+      "latestBlockObserved": "110875635"
+    },
+    {
+      "index": 6,
+      "nonce": "180",
+      "gas": "6002769",
+      "to": null,
+      "preparedHash": "0xfe2c5f387c29b738b05bedb594d42653894bd2f04103eff4b24563ea1cf28397",
+      "state": "FINALIZED",
+      "preparedAt": "2026-10-05T22:49:35.980Z",
+      "sentHash": "0xfe2c5f387c29b738b05bedb594d42653894bd2f04103eff4b24563ea1cf28397",
+      "sentAt": "2026-10-05T22:49:36.162Z",
+      "receipt": {
+        "status": "0x1",
+        "blockNumber": "0x69bd3f7",
+        "contractAddress": "0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103",
+        "gasUsed": "0x5b9851"
+      },
+      "finalizedAt": "2026-10-05T22:49:37.660Z",
+      "finalizedBlockObserved": "110875641",
+      "verificationFinalizedBlockObserved": "110875641",
+      "latestBlockObserved": "110875643"
+    },
+    {
+      "index": 7,
+      "nonce": "181",
+      "gas": "28730",
+      "to": "0x5102de3817ae16b3afaeb9d180130669a70787b3",
+      "preparedHash": "0xea2e8f05ba2f00337975f8f40952cbed1d0c5673422443936c012bc225ada7b9",
+      "state": "REVERTED",
+      "preparedAt": "2026-10-05T22:49:38.410Z",
+      "sentHash": "0xea2e8f05ba2f00337975f8f40952cbed1d0c5673422443936c012bc225ada7b9",
+      "sentAt": "2026-10-05T22:49:38.591Z",
+      "receipt": {
+        "status": "0x0",
+        "blockNumber": "0x69bd3ff",
+        "contractAddress": null,
+        "gasUsed": "0x703a"
+      }
+    }
+  ]
+}

@@ -1,66 +1,81 @@
 /**
- * Phase 9E: a presentation-only route through existing programs.
+ * The judge path: a presentation-only route through existing programs, people first, chain proof second.
  * This is deliberately NOT an automation of any onchain action or a source of telemetry.
  */
 export const JUDGE_STEPS = [
   {
-    title: 'World computer',
+    title: 'One canvas, everyone',
     question: 'What is r3OS?',
-    detail: 'An operating system for the world computer. The browser talks directly to Monad RPC / WebSocket and reads contracts, storage and logs. No app-owned canonical backend or database.',
-    cue: 'The chain sits inside the interaction loop, not behind the application as settlement-only infrastructure.',
+    detail:
+      'A Windows 98 desktop where a whole community paints one 256 × 256 canvas together on Monad. Every stroke is a transaction. There is no app-owned backend: the browser reads the canvas, the art and the activity straight from the contracts.',
+    cue: 'You can watch without a wallet. Writing needs a wallet or a Live Mode session.',
     program: undefined,
     action: undefined,
   },
   {
-    title: 'Local response',
-    question: 'What does the writer see?',
-    detail: 'Have the observer open in a separate browser profile first. Then draw a short stroke in Paint and commit with your wallet or an already-authorized Live session.',
-    cue: 'The local working canvas responds first. That is user-perceived responsiveness, NOT finality.',
+    title: "Who's here",
+    question: 'Is anyone else painting?',
+    detail:
+      'Open Paint. The side panel shows how many wallets painted recently and the latest strokes; click one to jump to it. When someone else commits, their stroke flashes on your canvas as it lands.',
+    cue: 'Everything in that panel comes from real Painted events. Nothing is simulated.',
+    program: 'paint',
+    action: 'Open Paint',
+  },
+  {
+    title: 'Paint together',
+    question: 'What does it feel like with two people?',
+    detail:
+      'Open the observer link in a separate browser profile (no wallet needed). Draw a short stroke here and commit it. The observer sees it appear within about a second; if the observer is in another program, a "You\'ve got paint" note says where.',
+    cue: 'Fast blocks are what make this feel like a shared room instead of turn-based.',
     program: 'paint',
     action: 'Focus Paint',
   },
   {
-    title: 'Remote observation',
-    question: 'Did another browser see it?',
-    detail: 'Watch the Paint view that you opened in a separate browser profile, preferably walletless, BEFORE the writer committed.',
-    cue: 'A second client updating from the real Painted event shows propagation. It does not prove settlement.',
-    program: undefined,
-    action: undefined,
+    title: 'Keep a piece of it',
+    question: 'What do painters take home?',
+    detail:
+      'Save the canvas as a frame NFT, then in My Frames press Burn CD: up to 12 frames become one mix CD. The CD-ROM drive plays it back track by track, straight from contract data.',
+    cue: 'Frames and CDs are fully onchain; burning a CD never touches the source frames.',
+    program: 'cdrom',
+    action: 'Open CD-ROM',
   },
   {
-    title: 'Protocol / settlement',
-    question: 'What did Monad observe?',
-    detail: 'Open X-Ray. Read the real monadLogs Proposed, Voted and Finalized observations. Receipt inclusion is a separate signal.',
+    title: 'Live on Monad',
+    question: 'What did the chain actually do?',
+    detail:
+      'Open Monad X-ray after a paint. It shows the real transaction and the Proposed, Voted and Finalized stages Monad reported, separately from receipt inclusion.',
     cue: 'Only an observed Finalized stage proves finalization. Missing stages stay missing.',
     program: 'xray',
-    action: 'Focus X-Ray',
+    action: 'Open X-ray',
   },
   {
-    title: 'MIP-8 / PAGE.EXE',
-    question: 'Why Monad specifically?',
-    detail: 'Open Explore Monad → Storage race, then press Run test. It compares reads inside a 4 KiB page with reads scattered across pages.',
-    cue: 'This performs read-only eth_calls. Show the measured result, including if no page effect is observed.',
-    program: 'monad-hw',
-    action: 'Open Storage race',
+    title: 'Made by a community',
+    question: 'Who is this for?',
+    detail:
+      'Built by and for the r3tards community, with bonuses for Skrumpeys and Monad Card holders. My Pass fills with stamps for what you did. Badges grant nothing: no token, no points. Each season ends with the canvas sold in a candle auction, and the community decides how the proceeds are spent.',
+    cue: 'Attention turns into a shared artwork and its history, not into points.',
+    program: 'pass',
+    action: 'Open My Pass',
   },
   {
-    title: 'The thesis',
-    question: 'Why does this matter?',
-    detail: 'r3OS deliberately places blockchain operations in places conventional applications normally reserve for local servers, databases, realtime services, and application backends.',
-    cue: 'The desktop is the interface. The experiment is putting Monad in the application interaction loop.',
+    title: 'The idea underneath',
+    question: 'Why build it this way?',
+    detail:
+      'r3OS puts the chain where apps normally put their servers, databases and realtime services. On Monad that is fast enough that the chain can sit inside the interaction loop. Explore Monad has the storage and block experiments behind that claim.',
+    cue: 'The desktop is the interface; the community canvas is the point.',
     program: undefined,
     action: undefined,
   },
 ] as const
 
-export type JudgeStepIndex = 0 | 1 | 2 | 3 | 4 | 5
+export type JudgeStepIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6
 
 export function moveJudgeStep(current: number, direction: -1 | 1): JudgeStepIndex {
   return Math.max(0, Math.min(JUDGE_STEPS.length - 1, current + direction)) as JudgeStepIndex
 }
 
 /** Never open programs from untrusted text, and never create a transaction from the guide. */
-export function judgeStepProgram(index: number): 'paint' | 'xray' | 'monad-hw' | undefined {
+export function judgeStepProgram(index: number): 'paint' | 'cdrom' | 'xray' | 'pass' | undefined {
   const step = JUDGE_STEPS[index]
   return step?.program
 }

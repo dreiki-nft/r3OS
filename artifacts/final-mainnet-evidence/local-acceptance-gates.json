@@ -1,0 +1,53 @@
+{
+  "schema": "r3os-local-acceptance/v1",
+  "startedAt": "2026-10-06T13:08:01.071Z",
+  "completedAt": "2026-10-06T13:08:54.755Z",
+  "allGreen": true,
+  "gates": {
+    "speculation": {
+      "command": "npm run test:speculation",
+      "exitCode": 0,
+      "durationMs": 2375
+    },
+    "torture": {
+      "command": "npm run test:torture",
+      "exitCode": 0,
+      "durationMs": 2727
+    },
+    "repoDoctor": {
+      "command": "npm run repo:doctor",
+      "exitCode": 0,
+      "durationMs": 511
+    },
+    "web": {
+      "command": "npm run test:web",
+      "exitCode": 0,
+      "durationMs": 15732
+    },
+    "generated": {
+      "command": "npm run generated:check",
+      "exitCode": 0,
+      "durationMs": 1324
+    },
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 16776
+    },
+    "contractsBuild": {
+      "command": "npm run contracts:build",
+      "exitCode": 0,
+      "durationMs": 2546
+    },
+    "contractsTest": {
+      "command": "npm run contracts:test",
+      "exitCode": 0,
+      "durationMs": 11582
+    },
+    "diffCheck": {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "durationMs": 107
+    }
+  }
+}

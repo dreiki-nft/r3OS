@@ -1,0 +1,11 @@
+{
+  "schema": "r3os-mainnet-launch/v1",
+  "genesisLabel": "R3OS_MAINNET_GENESIS",
+  "chainId": 143,
+  "build": {
+    "gitIdentifier": "42a17e62140d474d59922bb922599defac39d856"
+  },
+  "deployment": {
+    "note": "human-reviewed accepted mainnet deployment"
+  }
+}
