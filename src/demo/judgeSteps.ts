@@ -50,12 +50,12 @@ export const JUDGE_STEPS = [
   },
   {
     title: 'Made by a community',
-    question: 'Who is this for?',
+    question: 'Who made this canvas?',
     detail:
-      'Built by and for the r3tards community, with bonuses for Skrumpeys and Monad Card holders. My Pass fills with stamps for what you did. Badges grant nothing: no token, no points. Each season ends with the canvas sold in a candle auction, and the community decides how the proceeds are spent.',
+      "Season Replay plays back every paint of the season from the contract's own events, so you can watch the canvas being made, painter by painter. Built by and for the r3tards community, with bonuses for Skrumpeys and Monad Card holders. No token, no points; each season ends in a candle auction and the community decides how the proceeds are spent.",
     cue: 'Attention turns into a shared artwork and its history, not into points.',
-    program: 'pass',
-    action: 'Open My Pass',
+    program: 'replay',
+    action: 'Open Season Replay',
   },
   {
     title: 'The idea underneath',
@@ -75,7 +75,7 @@ export function moveJudgeStep(current: number, direction: -1 | 1): JudgeStepInde
 }
 
 /** Never open programs from untrusted text, and never create a transaction from the guide. */
-export function judgeStepProgram(index: number): 'paint' | 'cdrom' | 'xray' | 'pass' | undefined {
+export function judgeStepProgram(index: number): 'paint' | 'cdrom' | 'xray' | 'replay' | undefined {
   const step = JUDGE_STEPS[index]
   return step?.program
 }

@@ -23,6 +23,7 @@ export const START_PROGRAMS = [
   'pass',
   'block-camera',
   'cdrom',
+  'replay',
   'quests',
   'cd',
   'auction',

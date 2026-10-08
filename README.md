@@ -45,10 +45,14 @@ Open **[r3os.app](https://r3os.app/)** and choose **Run → `demo.exe`** (or go 
 3. **Paint together:** open the observer link in a second browser profile, paint here, and watch the stroke appear there about a second later.
 4. **Keep a piece of it:** frames, a mix CD, and the CD-ROM drive playing it back.
 5. **Live on Monad:** Monad X-ray shows your real transaction going Proposed → Voted → Finalized.
-6. **Made by a community:** the Painter Pass, partner holders, the finale auction.
+6. **Made by a community:** Season Replay plays back every paint of the season, painter by painter.
 7. **The idea underneath:** why the chain can sit inside the interaction loop.
 
 ## Community
+
+<!-- Season Replay GIF: node scripts/export-replay.mjs && node scripts/replay-gif.mjs, then add:
+<p align="center"><img src="docs/media/season-replay.gif" alt="Season 1 of the shared canvas, replayed paint by paint" width="512"></p>
+-->
 
 <!-- Paste the output of: node scripts/community-stats.mjs --exclude <builder wallets> -->
 
@@ -68,6 +72,7 @@ Numbers are counted from the contracts' own events by [`scripts/community-stats.
 | | |
 | --- | --- |
 | **Paint together** | Hourly pixel budgets that grow with every day you paint. Blank or still-wet pixels are cheap, painting over dry art costs double, and busy 16 × 16 tiles heat up and refuse paint for a while, so nobody can wipe the canvas. |
+| **Season Replay** | Watch the whole season being made: every paint, in order, rebuilt from the contract's `Painted` events with [`scripts/export-replay.mjs`](scripts/export-replay.mjs). Play, scrub, every-stroke or real-time. |
 | **See each other** | "Painting now", the latest strokes, strokes flashing as they land, "You've got paint" notes and a painter count in the taskbar. All read from `Painted` events. |
 | **Live Mode** | A browser-held session key authorized once. It can only paint and claim quests, expires, holds at most **1 MON**, and can be ended and swept back. |
 | **Frames → CD → CD-ROM** | Frames store their pixels onchain and record the block's `block.coinbase`. 1–12 frames become one CD NFT that the CD-ROM drive plays back. Source frames are never touched. |

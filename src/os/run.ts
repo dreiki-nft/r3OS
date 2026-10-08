@@ -17,6 +17,8 @@ export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   quests: 'quests',
   cd: 'cd',
   cdrom: 'cdrom',
+  replay: 'replay',
+  timelapse: 'replay',
   validators: 'validators',
   network: 'validators',
   camera: 'block-camera',

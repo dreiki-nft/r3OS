@@ -76,6 +76,9 @@ const BlockCameraProgram = lazy(() =>
 const MonadHardwareProgram = lazy(() =>
   import('../monadhw/MonadHardwareProgram').then((module) => ({ default: module.MonadHardwareProgram })),
 )
+const ReplayProgram = lazy(() =>
+  import('../replay/ReplayProgram').then((module) => ({ default: module.ReplayProgram })),
+)
 const CdromProgram = lazy(() =>
   import('../cdrom/CdromProgram').then((module) => ({ default: module.CdromProgram })),
 )
@@ -153,6 +156,17 @@ export const programs: ProgramDef[] = [
     minSize: { width: 620, height: 420 },
     singleInstance: true,
     hash: '#/cdrom',
+  },
+  {
+    id: 'replay',
+    title: 'Season Replay',
+    icon: 'gallery',
+    colour: '#5FEDDF',
+    component: ReplayProgram,
+    defaultSize: { width: 580, height: 720 },
+    minSize: { width: 340, height: 460 },
+    singleInstance: true,
+    hash: '#/replay',
   },
   {
     id: 'auction',
@@ -361,6 +375,7 @@ const launchPreloads: readonly ProgramPreload[] = [
     load: () => import('../monadhw/BlockCameraProgram').then((m) => m.BlockCameraProgram),
   },
   { id: 'cdrom', label: 'CD-ROM', load: () => import('../cdrom/CdromProgram').then((m) => m.CdromProgram) },
+  { id: 'replay', label: 'Season Replay', load: () => import('../replay/ReplayProgram').then((m) => m.ReplayProgram) },
   { id: 'cd', label: 'Burn a CD', load: () => import('../labs/CDBurnerProgram').then((m) => m.CDBurnerProgram) },
   {
     id: 'monad-hw',
