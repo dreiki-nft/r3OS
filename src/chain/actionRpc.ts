@@ -62,8 +62,40 @@ export function isRpcInfrastructureError(error: unknown) {
   )
 }
 
+/**
+ * A gas quote that failed because the node hiccupped, not because the transaction would revert. viem words
+ * both as "reverted with the following reason", so look at the JSON-RPC codes underneath: code 3 / "execution
+ * reverted" is a real revert; -32603 (internal), -32005 (limit) or an infrastructure failure is worth a retry.
+ */
+export function isTransientQuoteError(error: unknown) {
+  const codes: number[] = []
+  let text = ''
+  let cursor = error as { code?: unknown; cause?: unknown; message?: unknown } | undefined
+  for (let depth = 0; cursor && depth < 8; depth++) {
+    if (typeof cursor.code === 'number') codes.push(cursor.code)
+    if (typeof cursor.message === 'string') text += ` ${cursor.message}`
+    cursor = cursor.cause as typeof cursor
+  }
+  if (codes.includes(3) || /execution reverted/i.test(`${textOf(error)} ${text}`)) return false
+  return codes.includes(-32603) || codes.includes(-32005) || isRpcInfrastructureError(error)
+}
+
+/** Run `work` again (after a short pause) when it fails transiently; real reverts and rejections fail at once. */
+export async function retryTransient<T>(work: () => Promise<T>, attempts = 3, pauseMs = 250): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await work()
+    } catch (error) {
+      if (attempt >= attempts || !isTransientQuoteError(error)) throw error
+      await sleep(pauseMs * attempt)
+    }
+  }
+}
+
 export function isAlreadyKnownRawTx(error: unknown) {
-  return /already known|known transaction|already imported|already exists|tx already exists/i.test(textOf(error))
+  return /already known|known transaction|already imported|already exists|tx already exists/i.test(
+    textOf(error),
+  )
 }
 
 function isReceiptPending(error: unknown) {
@@ -209,9 +241,12 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
       }
 
       launch()
-      hedgeTimer = setTimeout(() => {
-        if (!done) launch()
-      }, Math.max(0, hedgeAfterMs))
+      hedgeTimer = setTimeout(
+        () => {
+          if (!done) launch()
+        },
+        Math.max(0, hedgeAfterMs),
+      )
     })
   }
 
@@ -338,7 +373,8 @@ export function createActionRpcPool(clients: readonly ActionRpcClient[]) {
     while (now() - started < timeoutMs) {
       const order = ranked()
       const elapsed = now() - started
-      const indices = elapsed >= RECEIPT_HEDGE_AFTER_MS && order.length > 1 ? order.slice(0, 2) : order.slice(0, 1)
+      const indices =
+        elapsed >= RECEIPT_HEDGE_AFTER_MS && order.length > 1 ? order.slice(0, 2) : order.slice(0, 1)
       const checks = await Promise.all(
         indices.map(async (index) => {
           const checkedAt = now()

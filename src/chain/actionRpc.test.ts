@@ -4,6 +4,8 @@ import {
   createActionRpcPool,
   isAlreadyKnownRawTx,
   isRpcInfrastructureError,
+  isTransientQuoteError,
+  retryTransient,
   type ActionRpcClient,
 } from './actionRpc'
 
@@ -43,10 +45,11 @@ describe('action RPC pool', () => {
     vi.useFakeTimers()
     let release!: () => void
     const slow = client({
-      getBlockNumber: vi.fn(() =>
-        new Promise<bigint>((resolve) => {
-          release = () => resolve(11n)
-        }),
+      getBlockNumber: vi.fn(
+        () =>
+          new Promise<bigint>((resolve) => {
+            release = () => resolve(11n)
+          }),
       ),
     })
     const fast = client({ getBlockNumber: vi.fn().mockResolvedValue(22n) })
@@ -67,9 +70,12 @@ describe('action RPC pool', () => {
   it('broadcasts one signed raw transaction to every endpoint and takes the first acceptance', async () => {
     let release!: () => void
     const slow = client({
-      sendRawTransaction: vi.fn(() => new Promise<Hex>((resolve) => {
-        release = () => resolve(hash)
-      })),
+      sendRawTransaction: vi.fn(
+        () =>
+          new Promise<Hex>((resolve) => {
+            release = () => resolve(hash)
+          }),
+      ),
     })
     const fast = client({ sendRawTransaction: vi.fn().mockResolvedValue(hash) })
     const pool = createActionRpcPool([slow, fast])
@@ -95,15 +101,9 @@ describe('action RPC pool', () => {
   })
 
   it('waits until the preferred action RPC can see freshly funded burner balance', async () => {
-    const getBalance = vi
-      .fn()
-      .mockResolvedValueOnce(0n)
-      .mockResolvedValueOnce(0n)
-      .mockResolvedValue(1_000n)
+    const getBalance = vi.fn().mockResolvedValueOnce(0n).mockResolvedValueOnce(0n).mockResolvedValue(1_000n)
     const pool = createActionRpcPool([client({ getBalance })])
-    await expect(pool.waitForBalance(`0x${'33'.repeat(20)}` as Hex, 1_000n, 1_000)).resolves.toBe(
-      1_000n,
-    )
+    await expect(pool.waitForBalance(`0x${'33'.repeat(20)}` as Hex, 1_000n, 1_000)).resolves.toBe(1_000n)
     expect(getBalance).toHaveBeenCalledTimes(3)
   })
 
@@ -140,5 +140,42 @@ describe('action RPC error classification', () => {
     expect(isRpcInfrastructureError(new Error('HTTP request failed: 503 Service Unavailable'))).toBe(true)
     expect(isRpcInfrastructureError(new Error('execution reverted'))).toBe(false)
     expect(isAlreadyKnownRawTx(new Error('already known'))).toBe(true)
+  })
+})
+
+describe('transient gas-quote failures', () => {
+  // viem words both cases as "The contract function ... reverted with the following reason: …"
+  const wrapped = (cause: object) =>
+    Object.assign(new Error('The contract function "paint" reverted with the following reason:'), { cause })
+
+  it('retries node hiccups but never a real revert', () => {
+    expect(
+      isTransientQuoteError(wrapped({ code: -32603, message: 'Internal error: Required data unavailable' })),
+    ).toBe(true)
+    expect(isTransientQuoteError(wrapped({ code: -32005, message: 'limit exceeded' }))).toBe(true)
+    expect(isTransientQuoteError(new Error('HTTP request failed. Status: 429'))).toBe(true)
+    expect(isTransientQuoteError(wrapped({ code: 3, message: 'execution reverted: NoChange()' }))).toBe(false)
+    expect(isTransientQuoteError(wrapped({ code: -32603, message: 'execution reverted' }))).toBe(false)
+    expect(
+      isTransientQuoteError(Object.assign(new Error('User rejected the request.'), { code: 4001 })),
+    ).toBe(false)
+  })
+
+  it('retries up to the limit and passes reverts straight through', async () => {
+    let calls = 0
+    const flaky = () => {
+      calls += 1
+      return calls < 3 ? Promise.reject(wrapped({ code: -32603 })) : Promise.resolve(42n)
+    }
+    await expect(retryTransient(flaky, 3, 1)).resolves.toBe(42n)
+    expect(calls).toBe(3)
+
+    let reverts = 0
+    const revert = () => {
+      reverts += 1
+      return Promise.reject(wrapped({ code: 3, message: 'execution reverted' }))
+    }
+    await expect(retryTransient(revert, 3, 1)).rejects.toThrow('reverted')
+    expect(reverts).toBe(1)
   })
 })

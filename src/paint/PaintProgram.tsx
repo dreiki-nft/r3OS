@@ -40,6 +40,7 @@ import {
   unitsLeft,
 } from '../live/liveStore'
 import { createStrokeQueue } from '../live/paintQueue'
+import { HOVER_REFRESH_MS, hoverReadDelay } from './hoverRead'
 import { startLiveQuick, type QuickProgress } from '../live/quickStart'
 import { drawEllipse, drawLine, drawRect, floodFill, type Point } from '../lib/paintEngine'
 import { PALETTE } from '../lib/palette'
@@ -475,10 +476,28 @@ export function PaintProgram() {
     return () => window.clearInterval(timer)
   }, [refreshBudget])
 
+  // The "under cursor" readout: paced so a resting cursor over busy paint doesn't read every block.
+  const hoverRead = useRef({ tile: -1, at: 0 })
   useEffect(() => {
     const tile = tileFor(hover)
-    void readTileState(tile, block.block)
-  }, [tileFor(hover), block.block])
+    const read = () => {
+      if (document.hidden) return
+      hoverRead.current = { tile, at: Date.now() }
+      void readTileState(tile, getBlockSnapshot().block)
+    }
+    let interval: number | undefined
+    const timer = window.setTimeout(
+      () => {
+        read()
+        interval = window.setInterval(read, HOVER_REFRESH_MS)
+      },
+      hoverReadDelay(tile, hoverRead.current, Date.now()),
+    )
+    return () => {
+      window.clearTimeout(timer)
+      if (interval) window.clearInterval(interval)
+    }
+  }, [tileFor(hover)])
 
   useEffect(() => {
     if (!heatView) return
@@ -1330,7 +1349,6 @@ export function PaintProgram() {
           onMove={onMove}
           onUp={onUp}
           onHover={(point) => {
-            if (tileFor(point) !== tileFor(hover)) void readTileState(tileFor(point), block.block)
             setHover(point)
           }}
         />

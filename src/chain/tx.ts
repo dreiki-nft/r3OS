@@ -14,6 +14,7 @@ import {
   actionRpcRequest,
   broadcastActionRawTransaction,
   probeActionRpcs,
+  retryTransient,
   waitForActionReceipt,
 } from './actionRpc'
 import { getBlockSnapshot } from './blocks'
@@ -193,20 +194,23 @@ export async function quoteAction(opts: ActionOptions): Promise<ActionQuote> {
     // A native MON transfer is not necessarily a 21k EOA transfer anymore. EIP-7702 and
     // contract-wallet recipients can execute code on receipt, so estimate against the actual
     // sender / recipient / value and keep the normal safety margin.
-    gasLimitPromise = actionRpcHedgedRequest((client) =>
-      client.estimateGas({
-        account: sender,
-        to: opts.to,
-        value: opts.value ?? 0n,
-      }),
+    gasLimitPromise = retryTransient(() =>
+      actionRpcHedgedRequest((client) =>
+        client.estimateGas({
+          account: sender,
+          to: opts.to,
+          value: opts.value ?? 0n,
+        }),
+      ),
     ).then((estimate) => (estimate === 21_000n ? estimate : gasLimitFor(opts.kind, estimate)))
   } else {
     const base = contractBase(opts, sender)
     // estimateContractGas already executes the transaction and surfaces reverts. Running a
     // simulateContract first performed the same expensive work twice on every quote.
-    gasLimitPromise = actionRpcHedgedRequest((client) => client.estimateContractGas(base)).then((estimate) =>
-      gasLimitFor(opts.kind, estimate, opts.pixels),
-    )
+    // A busy public RPC (a paint party on one wifi) can fail a quote transiently; retry those, never reverts.
+    gasLimitPromise = retryTransient(() =>
+      actionRpcHedgedRequest((client) => client.estimateContractGas(base)),
+    ).then((estimate) => gasLimitFor(opts.kind, estimate, opts.pixels))
   }
 
   const feePromiseForQuote = blockPromise.then((block) => feeQuote(block))

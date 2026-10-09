@@ -33,6 +33,7 @@ vi.mock('./actionRpc', () => {
     actionRpcRequest: vi.fn((work: (rpc: typeof client) => Promise<unknown>) => work(client)),
     actionRpcHedgedRequest: vi.fn((work: (rpc: typeof client) => Promise<unknown>) => work(client)),
     probeActionRpcs: vi.fn().mockResolvedValue(undefined),
+    retryTransient: vi.fn((work: () => Promise<unknown>) => work()),
     broadcastActionRawTransaction: mocks.broadcastRawTransaction,
     waitForActionReceipt: mocks.waitForTransactionReceipt,
   }
@@ -93,9 +94,10 @@ describe('transaction pipeline', () => {
     mocks.getBlockNumber.mockResolvedValue(10n)
     mocks.sendTransaction.mockResolvedValue(`0x${'11'.repeat(32)}`)
     mocks.signBurnerTransaction.mockResolvedValue('0x1234')
-    mocks.broadcastRawTransaction.mockImplementation(
-      async (_serialized: string, expectedHash: string) => ({ hash: expectedHash, endpointIndex: 0 }),
-    )
+    mocks.broadcastRawTransaction.mockImplementation(async (_serialized: string, expectedHash: string) => ({
+      hash: expectedHash,
+      endpointIndex: 0,
+    }))
     mocks.waitForTransactionReceipt.mockResolvedValue({
       status: 'success',
       blockNumber: 11n,
@@ -161,7 +163,10 @@ describe('transaction pipeline', () => {
   it('shares an in-flight fee quote across concurrent actions', async () => {
     let resolveFees!: (value: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }) => void
     mocks.estimateFeesPerGas.mockImplementationOnce(
-      () => new Promise((resolve) => { resolveFees = resolve }),
+      () =>
+        new Promise((resolve) => {
+          resolveFees = resolve
+        }),
     )
 
     const first = quoteAction({ kind: 'estimate', address, abi, functionName: 'ping', account })

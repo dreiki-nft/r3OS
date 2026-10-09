@@ -1,4 +1,4 @@
-import { zeroAddress, type Address, type Hex } from 'viem'
+import { hexToBigInt, isHex, zeroAddress, type Address, type Hex } from 'viem'
 import { publicClient, wsClient } from './clients'
 import { demoConstants, readCoreConstants } from './contracts'
 
@@ -91,6 +91,21 @@ export function normalizeHeader(value: unknown): BlockHeaderSnapshot {
   }
 }
 
+/** A raw `newHeads` payload (hex quantities) as a header snapshot. Missing or malformed fields stay unknown. */
+export function headerFromRpc(value: unknown): BlockHeaderSnapshot {
+  const raw = (value ?? {}) as Record<string, unknown>
+  const quantity = (field: unknown) =>
+    typeof field === 'bigint' ? field : isHex(field) && field.length > 2 ? hexToBigInt(field) : undefined
+  return normalizeHeader({
+    number: quantity(raw.number),
+    timestamp: quantity(raw.timestamp),
+    miner: isHex(raw.miner) && raw.miner.length === 42 ? raw.miner : undefined,
+    hash: isHex(raw.hash) && raw.hash.length === 66 ? raw.hash : undefined,
+    gasUsed: quantity(raw.gasUsed),
+    gasLimit: quantity(raw.gasLimit),
+  })
+}
+
 export async function readLatestHeader(client: {
   getBlock: (args: { blockTag: 'latest'; includeTransactions: false }) => Promise<unknown>
 }) {
@@ -169,13 +184,46 @@ export async function startBlockClock() {
   constants = nextConstants
   accept(initial, wsClient ? 'live' : 'polling')
 
-  if (wsClient) {
-    stopWatch = (wsClient as any).watchBlocks({
-      includeTransactions: false,
-      onBlock: (header: unknown) => accept(normalizeHeader(header), 'live'),
+  if (wsClient) void subscribeHeads()
+  else startPolling()
+}
+
+type HeadsTransport = {
+  subscribe: (args: {
+    params: ['newHeads']
+    onData: (data: { result?: unknown }) => void
+    onError: (error: unknown) => void
+  }) => Promise<{ unsubscribe: () => Promise<unknown> }>
+}
+
+/**
+ * The clock reads headers straight from `newHeads`. viem's `watchBlocks` would re-fetch every block with
+ * `eth_getBlockByNumber` (~2.5 requests/s per open tab on Monad), and at a paint party every browser on the
+ * venue wifi shares one IP's public-RPC rate limit. The header already carries everything the clock shows.
+ */
+async function subscribeHeads() {
+  try {
+    const transport = (wsClient as unknown as { transport: HeadsTransport }).transport
+    const { unsubscribe } = await transport.subscribe({
+      params: ['newHeads'],
+      onData: (data) => {
+        const header = headerFromRpc(data.result)
+        if (header.number <= 0n) return
+        const raw = data.result as { miner?: unknown } | undefined
+        if (header.hash && isHex(raw?.miner)) {
+          accept(header, 'live')
+          return
+        }
+        // A provider that trims the payload: fetch this one block in full, exactly as before.
+        void wsClient!
+          .getBlock({ blockNumber: header.number, includeTransactions: false })
+          .then((block) => accept(normalizeHeader(block), 'live'))
+          .catch(() => accept(header, 'live'))
+      },
       onError: () => startPolling(),
     })
-  } else {
+    stopWatch = () => void unsubscribe().catch(() => undefined)
+  } catch {
     startPolling()
   }
 }
