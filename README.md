@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://r3os.app/"><b>▶ Live app: r3os.app</b></a> ·
   <a href="#try-it-as-a-judge"><b>Judge path</b></a> ·
+  <a href="#a-tour-of-r3os"><b>Feature tour</b></a> ·
   <a href="#community"><b>Community</b></a> ·
   <a href="#mainnet"><b>Mainnet contracts</b></a> ·
   <a href="#run-it-locally"><b>Run locally</b></a> ·
@@ -27,13 +28,15 @@
 
 ## What it is
 
-r3OS boots like a 1998 PC and opens on one shared **256 × 256, 16-colour canvas** that a community paints together on Monad. You draw with Win98 tools, press Paint, and your stroke lands in the next block, about a second later.
+r3OS boots like a 1998 PC and opens on one shared **256 × 256, 16-colour canvas** that a community paints together on Monad. You draw with Win98 tools, press Paint, and your stroke lands in the next block, about a second later, on everyone's screen at once.
 
 **You're never painting alone.** Paint shows how many wallets are painting right now and their latest strokes. Other people's strokes flash on your canvas as they land. If you're in another program, a **"You've got paint"** note tells you, and *Open Paint* outlines exactly where.
 
-**You can keep a piece of it.** Save the canvas as a **frame NFT**, burn up to 12 frames onto a **mix CD**, and play it back in the **CD-ROM drive**, straight from contract data. Each 30-day season ends with the community's canvas sold in a snipe-proof **candle auction**.
+**You can keep a piece of it.** Save the canvas as a **frame NFT**, burn up to 12 frames and block photos onto a **mix CD**, and play it back in the **CD-ROM drive**, straight from contract data. Each 30-day season ends with the community's canvas sold in a snipe-proof **candle auction**.
 
 **It belongs to the people painting it.** Built by and for the **r3tards** community, with extra paint for Skrumpeys and Monad Card holders. Your **Painter Pass** fills with stamps for what you did. Badges grant nothing: no token, no points, no farming. Attention turns into a shared artwork and its history.
+
+**Everything you can own is drawn by a contract.** Frames, CDs, block portraits, the finale and your Painter Pass are SVG images that the contracts build on every read, with the pixels embedded. No IPFS, no image server, and the Pass redraws itself as you paint.
 
 Anyone can watch without a wallet. Painting needs a wallet, or **Live Mode**: sign once, then paint with no popups.
 
@@ -41,13 +44,15 @@ Anyone can watch without a wallet. Painting needs a wallet, or **Live Mode**: si
 
 Open **[r3os.app](https://r3os.app/)** and choose **Run → `demo.exe`** (or go straight to [r3os.app/#/demo](https://r3os.app/#/demo)). It walks through the real programs in seven steps and never signs or fakes anything:
 
-1. **One canvas, everyone:** what r3OS is.
+1. **One canvas, everyone:** what r3OS is, with a button straight to the live canvas.
 2. **Who's here:** open Paint without a wallet and see who painted recently; click a stroke to jump to it.
 3. **Paint together:** open the observer link in a second browser profile, paint here, and watch the stroke appear there about a second later.
 4. **Keep a piece of it:** frames, a mix CD, and the CD-ROM drive playing it back.
 5. **Live on Monad:** Monad X-ray shows your real transaction going Proposed → Voted → Finalized.
 6. **Made by a community:** Season Replay plays back every paint of the season, painter by painter.
 7. **The idea underneath:** why the chain can sit inside the interaction loop.
+
+The guide also links a real recent paint transaction on the explorer, so every claim can be checked.
 
 **Judges:** the private part of the submission has a guest-wallet link. It opens r3os.app with a throwaway wallet holding a little MON, so you can paint on mainnet immediately, with no wallet setup and no popups.
 
@@ -61,7 +66,24 @@ Open **[r3os.app](https://r3os.app/)** and choose **Run → `demo.exe`** (or go 
 
 Numbers are counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), not counting the builder's wallets. Anyone can rerun it against mainnet.
 
-### Holder bonuses
+## A tour of r3OS
+
+Every program below is live on mainnet and reachable from the desktop, the Start menu or **Run…**.
+
+### Paint: the shared canvas
+
+| | |
+| --- | --- |
+| **Win98 tools** | Pencil, brush, fill, picker, line, rectangle, ellipse, eraser and zoom, 1/3/5 px sizes and the 16-colour r3tards palette. What you draw is sent as one compact `paint` transaction of pixel runs. |
+| **Fair budgets** | An hourly pixel budget (512 px/h on mainnet) that grows with every day you paint, up to 2,048 px/h. Holders get more (table below). The budget meter shows what a stroke costs before you send it. |
+| **Wet, dry and hot paint** | Blank or still-wet pixels are cheap; painting over dry art costs double. Busy 16 × 16 tiles heat up and refuse paint for a while, and each region has a per-block cap, so nobody can wipe the canvas. *View → Wet paint & heat* shows it all on the canvas. |
+| **The character** | Each season has a protected r3tard outline that nobody can paint over, a face colour the community can flip black/white, and a background colour. |
+| **DF1 corruption and storms** | When a region keeps changing hands, DF1 corruption glitches a few pixels of each paint, chosen onchain. Every 200,000 blocks a **storm** hits for 600 blocks: everything glitches at 200%, storm paints are counted, and frames saved in a storm carry `Storm: yes`. |
+| **Live Mode** | A browser-held session key you authorize once with an EIP-712 signature. It can only paint and claim quests, expires, holds at most **1 MON**, and can be ended and swept back. Then you paint with no wallet popups at all. |
+| **Need MON?** | If a wallet can't pay for the next stroke, Paint says so with the real per-stroke cost before anything fails. |
+| **Save to Floppy, wallpaper, screensaver** | Save the canvas as a real `.BMP` built from contract bytes, set the live canvas as your desktop wallpaper, or let it run as the screensaver. |
+
+#### Holder bonuses
 
 | Holder state | Extra Paint budget | Accounting |
 | --- | ---: | --- |
@@ -70,20 +92,60 @@ Numbers are counted from the contracts' own events by [`scripts/community-stats.
 | **Skrumpeys** | **+128 px/day** | once per current-holder wallet on Monad mainnet |
 | **Monad Cards** | **+128 px/day** | once per current-holder wallet on Monad mainnet |
 
-## What you can do
+### Painting together, live
 
 | | |
 | --- | --- |
-| **Paint together** | Hourly pixel budgets that grow with every day you paint. Blank or still-wet pixels are cheap, painting over dry art costs double, and busy 16 × 16 tiles heat up and refuse paint for a while, so nobody can wipe the canvas. |
-| **Season Replay** | Watch the whole season being made: every paint, in order, rebuilt from the contract's `Painted` events with [`scripts/export-replay.mjs`](scripts/export-replay.mjs). Play, scrub, every-stroke or real-time. |
-| **See each other** | "Painting now", the latest strokes, strokes flashing as they land, "You've got paint" notes and a painter count in the taskbar. All read from `Painted` events. |
-| **Paint parties on a big screen** | [r3os.app/#/tv](https://r3os.app/#/tv) (or Run → `tv`) puts the canvas full-screen for a projector or stream: every stroke flashes where it lands with who painted it, "painting right now", tonight's totals and top painters, a rotating paint prompt and a QR code to join. Read-only, from the same contract events. |
-| **Live Mode** | A browser-held session key authorized once. It can only paint and claim quests, expires, holds at most **1 MON**, and can be ended and swept back. |
-| **Frames → CD → CD-ROM** | Frames store their pixels onchain and record the block's `block.coinbase`. 1–12 frames become one CD NFT that the CD-ROM drive plays back. Source frames are never touched. |
-| **Seasons and finale** | 30-day seasons with an optional protected character outline. The final canvas becomes a finale NFT sold in a candle auction whose real end is picked after bidding closes. Proceeds go to the project wallet ([`0x40Ea…647fA`](https://monadvision.com/address/0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA)); the community decides how they are spent. |
-| **Painter Pass and Quests** | A free soulbound Pass with onchain stamps, and quests checked directly against the contracts. |
-| **Block Camera** | Mints a portrait of the block your transaction lands in. |
-| **The 1998 layer** | BIOS boot with live chain data, the live canvas as your wallpaper, a canvas screensaver, Save to Floppy (a real `.BMP` from contract bytes), and Listen, which turns blocks into notes. |
+| **Who's here** | "Painting now", the latest strokes, outlines flashing where others just painted, a painter count in the taskbar and "You've got paint" notes. All read from the contract's `Painted` events; there is no presence server. |
+| **Broadcast view (TV)** | [r3os.app/#/tv](https://r3os.app/#/tv) (or Run → `tv`) puts the canvas full-screen for a projector or stream: every stroke flashes where it lands with who painted it, "painting right now", tonight's totals, top painters, a rotating paint prompt and a QR code to join. |
+| **Season Replay** | Watch the whole season being made: every paint, in order, rebuilt from the `Painted` events with [`scripts/export-replay.mjs`](scripts/export-replay.mjs). Play, scrub, every-stroke or real-time, and anyone can regenerate the file from the chain. |
+| **Monad X-ray** | Follows your own transaction from click to signature, broadcast, receipt and Monad's commit stages (Proposed → Voted → Finalized), with the 16 canvas regions it touched. Stages that weren't observed stay empty; a receipt is never relabelled as finality. |
+
+### Keep a piece of it
+
+| | |
+| --- | --- |
+| **Frames** | Save the canvas as a frame NFT. Each frame stores its pixels onchain and records `block.coinbase`, the address that sealed its block. |
+| **Renderers** | Frame holders can opt into alternative onchain renderers: **Diff** (only what changed since the previous frame), **Season Timelapse** (an animated finale) and **DF1** (the exact DF1 glitch algorithm, computed onchain at 64 × 64). |
+| **My Frames** | Your frames by season, with Frame Properties showing every onchain trait, renderer and the seal. |
+| **Burn a CD** | Burn 1–12 frames and Block Camera photos onto one mix CD NFT with a label. Sources are snapshotted, never touched. |
+| **CD-ROM (D:)** | Insert a CD and play it back: track list, a Win98 Imaging viewer and the disc art, all decoded from the CD's onchain snapshot. |
+| **Recycle Bin** | Throw away frames you don't want: the Bin burns them through the core contract, keeps a tombstone and earns you the RECYCLER stamp. |
+
+### Seasons and the finale
+
+| | |
+| --- | --- |
+| **30-day seasons** | Each season has its own outline, face and background. **Token #0 is the live canvas itself**, a real NFT that is never burnable. |
+| **Finale** | At the end of a season the final canvas becomes a finale NFT. |
+| **Candle auction** | The finale is sold in a ~24 h candle auction whose real end is a random block in its final stretch, drawn from the close block's hash after bidding ends (read through Monad's EIP-2935 block history), so sniping doesn't work. Proceeds go to the project wallet ([`0x40Ea…647fA`](https://monadvision.com/address/0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA)); the community decides how they are spent. Spec: [`docs/specs/AUCTION.md`](docs/specs/AUCTION.md). |
+
+### Your identity
+
+| | |
+| --- | --- |
+| **Painter Pass** | A free, soulbound NFT whose image the contract draws from your onchain activity: paint stats, quests and stamps. It changes as you paint. |
+| **Stamps** | Pins on your Pass for things you did, from built-in milestones and from outside sources: Quests, the Recycle Bin and the Monad Card. |
+| **Quests** | Achievements checked directly against the contracts that track them, so a claim can't be faked. Quests are append-only and grant nothing but the badge. Spec: [`docs/specs/QUESTS.md`](docs/specs/QUESTS.md). |
+| **Display** | Choose which of your r3tards shows on the My Pass monitor (saved on your device). |
+| **Operator Record** | An adminless history contract that records when an address was first seen using each part of r3OS, honestly split into exact first-use and first-observed. Spec: [`docs/specs/OPERATOR_RECORD.md`](docs/specs/OPERATOR_RECORD.md). |
+| **CARD.DRV** | Holders of the official Monad Card get a 4 KiB onchain memory page per card through an ownerless driver that never touches the card contract. It feeds Block Camera, the Pass and Quests. Spec: [`docs/specs/MONAD_CARD.md`](docs/specs/MONAD_CARD.md). |
+
+### Monad as hardware
+
+r3OS shows Monad's own behaviour as parts of the computer rather than hiding it behind generic web3 UI.
+
+| | |
+| --- | --- |
+| **Explore Monad** | Live **block speed** (with **Listen**, which plays one note per block), a **storage race** that measures MIP-8 4 KiB storage pages (PAGE.EXE), a **block camera** preview and a **liquidity race** that quotes MRC-17 propAMM venues in one isolated call (Router Lab). Specs: [`MONAD_HW.md`](docs/specs/MONAD_HW.md), [`ROUTER_LAB.md`](docs/specs/ROUTER_LAB.md). |
+| **Block Camera** | Mints a 32 × 32 portrait of the block your transaction lands in, from its number, hash, epoch and proposer. The viewfinder develops a new preview about every second. |
+| **Network Neighborhood** | The block-sealing addresses recorded in saved frames, browsable like a 1998 network. |
+| **System Information and DXDIAG** | Which Monad features the connected network really has (P256, EIP-2935 history, staking device, MIP-8), plus local RPC, websocket and render timings. Nothing is uploaded, and URLs and keys are never shown. |
+| **System Event (.333)** | A permanent latch anyone can trigger once a fresh Chainlink MON/USD round reaches $0.333. Spec: [`docs/specs/SYSTEM_EVENT.md`](docs/specs/SYSTEM_EVENT.md). |
+
+### The 1998 layer
+
+A BIOS boot that reads the live chain, a desktop, a Start menu and **Run…** (`demo.exe`, `paint`, `tv`, `replay`…), draggable windows, a taskbar with the live block and painter count, Win98 sounds, Help, a desktop assistant, Display Properties and the canvas screensaver. It works on phones too, one full-screen window at a time.
 
 ## Why Monad
 
@@ -208,6 +270,20 @@ The contracts are frozen; everything below happens on top of them.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen and a new prompt list each time, so the canvas keeps getting new painters and the same ones keep coming back.
 - **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
 - **Season 2 is set by the community.** The outline, the face and the prompts for the next 30 days come from the people who painted this one.
+
+## Future plans: r3OS as a platform
+
+r3OS is built as an operating system on purpose: the canvas is the first program, not the only one. The hooks for other builders already exist onchain:
+
+- **A program registry.** Paint keeps an experiment registry; a program the project registers can mint into the shared **r3OS Labs** NFT collection, the way Burn a CD and Block Camera do today.
+- **A readable canvas.** Any contract can read the canvas through the Lab read API (64 × 64 region words and blank masks), so other apps can build on what the community painted.
+- **Shared identity.** New stamp sources can be added to the Painter Pass, and Quests can check any contract, so activity in a partner app can show up on the same Pass.
+
+Ideas this makes possible (not built yet):
+
+- **Fully onchain games** inside r3OS: pixel games played on or against the shared canvas, arcade programs in the Start menu, and seasonal events where game results change the art.
+- **Partner dApps launching as r3OS programs:** Monad projects ship a window inside the desktop, get the same wallet, Live Mode and Pass, and reach the painters already there, the way the Monad Card already plugs in through CARD.DRV.
+- **Community-run seasons:** other NFT communities get their own outline, holder bonus and paint party, on the same canvas.
 
 ## Security
 
