@@ -41,6 +41,8 @@ import {
 } from '../live/liveStore'
 import { createStrokeQueue } from '../live/paintQueue'
 import { HOVER_REFRESH_MS, hoverReadDelay } from './hoverRead'
+import { gasHint } from './gasHint'
+import { maxCostWei } from '../chain/gas'
 import { startLiveQuick, type QuickProgress } from '../live/quickStart'
 import { drawEllipse, drawLine, drawRect, floodFill, type Point } from '../lib/paintEngine'
 import { PALETTE } from '../lib/palette'
@@ -157,6 +159,11 @@ export function PaintProgram() {
   const [budget, setBudget] = useState<BudgetState>(EMPTY_BUDGET)
   const [constants, setConstants] = useState(demoConstants)
   const [paintQuote, setPaintQuote] = useState<ActionQuote>()
+  // The newest real stroke cost, kept after the stroke is sent so "Need MON?" can still count strokes left.
+  const [lastStrokeCost, setLastStrokeCost] = useState<bigint>()
+  useEffect(() => {
+    if (paintQuote) setLastStrokeCost(maxCostWei(paintQuote.gasLimit, paintQuote.maxFeePerGas))
+  }, [paintQuote])
   const [quotes, setQuotes] = useState<Record<string, ActionQuote | string>>({})
   const [busy, setBusy] = useState(false)
   const [txState, setTxState] = useState<'signing' | 'sent' | 'confirmed'>()
@@ -1441,11 +1448,9 @@ export function PaintProgram() {
           cost={cost.units}
           reason={reason}
           connected={Boolean(wallet.account)}
-          noGas={
-            wallet.account && wallet.balance === 0n
-              ? config.chainId === 10143
-                ? 'testnet'
-                : 'mainnet'
+          gas={
+            wallet.account && !isLive
+              ? gasHint({ balance: wallet.balance, strokeCost: lastStrokeCost, chainId: config.chainId })
               : undefined
           }
           onHolderQuota={() => setHolderDialog(true)}

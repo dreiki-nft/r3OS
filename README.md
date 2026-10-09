@@ -199,6 +199,15 @@ scripts         repo/launch checks and generated-source tooling
 docs            technical reference, protocol specs and security model
 ```
 
+## What's next
+
+The contracts are frozen; everything below happens on top of them.
+
+- **Season 1 ends with its finale.** The last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
+- **Paint parties.** Regular sessions with the broadcast view on a big screen and a new prompt list each time, so the canvas keeps getting new painters and the same ones keep coming back.
+- **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
+- **Season 2 is set by the community.** The outline, the face and the prompts for the next 30 days come from the people who painted this one.
+
 ## Security
 
 The contracts are **not professionally audited**. See [`THREAT_MODEL.md`](THREAT_MODEL.md) for owner powers, trust boundaries and the Live Mode limits. Live Mode keeps a key in the browser on purpose, so it is capped at 1 MON, scoped to painting and quests, and expires; diagnostics never show keys or RPC URLs.

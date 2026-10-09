@@ -1,5 +1,6 @@
 import { Button } from '../os/ui/Button'
 import { ProgressSegments } from '../os/ui/ProgressSegments'
+import type { GasHint } from './gasHint'
 
 export interface BudgetState {
   hourly: number
@@ -14,15 +15,15 @@ export function BudgetMeter({
   cost,
   reason,
   connected = true,
-  noGas,
+  gas,
   onHolderQuota,
 }: {
   budget: BudgetState
   cost: number
   reason?: string
   connected?: boolean
-  /** The connected wallet holds 0 MON: say how to get some (testnet faucet) instead of failing at Paint. */
-  noGas?: 'testnet' | 'mainnet'
+  /** "Need MON?": the wallet can't pay for the next stroke (or soon won't). Say so before Paint fails. */
+  gas?: GasHint
   onHolderQuota?: () => void
 }) {
   if (!connected) {
@@ -45,7 +46,7 @@ export function BudgetMeter({
       <small>
         {reason ?? `${budget.hourlyLimit} hourly + ${budget.holder} holder · trust ${budget.activeDays}`}
       </small>
-      {noGas === 'testnet' && (
+      {gas?.kind === 'empty' && gas.network === 'testnet' && (
         <small className="budget-gas-hint">
           your wallet has 0 MON for gas.{' '}
           <a href="https://faucet.monad.xyz" target="_blank" rel="noopener noreferrer">
@@ -53,8 +54,23 @@ export function BudgetMeter({
           </a>
         </small>
       )}
-      {noGas === 'mainnet' && (
-        <small className="budget-gas-hint">your wallet has 0 MON. you need a little MON to pay gas.</small>
+      {gas?.kind === 'empty' && gas.network === 'mainnet' && (
+        <small className="budget-gas-hint">
+          need MON? your wallet has 0 MON for gas
+          {gas.perStroke ? `; one stroke costs up to ${gas.perStroke} right now` : ''}. send a little MON to
+          your wallet from any wallet or exchange that supports Monad.
+        </small>
+      )}
+      {gas?.kind === 'short' && (
+        <small className="budget-gas-hint">
+          not enough MON for this stroke: it can cost up to {gas.perStroke}, you have {gas.balance}. top up
+          this wallet, or paint a smaller stroke.
+        </small>
+      )}
+      {gas?.kind === 'low' && (
+        <small className="budget-gas-hint">
+          low on MON: about {gas.strokes} more stroke{gas.strokes === 1 ? '' : 's'} at {gas.perStroke} each.
+        </small>
       )}
       {onHolderQuota && <Button onClick={onHolderQuota}>Holder quota…</Button>}
     </div>

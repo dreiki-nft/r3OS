@@ -47,6 +47,8 @@ function storeHidden(hidden: boolean) {
 export function Welcome() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const traces = useSyncExternalStore(subscribeTxTrace, getTxTraceSnapshot)
+  // Traces are newest first; this changes only when a new transaction gets its receipt.
+  const latestReceipt = traces.traces.find((trace) => trace.t.receipt != null)?.hash
   const tick = useRefreshTick(30)
   const firstRunOpen = useSyncExternalStore(subscribeFirstRun, isFirstRunOpen)
   const [hidden, setHidden] = useState(storedHidden)
@@ -97,8 +99,9 @@ export function Welcome() {
     return () => {
       cancelled = true
     }
-    // Re-read after any transaction the app sends, and on the slow refresh tick.
-  }, [hidden, account, tick, traces.version])
+    // Re-read once per confirmed transaction (not on every proposed/voted/finalized step of it), and on the
+    // slow refresh tick.
+  }, [hidden, account, tick, latestReceipt])
 
   if (hidden || firstRunOpen) return null
 
