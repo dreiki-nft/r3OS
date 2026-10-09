@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>A Windows 98 computer on Monad where a whole community paints one canvas together, live.</b><br>
-  Every stroke is a Monad transaction. No app server anywhere.
+  Every stroke is a Monad transaction. No app-owned state server or database.
 </p>
 
 <p align="center">
@@ -15,7 +15,8 @@
   <a href="#community"><b>Community</b></a> ·
   <a href="#mainnet"><b>Mainnet contracts</b></a> ·
   <a href="#run-it-locally"><b>Run locally</b></a> ·
-  <a href="docs/TECHNICAL.md"><b>Technical reference</b></a>
+  <a href="docs/TECHNICAL.md"><b>Technical reference</b></a> ·
+  <a href="docs/submission/MAINNET_EVIDENCE.md"><b>Verified launch evidence</b></a>
 </p>
 
 <p align="center">
@@ -115,7 +116,7 @@ flowchart LR
 ```
 
 - Everything visual is generated onchain as SVG with embedded BMP pixels: frames, CDs, the Pass, camera portraits.
-- The frontend is static. It reads contracts, logs and blocks directly from Monad RPCs. An optional, stateless read accelerator can speed up the first screen; the direct public RPC remains the fallback.
+- The frontend is static. Canonical application state is held in Monad contracts and events, not an app-owned database or state server. Reads normally use Monad RPCs; an optional stateless read-accelerator proxy can speed up the first screen, with direct public RPC fallback. If enabled, this proxy is network infrastructure, not a source of app truth.
 - Receipt logs update the canvas right away; background reconciliation keeps it matched to canonical chain state.
 
 ## Mainnet

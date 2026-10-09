@@ -9,8 +9,8 @@ export const JUDGE_STEPS = [
     detail:
       'A Windows 98 desktop where a whole community paints one 256 × 256 canvas together on Monad. Every stroke is a transaction. There is no app-owned backend: the browser reads the canvas, the art and the activity straight from the contracts.',
     cue: 'You can watch without a wallet. Writing needs a wallet or a Live Mode session.',
-    program: undefined,
-    action: undefined,
+    program: 'paint',
+    action: 'See live canvas',
   },
   {
     title: "Who's here",

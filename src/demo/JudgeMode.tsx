@@ -1,6 +1,8 @@
 import { useState, useSyncExternalStore } from 'react'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { config } from '../chain/config'
+import { transactionExplorerUrl } from '../chain/explorer'
+import { getPresenceSnapshot, subscribePresence } from '../paint/presence'
 import { getMonadTraceFeedSnapshot, subscribeMonadTraceFeed } from '../chain/monadLogs'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
@@ -18,6 +20,9 @@ export function JudgeMode() {
   const [copyStatus, setCopyStatus] = useState('')
   const blockMode = useSyncExternalStore(subscribeBlocks, () => getBlockSnapshot().mode)
   const traceFeed = useSyncExternalStore(subscribeMonadTraceFeed, getMonadTraceFeedSnapshot)
+  const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
+  const latestProvenStroke = presence.strokes.find((stroke) => stroke.tx)
+  const latestTxUrl = latestProvenStroke?.tx && transactionExplorerUrl(latestProvenStroke.tx)
   const current = JUDGE_STEPS[step]
 
   function openStage(index: number) {
@@ -51,17 +56,26 @@ export function JudgeMode() {
     <div className="judge-mode">
       <div className="judge-heading">
         <span>r3OS / JUDGE PATH</span>
-        <strong>{String(step + 1).padStart(2, '0')} / {String(JUDGE_STEPS.length).padStart(2, '0')}</strong>
+        <strong>
+          {String(step + 1).padStart(2, '0')} / {String(JUDGE_STEPS.length).padStart(2, '0')}
+        </strong>
       </div>
       <div className="judge-connection" aria-label="Actual local connection status">
         <span>CONFIGURED CHAIN: {config.chainId}</span>
         <span>BLOCK FEED: {blockMode}</span>
         <span>monadLogs: {traceFeed.mode}</span>
       </div>
+      {latestTxUrl && (
+        <a className="judge-real-proof" href={latestTxUrl} target="_blank" rel="noreferrer">
+          Open a recent paint transaction in the explorer ↗
+        </a>
+      )}
       <h2>{current.title}</h2>
       <p className="judge-question">{current.question}</p>
       <p className="judge-detail">{current.detail}</p>
-      <p className="judge-cue"><b>NOTICE</b> {current.cue}</p>
+      <p className="judge-cue">
+        <b>NOTICE</b> {current.cue}
+      </p>
       {(step === 1 || step === 2) && (
         <div className="judge-observer">
           <Button onClick={() => void copyObserverLink()}>Copy observer URL</Button>
@@ -70,14 +84,22 @@ export function JudgeMode() {
         </div>
       )}
       {current.action && (
-        <Button primary onClick={() => openStage(step)}>{current.action}</Button>
+        <Button primary onClick={() => openStage(step)}>
+          {current.action}
+        </Button>
       )}
       <div className="judge-footer">
-        <Button disabled={step === 0} onClick={() => navigate(-1)}>◂ Back</Button>
+        <Button disabled={step === 0} onClick={() => navigate(-1)}>
+          ◂ Back
+        </Button>
         {step < JUDGE_STEPS.length - 1 ? (
-          <Button primary onClick={() => navigate(1)}>Next ▸</Button>
+          <Button primary onClick={() => navigate(1)}>
+            Next ▸
+          </Button>
         ) : (
-          <Button primary onClick={() => closeWindow('demo')}>Finish</Button>
+          <Button primary onClick={() => closeWindow('demo')}>
+            Finish
+          </Button>
         )}
       </div>
       <small className="judge-legal">Guide only. No simulated metrics or automated transactions.</small>

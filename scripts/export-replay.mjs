@@ -4,7 +4,7 @@
  * static file the site serves (public/replay/season-N.json). Read-only: never signs or sends anything.
  *
  *   node scripts/export-replay.mjs                 # mainnet defaults, current season
- *   node scripts/export-replay.mjs --season 0 --range 1000
+ *   node scripts/export-replay.mjs --season 0 --range 100
  *
  * Anyone can rerun it and get the same events, so the replay can be checked against the chain.
  * Pass --rpc to use another endpoint; the URL is never printed.
@@ -18,7 +18,8 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/
 const options = {
   rpc: 'https://rpc.monad.xyz',
   paint: '0x5102de3817ae16b3afaeb9d180130669a70787b3',
-  range: 1_000,
+  // rpc.monad.xyz answers eth_getLogs for at most 100 blocks; bigger windows get split and retried.
+  range: 100,
   concurrency: 4,
   out: 'public/replay',
 }
@@ -70,8 +71,9 @@ async function firstBlockAtOrAfter(timestamp, head) {
 async function paintedLogs(fromBlock, toBlock) {
   const rows = chunks(fromBlock, toBlock, options.range)
   const found = []
+  const total = toBlock - fromBlock + 1n
   let next = 0
-  let done = 0
+  let scanned = 0n
   async function worker() {
     while (next < rows.length) {
       const row = rows[next++]
@@ -90,8 +92,13 @@ async function paintedLogs(fromBlock, toBlock) {
           await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
         }
       }
-      done += 1
-      if (process.stderr.isTTY) process.stderr.write(`\rpaints: ${done}/${rows.length} windows`)
+      // Progress in blocks, not windows: a window the RPC rejects as too big is split in two, so a window
+      // count would keep growing and look like it never ends.
+      scanned += row.toBlock - row.fromBlock + 1n
+      if (process.stderr.isTTY)
+        process.stderr.write(
+          `\rscanning blocks: ${Number((scanned * 1000n) / total) / 10}% · ${found.length} paints found`,
+        )
     }
   }
   await Promise.all(Array.from({ length: options.concurrency }, worker))

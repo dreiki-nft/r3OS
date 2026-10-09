@@ -17,7 +17,7 @@ describe('judge route', () => {
 
   it('only opens Paint, CD-ROM, X-ray and Season Replay and never an admin contract surface', () => {
     expect(JUDGE_STEPS.map((_, i) => judgeStepProgram(i))).toEqual([
-      undefined,
+      'paint',
       'paint',
       'paint',
       'cdrom',

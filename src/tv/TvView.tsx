@@ -179,6 +179,7 @@ export function TvView() {
   const elapsed = now - openedAt.current
   const promptAt = promptIndex(elapsed, shift, PARTY_PROMPTS.length)
   const prompt = PARTY_PROMPTS[promptAt]
+  // The contract counts seasons from 0; everywhere else the UI shows season 1, 2, …
   const season = presence.season?.season ?? getCanvasSnapshot().season
   const feed = [
     ...strokes
@@ -241,7 +242,7 @@ export function TvView() {
             <span className="tv-onair">
               <i /> ON AIR
             </span>
-            <span>r3OS · season {season.toString()}</span>
+            <span>r3OS · season {(season + 1n).toString()}</span>
           </header>
 
           <section className="tv-now" aria-live="polite">

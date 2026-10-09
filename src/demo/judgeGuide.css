@@ -93,3 +93,10 @@
 .judge-legal {
   text-align: center;
 }
+
+.judge-real-proof {
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
