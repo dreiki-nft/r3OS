@@ -13,6 +13,7 @@ import {
   type Replay,
 } from './replayData'
 import './replay.css'
+import { painterName, usePainterNames } from '../chain/names'
 
 type Load =
   | { state: 'loading' }
@@ -24,10 +25,6 @@ type Axis = 'strokes' | 'time'
 const DURATIONS = [15, 30, 60] as const
 const reducedMotion = () =>
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
-
-function short(address: string) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`
-}
 
 export function ReplayProgram() {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
@@ -62,6 +59,7 @@ export function ReplayProgram() {
 }
 
 function ReplayPlayer({ replay }: { replay: Replay }) {
+  usePainterNames()
   const total = replay.events.length
   const canvasAt = useMemo(() => createCanvasAt(replay), [replay])
   const ref = useRef<HTMLCanvasElement>(null)
@@ -142,7 +140,7 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
         <span>
           <b>{count.toLocaleString('en-US')}</b> / {total.toLocaleString('en-US')} paints
         </span>
-        <span className="replay-latest">{latest ? `last: ${short(latest)}` : 'blank canvas'}</span>
+        <span className="replay-latest">{latest ? `last: ${painterName(latest)}` : 'blank canvas'}</span>
       </div>
       <input
         className="replay-scrub"

@@ -6,7 +6,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { PALETTE } from '../lib/palette'
-import { shortAddress } from '../os/activity'
 import { getCanvasSnapshot, subscribeCanvas, subscribeCanvasActivity } from '../paint/canvasStore'
 import {
   getPresenceSnapshot,
@@ -33,6 +32,7 @@ import {
   type TvStroke,
 } from './tvModel'
 import './tv.css'
+import { painterName, usePainterNames } from '../chain/names'
 
 const MAX_FLASHES = 40
 /** Only the newest flashes get a name tag, so a busy corner stays readable. */
@@ -97,6 +97,7 @@ export function TvView() {
   const [panel, setPanel] = useState(true)
   const [idle, setIdle] = useState(false)
   const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
+  usePainterNames()
 
   // Strokes from the start-up look-back (no colour known: use the painter's colour; never flashed).
   useEffect(() => {
@@ -226,7 +227,7 @@ export function TvView() {
                 >
                   {index < LABELLED_FLASHES && (
                     <span>
-                      {shortAddress(stroke.owner)} +{stroke.pixels}px
+                      {painterName(stroke.owner)} +{stroke.pixels}px
                     </span>
                   )}
                 </div>
@@ -297,14 +298,14 @@ export function TvView() {
                   row.kind === 'paint' ? (
                     <li key={row.key}>
                       <i style={{ background: PALETTE[row.stroke.colour].hex }} />
-                      <span>{shortAddress(row.stroke.owner)}</span>
+                      <span>{painterName(row.stroke.owner)}</span>
                       <span>+{row.stroke.pixels}px</span>
                       <span>{ago(row.block)}</span>
                     </li>
                   ) : (
                     <li key={row.key} className="tv-feed-frame">
                       <i />
-                      <span>{shortAddress(row.frame.minter)}</span>
+                      <span>{painterName(row.frame.minter)}</span>
                       <span>saved frame #{row.frame.tokenId.toString()}</span>
                       <span>{ago(row.block)}</span>
                     </li>
@@ -323,7 +324,7 @@ export function TvView() {
                 {leaders.map((row) => (
                   <li key={row.owner}>
                     <i style={{ background: PALETTE[row.colour].hex }} />
-                    <span>{shortAddress(row.owner)}</span>
+                    <span>{painterName(row.owner)}</span>
                     <span>{row.pixels.toLocaleString('en-US')} px</span>
                   </li>
                 ))}

@@ -25,6 +25,7 @@ import { errorText, labAddress, labLoadError, sameAddress, shortAddress } from '
 import { useRefreshTick } from '../chain/refreshTick'
 import { readCoreConstants } from '../chain/contracts'
 import { seasonClock } from '../lib/seasonClock'
+import { painterName, usePainterNames } from '../chain/names'
 
 const RULES = [
   'bid by depositing MON. your bid is your total deposit, and a new high has to beat the last one by 5%.',
@@ -99,6 +100,7 @@ export function routeNumber(name: string, hash = typeof location === 'undefined'
 
 export function AuctionProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
+  usePainterNames()
   const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const [address, setAddress] = useState<Address>()
@@ -510,7 +512,7 @@ export function AuctionProgram() {
           {info && (
             <dl className="lab-dl">
               <dt>seller</dt>
-              <dd>{shortAddress(info.seller)}</dd>
+              <dd>{painterName(info.seller)}</dd>
               <dt>royalty</dt>
               <dd>5% to the collection</dd>
               <dt>admin</dt>
@@ -566,7 +568,7 @@ export function AuctionProgram() {
                 <div className="sunken">
                   <small>{info.state === 2 ? 'winning bid' : 'standing high'}</small>
                   <b>{formatEther(info.state === 2 ? info.price : info.highest)} MON</b>
-                  <small>{winning ? shortAddress(winning.bidder) : '—'}</small>
+                  <small>{winning ? painterName(winning.bidder) : '—'}</small>
                 </div>
                 <div className="sunken">
                   <small>next minimum</small>
@@ -675,7 +677,7 @@ export function AuctionProgram() {
                   {bids.map((bid, index) => (
                     <span className="auction-bid-grid" key={index}>
                       <span>{bid.blockNumber.toString()}</span>
-                      <span>{shortAddress(bid.bidder)}</span>
+                      <span>{painterName(bid.bidder)}</span>
                       <span>{formatEther(bid.total)} MON</span>
                       <span>
                         {knownEnd && bid.blockNumber > previewEnd

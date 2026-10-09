@@ -1356,6 +1356,15 @@ button:disabled {
   color: var(--text-soft);
 }
 
+.pass-name-hint {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.pass-name-hint a {
+  color: var(--accent);
+}
+
 .pass-identity em {
   color: var(--accent);
   font-style: normal;

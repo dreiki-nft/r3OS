@@ -14,6 +14,7 @@ import { isBooting, subscribeBooting } from './bootState'
 import { isFirstRunOpen } from './firstRunState'
 import { openProgram } from './programs'
 import { getWindows, subscribeWindows } from './windows'
+import { painterName } from '../chain/names'
 
 export const BALLOON_ID = 'youve-got-paint'
 export const QUIET_AFTER_BOOT_MS = 30_000
@@ -59,7 +60,7 @@ export function youveGotPaintBody(strokes: readonly Stroke[], mine: readonly Box
   const painters = [...new Set(strokes.map((stroke) => stroke.owner))]
   const pixels = strokes.reduce((sum, stroke) => sum + stroke.pixels, 0)
   const near = strokes.some((stroke) => mine.some((box) => boxesNear(stroke.box, box)))
-  const who = painters.length === 1 ? shortAddress(painters[0]) : `${painters.length} painters`
+  const who = painters.length === 1 ? painterName(painters[0]) : `${painters.length} painters`
   const where = near ? ' right next to your art' : ''
   return `${who} just painted ${pixels.toLocaleString('en-US')} px${where}.`
 }

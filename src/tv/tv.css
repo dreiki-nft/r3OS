@@ -407,3 +407,11 @@
     }
   }
 }
+
+/* Painter names (.nad names or nicknames) can be long: keep rows on one line. */
+.tv-feed li > span:nth-child(2),
+.tv-top li > span:nth-child(2) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

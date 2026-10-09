@@ -37,6 +37,7 @@ import {
 import { HardwareProfiles } from './HardwareProfiles'
 import { SafeImage } from '../os/ui/SafeImage'
 import { PoweredByMonad } from '../os/ui/PoweredByMonad'
+import { nadNameOf, nadNamesAvailable, painterName, usePainterNames } from '../chain/names'
 import { WalletChooser } from '../os/WalletChooser'
 import { Tabs } from '../os/ui/Tabs'
 import { TreeView } from '../os/ui/TreeView'
@@ -95,6 +96,7 @@ function ipfsUrl(uri: string) {
 
 export function PassProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
+  usePainterNames()
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const [tab, setTab] = useState(() => {
@@ -467,9 +469,18 @@ export function PassProgram() {
                   <div className="pass-identity">
                     <small className="pass-kicker">R3OS PAINTER PASS · BUILD {block.block.toString()}</small>
                     <b className="pass-number">Pass #{passId.toString()}</b>
-                    <span>
-                      {short(wallet.account)} · <em>soulbound</em>
+                    <span title={wallet.account}>
+                      {painterName(wallet.account)} · {short(wallet.account)} · <em>soulbound</em>
                     </span>
+                    {nadNamesAvailable() && nadNameOf(wallet.account) === null && (
+                      <small className="pass-name-hint">
+                        want your name here and on the TV? set a primary{' '}
+                        <a href="https://nad.domains" target="_blank" rel="noopener noreferrer">
+                          .nad name
+                        </a>{' '}
+                        for this wallet.
+                      </small>
+                    )}
                     <dl className="pass-stats">
                       {(
                         [

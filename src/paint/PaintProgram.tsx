@@ -95,6 +95,7 @@ import { PaletteBar } from './PaletteBar'
 import { bytesToRuns, runsToBytes, splitPaintRuns } from './split'
 import { drawStrokeSegment, protectOutline } from './strokes'
 import { Toolbox, type Tool } from './Toolbox'
+import { painterName, usePainterNames } from '../chain/names'
 
 const EMPTY_BUDGET: BudgetState = { hourly: 0, hourlyLimit: 0, holder: 0, total: 0, activeDays: 0 }
 const ALLOWED_BACKGROUNDS = new Set([0, 5, 6, 8, 9, 10, 11])
@@ -126,6 +127,7 @@ export function PaintProgram() {
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const tileSnapshot = useSyncExternalStore(subscribeTileCache, getTileCacheSnapshot)
   const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
+  usePainterNames()
   // A judge's guest wallet signs locally with no popups, so the Live Mode offer is replaced by a note.
   const guest = Boolean(wallet.account) && usingGuestWallet()
   const together = summarize(presence.strokes, block.block)
@@ -1421,7 +1423,7 @@ export function PaintProgram() {
                   {presence.strokes.slice(0, 3).map((stroke) => (
                     <li key={stroke.key}>
                       <button title="show this stroke on the canvas" onClick={() => focusPaint(stroke.box)}>
-                        <span>{stroke.owner === me ? 'you' : short(stroke.owner)}</span>
+                        <span>{stroke.owner === me ? 'you' : painterName(stroke.owner)}</span>
                         <small>
                           {stroke.pixels.toLocaleString('en-US')} px ·{' '}
                           {agoLabel(stroke.block, block.block, block.blockTimeMs)} ago

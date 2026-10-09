@@ -11,6 +11,7 @@ import {
   youveGotPaintBody,
 } from './activity'
 import type { Stroke } from '../paint/presence'
+import { nicknameFor } from '../chain/names'
 
 const stroke = (owner: string, x: number, pixels = 10): Stroke => ({
   key: `${owner}:${x}`,
@@ -49,9 +50,11 @@ describe("You've Got Paint", () => {
 
   it('says who painted, how much, and whether it was next to your art', () => {
     const one = [stroke('0x1234567890abcdef1234567890abcdef12345678', 100, 12)]
-    expect(youveGotPaintBody(one, [])).toBe('0x1234…5678 just painted 12 px.')
+    // Painters are named the same way everywhere: their .nad name, else their fixed nickname.
+    const who = nicknameFor('0x1234567890abcdef1234567890abcdef12345678')
+    expect(youveGotPaintBody(one, [])).toBe(`${who} just painted 12 px.`)
     expect(youveGotPaintBody(one, [{ x0: 110, y0: 110, x1: 112, y1: 112 }])).toBe(
-      '0x1234…5678 just painted 12 px right next to your art.',
+      `${who} just painted 12 px right next to your art.`,
     )
     const many = [stroke('0xa', 0, 600), stroke('0xb', 50, 600), stroke('0xa', 90, 1)]
     expect(youveGotPaintBody(many, [{ x0: 200, y0: 200, x1: 210, y1: 210 }])).toBe(

@@ -31,6 +31,7 @@ import {
 } from './frameImage'
 import { getFrameInfo, type FrameInfo } from './framesStore'
 import { PixelPreview } from './PixelPreview'
+import { painterName, usePainterNames } from '../chain/names'
 
 const RENDERER_COPY: Record<string, string> = {
   'built-in': 'the original 256 × 256 frame',
@@ -85,6 +86,7 @@ async function rendererPreview(renderer: RendererInfo, tokenId: number, info: Fr
 
 export function FramePropsDialog() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
+  usePainterNames()
   const params = useRouteParams()
   const tokenId = safeRouteInt(params.get('token'))
   const initialTab = params.get('tab')
@@ -293,7 +295,7 @@ export function FramePropsDialog() {
                 frame #{tokenId} · season {info.season + 1}
               </dd>
               <dt>minter</dt>
-              <dd>{short(info.minter)}</dd>
+              <dd title={info.minter ?? undefined}>{painterName(info.minter)}</dd>
               <dt>block</dt>
               <dd>{info.blockNumber.toString()}</dd>
               <dt>sealed by</dt>
@@ -307,7 +309,7 @@ export function FramePropsDialog() {
               <dt>royalty</dt>
               <dd>{royalty}</dd>
               <dt>owner</dt>
-              <dd>{owner == null ? 'burned' : owns ? 'you' : short(owner)}</dd>
+              <dd title={owner ?? undefined}>{owner == null ? 'burned' : owns ? 'you' : painterName(owner)}</dd>
             </dl>
           </div>
         )}

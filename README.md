@@ -96,7 +96,7 @@ Every program below is live on mainnet and reachable from the desktop, the Start
 
 | | |
 | --- | --- |
-| **Who's here** | "Painting now", the latest strokes, outlines flashing where others just painted, a painter count in the taskbar and "You've got paint" notes. All read from the contract's `Painted` events; there is no presence server. |
+| **Who's here** | "Painting now", the latest strokes, outlines flashing where others just painted, a painter count in the taskbar and "You've got paint" notes. All read from the contract's `Painted` events; there is no presence server. Painters show up by their **`.nad` name** (Nad Name Service, read onchain) or, without one, a fixed nickname like `cyan crayon·79c8` that everyone sees the same. |
 | **Broadcast view (TV)** | [r3os.app/#/tv](https://r3os.app/#/tv) (or Run → `tv`) puts the canvas full-screen for a projector or stream: every stroke flashes where it lands with who painted it, "painting right now", tonight's totals, top painters, a rotating paint prompt and a QR code to join. |
 | **Season Replay** | Watch the whole season being made: every paint, in order, rebuilt from the `Painted` events with [`scripts/export-replay.mjs`](scripts/export-replay.mjs). Play, scrub, every-stroke or real-time, and anyone can regenerate the file from the chain. |
 | **Monad X-ray** | Follows your own transaction from click to signature, broadcast, receipt and Monad's commit stages (Proposed → Voted → Finalized), with the 16 canvas regions it touched. Stages that weren't observed stay empty; a receipt is never relabelled as finality. |
