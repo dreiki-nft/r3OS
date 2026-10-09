@@ -400,101 +400,139 @@ export function PassProgram() {
               </div>
             ) : (
               <div className="pass-general">
-                <button className="pass-monitor" onClick={() => setDisplayOpen(!displayOpen)}>
-                  <div className="monitor-screen">
-                    {selectedImage ? (
-                      <SafeImage
-                        src={selectedImage}
-                        alt={displayId == null ? 'r3tards logo' : `r3tard #${displayId}`}
-                        width={170}
-                        height={140}
-                      />
-                    ) : (
-                      <SafeImage src="/os/brand/logo.png" alt="r3tards logo" width={170} height={140} />
-                    )}
-                  </div>
-                  <i />
-                  <b />
-                </button>
-                <div>
-                  <p>System: r3OS painter pass / build {block.block.toString()}</p>
-                  <p>
-                    Registered to: {short(wallet.account)} / pass #{passId.toString()} · soulbound
-                  </p>
-                  <div className="display-picker">
-                    <Button onClick={() => setDisplayOpen(!displayOpen)}>
-                      Display: {displayId == null ? '(none) r3tards logo' : `r3tard #${displayId}`}
-                    </Button>
-                    {displayOpen && (
-                      <ListBox label="Display r3tard">
-                        <button
-                          role="option"
-                          onClick={() => {
-                            setDisplayId(null)
-                            if (wallet.account) writeStoredDisplay(wallet.account, null)
-                            setDisplayOpen(false)
-                            playSound('select')
-                          }}
-                        >
-                          <Icon name="frog" size={24} /> (none) r3tards logo
-                        </button>
-                        {ids.map((id) => (
+                <div className="pass-top">
+                  <div className="pass-display">
+                    <button className="pass-monitor" onClick={() => setDisplayOpen(!displayOpen)}>
+                      <div className="monitor-screen">
+                        {selectedImage ? (
+                          <SafeImage
+                            src={selectedImage}
+                            alt={displayId == null ? 'r3tards logo' : `r3tard #${displayId}`}
+                            width={170}
+                            height={140}
+                          />
+                        ) : (
+                          <SafeImage src="/os/brand/logo.png" alt="r3tards logo" width={170} height={140} />
+                        )}
+                      </div>
+                      <i />
+                      <b />
+                    </button>
+                    <div className="display-picker">
+                      <Button onClick={() => setDisplayOpen(!displayOpen)}>
+                        Display: {displayId == null ? 'r3tards logo' : `r3tard #${displayId}`} ▾
+                      </Button>
+                      {displayOpen && (
+                        <ListBox label="Display r3tard">
                           <button
                             role="option"
-                            key={id.toString()}
                             onClick={() => {
-                              setDisplayId(id)
-                              if (wallet.account) writeStoredDisplay(wallet.account, id)
+                              setDisplayId(null)
+                              if (wallet.account) writeStoredDisplay(wallet.account, null)
                               setDisplayOpen(false)
                               playSound('select')
                             }}
                           >
-                            {images.get(id.toString()) ? (
-                              <SafeImage
-                                src={images.get(id.toString())!}
-                                alt={`r3tard #${id}`}
-                                width={24}
-                                height={24}
-                              />
-                            ) : (
-                              <Icon name="frog" size={24} />
-                            )}
-                            r3tard #{id.toString()}
+                            <Icon name="frog" size={24} /> (none) r3tards logo
                           </button>
-                        ))}
-                        <small>r3tards in {short(wallet.account)} · saved on this device</small>
-                      </ListBox>
-                    )}
+                          {ids.map((id) => (
+                            <button
+                              role="option"
+                              key={id.toString()}
+                              onClick={() => {
+                                setDisplayId(id)
+                                if (wallet.account) writeStoredDisplay(wallet.account, id)
+                                setDisplayOpen(false)
+                                playSound('select')
+                              }}
+                            >
+                              {images.get(id.toString()) ? (
+                                <SafeImage
+                                  src={images.get(id.toString())!}
+                                  alt={`r3tard #${id}`}
+                                  width={24}
+                                  height={24}
+                                />
+                              ) : (
+                                <Icon name="frog" size={24} />
+                              )}
+                              r3tard #{id.toString()}
+                            </button>
+                          ))}
+                          <small>r3tards in {short(wallet.account)} · saved on this device</small>
+                        </ListBox>
+                      )}
+                    </div>
                   </div>
-                  <p>
-                    days painted {stats.activeDays.toString()} · pixels {stats.pixels.toString()} · frames{' '}
-                    {stats.frames.toString()}
-                  </p>
-                  <p>
-                    session paints {stats.sessionPaints.toString()} · storm paints{' '}
-                    {stats.stormPaints.toString()} · first paint block {stats.firstPaintBlock.toString()}
-                  </p>
-                  {passImage && (
+                  <div className="pass-identity">
+                    <small className="pass-kicker">R3OS PAINTER PASS · BUILD {block.block.toString()}</small>
+                    <b className="pass-number">Pass #{passId.toString()}</b>
+                    <span>
+                      {short(wallet.account)} · <em>soulbound</em>
+                    </span>
+                    <dl className="pass-stats">
+                      {(
+                        [
+                          ['DAYS PAINTED', stats.activeDays.toString()],
+                          ['PIXELS', stats.pixels.toLocaleString('en-US')],
+                          ['FRAMES', stats.frames.toString()],
+                          ['SESSION PAINTS', stats.sessionPaints.toString()],
+                          ['STORM PAINTS', stats.stormPaints.toString()],
+                          ['FIRST PAINT', stats.firstPaintBlock ? `#${stats.firstPaintBlock}` : '—'],
+                        ] as const
+                      ).map(([label, value]) => (
+                        <div className="sunken" key={label}>
+                          <dt>{label}</dt>
+                          <dd className={value.length > 6 ? 'long' : ''}>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </div>
+                <fieldset className="group-box pass-art-box">
+                  <legend>Your Pass, drawn onchain</legend>
+                  {passImage ? (
                     <SafeImage
                       className="pass-svg"
                       src={passImage}
                       alt="your Painter Pass, drawn onchain"
-                      width={180}
-                      height={180}
+                      width={168}
+                      height={168}
                     />
+                  ) : (
+                    <span className="pass-svg pass-svg-empty">loading pass…</span>
                   )}
-                  <p>
-                    stamps {stamps.filter((stamp) => stamp.earned).length} of {stamps.length}{' '}
+                  <div className="pass-stamps">
+                    <b>
+                      stamps {stamps.filter((stamp) => stamp.earned).length} of {stamps.length}
+                    </b>
+                    {/* Filled left to right, one segment per stamp: a progress bar, not a map of which ones. */}
+                    <div className="pass-stamp-bar sunken" aria-hidden="true">
+                      {stamps.map((stamp, index) => (
+                        <i
+                          key={`${stamp.name}-${index}`}
+                          className={index < stamps.filter((row) => row.earned).length ? 'on' : ''}
+                        />
+                      ))}
+                    </div>
+                    <small>the art updates as you paint: every stat above is read from the contract.</small>
                     <Button onClick={() => setTab('Stamps')}>See stamps…</Button>
-                  </p>
-                </div>
-                <div className="manufacturer">
-                  <span>Manufactured and supported by:</span>
-                  <div className="manufacturer-logos">
-                    <SafeImage src="/os/brand/pfp-main.webp" alt="r3tards" width={130} height={130} />
-                    <SafeImage src="/os/brand/pfp-builder.webp" alt="dreiki, the builder" width={130} height={130} />
                   </div>
-                  <PoweredByMonad className="manufacturer-powered" />
+                </fieldset>
+                <div className="pass-credits">
+                  <span>
+                    Manufactured and
+                    <br />
+                    supported by
+                  </span>
+                  <SafeImage src="/os/brand/pfp-main.webp" alt="r3tards" width={64} height={64} />
+                  <SafeImage
+                    src="/os/brand/pfp-builder.webp"
+                    alt="dreiki, the builder"
+                    width={64}
+                    height={64}
+                  />
+                  <PoweredByMonad className="pass-powered" />
                 </div>
               </div>
             )}

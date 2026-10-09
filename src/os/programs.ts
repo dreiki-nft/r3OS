@@ -119,7 +119,7 @@ export const programs: ProgramDef[] = [
     icon: 'computer',
     colour: '#FFFFFF',
     component: PassProgram,
-    defaultSize: { width: 580, height: 632 },
+    defaultSize: { width: 720, height: 820 },
     minSize: { width: 500, height: 480 },
     singleInstance: true,
     hash: '#/pass',

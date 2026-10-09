@@ -1109,7 +1109,6 @@ button:disabled {
   background: var(--field);
 }
 
-
 .canvas-well {
   overflow: auto;
   background: var(--field);
@@ -1299,10 +1298,194 @@ button:disabled {
   overflow: auto;
 }
 
+/* My Pass › General: monitor + identity + stat tiles, the Pass art box, then a one-line credits footer. */
 .pass-general {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.pass-top {
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+}
+
+.pass-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  width: 186px;
+}
+
+.pass-display .display-picker,
+.pass-display .display-picker > button {
+  width: 100%;
+}
+
+.pass-display .display-picker > button {
+  padding-inline: 6px;
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pass-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pass-kicker {
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.pass-number {
+  font-size: 30px;
+  line-height: 1.05;
+}
+
+.pass-identity > span {
+  color: var(--text-soft);
+}
+
+.pass-identity em {
+  color: var(--accent);
+  font-style: normal;
+}
+
+.pass-stats {
   display: grid;
-  grid-template-columns: 190px 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0 0;
+}
+
+.pass-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 10px;
+  background: var(--field);
+  min-width: 0;
+}
+
+.pass-stats dt {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pass-stats dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.pass-stats dd.long {
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.pass-art-box {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pass-art-box .pass-svg {
+  flex: none;
+  width: 168px;
+  height: 168px;
+  image-rendering: pixelated;
+}
+
+.pass-svg-empty {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  background: var(--field);
+}
+
+.pass-stamps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pass-stamps b {
+  font-size: 16px;
+}
+
+.pass-stamps small {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pass-stamp-bar {
+  display: flex;
+  gap: 3px;
+  align-self: stretch;
+  padding: 4px;
+  background: var(--field);
+}
+
+.pass-stamp-bar i {
+  flex: 1;
+  height: 14px;
+  background: #1b1b1e;
+}
+
+.pass-stamp-bar i.on {
+  background: var(--accent);
+}
+
+.pass-credits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--bevel-light-2);
+}
+
+.pass-credits > span {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pass-credits img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: 2px solid #111;
+  box-shadow: 3px 3px #000;
+}
+
+.pass-powered {
+  margin-left: auto;
+}
+
+.pass-powered img {
+  width: auto;
+  height: 22px;
+  border: 0;
+  box-shadow: none;
 }
 
 .pass-monitor {
@@ -1347,35 +1530,6 @@ button:disabled {
   height: 9px;
   background: #3a3a40;
   margin: auto;
-}
-
-.manufacturer {
-  grid-column: 1/3;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.manufacturer {
-  flex-wrap: wrap;
-}
-
-.manufacturer-logos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.manufacturer-logos img {
-  width: 130px;
-  height: 130px;
-  object-fit: cover;
-  border: 2px solid #111;
-  box-shadow: 5px 5px #000;
-}
-
-.manufacturer-powered {
-  flex-basis: 100%;
 }
 
 /* "Powered by Monad": My Pass footer and the boot screen. */
@@ -1601,12 +1755,22 @@ button:disabled {
     grid-template-columns: 130px 1fr;
   }
 
-  .pass-general {
-    grid-template-columns: 1fr;
+  .pass-top {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .manufacturer {
-    grid-column: 1;
+  .pass-display {
+    width: auto;
+  }
+
+  .pass-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pass-art-box {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .device-manager {
@@ -1667,11 +1831,6 @@ button:disabled {
 
 .pass-monitor .ico {
   margin: auto;
-}
-
-.manufacturer > .ico {
-  width: 150px !important;
-  height: 150px !important;
 }
 
 .balloon a {
