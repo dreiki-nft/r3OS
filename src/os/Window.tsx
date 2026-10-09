@@ -16,6 +16,7 @@ import {
   windowZIndex,
   type WindowState,
 } from './windows'
+import { isPhoneScreen } from './phone'
 
 const WindowActiveContext = createContext(false)
 export const useWindowActive = () => useContext(WindowActiveContext)
@@ -42,7 +43,7 @@ export function Window({
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
   const sizing = useRef<{ x: number; y: number; w: number; h: number } | null>(null)
   if (win.minimized) return null
-  const mobile = typeof innerWidth === 'number' && innerWidth <= 640
+  const mobile = isPhoneScreen()
   const maximizable = controls === 'full'
   const minimizable = controls === 'full' || controls === 'min-close'
   const style =

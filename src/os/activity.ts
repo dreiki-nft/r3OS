@@ -15,6 +15,7 @@ import { isFirstRunOpen } from './firstRunState'
 import { openProgram } from './programs'
 import { getWindows, subscribeWindows } from './windows'
 import { painterName } from '../chain/names'
+import { isPhoneScreen } from './phone'
 
 export const BALLOON_ID = 'youve-got-paint'
 export const QUIET_AFTER_BOOT_MS = 30_000
@@ -131,11 +132,7 @@ export function subscribeUnreadPaint(listener: Listener) {
 }
 
 function narrowScreen() {
-  try {
-    return window.matchMedia('(max-width: 640px)').matches
-  } catch {
-    return false
-  }
+  return isPhoneScreen()
 }
 
 /** Open Paint, outline every unread stroke for a few seconds and scroll to them. */

@@ -46,6 +46,7 @@ import {
   initReleases,
   subscribeReleases,
 } from './releases'
+import { isPhoneScreen } from './phone'
 
 const TvView = lazy(() => import('../tv/TvView').then((module) => ({ default: module.TvView })))
 
@@ -110,7 +111,8 @@ export function R3OS() {
         icon: 'key',
         title: 'Guest wallet connected',
         body: `${address.slice(0, 6)}…${address.slice(-4)} holds a little demo MON so you can paint right away. it's a throwaway wallet for judges: anything it paints counts under this guest address, not as a community painter.`,
-        sticky: true,
+        // On a phone it would sit over Paint's tools, so there it fades like any other balloon.
+        sticky: !isPhoneScreen(),
         actions: [{ label: 'Open Paint', run: () => void openProgram('paint') }],
       })
     }

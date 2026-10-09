@@ -22,6 +22,7 @@ import {
   type ShellAction,
 } from './shellMenus'
 import { refreshReleaseClock } from './releases'
+import { isPhoneScreen } from './phone'
 
 /** Decorative layers of the desktop surface: a right-click / long-press here belongs to the desktop. */
 const SURFACE_CLASSES = [
@@ -272,7 +273,7 @@ export function Desktop() {
             onClick={() => {
               if (Date.now() < suppressClickUntil.current) return
               choose(index)
-              if (matchMedia('(max-width:640px)').matches) open(index)
+              if (isPhoneScreen()) open(index)
             }}
             onDoubleClick={() => open(index)}
           >

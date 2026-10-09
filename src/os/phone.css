@@ -1,0 +1,454 @@
+/*
+ * Phones. Loaded after theme.css, so these rules win over the desktop layout at the same specificity.
+ * On a phone every window is full screen, so each program gets one readable column that never scrolls
+ * sideways. The desktop (wide screen) layout is untouched.
+ */
+
+/* iOS Safari enlarges text on its own ("text inflation"), which made phone text huge and broke layouts. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (max-width: 640px), (max-height: 500px) and (pointer: coarse) {
+  :root {
+    --phone-taskbar: calc(48px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .taskbar {
+    height: var(--phone-taskbar);
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .os-window {
+    min-width: 0;
+    height: calc(100% - var(--phone-taskbar)) !important;
+  }
+
+  .titlebar {
+    height: 36px;
+  }
+
+  .task-buttons,
+  .assistant {
+    display: none;
+  }
+
+  .os-window {
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+  }
+
+  .os-window .window-content {
+    height: calc(100% - 36px);
+    /* Each program scrolls vertically; nothing may push it sideways. */
+    overflow-x: hidden;
+  }
+
+  .start-menu {
+    bottom: var(--phone-taskbar);
+  }
+
+  .taskbar .start-button {
+    flex: 0 0 auto;
+  }
+
+  .taskbar .tray {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 2px;
+    padding: 3px 5px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .taskbar .tray > button {
+    flex: 0 0 auto;
+    padding: 0 3px;
+  }
+
+  /* The assistant is hidden on phones, so its tray button would do nothing. */
+  .taskbar .tray > button[aria-label='Show assistant'] {
+    display: none;
+  }
+
+  /* Balloons drop in from the top on a phone: at the bottom they covered the Paint button. */
+  .balloon-stack {
+    top: calc(6px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    left: 6px;
+    right: 6px;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .balloon {
+    width: auto;
+    max-height: 45vh;
+    overflow-y: auto;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 6px;
+    padding: 8px 26px 8px 8px;
+    font-size: 12px;
+    box-shadow: 3px 3px #000;
+  }
+
+  .balloon > button {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  /* ------------------------------------------------------------------ Paint */
+
+  /* One scrolling column: tools, a square canvas the width of the phone, colours, then the Paint button,
+     which stays pinned to the bottom while the canvas is on screen. */
+  .paint-program {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .paint-program > *,
+  .paint-main > *,
+  .paint-bottom > * {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .paint-program .menu-bar {
+    order: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .paint-live-hero {
+    order: 2;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    min-height: 0;
+    padding: 6px 8px;
+  }
+
+  .paint-live-state small {
+    font-size: 11px;
+  }
+
+  .paint-live-proof {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 8px;
+    padding: 4px 0 0;
+    border-left: 0;
+    border-top: 1px solid #444;
+    font-size: 11px;
+  }
+
+  .paint-live-hero.active .paint-live-proof {
+    border-top-color: #26783b;
+  }
+
+  /* "block #… · websocket live" repeats what the taskbar already shows. */
+  .paint-live-proof > span:nth-of-type(2) {
+    display: none;
+  }
+
+  .paint-proof-line {
+    width: 100%;
+  }
+
+  .paint-live-hero-button {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    min-width: 96px;
+    max-width: 150px;
+    min-height: 40px;
+    padding: 4px 10px;
+  }
+
+  /* Tools, colours, canvas, Paint button: the canvas column's parts become rows of the program itself. */
+  .paint-main {
+    display: contents;
+  }
+
+  .paint-main .toolbox {
+    order: 3;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    overflow: visible;
+  }
+
+  .paint-main .toolbox .tool {
+    display: grid;
+    width: 38px;
+    height: 38px;
+  }
+
+  .paint-main .toolbox .tool svg,
+  .paint-main .toolbox .tool img {
+    max-width: 26px;
+    max-height: 26px;
+  }
+
+  /* Zoom does nothing on a phone (the canvas always fills the width), so it is hidden there. */
+  .paint-main .toolbox .tool[aria-label='Zoom'] {
+    display: none;
+  }
+
+  .paint-main .tool-options {
+    grid-column: auto;
+    grid-row: auto;
+    flex-direction: row;
+    flex: 1 0 auto;
+    min-width: 132px;
+    padding: 2px;
+  }
+
+  .paint-main .tool-options button {
+    flex: 1;
+    height: 30px;
+    padding: 0 4px;
+    grid-template-columns: 10px auto;
+    font-size: 11px;
+  }
+
+  .paint-main .tool-options small {
+    align-self: center;
+    padding: 0 4px;
+  }
+
+  .canvas-well {
+    order: 5;
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 1;
+    max-height: none;
+    padding: 4px;
+    overflow: hidden;
+  }
+
+  .canvas-well canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .paint-info {
+    display: none;
+  }
+
+  /* The bottom panel's parts become separate rows so the Paint button can stay pinned. */
+  .paint-bottom {
+    display: contents;
+  }
+
+  .palette-row {
+    order: 4;
+    gap: 8px;
+    padding: 0 8px 6px;
+  }
+
+  .palette-row .colour-well {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 50px;
+  }
+
+  .palette-grid {
+    flex: 1;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(2, 24px);
+    gap: 2px;
+  }
+
+  .palette-grid button {
+    width: 100%;
+    height: 24px;
+  }
+
+  .paint-action {
+    order: 6;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    padding: 6px 8px 8px;
+    background: var(--face);
+    border-top: 1px solid #111;
+    box-shadow: 0 -6px 10px rgba(0, 0, 0, 0.35);
+  }
+
+  .paint-action > small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  /* The Live Mode panel above already explains this; keep the pinned bar short. */
+  .paint-action .paint-live-hint:not(.active) {
+    display: none;
+  }
+
+  .paint-action-buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  .paint-action-buttons .r3-button {
+    flex: 1;
+    min-height: 46px;
+  }
+
+  .paint-action .paint-live-hint {
+    white-space: normal;
+    font-size: 11px;
+  }
+
+  .budget-meter {
+    order: 7;
+    padding: 8px;
+  }
+
+  .paint-status {
+    order: 8;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .paint-status span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 640px), (max-height: 500px) and (pointer: coarse) {
+  /* ------------------------------------------------------------- Other programs */
+
+  /* Tabs wrap onto a second row, like Windows 98 property sheets with many tabs. */
+  .tabs {
+    flex-wrap: wrap;
+    padding-left: 4px;
+    row-gap: 2px;
+  }
+
+  .tab {
+    padding: 6px 9px;
+  }
+
+  /* Explorer-style toolbars scroll sideways instead of pushing the window wider. */
+  .os-window .frames-toolbar {
+    min-height: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .os-window .frames-toolbar button {
+    flex: 0 0 auto;
+    width: 56px;
+  }
+
+  .os-window .frames-status {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .os-window .frames-status span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .os-window .season-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Detail lists keep their columns and scroll inside the list; empty-state text still wraps to the screen. */
+  .os-window .cdrom-empty,
+  .os-window .bin-empty {
+    max-width: calc(100vw - 16px);
+    padding: 16px;
+  }
+
+  /* Live Mode wizard: the side picture takes too much width on a phone. */
+  .live-wizard-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+  }
+
+  .live-wizard-art {
+    display: none;
+  }
+}
+
+@media (max-width: 640px), (max-height: 500px) and (pointer: coarse) {
+  /* Frame properties: picture on top, details full width underneath. */
+  .os-window .frame-general,
+  .os-window .renderer-layout,
+  .os-window .df1-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .os-window .frame-general-thumb {
+    justify-self: center;
+  }
+
+  .os-window .frame-general dl {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .os-window .frame-general dd {
+    overflow-wrap: anywhere;
+  }
+
+  .os-window .df1-pair .sunken {
+    width: 100%;
+    max-width: 260px;
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
+
+/* Landscape phones: the canvas sits on the left at full height, the controls scroll on the right. */
+@media (max-height: 500px) and (pointer: coarse) and (orientation: landscape) {
+  .paint-program {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-rows: repeat(7, max-content) 1fr;
+    align-content: start;
+  }
+
+  .paint-program > *,
+  .paint-main > *,
+  .paint-bottom > * {
+    grid-column: 2;
+  }
+
+  .paint-program .canvas-well {
+    grid-column: 1;
+    grid-row: 1 / 9;
+    position: sticky;
+    top: 0;
+    width: calc(100dvh - var(--phone-taskbar) - 48px);
+    height: calc(100dvh - var(--phone-taskbar) - 48px);
+    border-right: 1px solid #000;
+  }
+
+  .paint-action {
+    position: static;
+    box-shadow: none;
+  }
+}
