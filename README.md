@@ -291,4 +291,4 @@ The contracts are **not professionally audited**. See [`THREAT_MODEL.md`](THREAT
 
 ## Credits
 
-Built solo by **dreiki** for and with the **r3tards** community, using Claude and ChatGPT as coding assistants. Art, palette and r3tards characters by dreiki.
+Built solo by **dreiki** for the **Monad** community, using Claude and ChatGPT as coding assistants. Art, palette and r3tards characters by dreiki.
