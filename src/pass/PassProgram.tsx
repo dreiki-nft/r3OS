@@ -36,6 +36,7 @@ import {
 } from '../live/liveStore'
 import { HardwareProfiles } from './HardwareProfiles'
 import { SafeImage } from '../os/ui/SafeImage'
+import { PoweredByMonad } from '../os/ui/PoweredByMonad'
 import { WalletChooser } from '../os/WalletChooser'
 import { Tabs } from '../os/ui/Tabs'
 import { TreeView } from '../os/ui/TreeView'
@@ -489,7 +490,11 @@ export function PassProgram() {
                 </div>
                 <div className="manufacturer">
                   <span>Manufactured and supported by:</span>
-                  <SafeImage src="/os/brand/pfp-main.webp" alt="r3tards" width={150} height={150} />
+                  <div className="manufacturer-logos">
+                    <SafeImage src="/os/brand/pfp-main.webp" alt="r3tards" width={130} height={130} />
+                    <SafeImage src="/os/brand/pfp-builder.webp" alt="dreiki, the builder" width={130} height={130} />
+                  </div>
+                  <PoweredByMonad className="manufacturer-powered" />
                 </div>
               </div>
             )}

@@ -38,6 +38,9 @@ const tools: ToolEntry[] = [
   { id: 'zoom', label: 'Zoom', icon: 'zoom' },
 ]
 
+/** Tools whose stroke width follows the size picker. */
+const sizedTools = new Set<Tool>(['brush', 'eraser', 'line', 'rect', 'ellipse'])
+
 export function Toolbox({
   tool,
   onTool,
@@ -62,24 +65,40 @@ export function Toolbox({
             onTool(entry.id)
           }}
         >
-          {entry.icon ? (
-            <Icon name={entry.icon} size={24} />
-          ) : (
-            <ShapeIcon shape={entry.shape!} />
-          )}
+          {entry.icon ? <Icon name={entry.icon} size={24} /> : <ShapeIcon shape={entry.shape!} />}
         </button>
       ))}
-      <div className="tool-options sunken" aria-label="Brush size">
-        {[1, 3, 5].map((value, index) => (
-          <button
-            key={value}
-            aria-label={`Brush size ${value}`}
-            className={size === value ? 'chosen' : ''}
-            onClick={() => onSize(value)}
-          >
-            <span className={`brush-size-sample sample-${index + 1}`} />
-          </button>
-        ))}
+      <div className="tool-options sunken" role="radiogroup" aria-label="Brush size">
+        {[1, 3, 5].map((value, index) => {
+          // The pencil always draws 1 px (like MS Paint); sizes apply to the brush, eraser and shapes.
+          const fixed = tool === 'pencil' || !sizedTools.has(tool)
+          const chosen = fixed ? value === 1 && tool === 'pencil' : size === value
+          return (
+            <button
+              key={value}
+              role="radio"
+              aria-checked={chosen}
+              aria-label={`Brush size ${value} px`}
+              title={
+                fixed
+                  ? tool === 'pencil'
+                    ? 'the pencil is always 1 px'
+                    : 'no size for this tool'
+                  : `${value} px`
+              }
+              className={chosen ? 'chosen' : ''}
+              disabled={fixed}
+              onClick={() => {
+                playSound('select')
+                onSize(value)
+              }}
+            >
+              <span className={`brush-size-sample sample-${index + 1}`} />
+              <span>{value}px</span>
+            </button>
+          )
+        })}
+        {tool === 'pencil' && <small>pencil: 1px</small>}
       </div>
     </aside>
   )

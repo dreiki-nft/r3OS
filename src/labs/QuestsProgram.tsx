@@ -18,6 +18,8 @@ import { GroupBox } from '../os/ui/GroupBox'
 import { IntroBar } from '../os/ui/IntroBar'
 import { MenuBar } from '../os/ui/MenuBar'
 import { SafeImage } from '../os/ui/SafeImage'
+import { Icon } from '../os/ui/Icon'
+import { readPassImage } from '../pass/passImage'
 import { errorText, labLoadError, LabNotDeployedError, shortAddress } from './labCommon'
 import {
   QUEST_GROUP_TITLES,
@@ -88,6 +90,7 @@ export function QuestsProgram() {
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const refreshTick = useRefreshTick()
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
+  const [passImage, setPassImage] = useState<string>()
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
   const releases = useSyncExternalStore(subscribeReleases, getReleaseSnapshot)
   const [labTargets, setLabTargets] = useState<Record<string, string>>({})
@@ -103,6 +106,20 @@ export function QuestsProgram() {
   const [claimableMask, setClaimableMask] = useState(0n)
   const [completedMask, setCompletedMask] = useState(0n)
   const [completedCount, setCompletedCount] = useState(0n)
+  // The header shows your actual Painter Pass (its QUESTS line changes with every claim).
+  useEffect(() => {
+    if (!wallet.account) {
+      setPassImage(undefined)
+      return
+    }
+    let cancelled = false
+    void readPassImage(wallet.account, completedCount.toString()).then((image) => {
+      if (!cancelled) setPassImage(image)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [wallet.account, completedCount])
   const [selected, setSelected] = useState(0)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -310,7 +327,13 @@ export function QuestsProgram() {
       />
       <header className="quests-head">
         <div>
-          <span className="badge-placeholder" />
+          {passImage ? (
+            <SafeImage className="quests-pass" src={passImage} alt="your Painter Pass" width={38} height={38} />
+          ) : (
+            <span className="badge-placeholder" title="claim your Painter Pass in My Pass to see it here">
+              <Icon name="computer" size={24} />
+            </span>
+          )}
           <div>
             <b>{defsLoaded ? `${completedCount} of ${visibleCount} badges` : 'loading quests…'}</b>
             <small>

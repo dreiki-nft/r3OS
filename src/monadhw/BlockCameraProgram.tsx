@@ -40,6 +40,9 @@ export function BlockCameraProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const refreshTick = useRefreshTick(10)
+  // The viewfinder samples the head every 3 blocks (~1 s on Monad). Every block is impossible: a portrait is a
+  // ~4.6M-gas eth_call that takes longer than a 0.4 s block, and only one is ever in flight.
+  const viewfinderTick = useRefreshTick(3)
   // Viewfinder/quote follow refreshTick; registry basics, the roll and card quotes only change on
   // capture, so they poll on the slow tick (and loadRoll also runs right after a capture).
   const slowTick = useRefreshTick(30)
@@ -51,6 +54,8 @@ export function BlockCameraProgram() {
   const [labs, setLabs] = useState<Address>()
   const [season, setSeason] = useState(0n)
   const [preview, setPreview] = useState('')
+  // The block the picture on screen was drawn from (it trails the live head by a block or two).
+  const [previewBlock, setPreviewBlock] = useState<bigint>()
   const [quote, setQuote] = useState<ActionQuote>()
   const [cardQuote, setCardQuote] = useState<ActionQuote>()
   const [cardCanvasQuote, setCardCanvasQuote] = useState<ActionQuote>()
@@ -101,12 +106,12 @@ export function BlockCameraProgram() {
 
   const proposerKnown = hw.staking.proposerValId.value != null && hw.staking.status === 'present'
   const epochKnown = hw.staking.epoch.value != null && hw.staking.status === 'present'
-  // Sample the head once per refresh tick: previewPortrait is a ~4.6M-gas eth_call, far too heavy per block.
+  // Sample the head on the viewfinder tick: previewPortrait is a ~4.6M-gas eth_call, far too heavy per block.
   const frame = useMemo(() => {
     const head = getBlockSnapshot()
     return { block: head.block, hash: head.hash }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTick])
+  }, [viewfinderTick])
   const previewArgs = useMemo(
     () =>
       [
@@ -161,7 +166,10 @@ export function BlockCameraProgram() {
               args: sent,
             },
           ])
-          if (mounted.current && rows[0]?.status === 'success') setPreview(hexToString(rows[0].result as Hex))
+          if (mounted.current && rows[0]?.status === 'success') {
+            setPreview(hexToString(rows[0].result as Hex))
+            setPreviewBlock(sent[0])
+          }
         } catch {
           break
         }
@@ -401,12 +409,18 @@ export function BlockCameraProgram() {
             {flash && <div className="camera-flash" aria-hidden="true" />}
           </div>
           <div className="camera-live-caption">
-            <b>{block.block ? `BLOCK #${block.block}` : 'WAITING FOR A BLOCK'}</b>
+            <b>
+              {previewBlock
+                ? `PORTRAIT OF BLOCK #${previewBlock}`
+                : block.block
+                  ? 'DEVELOPING…'
+                  : 'WAITING FOR A BLOCK'}
+            </b>
             <span>
               {block.block
-                ? block.miner !== zeroAddress
-                  ? `made by ${shortAddress(block.miner)}`
-                  : 'producer unknown'
+                ? `live head #${block.block} · ${
+                    block.miner !== zeroAddress ? `made by ${shortAddress(block.miner)}` : 'producer unknown'
+                  }`
                 : 'connect to Monad to see the live block'}
             </span>
           </div>
@@ -481,8 +495,8 @@ export function BlockCameraProgram() {
           </div>
           {choosingWallet && !wallet.account && <WalletChooser onClose={() => setChoosingWallet(false)} />}
           <small>
-            the viewfinder shows the current head. your photo is sealed from the block that actually includes
-            the capture.
+            Monad makes a block every ~0.4 s, faster than a portrait can be drawn, so the viewfinder develops a
+            new one every ~1 s. your photo is sealed from the block that actually includes the capture.
           </small>
         </GroupBox>
 

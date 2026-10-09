@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { PoweredByMonad } from './ui/PoweredByMonad'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { chainName, config } from '../chain/config'
 import { recordPerf } from '../chain/perf'
@@ -246,6 +247,7 @@ export function BootScreen() {
           <div className="boot-bar" aria-hidden="true" />
         </div>
       )}
+      <PoweredByMonad className="boot-powered" height={20} />
     </div>
   )
 }
