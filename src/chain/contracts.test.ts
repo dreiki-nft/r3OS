@@ -43,7 +43,8 @@ describe('discoverContracts', () => {
     expect(results[0].labs.quests).toBe('0x0000000000000000000000000000000000000001')
     expect(results[0].experimentCount).toBe(3)
     expect((await import('./contracts')).getCachedContracts()).toBe(results[0])
-  })
+    // The first dynamic import transforms the whole chain module graph; cold runs on Windows can pass 5 s.
+  }, 30_000)
 
   it('shares the short-lived core status read', async () => {
     const { readCoreStatus, getCachedCoreStatus } = await import('./contracts')
