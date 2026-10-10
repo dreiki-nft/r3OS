@@ -1,6 +1,6 @@
 /**
  * r3OS broadcast view (#/tv): the shared canvas full-screen for a projector or a stream, with every new
- * stroke flashing where it lands, who is painting right now, a paint-party prompt and a QR code to join.
+ * stroke flashing where it lands, who is painting right now and a QR code to join.
  * It reads the same canvas store and events as Paint; it never signs anything and never shows URL text.
  */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -14,7 +14,6 @@ import {
   summarize,
   windowLabel,
 } from '../paint/presence'
-import { PARTY_PROMPTS } from './prompts'
 import { QR_LABEL, QR_ROWS, qrPath } from './qr'
 import {
   boxPercent,
@@ -23,8 +22,6 @@ import {
   onAirLabel,
   painterColour,
   partyStats,
-  promptIndex,
-  promptProgress,
   topPainters,
   tvFrameFromActivity,
   tvStrokeFromActivity,
@@ -93,7 +90,6 @@ export function TvView() {
   const [strokes, setStrokes] = useState<TvStroke[]>([])
   const [frames, setFrames] = useState<TvFrame[]>([])
   const [now, setNow] = useState(() => Date.now())
-  const [shift, setShift] = useState(0)
   const [panel, setPanel] = useState(true)
   const [idle, setIdle] = useState(false)
   const presence = useSyncExternalStore(subscribePresence, getPresenceSnapshot)
@@ -136,13 +132,11 @@ export function TvView() {
     return () => window.clearInterval(timer)
   }, [])
 
-  // Host controls: ← / → prompt, F fullscreen, H hide the side panel, Esc back to the desktop.
+  // Host controls: F fullscreen, H hide the side panel, Esc back to the desktop.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.altKey || event.ctrlKey || event.metaKey) return
-      if (event.key === 'ArrowRight') setShift((value) => value + 1)
-      else if (event.key === 'ArrowLeft') setShift((value) => value - 1)
-      else if (event.key === 'f' || event.key === 'F') toggleFullscreen()
+      if (event.key === 'f' || event.key === 'F') toggleFullscreen()
       else if (event.key === 'h' || event.key === 'H') setPanel((value) => !value)
       else if (event.key === 'Escape' && !document.fullscreenElement) exitTv()
       else return
@@ -178,8 +172,6 @@ export function TvView() {
     .filter((stroke) => stroke.live && now - stroke.seenAt < FLASH_MS)
     .slice(0, MAX_FLASHES)
   const elapsed = now - openedAt.current
-  const promptAt = promptIndex(elapsed, shift, PARTY_PROMPTS.length)
-  const prompt = PARTY_PROMPTS[promptAt]
   // The contract counts seasons from 0; everywhere else the UI shows season 1, 2, …
   const season = presence.season?.season ?? getCanvasSnapshot().season
   const feed = [
@@ -279,17 +271,6 @@ export function TvView() {
             </dl>
           </section>
 
-          <section className="tv-prompt">
-            <h2>
-              prompt {promptAt + 1}/{PARTY_PROMPTS.length}
-            </h2>
-            <p className="tv-prompt-title">{prompt.title}</p>
-            <p className="tv-prompt-hint">{prompt.hint}</p>
-            <div className="tv-prompt-bar">
-              <i style={{ width: `${(1 - promptProgress(elapsed)) * 100}%` }} />
-            </div>
-          </section>
-
           <section className="tv-feed">
             <h2>latest</h2>
             {feed.length ? (
@@ -345,7 +326,7 @@ export function TvView() {
       )}
 
       <div className="tv-controls">
-        <span>← → prompt · F fullscreen · H panel · Esc exit</span>
+        <span>F fullscreen · H panel · Esc exit</span>
         <button type="button" onClick={toggleFullscreen} aria-label="Toggle fullscreen">
           ⛶
         </button>
