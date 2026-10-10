@@ -37,10 +37,16 @@ export function BudgetMeter({
 
   const left = Math.max(0, budget.total - cost)
   const limit = Math.max(1, budget.hourlyLimit + budget.holder)
+  // A drawing bigger than what's left would read "0 left", which looked like the budget had vanished.
+  // Say both numbers instead, and when the hourly part refills (the contract resets it on the UTC hour).
+  const over = cost > budget.total
+  const refillMinutes = 60 - new Date().getUTCMinutes()
   return (
     <div className="budget-meter">
       <span>
-        budget left this hour: {left} / {limit} px
+        {over
+          ? `this drawing needs ${cost} · you have ${budget.total} left · refills in ${refillMinutes} min`
+          : `budget left this hour: ${left} / ${limit} px`}
       </span>
       <ProgressSegments value={left} max={limit} />
       <small>
