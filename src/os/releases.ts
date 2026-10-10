@@ -24,15 +24,12 @@ const listeners = new Set<Listener>()
 const announced = new Set<string>()
 const opened = new Set<string>()
 
-function envTrue(name: string) {
-  return (
-    String((import.meta.env as Record<string, unknown>)[name] ?? '')
-      .trim()
-      .toLowerCase() === 'true'
-  )
-}
-
-const revealAllByEnv = Boolean(import.meta.env.DEV) || envTrue('VITE_REVEAL_ALL')
+// Read by its literal name: a variable key would make Vite inline every VITE_ variable into the bundle.
+const revealAllByEnv =
+  Boolean(import.meta.env.DEV) ||
+  String(import.meta.env.VITE_REVEAL_ALL ?? '')
+    .trim()
+    .toLowerCase() === 'true'
 let state: ReleaseSnapshot = {
   status: 'loading',
   config: EMPTY_CONFIG,

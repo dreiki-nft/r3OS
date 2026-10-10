@@ -1,0 +1,5 @@
+Contact: https://x.com/Dreiki10
+Expires: 2027-10-10T00:00:00.000Z
+Preferred-Languages: en, es
+Canonical: https://r3os.app/.well-known/security.txt
+Policy: https://github.com/dreiki-nft/r3OS/blob/main/THREAT_MODEL.md

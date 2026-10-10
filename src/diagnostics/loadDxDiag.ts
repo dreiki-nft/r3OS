@@ -145,7 +145,7 @@ export async function loadDxDiag(
 
   return {
     appVersion: packageJson.version,
-    buildId: normalizeBuildId((import.meta.env as Record<string, unknown>).VITE_BUILD_ID),
+    buildId: normalizeBuildId(import.meta.env.VITE_BUILD_ID),
     chain: { id: config.chainId, name: chainName, client: hardware?.clientVersion.value },
     block: {
       number: block.block > 0n ? block.block : undefined,

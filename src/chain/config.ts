@@ -21,8 +21,34 @@ export interface AppConfig {
   demo: boolean
 }
 
+/*
+ * Every setting is read by its literal name. Reading import.meta.env with a variable key makes Vite inline the
+ * whole env object into the public bundle, including variables the app never uses (e.g. Vercel's VITE_VERCEL_*).
+ */
+const ENV: Record<string, unknown> = {
+  VITE_AUCTION_ADDRESS: import.meta.env.VITE_AUCTION_ADDRESS,
+  VITE_CHAIN_ID: import.meta.env.VITE_CHAIN_ID,
+  VITE_CONTRACT_ADDRESS: import.meta.env.VITE_CONTRACT_ADDRESS,
+  VITE_DEPLOY_BLOCK: import.meta.env.VITE_DEPLOY_BLOCK,
+  VITE_EXPLORER_URL: import.meta.env.VITE_EXPLORER_URL,
+  VITE_FASTLANE_ACCELERATOR_TIMEOUT_MS: import.meta.env.VITE_FASTLANE_ACCELERATOR_TIMEOUT_MS,
+  VITE_FASTLANE_ACCELERATOR_URL: import.meta.env.VITE_FASTLANE_ACCELERATOR_URL,
+  VITE_IPFS_GATEWAY: import.meta.env.VITE_IPFS_GATEWAY,
+  VITE_LOGS_RANGE: import.meta.env.VITE_LOGS_RANGE,
+  VITE_MULTICALL3_ADDRESS: import.meta.env.VITE_MULTICALL3_ADDRESS,
+  VITE_NFT_API_URL: import.meta.env.VITE_NFT_API_URL,
+  VITE_PAINT_ADDRESS: import.meta.env.VITE_PAINT_ADDRESS,
+  VITE_QUESTS_ADDRESS: import.meta.env.VITE_QUESTS_ADDRESS,
+  VITE_RPC_BATCH_SIZE: import.meta.env.VITE_RPC_BATCH_SIZE,
+  VITE_RPC_RPS: import.meta.env.VITE_RPC_RPS,
+  VITE_RPC_URL: import.meta.env.VITE_RPC_URL,
+  VITE_RPC_URLS: import.meta.env.VITE_RPC_URLS,
+  VITE_WALLET_RPC_URL: import.meta.env.VITE_WALLET_RPC_URL,
+  VITE_WS_URL: import.meta.env.VITE_WS_URL,
+}
+
 function env(name: string) {
-  return String((import.meta.env as Record<string, unknown>)[name] ?? '').trim()
+  return String(ENV[name] ?? '').trim()
 }
 
 function positiveInt(name: string, fallback: number, allowZero = false) {
