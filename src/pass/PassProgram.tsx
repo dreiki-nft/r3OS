@@ -37,7 +37,13 @@ import {
 import { HardwareProfiles } from './HardwareProfiles'
 import { SafeImage } from '../os/ui/SafeImage'
 import { PoweredByMonad } from '../os/ui/PoweredByMonad'
-import { nadNameOf, nadNamesAvailable, painterName, usePainterNames } from '../chain/names'
+import {
+  nadNameStatus,
+  nadNamesAvailable,
+  painterName,
+  refreshPainterName,
+  usePainterNames,
+} from '../chain/names'
 import { WalletChooser } from '../os/WalletChooser'
 import { Tabs } from '../os/ui/Tabs'
 import { TreeView } from '../os/ui/TreeView'
@@ -472,13 +478,33 @@ export function PassProgram() {
                     <span title={wallet.account}>
                       {painterName(wallet.account)} · {short(wallet.account)} · <em>soulbound</em>
                     </span>
-                    {nadNamesAvailable() && nadNameOf(wallet.account) === null && (
+                    {nadNamesAvailable() && nadNameStatus(wallet.account) === 'none' && (
                       <small className="pass-name-hint">
-                        want your name here and on the TV? set a primary{' '}
+                        own a .nad name? it shows here and on the TV once it's this wallet's primary name: on{' '}
                         <a href="https://nad.domains" target="_blank" rel="noopener noreferrer">
-                          .nad name
+                          nad.domains
                         </a>{' '}
-                        for this wallet.
+                        open My Names, pick it and press "Set as primary name".{' '}
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => refreshPainterName(wallet.account)}
+                        >
+                          check again
+                        </button>
+                      </small>
+                    )}
+                    {nadNamesAvailable() && nadNameStatus(wallet.account) === 'hidden' && (
+                      <small className="pass-name-hint">
+                        your primary .nad name uses characters r3OS doesn't show (only a-z, 0-9, - and _, up
+                        to 32), so you get a nickname instead.{' '}
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => refreshPainterName(wallet.account)}
+                        >
+                          check again
+                        </button>
                       </small>
                     )}
                     <dl className="pass-stats">

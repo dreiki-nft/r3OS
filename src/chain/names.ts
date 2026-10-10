@@ -16,6 +16,8 @@ const NNS_ABI = parseAbi(['function getPrimaryNameForAddress(address addr) view 
 
 const NAME_TTL_MS = 30 * 60_000
 const MISS_TTL_MS = 5 * 60_000
+/** A failed RPC round trip says nothing about the wallet, so it is retried soon instead of cached as "no name". */
+const ERROR_TTL_MS = 15_000
 const BATCH_WAIT_MS = 250
 const BATCH_MAX = 100
 
@@ -67,7 +69,7 @@ export function nicknameFor(address: string) {
 }
 
 /**
- * Only plain names are shown (letters, digits, `-`, `_`, up to 24 characters). Anything else, including
+ * Only plain names are shown (letters, digits, `-`, `_`, up to 32 characters). Anything else, including
  * look-alike Unicode, falls back to the nickname, so nobody can dress up as someone else on the big screen.
  */
 export function cleanNadName(raw: unknown) {
@@ -76,10 +78,18 @@ export function cleanNadName(raw: unknown) {
     .trim()
     .toLowerCase()
     .replace(/\.nad$/, '')
-  return /^[a-z0-9_-]{1,24}$/.test(name) ? `${name}.nad` : undefined
+  return /^[a-z0-9_-]{1,32}$/.test(name) ? `${name}.nad` : undefined
 }
 
-type Entry = { name?: string; at: number }
+/**
+ * What NNS said about a wallet:
+ * - `name`: a primary name r3OS can show;
+ * - `none`: no primary name set (empty answer or a revert for that wallet);
+ * - `hidden`: a primary name exists but uses characters r3OS won't put on the big screen;
+ * - `error`: the RPC call itself failed, so nothing is known yet.
+ */
+export type NadNameStatus = 'loading' | 'name' | 'none' | 'hidden'
+type Entry = { name?: string; state: 'name' | 'none' | 'hidden' | 'error'; at: number }
 const cache = new Map<string, Entry>()
 const queued = new Set<string>()
 const listeners = new Set<() => void>()
@@ -114,10 +124,15 @@ async function flush() {
     )) as { status: string; result?: unknown }[]
     batch.forEach((address, index) => {
       const row = rows[index]
-      cache.set(address, { name: row?.status === 'success' ? cleanNadName(row.result) : undefined, at: now })
+      if (row?.status !== 'success' || typeof row.result !== 'string' || !row.result.trim()) {
+        cache.set(address, { state: 'none', at: now })
+        return
+      }
+      const name = cleanNadName(row.result)
+      cache.set(address, name ? { name, state: 'name', at: now } : { state: 'hidden', at: now })
     })
   } catch {
-    for (const address of batch) cache.set(address, { at: now })
+    for (const address of batch) cache.set(address, { state: 'error', at: now })
   }
   emit()
 }
@@ -125,7 +140,8 @@ async function flush() {
 function request(address: string) {
   if (!lookupsEnabled()) return
   const entry = cache.get(address)
-  if (entry && Date.now() - entry.at < (entry.name ? NAME_TTL_MS : MISS_TTL_MS)) return
+  const ttl = entry?.state === 'name' ? NAME_TTL_MS : entry?.state === 'error' ? ERROR_TTL_MS : MISS_TTL_MS
+  if (entry && Date.now() - entry.at < ttl) return
   if (queued.has(address)) return
   queued.add(address)
   timer ??= setTimeout(() => void flush(), BATCH_WAIT_MS)
@@ -139,13 +155,30 @@ export function painterName(address?: string | null) {
   return cache.get(lower)?.name ?? nicknameFor(lower)
 }
 
-/** The wallet's `.nad` name; `null` once looked up and it has none; `undefined` while not known yet. */
+/** The wallet's `.nad` name; `null` once NNS answered that none can be shown; `undefined` while not known. */
 export function nadNameOf(address?: string | null): string | null | undefined {
-  if (!address || !ADDRESS.test(address)) return undefined
+  const status = nadNameStatus(address)
+  if (status === 'loading') return undefined
+  return status === 'name' ? (cache.get(address!.toLowerCase())?.name ?? null) : null
+}
+
+/** Like nadNameOf, but says why there is no name, so My Pass can give the right hint. */
+export function nadNameStatus(address?: string | null): NadNameStatus {
+  if (!address || !ADDRESS.test(address)) return 'loading'
   const lower = address.toLowerCase()
   request(lower)
   const entry = cache.get(lower)
-  return entry ? (entry.name ?? null) : undefined
+  if (!entry || entry.state === 'error') return 'loading'
+  return entry.state
+}
+
+/** Look the wallet up again right away, e.g. just after it set a primary name on nad.domains. */
+export function refreshPainterName(address?: string | null) {
+  if (!address || !ADDRESS.test(address)) return
+  const lower = address.toLowerCase()
+  cache.delete(lower)
+  request(lower)
+  emit()
 }
 
 /** Whether `.nad` names can be looked up here (Monad mainnet only). */
@@ -178,6 +211,14 @@ export function __resetPainterNamesForTests() {
 }
 
 export function __setPainterNameForTests(address: string, name: string | undefined) {
-  cache.set(address.toLowerCase(), { name, at: Date.now() })
+  cache.set(
+    address.toLowerCase(),
+    name ? { name, state: 'name', at: Date.now() } : { state: 'none', at: Date.now() },
+  )
   emit()
+}
+
+export async function __flushPainterNamesForTests() {
+  if (timer) clearTimeout(timer)
+  await flush()
 }

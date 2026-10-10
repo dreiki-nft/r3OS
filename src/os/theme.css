@@ -1365,6 +1365,16 @@ button:disabled {
   color: var(--accent);
 }
 
+.pass-name-hint .link-button {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .pass-identity em {
   color: var(--accent);
   font-style: normal;
