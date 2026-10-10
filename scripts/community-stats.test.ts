@@ -10,6 +10,8 @@ import {
   parseArgs,
   runPixels,
   summarize,
+  windowMarkdown,
+  windowStats,
 } from './community-stats-lib.mjs'
 
 const A = '0x00000000000000000000000000000000000000a1'
@@ -97,5 +99,40 @@ describe('community stats', () => {
     expect(() => parseArgs(['--exclude', 'nope'])).toThrow('--exclude is not an address')
     expect(() => parseArgs(['--rpc=https://secret.example/key'])).toThrow('unknown flag --rpc')
     expect(() => parseArgs(['--rpc=https://secret.example/key'])).not.toThrow(/secret/)
+  })
+
+  it('measures a launch window: hourly activity, new painters and painters who came back an hour later', () => {
+    const launch = 1_000n * DAY
+    const H = 3_600n
+    const window = windowStats(
+      [
+        painted(A, '0x0a050903', launch - DAY), // A painted before launch
+        painted(A, '0x0b000003', launch + 10n),
+        painted(B, '0x0c000003', launch + 20n),
+        painted(B, '0x0c000103', launch + 2n * H), // B comes back two hours later
+        painted(ME, '0x0d00ff03', launch + 30n),
+        painted(B, '0x0c000003', launch + 25n * H), // after the window
+      ],
+      { fromTime: launch, toTime: launch + 24n * H, exclude: [ME] },
+    )
+    expect(window.painters).toBe(2)
+    expect(window.newPainters).toBe(1)
+    expect(window.cameBackLater).toBe(1)
+    expect(window.paints).toBe(3)
+    expect(window.pixels).toBe(4)
+    expect(window.hourly).toHaveLength(24)
+    expect(window.hourly[0]).toEqual({ hour: 0, paints: 2, pixels: 2, painters: 2 })
+    expect(window.peakHour.hour).toBe(0)
+    const text = windowMarkdown(window)
+    expect(text).toContain('| New to r3OS (first stroke ever) | 1 |')
+    expect(text).toContain('| Came back 1+ hour after their first stroke | 1 |')
+  })
+
+  it('reads a launch window from --since and --hours', () => {
+    const options = parseArgs(['--since', '2026-10-10T21:00:00Z', '--hours', '24'])
+    expect(options.since).toBe(BigInt(Date.parse('2026-10-10T21:00:00Z') / 1_000))
+    expect(options.hours).toBe(24)
+    expect(() => parseArgs(['--since', 'tomorrow-ish'])).toThrow('--since must be a date/time')
+    expect(() => parseArgs(['--hours', '24'])).toThrow('--hours needs --since')
   })
 })

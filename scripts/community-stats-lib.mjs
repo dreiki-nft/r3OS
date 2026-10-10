@@ -31,6 +31,14 @@ export function parseArgs(argv) {
     else if (arg === '--cd-burner') out.cdBurner = next()
     else if (arg === '--pass') out.pass = next()
     else if (arg === '--from-block') out.fromBlock = BigInt(next())
+    else if (arg === '--to-block') out.toBlock = BigInt(next())
+    // Launch window: --since 2026-10-10T21:00:00Z [--hours 24] counts only that window (see windowStats).
+    else if (arg === '--since') {
+      const value = next()
+      const ms = Date.parse(value)
+      if (!Number.isFinite(ms)) throw new Error('--since must be a date/time, e.g. 2026-10-10T21:00:00Z')
+      out.since = BigInt(Math.floor(ms / 1_000))
+    } else if (arg === '--hours') out.hours = Number(next())
     else if (arg === '--range') out.range = Number(next())
     else if (arg === '--concurrency') out.concurrency = Number(next())
     else if (arg === '--exclude')
@@ -59,6 +67,9 @@ export function parseArgs(argv) {
     if (value != null && !ADDRESS.test(value)) throw new Error(`${name} is not an address`)
   }
   if (!Number.isInteger(out.range) || out.range < 1) throw new Error('--range must be a positive integer')
+  if (out.hours != null && (!Number.isFinite(out.hours) || out.hours <= 0 || out.hours > 24 * 30))
+    throw new Error('--hours must be between 0 and 720')
+  if (out.hours != null && out.since == null) throw new Error('--hours needs --since')
   if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 16)
     throw new Error('--concurrency must be 1-16')
   out.exclude = out.exclude.map((value) => value.toLowerCase())
@@ -168,5 +179,87 @@ export function markdown(stats, { fromBlock, toBlock, asOf }) {
     `| Painter Passes claimed | ${stats.passes.count.toLocaleString('en-US')} |`,
     '',
     "Counted from the contracts' own events with `node scripts/community-stats.mjs`; anyone can rerun it.",
+  ].join('\n')
+}
+
+/**
+ * A launch window (for example the first 24 hours after the site was announced): hour-by-hour activity,
+ * painters new to r3OS (no paint before the window) and painters who came back an hour or more after their
+ * first stroke in the window. Painted logs must carry blockTimestamp; logs outside the window only tell us
+ * who had painted before it.
+ */
+export function windowStats(painted, { fromTime, toTime, exclude = [] }) {
+  const skip = new Set(exclude.map((value) => value.toLowerCase()))
+  const hours = Math.max(1, Math.ceil(Number(toTime - fromTime) / 3_600))
+  const hourly = Array.from({ length: hours }, (_, hour) => ({
+    hour,
+    paints: 0,
+    pixels: 0,
+    owners: new Set(),
+  }))
+  const before = new Set()
+  const first = new Map()
+  const last = new Map()
+  for (const log of painted) {
+    const args = decode(PAINTED, log)
+    if (!args || log.blockTimestamp == null) continue
+    const owner = String(args.owner).toLowerCase()
+    if (skip.has(owner)) continue
+    const time = BigInt(log.blockTimestamp)
+    if (time < fromTime) {
+      before.add(owner)
+      continue
+    }
+    if (time >= toTime) continue
+    const slot = hourly[Number((time - fromTime) / 3_600n)]
+    slot.paints += 1
+    slot.pixels += runPixels(args.runs)
+    slot.owners.add(owner)
+    if (!first.has(owner) || time < first.get(owner)) first.set(owner, time)
+    if (!last.has(owner) || time > last.get(owner)) last.set(owner, time)
+  }
+  const rows = hourly.map(({ hour, paints, pixels, owners }) => ({
+    hour,
+    paints,
+    pixels,
+    painters: owners.size,
+  }))
+  const peak = rows.reduce(
+    (best, row) =>
+      row.painters > best.painters || (row.painters === best.painters && row.paints > best.paints)
+        ? row
+        : best,
+    rows[0],
+  )
+  return {
+    fromTime: Number(fromTime),
+    toTime: Number(toTime),
+    painters: first.size,
+    newPainters: [...first.keys()].filter((owner) => !before.has(owner)).length,
+    cameBackLater: [...first.keys()].filter((owner) => last.get(owner) - first.get(owner) >= 3_600n).length,
+    paints: rows.reduce((sum, row) => sum + row.paints, 0),
+    pixels: rows.reduce((sum, row) => sum + row.pixels, 0),
+    peakHour: peak,
+    hourly: rows,
+  }
+}
+
+const utc = (seconds) => new Date(seconds * 1_000).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
+
+export function windowMarkdown(window) {
+  const peakStart = window.fromTime + window.peakHour.hour * 3_600
+  return [
+    `**Launch window** (${utc(window.fromTime)} → ${utc(window.toTime)})`,
+    '',
+    '| | |',
+    '| --- | ---: |',
+    `| Painters in the window | ${window.painters.toLocaleString('en-US')} |`,
+    `| New to r3OS (first stroke ever) | ${window.newPainters.toLocaleString('en-US')} |`,
+    `| Came back 1+ hour after their first stroke | ${window.cameBackLater.toLocaleString('en-US')} |`,
+    `| Paint transactions | ${window.paints.toLocaleString('en-US')} |`,
+    `| Pixels painted | ${window.pixels.toLocaleString('en-US')} |`,
+    `| Busiest hour | ${utc(peakStart)}: ${window.peakHour.painters} painters, ${window.peakHour.paints} strokes |`,
+    '',
+    'Hour-by-hour numbers are in `--json` output (field `window.hourly`), ready for a chart.',
   ].join('\n')
 }

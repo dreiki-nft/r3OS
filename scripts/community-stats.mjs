@@ -4,6 +4,7 @@
  * frames, CDs and Pass claims on Monad mainnet, counted from the contracts' own events.
  *
  *   node scripts/community-stats.mjs --exclude 0xYourWallet,0xYourTestWallet
+ *   node scripts/community-stats.mjs --since 2026-10-10T21:00:00Z --hours 24 --exclude …   # a launch window
  *
  * Defaults to the accepted mainnet deployment and the public RPC. It never signs or sends anything.
  * Pass --rpc to use another endpoint; the URL is never printed.
@@ -18,6 +19,8 @@ import {
   markdown,
   parseArgs,
   summarize,
+  windowMarkdown,
+  windowStats,
 } from './community-stats-lib.mjs'
 
 const MAINNET = {
@@ -90,7 +93,8 @@ async function logsFor(address, event, fromBlock, toBlock, label) {
 }
 
 try {
-  const head = await client.getBlockNumber()
+  let head = await client.getBlockNumber()
+  if (options.toBlock != null && options.toBlock < head) head = options.toBlock
   let fromBlock = options.fromBlock
   if (fromBlock == null) {
     const seasonStart = await client.readContract({
@@ -100,10 +104,27 @@ try {
     })
     fromBlock = await firstBlockAtOrAfter(BigInt(seasonStart), head)
   }
+
+  // A launch window: paints are still read from the season start (to tell new painters from earlier ones),
+  // but every count below covers only the window.
+  let windowRange
+  if (options.since != null) {
+    const fromTime = options.since
+    const toTime = fromTime + BigInt(Math.round((options.hours ?? 24) * 3_600))
+    const headTime = (await client.getBlock({ blockNumber: head })).timestamp
+    const startBlock = await firstBlockAtOrAfter(fromTime, head)
+    const endBlock = toTime > headTime ? head : (await firstBlockAtOrAfter(toTime, head)) - 1n
+    windowRange = { fromTime, toTime, startBlock, endBlock }
+    head = endBlock
+    if (startBlock < fromBlock) fromBlock = startBlock
+  }
+
   const painted = await logsFor(options.paint, PAINTED, fromBlock, head, 'paints')
-  const frames = await logsFor(options.paint, FRAME_MINTED, fromBlock, head, 'frames')
-  const cds = await logsFor(options.cdBurner, CD_BURNED, fromBlock, head, 'cds')
-  const passes = await logsFor(options.pass, TRANSFER, fromBlock, head, 'passes')
+  const statsFrom = windowRange?.startBlock ?? fromBlock
+  const inRange = (log) => BigInt(log.blockNumber) >= statsFrom && BigInt(log.blockNumber) <= head
+  const frames = (await logsFor(options.paint, FRAME_MINTED, statsFrom, head, 'frames')).filter(inRange)
+  const cds = (await logsFor(options.cdBurner, CD_BURNED, statsFrom, head, 'cds')).filter(inRange)
+  const passes = (await logsFor(options.pass, TRANSFER, statsFrom, head, 'passes')).filter(inRange)
 
   // Timestamps for "came back on another day": one header read per distinct block with a paint.
   const times = new Map()
@@ -112,13 +133,33 @@ try {
   }
   for (const log of painted) log.blockTimestamp = times.get(log.blockNumber)
 
-  const stats = summarize({ painted, frames, cds, passes }, options.exclude)
+  const stats = summarize({ painted: painted.filter(inRange), frames, cds, passes }, options.exclude)
+  const window = windowRange
+    ? windowStats(painted, {
+        fromTime: windowRange.fromTime,
+        toTime: windowRange.toTime,
+        exclude: options.exclude,
+      })
+    : undefined
   const asOf = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
   if (options.json)
     console.log(
-      JSON.stringify({ ...stats, fromBlock: String(fromBlock), toBlock: String(head), asOf }, null, 2),
+      JSON.stringify(
+        {
+          ...stats,
+          fromBlock: String(statsFrom),
+          toBlock: String(head),
+          asOf,
+          ...(window ? { window } : {}),
+        },
+        null,
+        2,
+      ),
     )
-  else console.log(markdown(stats, { fromBlock, toBlock: head, asOf }))
+  else {
+    console.log(markdown(stats, { fromBlock: statsFrom, toBlock: head, asOf }))
+    if (window) console.log('\n' + windowMarkdown(window))
+  }
 } catch (error) {
   // Never print the RPC URL (it can carry a key); viem puts it in error.message as "URL: …".
   const message = String(error?.shortMessage ?? error?.message ?? error).replace(/https?:\/\/\S+/g, '[rpc]')

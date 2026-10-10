@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { encodeAbiParameters, encodeEventTopics } from 'viem'
 import { PAINTED } from './community-stats-lib.mjs'
-import { buildReplay, defaultOutlineHex, paletteRgb } from './replay-lib.mjs'
+import { buildReplay, defaultOutlineHex, paletteRgb, replayFrames } from './replay-lib.mjs'
 import { parseReplay } from '../src/replay/replayData'
 
 const A = '0x00000000000000000000000000000000000000A1'
@@ -60,5 +60,25 @@ describe('replay export', () => {
     expect(palette).toHaveLength(16)
     expect(palette[11]).toEqual([95, 237, 223])
     expect(defaultOutlineHex()).toMatch(/^0x[0-9a-f]{300,}$/)
+  })
+
+  it('animates only a block window, starting from the canvas as it stood before it', () => {
+    // Three strokes on row 0: x=0 before the window, x=1 inside it, x=2 after it. Background 0 shows as 9.
+    const replay = {
+      fromBlock: '100',
+      outline: '0x',
+      face: 1,
+      background: 9,
+      events: [
+        [0, 0, '0x00000003', '0x'],
+        [50, 0, '0x00010104', '0x'],
+        [150, 0, '0x00020205', '0x'],
+      ],
+    }
+    const frames = replayFrames(replay, 2, { fromBlock: 120n, toBlock: 200n })
+    expect([frames[0][0], frames[0][1], frames[0][2]]).toEqual([3, 9, 9])
+    expect([frames[1][0], frames[1][1], frames[1][2]]).toEqual([3, 4, 9])
+    const all = replayFrames(replay, 3)
+    expect([all[2][0], all[2][1], all[2][2]]).toEqual([3, 4, 5])
   })
 })

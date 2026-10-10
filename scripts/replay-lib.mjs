@@ -98,17 +98,35 @@ const bytes = (hex) => Uint8Array.from(Buffer.from(hex.slice(2), 'hex'))
 /**
  * Palette-index frames of the replay (outline drawn in the face colour, blank pixels in the background
  * colour), sampled evenly by stroke count. The last frame is the canvas after every event.
+ * `window` ({ fromBlock, toBlock }, absolute block numbers) animates only the strokes in that range: the
+ * first frame already shows everything painted before it (e.g. the canvas at launch).
  */
-export function replayFrames(replay, frameCount) {
+export function replayFrames(replay, frameCount, window) {
   const outline = new Uint8Array(256 * 256)
   const runs = bytes(replay.outline)
   for (let o = 0; o + 2 < runs.length; o += 3)
     for (let x = runs[o + 1]; x <= runs[o + 2]; x++) outline[runs[o] * 256 + x] = 1
   const pixels = new Uint8Array(256 * 256)
   const frames = []
+  const base = BigInt(replay.fromBlock)
+  const blockOf = (event) => base + BigInt(event[0])
   let applied = 0
+  let end = replay.events.length
+  if (window) {
+    const from = window.fromBlock == null ? undefined : BigInt(window.fromBlock)
+    const to = window.toBlock == null ? undefined : BigInt(window.toBlock)
+    if (from != null)
+      for (; applied < replay.events.length && blockOf(replay.events[applied]) < from; applied++) {
+        const [, , eventRuns, corruptions] = replay.events[applied]
+        applyEvent(pixels, outline, bytes(eventRuns), bytes(corruptions))
+      }
+    if (to != null) while (end > applied && blockOf(replay.events[end - 1]) > to) end--
+  }
+  const start = applied
   for (let f = 1; f <= frameCount; f++) {
-    const target = Math.round((f / frameCount) * replay.events.length)
+    // A window opens on the canvas as it stood at its start; a whole season opens after its first strokes.
+    const progress = window ? (f - 1) / Math.max(1, frameCount - 1) : f / frameCount
+    const target = start + Math.round(progress * (end - start))
     for (; applied < target; applied++) {
       const [, , eventRuns, corruptions] = replay.events[applied]
       applyEvent(pixels, outline, bytes(eventRuns), bytes(corruptions))

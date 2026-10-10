@@ -4,6 +4,8 @@
  *
  *   node scripts/replay-gif.mjs                       # public/replay/season-0.json → docs/media/season-replay.gif
  *   node scripts/replay-gif.mjs --season 0 --frames 60 --scale 2 --out docs/media/season-replay.gif
+ *   node scripts/replay-gif.mjs --from-block 112100000 --to-block 112316000 --out docs/media/launch-24h.gif
+ *     (animates only that block range, starting from the canvas as it stood at --from-block)
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -20,6 +22,8 @@ for (let i = 0; i < argv.length; i += 2) {
   else if (flag === '--frames') options.frames = Number(value)
   else if (flag === '--scale') options.scale = Number(value)
   else if (flag === '--out') options.out = value
+  else if (flag === '--from-block') options.fromBlock = BigInt(value)
+  else if (flag === '--to-block') options.toBlock = BigInt(value)
   else throw new Error(`unknown flag ${flag}`)
 }
 if (![1, 2, 3].includes(options.scale)) throw new Error('--scale must be 1, 2 or 3')
@@ -31,7 +35,13 @@ if (!replay.events?.length) throw new Error('replay has no events; run scripts/e
 const palette = paletteRgb()
 const size = 256 * options.scale
 const gif = GIFEncoder()
-const frames = replayFrames(replay, options.frames)
+const frames = replayFrames(
+  replay,
+  options.frames,
+  options.fromBlock != null || options.toBlock != null
+    ? { fromBlock: options.fromBlock, toBlock: options.toBlock }
+    : undefined,
+)
 frames.forEach((frame, index) => {
   const scaled = new Uint8Array(size * size)
   for (let y = 0; y < size; y++) {
