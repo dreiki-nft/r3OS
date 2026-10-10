@@ -963,6 +963,8 @@ button:disabled {
 .paint-program {
   height: 100%;
   display: grid;
+  /* One column exactly the window's width: a long status line must never push the Paint button off the edge. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto 1fr auto 23px;
   background: var(--face);
 }
@@ -1118,6 +1120,7 @@ button:disabled {
 
 .canvas-well canvas {
   display: block;
+  margin-inline: auto;
   image-rendering: pixelated;
   touch-action: none;
   background: #fff;
@@ -1280,7 +1283,7 @@ button:disabled {
 
 .paint-status {
   display: grid;
-  grid-template-columns: 1fr 90px 150px 120px;
+  grid-template-columns: minmax(0, 1fr) 90px 150px 120px;
   background: var(--face-2);
   border-top: 1px solid #000;
 }
@@ -1289,6 +1292,8 @@ button:disabled {
   padding: 3px 6px;
   border-right: 1px solid #555;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pass-tab {

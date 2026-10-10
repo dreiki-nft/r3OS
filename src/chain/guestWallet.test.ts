@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { numberToHex, recoverMessageAddress, recoverTypedDataAddress } from 'viem'
 import { config } from './config'
 import { createGuestProvider, guestKeyFromHash, watchGuestLinks } from './guestWallet'
@@ -66,21 +66,57 @@ describe('guest wallet', () => {
     }
   })
 
-  it('reloads once when a guest link is pasted into a tab that already has r3OS open', () => {
+  function fakeTab() {
     let listener: (() => void) | undefined
-    let reloads = 0
-    const fake = {
-      location: { hash: '#/paint', reload: () => reloads++ },
+    const tab = {
+      reloads: 0,
+      urls: [] as string[],
+      fire: () => listener?.(),
+      listening: () => Boolean(listener),
+      location: {
+        hash: '#/paint',
+        pathname: '/',
+        search: '',
+        reload: () => tab.reloads++,
+      },
+      history: {
+        state: null,
+        replaceState: (_state: unknown, _title: string, url: string) => {
+          tab.urls.push(url)
+          tab.location.hash = url.slice(url.indexOf('#'))
+        },
+      },
       addEventListener: (_name: string, fn: () => void) => (listener = fn),
       removeEventListener: () => (listener = undefined),
     }
-    const stop = watchGuestLinks(fake as never)
-    listener?.()
-    expect(reloads).toBe(0)
-    fake.location.hash = `#/guest/${KEY.slice(2)}`
-    listener?.()
-    expect(reloads).toBe(1)
+    return tab
+  }
+
+  it('asks before a guest link pasted into an open tab swaps the wallet', async () => {
+    const tab = fakeTab()
+    const stop = watchGuestLinks(tab as never, async () => true)
+    tab.fire()
+    expect(tab.reloads).toBe(0)
+    tab.location.hash = `#/guest/${KEY.slice(2)}`
+    tab.fire()
+    // The key leaves the address bar before the question is even answered.
+    expect(tab.urls[0]).toBe('/#/paint')
+    await vi.waitFor(() => expect(tab.reloads).toBe(1))
+    // Agreed: the key goes back for one reload, so startup captures it like a fresh visit.
+    expect(tab.urls[1]).toBe(`/#/guest/${KEY.slice(2)}`)
     stop()
-    expect(listener).toBeUndefined()
+    expect(tab.listening()).toBe(false)
+  })
+
+  it('keeps the current wallet when the person says no', async () => {
+    const tab = fakeTab()
+    const ask = vi.fn(async () => false)
+    watchGuestLinks(tab as never, ask)
+    tab.location.hash = `#/guest/${KEY.slice(2)}`
+    tab.fire()
+    await vi.waitFor(() => expect(ask).toHaveBeenCalled())
+    await Promise.resolve()
+    expect(tab.reloads).toBe(0)
+    expect(tab.location.hash).toBe('#/paint')
   })
 })

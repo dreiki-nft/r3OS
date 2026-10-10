@@ -12,7 +12,7 @@ import { closeWindow } from '../os/windows'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { SafeImage } from '../os/ui/SafeImage'
-import { createBurner, loadBurner, setCachedBurnerBalance } from './burner'
+import { createBurnerOnce, loadBurner, setCachedBurnerBalance } from './burner'
 import { QUICK_ALLOWANCE, samplePaint64, startLiveQuick, type QuickProgress } from './quickStart'
 import {
   buildStartSessionTypedData,
@@ -174,7 +174,7 @@ export function LiveWizard() {
 
   async function prepareBurner() {
     if (!wallet.account) return
-    const burner = createBurner(wallet.account)
+    const burner = await createBurnerOnce(wallet.account)
     const stored = loadBurner(wallet.account)
     if (!stored || stored.address.toLowerCase() !== burner.address.toLowerCase()) {
       setError('this browser blocked burner storage. allow local storage and try again.')

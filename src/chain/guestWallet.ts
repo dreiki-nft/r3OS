@@ -73,13 +73,33 @@ export function captureGuestKey(): { key: Hex; fresh: boolean } | undefined {
 
 /**
  * A guest link pasted into a tab that already has r3OS open only changes the hash, so startup never sees it
- * (and the key would sit in the address bar). Reload once so it is captured exactly like a fresh visit.
+ * (and the key would sit in the address bar). The key leaves the address bar at once; then, if `ask` agrees
+ * (an open tab may hold the person's own wallet, and a link from a stranger must not swap it silently), the
+ * tab reloads once so the key is captured exactly like a fresh visit.
  */
 export function watchGuestLinks(
-  target: Pick<Window, 'addEventListener' | 'removeEventListener' | 'location'> = window,
+  target: Pick<Window, 'addEventListener' | 'removeEventListener' | 'location' | 'history'> = window,
+  ask: () => Promise<boolean> = async () => true,
 ) {
   const onHash = () => {
-    if (guestKeyFromHash(target.location.hash)) target.location.reload()
+    const key = guestKeyFromHash(target.location.hash)
+    if (!key) return
+    const clean = `${target.location.pathname}${target.location.search}#/paint`
+    const withKey = `${target.location.pathname}${target.location.search}#/guest/${key.slice(2)}`
+    try {
+      target.history.replaceState(target.history.state, '', clean)
+    } catch {
+      // The key stays in the bar until the reload below; nothing else reads it.
+    }
+    void ask().then((yes) => {
+      if (!yes) return
+      try {
+        target.history.replaceState(target.history.state, '', withKey)
+      } catch {
+        return
+      }
+      target.location.reload()
+    })
   }
   target.addEventListener('hashchange', onHash)
   return () => target.removeEventListener('hashchange', onHash)

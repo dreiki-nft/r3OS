@@ -4,6 +4,7 @@ import { publicClient, wsClient } from '../chain/clients'
 import { discoverContracts } from '../chain/contracts'
 import { readHeavy } from '../chain/readMany'
 import { R3OS_LABS_ABI } from '../lib/generated/abi'
+import { resilientWatch } from '../chain/resilientWatch'
 
 export type LabsAttributeValue = string | number | boolean
 export interface LabsTokenData {
@@ -65,17 +66,24 @@ export async function resolveLabsAddress() {
 
 function ensureMetadataWatch(labs: Address) {
   if (!wsClient || stopMetadataWatch) return
-  stopMetadataWatch = wsClient.watchContractEvent({
-    address: labs,
-    abi: R3OS_LABS_ABI,
-    eventName: 'MetadataUpdate',
-    onLogs: (logs) => {
-      for (const log of logs) {
-        const id = (log.args as { _tokenId?: bigint })._tokenId
-        if (id != null) invalidateLabsToken(id)
-      }
-    },
-  })
+  const client = wsClient
+  // While the watch is down an update could be missed, so drop the cached metadata and read it fresh.
+  stopMetadataWatch = resilientWatch(
+    (onError) =>
+      client.watchContractEvent({
+        address: labs,
+        abi: R3OS_LABS_ABI,
+        eventName: 'MetadataUpdate',
+        onLogs: (logs) => {
+          for (const log of logs) {
+            const id = (log.args as { _tokenId?: bigint })._tokenId
+            if (id != null) invalidateLabsToken(id)
+          }
+        },
+        onError,
+      }),
+    () => cache.clear(),
+  )
 }
 
 export function invalidateLabsToken(id: bigint) {

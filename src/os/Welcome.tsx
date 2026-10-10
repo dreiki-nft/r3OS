@@ -12,6 +12,7 @@ import { openProgram } from './programs'
 import { playSound } from './sound'
 import { Button } from './ui/Button'
 import { WalletChooser } from './WalletChooser'
+import { getWindows, subscribeWindows } from './windows'
 import {
   nextWelcomeStep,
   SHOW_WELCOME_EVENT,
@@ -21,6 +22,8 @@ import {
 } from './welcomeChecklist'
 
 const HIDDEN_KEY = 'r3os.welcome.hidden'
+
+const paintShowing = () => getWindows().windows.some((win) => win.id === 'paint' && !win.minimized)
 
 function storedHidden() {
   try {
@@ -51,6 +54,8 @@ export function Welcome() {
   const latestReceipt = traces.traces.find((trace) => trace.t.receipt != null)?.hash
   const tick = useRefreshTick(30)
   const firstRunOpen = useSyncExternalStore(subscribeFirstRun, isFirstRunOpen)
+  // "Open Paint" next to an open Paint window reads like it did nothing.
+  const paintOpen = useSyncExternalStore(subscribeWindows, paintShowing)
   const [hidden, setHidden] = useState(storedHidden)
   const [choosing, setChoosing] = useState(false)
   const [facts, setFacts] = useState<Omit<WelcomeFacts, 'connected'> & { account?: string }>({})
@@ -130,10 +135,14 @@ export function Welcome() {
           Watch the shared canvas first. Connect a wallet only when you want to write onchain.
         </p>
         <div className="welcome-actions">
-          <Button primary onClick={() => openProgram('paint')}>
-            Open Paint
+          {!paintOpen && (
+            <Button primary onClick={() => openProgram('paint')}>
+              Open Paint
+            </Button>
+          )}
+          <Button primary={paintOpen} onClick={() => setChoosing(true)}>
+            Connect wallet
           </Button>
-          <Button onClick={() => setChoosing(true)}>Connect wallet</Button>
           <Button onClick={() => openProgram('help', true, helpHash('getting-started'))}>
             60-second tour
           </Button>
@@ -170,9 +179,11 @@ export function Welcome() {
       </ol>
       {next ? (
         <div className="welcome-actions">
-          <Button primary onClick={() => act(next.id)}>
-            {next.id === 'connect' ? 'Connect wallet' : next.id === 'pass' ? 'Open My Pass' : 'Open Paint'}
-          </Button>
+          {!(paintOpen && next.id !== 'connect' && next.id !== 'pass') && (
+            <Button primary onClick={() => act(next.id)}>
+              {next.id === 'connect' ? 'Connect wallet' : next.id === 'pass' ? 'Open My Pass' : 'Open Paint'}
+            </Button>
+          )}
           <Button onClick={() => openProgram('help', true, helpHash('getting-started'))}>Help</Button>
         </div>
       ) : (

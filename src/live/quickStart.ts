@@ -10,7 +10,7 @@ import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { encodeChangedRuns } from '../lib/patch'
 import { getCanvasSnapshot } from '../paint/canvasStore'
 import { confirmHigherCost } from '../os/confirm'
-import { burnerStatus, createBurner, loadBurner, setCachedBurnerBalance } from './burner'
+import { burnerStatus, createBurnerOnce, loadBurner, setCachedBurnerBalance } from './burner'
 import { resetBurnerNonce } from './nonce'
 import {
   burnerFundTooLarge,
@@ -132,7 +132,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   if (!walletOnCorrectChain()) await switchToMonad()
 
   const existingBurner = loadBurner(owner)
-  const burner = existingBurner ?? createBurner(owner)
+  const burner = existingBurner ?? (await createBurnerOnce(owner))
   // Hide the burner's first pending-nonce RPC behind the wallet-sign/funding steps.
   // That keeps the first no-popup stroke from paying a cold nonce round trip.
   const nonceWarm = resetBurnerNonce(burner.address).catch(() => undefined)

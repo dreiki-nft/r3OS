@@ -148,7 +148,8 @@ export function PaintProgram() {
   // The pencil keeps its own size (1 px by default, for detail) so switching to the brush doesn't change it.
   const [pencilSize, setPencilSize] = useState(1)
   const strokeSize = tool === 'pencil' ? pencilSize : size
-  const [zoom, setZoom] = useState(2)
+  // 0 = fit the whole canvas to the window; 1/2/4/8 = fixed zoom (the well scrolls).
+  const [zoom, setZoom] = useState(0)
   const [grid, setGrid] = useState(false)
   const [protectedView, setProtected] = useState(false)
   const [heatView, setHeatView] = useState(false)
@@ -766,7 +767,7 @@ export function PaintProgram() {
       return
     }
     if (tool === 'zoom') {
-      setZoom((current) => (current >= 8 ? 1 : current * 2))
+      setZoom((current) => (current === 0 ? 2 : current >= 8 ? 0 : current * 2))
       return
     }
     if (tool === 'fill') {
@@ -1185,7 +1186,11 @@ export function PaintProgram() {
         ...(isPhoneScreen()
           ? []
           : [
-              ...[1, 2, 4, 8].map((value) => ({ label: `Zoom ${value}×`, action: () => setZoom(value) })),
+              { label: `Zoom to fit ${zoom === 0 ? '✓' : ''}`, action: () => setZoom(0) },
+              ...[1, 2, 4, 8].map((value) => ({
+                label: `Zoom ${value}× ${zoom === value ? '✓' : ''}`,
+                action: () => setZoom(value),
+              })),
               { label: `Grid ${grid ? '✓' : ''}`, action: () => setGrid(!grid) },
             ]),
         { label: `Show protected ${protectedView ? '✓' : ''}`, action: () => setProtected(!protectedView) },

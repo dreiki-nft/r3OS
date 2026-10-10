@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { recordPerfSampled } from '../chain/perf'
 import { PALETTE } from '../lib/palette'
 import type { Point } from '../lib/paintEngine'
@@ -59,6 +59,9 @@ export function CanvasView({
   const well = useRef<HTMLDivElement>(null)
   const renderedProbe = useRef<string | undefined>(undefined)
   const pendingPaintInputAt = useRef<number | undefined>(undefined)
+  // zoom 0 = "fit": the whole canvas sized to the space the window gives it, so no part hides below the fold.
+  const [fitSize, setFitSize] = useState(512)
+  const effectiveZoom = zoom > 0 ? zoom : fitSize / 256
   const lastVisibilityChangeAt = useRef<number>(0)
   const perfNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
 
@@ -73,8 +76,24 @@ export function CanvasView({
 
   useEffect(() => {
     const host = well.current
+    if (zoom > 0 || !host || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      const style = getComputedStyle(host)
+      const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
+      const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+      const size = Math.floor(Math.min(host.clientWidth - padX, host.clientHeight - padY))
+      if (size > 0) setFitSize(Math.max(128, size))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(host)
+    return () => observer.disconnect()
+  }, [zoom])
+
+  useEffect(() => {
+    const host = well.current
     if (!focus || !host) return
-    const scale = (ref.current?.clientWidth ?? 256 * zoom) / 256
+    const scale = (ref.current?.clientWidth ?? 256 * effectiveZoom) / 256
     const cx = ((focus.box.x0 + focus.box.x1 + 1) / 2) * scale
     const cy = ((focus.box.y0 + focus.box.y1 + 1) / 2) * scale
     host.scrollTo?.({ left: cx - host.clientWidth / 2, top: cy - host.clientHeight / 2, behavior: 'smooth' })
@@ -136,7 +155,7 @@ export function CanvasView({
       context.save()
       context.setLineDash([2, 2])
       context.strokeStyle = '#fff'
-      context.lineWidth = 1 / zoom
+      context.lineWidth = 1 / effectiveZoom
       context.strokeRect(
         selection.x0 + 0.5,
         selection.y0 + 0.5,
@@ -159,9 +178,9 @@ export function CanvasView({
       context.restore()
     }
 
-    if (grid && zoom >= 4) {
+    if (grid && effectiveZoom >= 4) {
       context.strokeStyle = 'rgba(255,255,255,.08)'
-      context.lineWidth = 1 / zoom
+      context.lineWidth = 1 / effectiveZoom
       for (let n = 0; n <= 256; n++) {
         context.beginPath()
         context.moveTo(n, 0)
@@ -175,7 +194,7 @@ export function CanvasView({
     }
 
     const renderedAt = perfNow()
-    if (selection || pings?.length || (grid && zoom >= 4)) {
+    if (selection || pings?.length || (grid && effectiveZoom >= 4)) {
       recordPerfSampled('canvas-overlay', 'selection/pings/grid', renderedAt - overlayStarted, 8)
     }
 
@@ -200,7 +219,7 @@ export function CanvasView({
     background,
     grid,
     protectedView,
-    zoom,
+    effectiveZoom,
     showHeat,
     tileStates,
     maxHeat,
@@ -240,7 +259,7 @@ export function CanvasView({
         ref={ref}
         width={256}
         height={256}
-        style={{ width: 256 * zoom, height: 256 * zoom }}
+        style={{ width: 256 * effectiveZoom, height: 256 * effectiveZoom }}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
           if (previewInputMode === 'down' || previewInputMode === 'stroke') markPaintInput()

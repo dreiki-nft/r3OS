@@ -5,6 +5,7 @@ import {
   chunkBlockRanges,
   clearMatchingInFlight,
   createSerialQueue,
+  deliveredAfter,
   logSetsDiffer,
   paintedUnitsFromArgs,
   reloadOnSpeculativeMismatch,
@@ -113,5 +114,20 @@ describe('canvas store helpers', () => {
     const runs = Uint8Array.from([0, 0, 20, 1, 32, 32, 33, 2])
     const corruptions = Uint8Array.from([255, 255, 3])
     expect([...tilesTouchedByPainted(runs, corruptions)].sort((a, b) => a - b)).toEqual([0, 1, 34, 255])
+  })
+})
+
+describe('reload while strokes arrive', () => {
+  it('re-applies only what landed after the block the reload read', () => {
+    const log = (blockNumber: bigint, logIndex: number) => ({
+      blockNumber,
+      logIndex,
+      transactionHash: `0x${'ab'.repeat(32)}` as Hex,
+      data: '0x' as Hex,
+      topics: [] as readonly Hex[],
+    })
+    const delivered = [log(98n, 0), log(100n, 1), log(101n, 0), log(103n, 2)]
+    expect(deliveredAfter(delivered, 100n).map((entry) => entry.blockNumber)).toEqual([101n, 103n])
+    expect(deliveredAfter(delivered, 103n)).toEqual([])
   })
 })

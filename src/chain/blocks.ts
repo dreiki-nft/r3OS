@@ -184,8 +184,10 @@ export async function startBlockClock() {
   constants = nextConstants
   accept(initial, wsClient ? 'live' : 'polling')
 
-  if (wsClient) void subscribeHeads()
-  else startPolling()
+  if (wsClient) {
+    void subscribeHeads()
+    startWatchdog()
+  } else startPolling()
 }
 
 type HeadsTransport = {
@@ -196,41 +198,121 @@ type HeadsTransport = {
   }) => Promise<{ unsubscribe: () => Promise<unknown> }>
 }
 
+/** Monad makes a block every ~0.4 s: this long without a header on a visible tab means the socket is stuck. */
+export const HEADS_STALL_MS = 5_000
+/** While on the HTTP fallback, try the websocket again this often. */
+export const HEADS_RESUBSCRIBE_MS = 15_000
+
+let subscription = 0
+let polling = false
+let lastLiveAt = 0
+let nextResubscribeAt = 0
+let watchdogTimer: number | undefined
+
+const clockNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
+
+/**
+ * One watchdog decision. A socket can stay open yet stop delivering (a sleeping laptop, a proxy that drops idle
+ * frames, a node that silently ends the subscription), and viem never reports that as an error. So a visible tab
+ * that has seen no header for HEADS_STALL_MS bridges on HTTP polling, and from polling it keeps offering the
+ * websocket another chance until headers flow again.
+ */
+export function headsWatchdogAction(state: {
+  hidden: boolean
+  polling: boolean
+  now: number
+  lastLiveAt: number
+  nextResubscribeAt: number
+}): 'poll' | 'resubscribe' | 'none' {
+  if (state.hidden) return 'none'
+  if (!state.polling) return state.now - state.lastLiveAt > HEADS_STALL_MS ? 'poll' : 'none'
+  return state.now >= state.nextResubscribeAt ? 'resubscribe' : 'none'
+}
+
+function watchdogTick() {
+  const now = clockNow()
+  const action = headsWatchdogAction({
+    hidden: typeof document !== 'undefined' && document.hidden,
+    polling,
+    now,
+    lastLiveAt,
+    nextResubscribeAt,
+  })
+  if (action === 'poll') startPolling()
+  else if (action === 'resubscribe') {
+    nextResubscribeAt = now + HEADS_RESUBSCRIBE_MS
+    void subscribeHeads()
+  }
+}
+
+// Coming back to a tab that slept: check at once rather than on the next tick.
+const onVisibility = () => {
+  if (!document.hidden) watchdogTick()
+}
+
+function startWatchdog() {
+  if (watchdogTimer || typeof window === 'undefined') return
+  watchdogTimer = window.setInterval(watchdogTick, 1_000)
+  document.addEventListener('visibilitychange', onVisibility)
+}
+
 /**
  * The clock reads headers straight from `newHeads`. viem's `watchBlocks` would re-fetch every block with
  * `eth_getBlockByNumber` (~2.5 requests/s per open tab on Monad), and at a paint party every browser on the
  * venue wifi shares one IP's public-RPC rate limit. The header already carries everything the clock shows.
  */
 async function subscribeHeads() {
+  const generation = ++subscription
+  stopWatch?.()
+  stopWatch = undefined
+  // A fresh subscription gets the full stall window to deliver its first header.
+  if (!polling) lastLiveAt = clockNow()
+  const live = (header: BlockHeaderSnapshot) => {
+    if (generation !== subscription) return
+    lastLiveAt = clockNow()
+    // Headers flow again: leave the HTTP fallback.
+    if (polling) stopPolling()
+    accept(header, 'live')
+  }
   try {
     const transport = (wsClient as unknown as { transport: HeadsTransport }).transport
     const { unsubscribe } = await transport.subscribe({
       params: ['newHeads'],
       onData: (data) => {
+        if (generation !== subscription) return
         const header = headerFromRpc(data.result)
         if (header.number <= 0n) return
         const raw = data.result as { miner?: unknown } | undefined
         if (header.hash && isHex(raw?.miner)) {
-          accept(header, 'live')
+          live(header)
           return
         }
         // A provider that trims the payload: fetch this one block in full, exactly as before.
         void wsClient!
           .getBlock({ blockNumber: header.number, includeTransactions: false })
-          .then((block) => accept(normalizeHeader(block), 'live'))
-          .catch(() => accept(header, 'live'))
+          .then((block) => live(normalizeHeader(block)))
+          .catch(() => live(header))
       },
-      onError: () => startPolling(),
+      onError: () => {
+        if (generation === subscription) startPolling()
+      },
     })
-    stopWatch = () => void unsubscribe().catch(() => undefined)
+    const stop = () => void unsubscribe().catch(() => undefined)
+    // Superseded while subscribing (polling began, or a newer attempt started): drop this one.
+    if (generation !== subscription) stop()
+    else stopWatch = stop
   } catch {
-    startPolling()
+    if (generation === subscription) startPolling()
   }
 }
 
 function startPolling() {
+  // Ends the current subscription; the watchdog offers the websocket another chance later.
+  subscription++
   stopWatch?.()
   stopWatch = undefined
+  polling = true
+  nextResubscribeAt = clockNow() + HEADS_RESUBSCRIBE_MS
   const poll = async () => {
     if (!publicClient) return
     const header = await readLatestHeader(publicClient as never).catch(() => ({
@@ -238,16 +320,29 @@ function startPolling() {
       timestamp: snapshot.timestamp,
       miner: snapshot.miner,
     }))
-    accept(header, 'polling')
+    if (!polling) return
+    // The websocket may have delivered newer headers while this read was in flight.
+    if (header.number >= snapshot.block || snapshot.mode !== 'live') accept(header, 'polling')
     pollTimer = window.setTimeout(poll, document.hidden ? 5_000 : 400)
   }
   if (pollTimer) window.clearTimeout(pollTimer)
   void poll()
 }
 
-export function stopBlockClock() {
-  stopWatch?.()
+function stopPolling() {
+  polling = false
   if (pollTimer) window.clearTimeout(pollTimer)
+  pollTimer = undefined
+}
+
+export function stopBlockClock() {
+  subscription++
+  stopWatch?.()
+  stopWatch = undefined
+  stopPolling()
+  if (watchdogTimer) window.clearInterval(watchdogTimer)
+  watchdogTimer = undefined
+  if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility)
   clockStarted = false
 }
 

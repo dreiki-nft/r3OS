@@ -3,6 +3,7 @@ import { publicClient, wsClient } from '../chain/clients'
 import { readHeavy, readMany } from '../chain/readMany'
 import { R3OS_LABS_ABI } from '../lib/generated/abi'
 import { readLabsToken, resolveLabsAddress, type LabsTokenData } from '../labs/labsToken'
+import { resilientWatch } from '../chain/resilientWatch'
 
 export type LabsOwnedToken = { id: bigint; data?: LabsTokenData }
 
@@ -41,33 +42,43 @@ let stopLabsTransferWatch: (() => void) | undefined
 
 function ensureLabsTransferWatch(labs: Address) {
   if (!wsClient || stopLabsTransferWatch) return
-  stopLabsTransferWatch = wsClient.watchContractEvent({
-    address: labs,
-    abi: R3OS_LABS_ABI,
-    eventName: 'Transfer',
-    onLogs: (logs) => {
-      const prefix = `${labs.toLowerCase()}:`
-      for (const log of logs) {
-        const args = log.args as { from?: Address; to?: Address; tokenId?: bigint }
-        if (args.tokenId == null) continue
-        for (const [key, cached] of ownedLabsCache) {
-          if (!key.startsWith(prefix)) continue
-          const owner = key.slice(prefix.length) as Address
-          const next = applyLabsTransfer(
-            cached.ids,
-            owner,
-            args.from ?? zeroAddress,
-            args.to ?? zeroAddress,
-            args.tokenId,
-          )
-          if (next.length !== cached.ids.length || next.some((id, index) => id !== cached.ids[index])) {
-            ownedLabsCache.set(key, { ids: next, at: Date.now() })
-            ownedLabsSources.delete(key)
+  const client = wsClient
+  // While the watch is down a transfer could be missed, so forget the owned-labs lists and read them fresh.
+  stopLabsTransferWatch = resilientWatch(
+    (onError) =>
+      client.watchContractEvent({
+        address: labs,
+        abi: R3OS_LABS_ABI,
+        eventName: 'Transfer',
+        onError,
+        onLogs: (logs) => {
+          const prefix = `${labs.toLowerCase()}:`
+          for (const log of logs) {
+            const args = log.args as { from?: Address; to?: Address; tokenId?: bigint }
+            if (args.tokenId == null) continue
+            for (const [key, cached] of ownedLabsCache) {
+              if (!key.startsWith(prefix)) continue
+              const owner = key.slice(prefix.length) as Address
+              const next = applyLabsTransfer(
+                cached.ids,
+                owner,
+                args.from ?? zeroAddress,
+                args.to ?? zeroAddress,
+                args.tokenId,
+              )
+              if (next.length !== cached.ids.length || next.some((id, index) => id !== cached.ids[index])) {
+                ownedLabsCache.set(key, { ids: next, at: Date.now() })
+                ownedLabsSources.delete(key)
+              }
+            }
           }
-        }
-      }
+        },
+      }),
+    () => {
+      ownedLabsCache.clear()
+      ownedLabsSources.clear()
     },
-  })
+  )
 }
 
 export async function labsAddress() {

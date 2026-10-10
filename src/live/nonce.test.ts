@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createNonceManager } from './nonce'
+import { createNonceManager, type SharedNonce } from './nonce'
 
 describe('burner nonce manager', () => {
   it('sends strictly one at a time with no nonce gaps', async () => {
@@ -34,5 +34,41 @@ describe('burner nonce manager', () => {
     await expect(manager.send(sender)).resolves.toBe(5)
     expect(sender.mock.calls.map(([nonce]) => nonce)).toEqual([3, 5])
     expect(pending).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('burner nonces across tabs', () => {
+  function sharedBetweenTabs(): SharedNonce {
+    let chain = Promise.resolve()
+    let stored: number | undefined
+    return {
+      lock: <T>(task: () => Promise<T>) => {
+        const run = chain.then(task)
+        chain = run.then(
+          () => undefined,
+          () => undefined,
+        )
+        return run
+      },
+      read: () => stored,
+      write: (next) => {
+        stored = next
+      },
+    }
+  }
+
+  it('two tabs on one burner never reuse a nonce, even when the RPC pending count lags', async () => {
+    const shared = sharedBetweenTabs()
+    // Both tabs ask a lagging RPC and hear "8".
+    const tabA = createNonceManager(async () => 8, shared)
+    const tabB = createNonceManager(async () => 8, shared)
+    const used: number[] = []
+    await Promise.all([
+      tabA.send(async (nonce) => used.push(nonce)),
+      tabB.send(async (nonce) => used.push(nonce)),
+      tabA.send(async (nonce) => used.push(nonce)),
+      tabB.send(async (nonce) => used.push(nonce)),
+    ])
+    expect([...used].sort((a, b) => a - b)).toEqual([8, 9, 10, 11])
   })
 })

@@ -44,6 +44,7 @@ import {
   type RecycleLogCache,
   type RecycleLogCacheValue,
 } from '../../labs/recycle'
+import { resilientWatch } from '../../chain/resilientWatch'
 
 const RECYCLED = parseAbiItem(
   'event Recycled(address indexed owner,uint256 indexed frameId,uint256 season,uint256 blockNumber)',
@@ -324,63 +325,70 @@ export function RecycleBin() {
 
   useEffect(() => {
     if (!wsClient || !bin) return
-    return wsClient.watchContractEvent({
-      address: bin,
-      abi: R3OS_RECYCLE_BIN_ABI,
-      eventName: 'Recycled',
-      onLogs: (logs) => {
-        void (async () => {
-          const reads = await readMany(
-            logs.map((log) => ({
-              address: bin,
-              abi: R3OS_RECYCLE_BIN_ABI,
-              functionName: 'tombstone',
-              args: [log.args.frameId!],
-            })),
-            { allowFailure: true },
-          )
-          const additions: Row[] = logs.map((log, index) => ({
-            id: Number(log.args.frameId ?? 0n),
-            owner: (log.args.owner ?? zeroAddress) as Address,
-            deletedAt: log.blockNumber ?? 0n,
-            tombstone:
-              (reads[index] as any)?.status === 'success'
-                ? tupleTombstone((reads[index] as any).result)
-                : {
-                    minter: zeroAddress,
-                    season: Number(log.args.season ?? 0n),
-                    blockNumber: BigInt(log.args.blockNumber ?? 0n),
-                    storm: false,
-                  },
-          }))
-          setRows((current) => {
-            const keys = new Set(additions.map((row) => `${row.id}:${row.deletedAt}`))
-            const next = [
-              ...additions.reverse(),
-              ...current.filter((row) => !keys.has(`${row.id}:${row.deletedAt}`)),
-            ].slice(0, 100)
-            const cachedRows = next.map((row) => ({
-              id: row.id,
-              owner: row.owner,
-              deletedAt: row.deletedAt,
-              season: row.tombstone.season,
-              savedBlock: row.tombstone.blockNumber,
-            })) satisfies CachedBurn[]
-            const scannedTo = additions.reduce(
-              (latest, row) => (row.deletedAt > latest ? row.deletedAt : latest),
-              0n,
-            )
-            void idbSet('logCache', `${config.chainId}:${bin.toLowerCase()}`, {
-              scannedTo,
-              rows: cachedRows,
-            } satisfies RecycleLogCache<CachedBurn>)
-            return next
-          })
-          await loadSidebar(bin, wallet.account)
-        })()
-      },
-    })
-  }, [bin, loadSidebar, wallet.account])
+    const client = wsClient
+    // A dropped watch re-reads the bin, then watches again.
+    return resilientWatch(
+      (onError) =>
+        client.watchContractEvent({
+          address: bin,
+          abi: R3OS_RECYCLE_BIN_ABI,
+          eventName: 'Recycled',
+          onError,
+          onLogs: (logs) => {
+            void (async () => {
+              const reads = await readMany(
+                logs.map((log) => ({
+                  address: bin,
+                  abi: R3OS_RECYCLE_BIN_ABI,
+                  functionName: 'tombstone',
+                  args: [log.args.frameId!],
+                })),
+                { allowFailure: true },
+              )
+              const additions: Row[] = logs.map((log, index) => ({
+                id: Number(log.args.frameId ?? 0n),
+                owner: (log.args.owner ?? zeroAddress) as Address,
+                deletedAt: log.blockNumber ?? 0n,
+                tombstone:
+                  (reads[index] as any)?.status === 'success'
+                    ? tupleTombstone((reads[index] as any).result)
+                    : {
+                        minter: zeroAddress,
+                        season: Number(log.args.season ?? 0n),
+                        blockNumber: BigInt(log.args.blockNumber ?? 0n),
+                        storm: false,
+                      },
+              }))
+              setRows((current) => {
+                const keys = new Set(additions.map((row) => `${row.id}:${row.deletedAt}`))
+                const next = [
+                  ...additions.reverse(),
+                  ...current.filter((row) => !keys.has(`${row.id}:${row.deletedAt}`)),
+                ].slice(0, 100)
+                const cachedRows = next.map((row) => ({
+                  id: row.id,
+                  owner: row.owner,
+                  deletedAt: row.deletedAt,
+                  season: row.tombstone.season,
+                  savedBlock: row.tombstone.blockNumber,
+                })) satisfies CachedBurn[]
+                const scannedTo = additions.reduce(
+                  (latest, row) => (row.deletedAt > latest ? row.deletedAt : latest),
+                  0n,
+                )
+                void idbSet('logCache', `${config.chainId}:${bin.toLowerCase()}`, {
+                  scannedTo,
+                  rows: cachedRows,
+                } satisfies RecycleLogCache<CachedBurn>)
+                return next
+              })
+              await loadSidebar(bin, wallet.account)
+            })()
+          },
+        }),
+      () => void refresh(),
+    )
+  }, [bin, loadSidebar, wallet.account, refresh])
 
   // Only in-app requests (My Frames, the desktop Bin) open the confirm dialog. A `?recycle=` in a shared
   // link is ignored on purpose: a link must never pre-arm a burn.

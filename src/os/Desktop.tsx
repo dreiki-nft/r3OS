@@ -23,6 +23,7 @@ import {
 } from './shellMenus'
 import { refreshReleaseClock } from './releases'
 import { isPhoneScreen } from './phone'
+import { resilientWatch } from '../chain/resilientWatch'
 
 /** Decorative layers of the desktop surface: a right-click / long-press here belongs to the desktop. */
 const SURFACE_CLASSES = [
@@ -105,12 +106,18 @@ export function Desktop() {
       }
       await read()
       if (wsClient) {
-        stop = wsClient.watchContractEvent({
-          address: bin,
-          abi: R3OS_RECYCLE_BIN_ABI,
-          eventName: 'Recycled',
-          onLogs: () => void read(),
-        })
+        const client = wsClient
+        stop = resilientWatch(
+          (onError) =>
+            client.watchContractEvent({
+              address: bin,
+              abi: R3OS_RECYCLE_BIN_ABI,
+              eventName: 'Recycled',
+              onLogs: () => void read(),
+              onError,
+            }),
+          () => void read().catch(() => undefined),
+        )
       }
     })().catch(() => undefined)
     return () => {

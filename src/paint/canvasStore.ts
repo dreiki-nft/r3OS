@@ -1,6 +1,7 @@
 import { hexToBytes, type Hex, type Log } from 'viem'
 import { recordPerf, recordPerfSampled } from '../chain/perf'
 import { publicClient, wsClient } from '../chain/clients'
+import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { readMany } from '../chain/readMany'
 import { config } from '../chain/config'
 import { getLogsWindow } from '../chain/logs'
@@ -113,6 +114,20 @@ let startPromise: Promise<void> | undefined
 let constants = demoConstants
 let activityFeed: ActivityFeedSnapshot = { version: 0, items: [] }
 const appliedLogKeys = new Map<string, bigint>()
+/**
+ * Logs delivered outside the serial queue (websocket, receipts), newest last. A full canvas reload reads the
+ * contract at one block while these keep arriving; anything newer than that block is applied again on top of
+ * the reloaded canvas, or a stroke that landed mid-reload would vanish until the next reconcile.
+ */
+const recentDelivered: CoreLog[] = []
+const RECENT_DELIVERED_MAX = 512
+let logsSubscribed = false
+let retryLogsAt = 0
+let lastBlockMode: string | undefined
+let unwatchBlockMode: (() => void) | undefined
+const LOGS_RETRY_MS = 15_000
+// Each polling loop owns a generation, so a tick still awaiting its catch-up cannot start a second loop.
+let pollGeneration = 0
 const proposalCommitments = new ProposalCommitmentTracker()
 
 function emitCanvas() {
@@ -124,7 +139,7 @@ function emitTiles() {
   for (const listener of tileListeners) listener()
 }
 
-function emitActivity(activity: CanvasActivity) {
+function emitActivityNow(activity: CanvasActivity) {
   activityFeed = {
     version: activityFeed.version + 1,
     items: [...activityFeed.items, activity].slice(-600),
@@ -301,6 +316,16 @@ function pruneApplied(beforeBlock: bigint) {
   for (const [key, block] of appliedLogKeys) if (block < beforeBlock) appliedLogKeys.delete(key)
 }
 
+function rememberDelivered(log: CoreLog) {
+  recentDelivered.push(log)
+  if (recentDelivered.length > RECENT_DELIVERED_MAX) recentDelivered.splice(0, recentDelivered.length - RECENT_DELIVERED_MAX)
+}
+
+/** Logs that arrived while the canvas was being read at `block` and are newer than it. */
+export function deliveredAfter(logs: readonly CoreLog[], block: bigint) {
+  return logs.filter((log) => log.blockNumber > block)
+}
+
 async function seedCanonicalOverlap(latest: bigint) {
   if (!publicClient || !config.paintAddress) return
   const fromBlock = latest > 32n ? latest - 32n : 0n
@@ -319,10 +344,18 @@ async function seedCanonicalOverlap(latest: bigint) {
 
 async function applyDeliveredLogs(
   logs: readonly CoreLog[],
-  options: { advanceSnapshot?: boolean; observedAt?: number; source?: 'websocket'; onPaint?: () => void } = {},
+  options: {
+    advanceSnapshot?: boolean
+    observedAt?: number
+    source?: 'websocket'
+    onPaint?: () => void
+    /** re-applying logs after a reload: the activity feed already showed them */
+    replay?: boolean
+  } = {},
 ) {
   if (!logs.length) return false
   const advanceSnapshot = options.advanceSnapshot ?? true
+  const emitActivity = options.replay ? () => undefined : emitActivityNow
   let needsReload = false
   let canvasChanged = false
   let decodedPaints = 0
@@ -334,6 +367,7 @@ async function applyDeliveredLogs(
     const key = canvasLogIdentity(log)
     if (key && appliedLogKeys.has(key)) continue
     rememberLog(log)
+    if (!options.replay) rememberDelivered(log)
     const decodeStarted = profileWebsocket ? perfNow() : 0
     const decoded = decodeCoreLog(log)
     if (profileWebsocket) decodeMs += perfNow() - decodeStarted
@@ -439,7 +473,7 @@ async function applyDeliveredLogs(
   return needsReload
 }
 
-async function loadCanvasAt(block: bigint) {
+async function loadCanvasAt(block: bigint, options: { replayDelivered?: boolean } = {}) {
   if (!publicClient || !config.paintAddress) {
     emitCanvas()
     return
@@ -500,11 +534,16 @@ async function loadCanvasAt(block: bigint) {
     face: Number(info[2]),
     backgroundColor: Number(info[3]),
     snapshotBlock: block,
-    status: wsClient ? 'live' : 'polling',
+    status: wsClient && logsSubscribed ? 'live' : 'polling',
   }
   tileCache.clear()
   appliedLogKeys.clear()
   await seedCanonicalOverlap(block)
+  // Strokes the websocket or a receipt delivered during the reload, on top of the fresh canvas. Not advancing
+  // snapshotBlock keeps any catch-up reading from `block`; the remembered keys stop double application.
+  // A reconcile repair passes false: it distrusts what was delivered and re-reads the tail canonically.
+  const tail = options.replayDelivered === false ? [] : deliveredAfter(recentDelivered, block)
+  if (tail.length) await applyDeliveredLogs(tail, { advanceSnapshot: false, replay: true })
   emitTiles()
   emitCanvas()
 }
@@ -595,7 +634,7 @@ async function reconcileSpeculativeNowImpl(targetFinalizedBlock?: bigint) {
   const anchor = snapshot.snapshotBlock < finalized ? snapshot.snapshotBlock : finalized
   const fromBlock = anchor > 32n ? anchor - 32n : 0n
   if (finalized - fromBlock + 1n > BigInt(20 * config.logsRange)) {
-    await loadCanvasAt(finalized)
+    await loadCanvasAt(finalized, { replayDelivered: false })
     await catchUpNow()
     return true
   }
@@ -610,7 +649,7 @@ async function reconcileSpeculativeNowImpl(targetFinalizedBlock?: bigint) {
     .map(([key]) => key)
   if (
     await reloadOnSpeculativeMismatch(applied, canonical, async () => {
-      await loadCanvasAt(finalized)
+      await loadCanvasAt(finalized, { replayDelivered: false })
       // Re-apply the post-finalized tail so low-latency UX can continue after the authoritative repair.
       await catchUpNow()
     })
@@ -649,13 +688,16 @@ export function startCanvasStore() {
     unwatchMonadNotifications?.()
     unwatchMonadNotifications = subscribeMonadLogNotifications(onMonadCanvasCommitment)
     if (wsClient && config.paintAddress) {
-      unwatch = wsClient.watchContractEvent({
-        address: config.paintAddress,
-        abi: R3OS_PAINT_ABI,
-        onLogs: (logs) => void onSubscriptionLogs(logs),
-        onError: () => {
-          void catchUp().finally(startPolling)
-        },
+      subscribeLogs()
+      // The block clock notices a stalled socket (no newHeads) and when headers flow again; the Paint log
+      // subscription rides the same socket, so it follows: HTTP catch-up while stalled, websocket after.
+      lastBlockMode = getBlockSnapshot().mode
+      unwatchBlockMode = subscribeBlocks(() => {
+        const mode = getBlockSnapshot().mode
+        if (mode === lastBlockMode) return
+        lastBlockMode = mode
+        if (mode === 'polling' && logsSubscribed) fallBackToPolling()
+        else if (mode === 'live' && !logsSubscribed) resumeSubscription()
       })
     } else {
       startPolling()
@@ -669,11 +711,55 @@ export function startCanvasStore() {
   return pending
 }
 
+function setLogsSubscribed(live: boolean) {
+  logsSubscribed = live
+  const status = live ? 'live' : 'polling'
+  if (snapshot.status === status || snapshot.status === 'demo') return
+  snapshot = { ...snapshot, status }
+  emitCanvas()
+}
+
+function subscribeLogs() {
+  if (!wsClient || !config.paintAddress) return
+  unwatch?.()
+  unwatch = wsClient.watchContractEvent({
+    address: config.paintAddress,
+    abi: R3OS_PAINT_ABI,
+    onLogs: (logs) => void onSubscriptionLogs(logs),
+    onError: () => fallBackToPolling(),
+  })
+  setLogsSubscribed(true)
+}
+
+function fallBackToPolling() {
+  retryLogsAt = Date.now() + LOGS_RETRY_MS
+  void catchUp()
+    .catch(() => undefined)
+    .finally(startPolling)
+}
+
+/** Back from HTTP polling to the websocket: subscribe first, then one catch-up closes the gap between them. */
+function resumeSubscription() {
+  pollGeneration++
+  if (pollTimer) window.clearTimeout(pollTimer)
+  pollTimer = undefined
+  subscribeLogs()
+  void catchUp().catch(() => undefined)
+}
+
 function startPolling() {
   unwatch?.()
   unwatch = undefined
+  setLogsSubscribed(false)
+  const generation = ++pollGeneration
   const tick = async () => {
-    if (!document.hidden) await catchUp()
+    if (!document.hidden) await catchUp().catch(() => undefined)
+    if (generation !== pollGeneration || logsSubscribed) return
+    // The socket is healthy again (headers arrive on it) and the last failure is old: try the subscription again.
+    if (wsClient && getBlockSnapshot().mode === 'live' && Date.now() >= retryLogsAt) {
+      resumeSubscription()
+      return
+    }
     pollTimer = window.setTimeout(tick, document.hidden ? 5_000 : 1_000)
   }
   if (pollTimer) window.clearTimeout(pollTimer)
@@ -682,6 +768,11 @@ function startPolling() {
 
 export function stopCanvasStore() {
   unwatch?.()
+  unwatch = undefined
+  unwatchBlockMode?.()
+  unwatchBlockMode = undefined
+  logsSubscribed = false
+  pollGeneration++
   unwatchMonadNotifications?.()
   unwatchMonadNotifications = undefined
   proposalCommitments.reset()

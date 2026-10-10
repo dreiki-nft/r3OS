@@ -48,6 +48,7 @@ import {
 } from './releases'
 import { isPhoneScreen } from './phone'
 import { watchGuestLinks } from '../chain/guestWallet'
+import { osConfirm } from './confirm'
 
 const TvView = lazy(() => import('../tv/TvView').then((module) => ({ default: module.TvView })))
 
@@ -119,7 +120,15 @@ export function R3OS() {
     }
     show()
     window.addEventListener('r3os:guest-wallet', show)
-    const stopWatching = watchGuestLinks()
+    const stopWatching = watchGuestLinks(window, () =>
+      osConfirm({
+        title: 'Guest wallet link',
+        message:
+          'this link holds a throwaway guest wallet (made for hackathon judges). using it disconnects the wallet in this tab.\n\nonly continue if the r3OS team gave you this link.',
+        okLabel: 'Use guest wallet',
+        cancelLabel: 'Keep my wallet',
+      }),
+    )
     return () => {
       window.removeEventListener('r3os:guest-wallet', show)
       stopWatching()

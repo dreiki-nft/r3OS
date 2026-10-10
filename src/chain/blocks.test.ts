@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   blockEta,
   emaBlockTime,
+  HEADS_RESUBSCRIBE_MS,
+  HEADS_STALL_MS,
+  headsWatchdogAction,
   headerFromRpc,
   isStormAt,
   normalizeHeader,
@@ -97,5 +100,28 @@ describe('newHeads headers', () => {
     expect(header).not.toHaveProperty('hash')
     expect(header).not.toHaveProperty('gasUsed')
     expect(header.miner).toBe('0x0000000000000000000000000000000000000000')
+  })
+})
+
+describe('newHeads watchdog', () => {
+  const base = { hidden: false, polling: false, now: 100_000, lastLiveAt: 99_000, nextResubscribeAt: 0 }
+
+  it('stays on the websocket while headers arrive', () => {
+    expect(headsWatchdogAction(base)).toBe('none')
+  })
+
+  it('falls back to HTTP polling when a visible tab sees no header for the stall window', () => {
+    expect(headsWatchdogAction({ ...base, lastLiveAt: base.now - HEADS_STALL_MS - 1 })).toBe('poll')
+  })
+
+  it('never acts for a hidden tab', () => {
+    expect(headsWatchdogAction({ ...base, hidden: true, lastLiveAt: 0 })).toBe('none')
+    expect(headsWatchdogAction({ ...base, hidden: true, polling: true })).toBe('none')
+  })
+
+  it('offers the websocket another chance from polling, on a schedule', () => {
+    expect(headsWatchdogAction({ ...base, polling: true, nextResubscribeAt: base.now + 1 })).toBe('none')
+    expect(headsWatchdogAction({ ...base, polling: true, nextResubscribeAt: base.now })).toBe('resubscribe')
+    expect(HEADS_RESUBSCRIBE_MS).toBeGreaterThan(HEADS_STALL_MS)
   })
 })

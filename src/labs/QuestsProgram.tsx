@@ -34,6 +34,7 @@ import { getReleaseSnapshot, isProgramAvailable, subscribeReleases } from '../os
 import { useRefreshTick } from '../chain/refreshTick'
 import { questIsRetired, retiredAddresses } from '../os/retired'
 import { questAddress, readQuestAccountData, readQuestDefinitions, type QuestDefinition } from './questsData'
+import { resilientWatch } from '../chain/resilientWatch'
 
 const RULES = [
   'each quest reads a number straight from a contract: pixels painted, frames saved, storm paints, and so on.',
@@ -194,14 +195,23 @@ export function QuestsProgram() {
 
   useEffect(() => {
     if (!wsClient || !address) return
-    return wsClient.watchContractEvent({
-      address,
-      abi: R3OS_QUESTS_ABI,
-      onLogs: (eventLogs) => {
-        if (eventLogs.some((log) => log.eventName === 'QuestAdded')) void loadDefs(true)
+    const client = wsClient
+    return resilientWatch(
+      (onError) =>
+        client.watchContractEvent({
+          address,
+          abi: R3OS_QUESTS_ABI,
+          onLogs: (eventLogs) => {
+            if (eventLogs.some((log) => log.eventName === 'QuestAdded')) void loadDefs(true)
+            void refresh(true)
+          },
+          onError,
+        }),
+      () => {
+        void loadDefs(true)
         void refresh(true)
       },
-    })
+    )
   }, [address, loadDefs, refresh])
 
   async function quoteClaims(ids: number[]) {

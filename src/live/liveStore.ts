@@ -9,6 +9,7 @@ import {
   cachedBurnerBalance,
   loadBurner,
   subscribeBurnerChanges,
+  watchBurnerStorage,
   type BurnerRecord,
   type BurnerSession,
 } from './burner'
@@ -109,6 +110,8 @@ export function advanceObservedSessionUsage(session: BurnerSession | undefined, 
 function ensureStarted() {
   if (started) return
   started = true
+  // Live Mode started, renewed or reset in another tab of this browser.
+  watchBurnerStorage()
   subscribeBurnerChanges((owner) => {
     if (!sameOwner(owner, snapshot.owner)) return
     const burner = loadBurner(owner)

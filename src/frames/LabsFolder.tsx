@@ -18,6 +18,7 @@ import {
   loadOwnedLabsTokens,
   type LabsOwnedToken,
 } from './labsStore'
+import { resilientWatch } from '../chain/resilientWatch'
 
 export type LabsFilter = 'All' | 'CDs' | 'Portraits'
 
@@ -57,29 +58,35 @@ export function LabsFolder({ onExit }: { onExit: () => void }) {
 
   useEffect(() => {
     if (!wsClient || !labs || !wallet.account) return
-    return wsClient.watchContractEvent({
-      address: labs,
-      abi: R3OS_LABS_ABI,
-      eventName: 'Transfer',
-      onLogs: (logs) => {
-        setTokens((current) => {
-          let ids = current.map((item) => item.id)
-          for (const log of logs) {
-            const args = log.args as { from?: Address; to?: Address; tokenId?: bigint }
-            if (args.tokenId != null)
-              ids = applyLabsTransfer(
-                ids,
-                wallet.account!,
-                args.from ?? zeroAddress,
-                args.to ?? zeroAddress,
-                args.tokenId,
-              )
-          }
-          if (ids.length !== current.length || ids.some((id, i) => id !== current[i]?.id)) void load()
-          return current
-        })
-      },
-    })
+    const client = wsClient
+    return resilientWatch(
+      (onError) =>
+        client.watchContractEvent({
+          address: labs,
+          abi: R3OS_LABS_ABI,
+          eventName: 'Transfer',
+          onError,
+          onLogs: (logs) => {
+            setTokens((current) => {
+              let ids = current.map((item) => item.id)
+              for (const log of logs) {
+                const args = log.args as { from?: Address; to?: Address; tokenId?: bigint }
+                if (args.tokenId != null)
+                  ids = applyLabsTransfer(
+                    ids,
+                    wallet.account!,
+                    args.from ?? zeroAddress,
+                    args.to ?? zeroAddress,
+                    args.tokenId,
+                  )
+              }
+              if (ids.length !== current.length || ids.some((id, i) => id !== current[i]?.id)) void load()
+              return current
+            })
+          },
+        }),
+      () => void load(),
+    )
   }, [labs, wallet.account, load])
 
   const shown = useMemo(
