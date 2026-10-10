@@ -71,6 +71,20 @@ export function captureGuestKey(): { key: Hex; fresh: boolean } | undefined {
   return captured
 }
 
+/**
+ * A guest link pasted into a tab that already has r3OS open only changes the hash, so startup never sees it
+ * (and the key would sit in the address bar). Reload once so it is captured exactly like a fresh visit.
+ */
+export function watchGuestLinks(
+  target: Pick<Window, 'addEventListener' | 'removeEventListener' | 'location'> = window,
+) {
+  const onHash = () => {
+    if (guestKeyFromHash(target.location.hash)) target.location.reload()
+  }
+  target.addEventListener('hashchange', onHash)
+  return () => target.removeEventListener('hashchange', onHash)
+}
+
 export function forgetGuestKey() {
   captured = undefined
   try {

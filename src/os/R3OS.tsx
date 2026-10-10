@@ -47,6 +47,7 @@ import {
   subscribeReleases,
 } from './releases'
 import { isPhoneScreen } from './phone'
+import { watchGuestLinks } from '../chain/guestWallet'
 
 const TvView = lazy(() => import('../tv/TvView').then((module) => ({ default: module.TvView })))
 
@@ -118,7 +119,11 @@ export function R3OS() {
     }
     show()
     window.addEventListener('r3os:guest-wallet', show)
-    return () => window.removeEventListener('r3os:guest-wallet', show)
+    const stopWatching = watchGuestLinks()
+    return () => {
+      window.removeEventListener('r3os:guest-wallet', show)
+      stopWatching()
+    }
   }, [])
 
   useEffect(() => {

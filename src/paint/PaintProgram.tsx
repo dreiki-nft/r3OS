@@ -62,6 +62,7 @@ import { closeWindow } from '../os/windows'
 import { regionsFromRunList } from '../xray/regions'
 import { BudgetMeter, type BudgetState } from './BudgetMeter'
 import { spendObservedBudget } from './budget'
+import { isPhoneScreen } from '../os/phone'
 import { CanvasView } from './CanvasView'
 import {
   agoLabel,
@@ -143,6 +144,9 @@ export function PaintProgram() {
   const [colour, setColour] = useState(1)
   const [bgColour, setBgColour] = useState(0)
   const [size, setSize] = useState(1)
+  // The pencil keeps its own size (1 px by default, for detail) so switching to the brush doesn't change it.
+  const [pencilSize, setPencilSize] = useState(1)
+  const strokeSize = tool === 'pencil' ? pencilSize : size
   const [zoom, setZoom] = useState(2)
   const [grid, setGrid] = useState(false)
   const [protectedView, setProtected] = useState(false)
@@ -681,7 +685,7 @@ export function PaintProgram() {
     const editStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
     pushUndo()
     const next = canvas.working.slice()
-    drawStrokeSegment(next, point, point, tool as 'pencil' | 'brush' | 'eraser', colour, size)
+    drawStrokeSegment(next, point, point, tool as 'pencil' | 'brush' | 'eraser', colour, strokeSize)
     protectOutline(next, canvas.outline, canvas.working)
     strokeLast.current = point
     strokeBuffer.current = next
@@ -701,7 +705,7 @@ export function PaintProgram() {
       point,
       tool as 'pencil' | 'brush' | 'eraser',
       colour,
-      size,
+      strokeSize,
     )
     protectOutline(strokeBuffer.current, canvas.outline, before)
     recordPendingTiles(tilesFromDiff(before, strokeBuffer.current))
@@ -1164,8 +1168,13 @@ export function PaintProgram() {
     {
       label: 'View',
       items: [
-        ...[1, 2, 4, 8].map((value) => ({ label: `Zoom ${value}×`, action: () => setZoom(value) })),
-        { label: `Grid ${grid ? '✓' : ''}`, action: () => setGrid(!grid) },
+        // On a phone the canvas always fills the screen width, so zoom (and the grid, drawn from 4×) do nothing.
+        ...(isPhoneScreen()
+          ? []
+          : [
+              ...[1, 2, 4, 8].map((value) => ({ label: `Zoom ${value}×`, action: () => setZoom(value) })),
+              { label: `Grid ${grid ? '✓' : ''}`, action: () => setGrid(!grid) },
+            ]),
         { label: `Show protected ${protectedView ? '✓' : ''}`, action: () => setProtected(!protectedView) },
         { label: `Wet paint & heat ${heatView ? '✓' : ''}`, action: () => setHeatView(!heatView) },
         { label: 'Monad X-ray…', action: () => openProgram('xray') },
@@ -1337,7 +1346,12 @@ export function PaintProgram() {
         )}
       </section>
       <div className="paint-main">
-        <Toolbox tool={tool} onTool={setTool} size={size} onSize={setSize} />
+        <Toolbox
+          tool={tool}
+          onTool={setTool}
+          size={strokeSize}
+          onSize={tool === 'pencil' ? setPencilSize : setSize}
+        />
         <CanvasView
           pixels={canvas.working}
           outline={canvas.outline}

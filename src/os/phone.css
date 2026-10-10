@@ -10,7 +10,36 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Touch screens: no double-tap zoom on controls, no grey tap flash, no long-press "save image" on the canvas. */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role='button'],
+  [role='menuitem'],
+  .desktop-icon {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .canvas-well,
+  .canvas-well canvas,
+  .desktop-icon,
+  .toolbox,
+  .palette-grid {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 @media (max-width: 640px), (max-height: 500px) and (pointer: coarse) {
+  /* iPhone Safari zooms the whole page into any field with text under 16px. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
   :root {
     --phone-taskbar: calc(48px + env(safe-area-inset-bottom, 0px));
   }
@@ -74,6 +103,34 @@ html {
     display: none;
   }
 
+  /* Menus: the bar may wrap instead of overflowing, and each drop-down opens just under its button as a
+     full-width sheet, so it can never run off the right edge of the screen or be clipped by the window. */
+  .menu-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 25px;
+  }
+
+  .menu-root > button {
+    min-height: 32px;
+    padding: 4px 9px;
+  }
+
+  .menu-dropdown {
+    position: fixed;
+    top: auto;
+    left: 6px;
+    right: 6px;
+    width: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 30;
+  }
+
+  .menu-dropdown button {
+    min-height: 38px;
+  }
+
   /* Balloons drop in from the top on a phone: at the bottom they covered the Paint button. */
   .balloon-stack {
     top: calc(6px + env(safe-area-inset-top, 0px));
@@ -121,10 +178,11 @@ html {
     min-width: 0;
   }
 
+  /* Paint's menu bar stays at the top while the column scrolls. */
   .paint-program .menu-bar {
     order: 1;
-    overflow-x: auto;
-    scrollbar-width: none;
+    position: sticky;
+    top: 0;
   }
 
   .paint-live-hero {

@@ -38,8 +38,8 @@ const tools: ToolEntry[] = [
   { id: 'zoom', label: 'Zoom', icon: 'zoom' },
 ]
 
-/** Tools whose stroke width follows the size picker. */
-const sizedTools = new Set<Tool>(['brush', 'eraser', 'line', 'rect', 'ellipse'])
+/** Tools whose stroke width follows the size picker (the pencil has its own size, 1 px to start). */
+const sizedTools = new Set<Tool>(['pencil', 'brush', 'eraser', 'line', 'rect', 'ellipse'])
 
 export function Toolbox({
   tool,
@@ -70,22 +70,15 @@ export function Toolbox({
       ))}
       <div className="tool-options sunken" role="radiogroup" aria-label="Brush size">
         {[1, 3, 5].map((value, index) => {
-          // The pencil always draws 1 px (like MS Paint); sizes apply to the brush, eraser and shapes.
-          const fixed = tool === 'pencil' || !sizedTools.has(tool)
-          const chosen = fixed ? value === 1 && tool === 'pencil' : size === value
+          const fixed = !sizedTools.has(tool)
+          const chosen = !fixed && size === value
           return (
             <button
               key={value}
               role="radio"
               aria-checked={chosen}
               aria-label={`Brush size ${value} px`}
-              title={
-                fixed
-                  ? tool === 'pencil'
-                    ? 'the pencil is always 1 px'
-                    : 'no size for this tool'
-                  : `${value} px`
-              }
+              title={fixed ? 'no size for this tool' : `${value} px`}
               className={chosen ? 'chosen' : ''}
               disabled={fixed}
               onClick={() => {
@@ -98,7 +91,6 @@ export function Toolbox({
             </button>
           )
         })}
-        {tool === 'pencil' && <small>pencil: 1px</small>}
       </div>
     </aside>
   )

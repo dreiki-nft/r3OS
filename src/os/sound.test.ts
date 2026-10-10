@@ -56,4 +56,51 @@ describe('sound', () => {
     s.playSound('select')
     expect(plays).toBe(2)
   })
+
+  it('starts at half volume on a fresh device', async () => {
+    const s = await import('./sound')
+    expect(s.getVolume()).toBe(0.5)
+    expect(s.DEFAULT_VOLUME).toBe(0.5)
+  })
+
+  it('plays through Web Audio with the chosen volume once the sound is loaded', async () => {
+    const gains: number[] = []
+    let started = 0
+    class Ctx {
+      state = 'running'
+      destination = {}
+      resume = async () => {}
+      decodeAudioData = async () => ({ duration: 0.1 })
+      createGain() {
+        const node = { gain: { value: 1 }, connect: (target: unknown) => target }
+        gains.push(0)
+        const index = gains.length - 1
+        Object.defineProperty(node.gain, 'value', {
+          set: (v: number) => (gains[index] = v),
+          get: () => gains[index],
+        })
+        return node
+      }
+      createBufferSource() {
+        return { buffer: null, connect: (target: unknown) => target, start: () => started++ }
+      }
+    }
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn((_n: string, fn: () => void) => {
+        gesture = fn
+      }),
+      removeEventListener: vi.fn(),
+      AudioContext: Ctx,
+    })
+    vi.stubGlobal('fetch', async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }))
+    const s = await import('./sound')
+    s.initSound()
+    s.setVolume(0.3)
+    gesture?.()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    s.playSound('select')
+    expect(started).toBe(1)
+    expect(plays).toBe(0)
+    expect(gains.at(-1)).toBe(0.3)
+  })
 })

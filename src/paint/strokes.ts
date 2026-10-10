@@ -16,7 +16,7 @@ export function drawStrokeSegment(
   size: number,
 ) {
   const value = tool === 'eraser' ? 0 : colour
-  const width = tool === 'pencil' ? 1 : size
+  const width = size
   if (from.x === to.x && from.y === to.y) drawBrush(buffer, to.x, to.y, value, width)
   else drawLine(buffer, from, to, value, width)
 }

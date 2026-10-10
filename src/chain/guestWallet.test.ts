@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { numberToHex, recoverMessageAddress, recoverTypedDataAddress } from 'viem'
 import { config } from './config'
-import { createGuestProvider, guestKeyFromHash } from './guestWallet'
+import { createGuestProvider, guestKeyFromHash, watchGuestLinks } from './guestWallet'
 
 // A throwaway test key; never funded anywhere.
 const KEY = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
@@ -64,5 +64,23 @@ describe('guest wallet', () => {
         code: 4200,
       })
     }
+  })
+
+  it('reloads once when a guest link is pasted into a tab that already has r3OS open', () => {
+    let listener: (() => void) | undefined
+    let reloads = 0
+    const fake = {
+      location: { hash: '#/paint', reload: () => reloads++ },
+      addEventListener: (_name: string, fn: () => void) => (listener = fn),
+      removeEventListener: () => (listener = undefined),
+    }
+    const stop = watchGuestLinks(fake as never)
+    listener?.()
+    expect(reloads).toBe(0)
+    fake.location.hash = `#/guest/${KEY.slice(2)}`
+    listener?.()
+    expect(reloads).toBe(1)
+    stop()
+    expect(listener).toBeUndefined()
   })
 })
