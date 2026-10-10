@@ -79,7 +79,7 @@ Every program below is live on mainnet and reachable from the desktop, the Start
 | **Wet, dry and hot paint** | Blank or still-wet pixels are cheap; painting over dry art costs double. Busy 16 × 16 tiles heat up and refuse paint for a while, and each region has a per-block cap, so nobody can wipe the canvas. *View → Wet paint & heat* shows it all on the canvas. |
 | **The character** | Each season has a protected r3tard outline that nobody can paint over, a face colour the community can flip black/white, and a background colour. |
 | **DF1 corruption and storms** | When a region keeps changing hands, DF1 corruption glitches a few pixels of each paint, chosen onchain. Every 200,000 blocks a **storm** hits for 600 blocks: everything glitches at 200%, storm paints are counted, and frames saved in a storm carry `Storm: yes`. |
-| **Live Mode** | A browser-held session key you authorize once with an EIP-712 signature. It can only paint and claim quests, expires, holds at most **1 MON**, and can be ended and swept back. Then you paint with no wallet popups at all. |
+| **Live Mode** | A browser-held session key you authorize once with an EIP-712 signature. It can only paint and claim quests, expires, holds at most **10 MON**, and can be ended and swept back. All painting goes through it: a wallet starts Live Mode once, then paints with no popups at all. |
 | **Need MON?** | If a wallet can't pay for the next stroke, Paint says so with the real per-stroke cost before anything fails. |
 | **Save to Floppy, wallpaper, screensaver** | Save the canvas as a real `.BMP` built from contract bytes, set the live canvas as your desktop wallpaper, or let it run as the screensaver. |
 

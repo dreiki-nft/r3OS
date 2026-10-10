@@ -35,6 +35,7 @@ import {
   getLiveSnapshot,
   liveActive,
   liveTimeLeftMs,
+  MAX_BURNER_FUND,
   setLiveOwner,
   subscribeLive,
   unitsLeft,
@@ -825,8 +826,17 @@ export function PaintProgram() {
     return observedRegionUsage(getActivityFeedSnapshot().items, block.block)
   }
 
+  // Painting goes through Live Mode: a connected wallet starts it once, then every stroke is sent by the
+  // session key with no popup. Guest wallets (for judges) already sign locally, so they paint directly.
+  const needsLive = Boolean(wallet.account) && !guest && !isLive
+
   async function paintChunks(andFrame = false) {
     if (andFrame && isLive) return
+    if (needsLive) {
+      if (!walletOnCorrectChain()) await switchToMonad()
+      else void startLiveFor()
+      return
+    }
     if (config.demo) {
       setBox({
         title: 'Demo mode',
@@ -1104,15 +1114,18 @@ export function PaintProgram() {
               : 'Paint and save frame…',
           disabled:
             isLive ||
+            !guest ||
             patch.pixelWrites === 0 ||
             !(quotes[paintFrameKey] && typeof quotes[paintFrameKey] !== 'string'),
           disabledReason: isLive
             ? 'save frame from your main wallet'
-            : patch.pixelWrites === 0
-              ? 'paint something first'
-              : typeof quotes[paintFrameKey] === 'string'
-                ? (quotes[paintFrameKey] as string)
-                : 'quoting…',
+            : !guest
+              ? 'paint with Live Mode, then File › Save frame'
+              : patch.pixelWrites === 0
+                ? 'paint something first'
+                : typeof quotes[paintFrameKey] === 'string'
+                  ? (quotes[paintFrameKey] as string)
+                  : 'quoting…',
           action: () => void paintChunks(true),
         },
         {
@@ -1271,7 +1284,7 @@ export function PaintProgram() {
                     ? liveQuick?.phase === 'sign'
                       ? 'confirm the session signature · it cannot move funds'
                       : liveQuick?.phase === 'fund'
-                        ? 'fund the browser key once · 1 MON hard cap'
+                        ? `fund the browser key once · ${Number(MAX_BURNER_FUND / 10n ** 18n)} MON hard cap`
                         : 'authorizing the browser paint session…'
                     : 'authorize once · then paint without a wallet popup per stroke · no Undo'}
             </small>
@@ -1484,12 +1497,19 @@ export function PaintProgram() {
             <Button
               primary
               title={wallet.account && reason ? reason : undefined}
-              disabled={wallet.account ? busy || (!!reason && (isLive || walletOnCorrectChain())) : false}
+              disabled={
+                wallet.account
+                  ? needsLive
+                    ? liveStarting
+                    : busy || (!!reason && (isLive || walletOnCorrectChain()))
+                  : false
+              }
               onClick={() => {
                 if (!wallet.account) {
                   setWalletIntent('paint')
                   setWalletDialog(true)
                 } else if (!isLive && !walletOnCorrectChain()) void switchToMonad()
+                else if (needsLive) void startLiveFor()
                 else void paintChunks(false)
               }}
             >
@@ -1497,7 +1517,11 @@ export function PaintProgram() {
                 ? 'Connect wallet'
                 : !isLive && !walletOnCorrectChain()
                   ? 'Switch to Monad'
-                  : `Paint ${cost.pixels} px`}
+                  : needsLive
+                    ? liveStarting
+                      ? liveButtonLabel
+                      : 'Start Live Mode to paint'
+                    : `Paint ${cost.pixels} px`}
             </Button>
             {progress && progress.total > 1 && (
               <Button

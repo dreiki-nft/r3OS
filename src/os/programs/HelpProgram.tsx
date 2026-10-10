@@ -28,12 +28,12 @@ const pages: Record<HelpSlug, ReactNode> = {
         locally.
       </li>
       <li>
-        <b>connect when you want to commit</b>. pick a colour, draw, then press <b>Paint</b>. your pixels are a
-        normal Monad transaction.
+        <b>connect when you want to paint</b>, then press <b>Start Live Mode to paint</b>. you authorize and fund
+        a capped browser session once (two wallet prompts); after that every stroke is a Monad transaction sent
+        without a wallet popup. Live Mode has no Undo.
       </li>
       <li>
-        <b>try Live Mode</b> when you want the Monad demo. authorize and fund the capped browser session once;
-        after that, strokes are sent without a wallet popup per stroke. Live Mode has no Undo.
+        pick a colour, draw, then press <b>Paint</b>. with Auto-paint on, strokes go out as you draw.
       </li>
       <li>
         <b>save a frame</b>: in Paint, File › Save frame…. it becomes an NFT in <b>My Frames</b>.
@@ -244,11 +244,12 @@ const pages: Record<HelpSlug, ReactNode> = {
   'live-mode': (
     <>
       <p>
-        stop confirming every stroke. Live Mode authorizes a capped browser key for paint-only actions, for a
+        painting in r3OS goes through Live Mode, so you never confirm every stroke. Live Mode authorizes a capped
+        browser key (at most 10 MON) for paint-only actions, for a
         limited time and a limited number of units. strokes still go through the Paint contract; live WebSocket updates can be speculative until the block advances through Monad commitment states.
       </p>
       <p>
-        press <b>Start Live Mode</b> in Paint. if you are disconnected, choose the wallet there and quick start
+        press <b>Start Live Mode to paint</b> in Paint. if you are disconnected, choose the wallet there and quick start
         continues automatically. the wallet signs the session once and, when needed, sends the burner a little
         MON for gas. after that, strokes need no wallet popup. if the burner still has enough MON, setup is one
         wallet prompt.

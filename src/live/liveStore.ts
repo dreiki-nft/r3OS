@@ -292,9 +292,10 @@ export function sweepAmount(balance: bigint, gasLimit: bigint, maxFeePerGas: big
 
 /**
  * App-managed ceiling for a browser-held burner. A burner key lives in localStorage, so it should only ever
- * hold pocket change; any app funding action that would take its balance above this is refused.
+ * hold pocket change; any app funding action that would take its balance above this is refused. 10 MON leaves
+ * room for ~20 paints even when gas spikes (1 MON covered only a handful), and painting needs Live Mode.
  */
-export const MAX_BURNER_FUND = 1n * 10n ** 18n
+export const MAX_BURNER_FUND = 10n * 10n ** 18n
 
 export function burnerFundTooLarge(value: bigint, currentBalance = 0n) {
   return currentBalance + value > MAX_BURNER_FUND

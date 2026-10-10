@@ -11,14 +11,19 @@ describe('quickFunding', () => {
     expect(quickFunding(0n, 200_000n, 150_000n, 100n * GWEI)).toBe(parseEther('0.5'))
   })
 
+  it('fits 20 paints at a gas spike that the old 1 MON cap could not cover', () => {
+    // (20 × 1.2M + 300k) × 204 gwei = 4.957 MON → 5 MON, under the 10 MON cap
+    expect(fundingSuggestion(1_200_000n, 300_000n, 204n * GWEI)).toBe(parseEther('5'))
+  })
+
   it('caps an expensive 20-paint target at the browser-key safety ceiling', () => {
-    expect(fundingSuggestion(1_200_000n, 300_000n, 204n * GWEI)).toBe(MAX_BURNER_FUND)
-    expect(quickFunding(0n, 1_200_000n, 300_000n, 204n * GWEI)).toBe(MAX_BURNER_FUND)
+    expect(fundingSuggestion(1_200_000n, 300_000n, 1_000n * GWEI)).toBe(MAX_BURNER_FUND)
+    expect(quickFunding(0n, 1_200_000n, 300_000n, 1_000n * GWEI)).toBe(MAX_BURNER_FUND)
   })
 
   it('tops up to the capped total without rounding the delta past the cap', () => {
-    expect(quickFunding(parseEther('0.05'), 1_200_000n, 300_000n, 204n * GWEI)).toBe(
-      parseEther('0.95'),
+    expect(quickFunding(parseEther('0.05'), 1_200_000n, 300_000n, 1_000n * GWEI)).toBe(
+      parseEther('9.95'),
     )
   })
 
@@ -31,12 +36,12 @@ describe('quickFunding', () => {
 
 describe('burner funding cap', () => {
   it('refuses to move more than pocket change into a browser-held key', () => {
-    expect(MAX_BURNER_FUND).toBe(parseEther('1'))
-    expect(burnerFundTooLarge(parseEther('0.5'))).toBe(false)
-    expect(burnerFundTooLarge(parseEther('1'))).toBe(false)
-    expect(burnerFundTooLarge(parseEther('1.1'))).toBe(true)
-    expect(burnerFundTooLarge(parseEther('0.1'), parseEther('0.9'))).toBe(false)
-    expect(burnerFundTooLarge(parseEther('0.2'), parseEther('0.9'))).toBe(true)
+    expect(MAX_BURNER_FUND).toBe(parseEther('10'))
+    expect(burnerFundTooLarge(parseEther('5'))).toBe(false)
+    expect(burnerFundTooLarge(parseEther('10'))).toBe(false)
+    expect(burnerFundTooLarge(parseEther('10.1'))).toBe(true)
+    expect(burnerFundTooLarge(parseEther('0.1'), parseEther('9.9'))).toBe(false)
+    expect(burnerFundTooLarge(parseEther('0.2'), parseEther('9.9'))).toBe(true)
   })
 })
 

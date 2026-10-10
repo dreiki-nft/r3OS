@@ -211,7 +211,7 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
   }
 
   // The browser key must be able to register the session and still afford at least one representative
-  // paint at the quoted max fee without breaking the 1 MON safety ceiling. A 20-paint convenience target
+  // paint at the quoted max fee without breaking the burner's MAX_BURNER_FUND safety ceiling. A 20-paint convenience target
   // may be much larger than that during fee spikes, so it is capped rather than treated as an error.
   const minimumUsableBalance = (paintGas + startQuote.gasLimit) * startQuote.maxFeePerGas
   if (minimumUsableBalance > MAX_BURNER_FUND) {
