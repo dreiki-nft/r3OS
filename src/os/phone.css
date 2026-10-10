@@ -208,6 +208,7 @@ html {
     border-left: 0;
     border-top: 1px solid #444;
     font-size: 11px;
+    min-height: 0;
   }
 
   .paint-live-hero.active .paint-live-proof {

@@ -1048,6 +1048,10 @@ button:disabled {
 .paint-live-proof {
   padding-left: 10px;
   border-left: 1px solid #555;
+  /* Always room for its three-line state ("1 painter recently" · px · block), so switching to the one-line
+     "YOU included…" never changes the bar's height and nudges the canvas below it. */
+  min-height: calc(3lh + 4px);
+  justify-content: center;
 }
 
 .paint-live-hero.active .paint-live-proof {
