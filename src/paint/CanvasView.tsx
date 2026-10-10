@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { recordPerfSampled } from '../chain/perf'
+import { nextFitSize } from './fitSize'
 import { PALETTE } from '../lib/palette'
 import type { Point } from '../lib/paintEngine'
 import type { TilePreviewState } from './cost'
@@ -60,8 +61,9 @@ export function CanvasView({
   const renderedProbe = useRef<string | undefined>(undefined)
   const pendingPaintInputAt = useRef<number | undefined>(undefined)
   // zoom 0 = "fit": the whole canvas sized to the space the window gives it, so no part hides below the fold.
-  const [fitSize, setFitSize] = useState(512)
-  const effectiveZoom = zoom > 0 ? zoom : fitSize / 256
+  // Starts at 0 so the first measurement sets the size outright.
+  const [fitSize, setFitSize] = useState(0)
+  const effectiveZoom = zoom > 0 ? zoom : (fitSize || 512) / 256
   const lastVisibilityChangeAt = useRef<number>(0)
   const perfNow = () => (typeof performance === 'undefined' ? Date.now() : performance.now())
 
@@ -81,8 +83,8 @@ export function CanvasView({
       const style = getComputedStyle(host)
       const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
       const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
-      const size = Math.floor(Math.min(host.clientWidth - padX, host.clientHeight - padY))
-      if (size > 0) setFitSize(Math.max(128, size))
+      const available = Math.floor(Math.min(host.clientWidth - padX, host.clientHeight - padY))
+      if (available > 0) setFitSize((current) => nextFitSize(current, available))
     }
     measure()
     const observer = new ResizeObserver(measure)

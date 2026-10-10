@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Address } from 'viem'
-import { deploymentScope } from './config'
+import { deploymentScope, parseRpcUrls } from './config'
 
 describe('deploymentScope', () => {
   it('separates browser state by chain and Paint deployment', () => {
@@ -18,5 +18,23 @@ describe('deploymentScope', () => {
 
   it('has an explicit namespace when Paint is unavailable', () => {
     expect(deploymentScope(10143, undefined)).toBe('10143:no-paint')
+  })
+})
+
+describe('parseRpcUrls', () => {
+  const A = 'https://rpc.monad.xyz'
+  const B = 'https://rpc2.monad.xyz'
+  const C = 'https://rpc3.monad.xyz'
+
+  it('puts VITE_RPC_URL first, then VITE_RPC_URLS, without duplicates', () => {
+    expect(parseRpcUrls(A, `${B},${A}, ${C}`)).toEqual([A, B, C])
+  })
+
+  it('accepts a comma list in the singular VITE_RPC_URL too', () => {
+    expect(parseRpcUrls(`${A},${B},${C}`, '')).toEqual([A, B, C])
+  })
+
+  it('drops entries that are not http(s) URLs instead of breaking every read', () => {
+    expect(parseRpcUrls(`VITE_RPC_URLS=${A}`, ` "${B}" ,${C},wss://rpc.monad.xyz`)).toEqual([C])
   })
 })

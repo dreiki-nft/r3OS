@@ -73,10 +73,26 @@ function address(name: string, fallback?: string): Address | undefined {
 }
 
 const paint = address('VITE_PAINT_ADDRESS', env('VITE_CONTRACT_ADDRESS'))
-const legacyRpc = env('VITE_RPC_URL')
-const rpcUrls = Array.from(
-  new Set([legacyRpc, ...env('VITE_RPC_URLS').split(',')].map((value) => value.trim()).filter(Boolean)),
-)
+/**
+ * The read pool: VITE_RPC_URL first, then VITE_RPC_URLS. Either may hold a comma list (they are one letter
+ * apart, and a list pasted into the singular one once put the live site on the demo canvas). Anything that is
+ * not an http(s) URL is dropped, so one bad entry can never take every read down with it.
+ */
+export function parseRpcUrls(primary: string, list: string) {
+  const urls = [...primary.split(','), ...list.split(',')]
+    .map((value) => value.trim())
+    .filter((value) => {
+      try {
+        const { protocol } = new URL(value)
+        return protocol === 'https:' || protocol === 'http:'
+      } catch {
+        return false
+      }
+    })
+  return Array.from(new Set(urls))
+}
+
+const rpcUrls = parseRpcUrls(env('VITE_RPC_URL'), env('VITE_RPC_URLS'))
 const chainId = Number(env('VITE_CHAIN_ID') || 10143)
 const canonicalMulticall3 =
   chainId === 143 || chainId === 10143 ? '0xcA11bde05977b3631167028862bE2a173976CA11' : undefined
