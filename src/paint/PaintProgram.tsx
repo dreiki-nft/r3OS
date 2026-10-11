@@ -849,10 +849,30 @@ export function PaintProgram() {
   // session key with no popup. Guest wallets (for judges) already sign locally, so they paint directly.
   const needsLive = Boolean(wallet.account) && !guest && !isLive
 
+  // Asking the wallet to switch networks can be refused or fail; either way the person hears about it
+  // (it used to fail silently, so pressing Switch to Monad and rejecting looked like nothing happened).
+  async function switchNetwork() {
+    try {
+      await switchToMonad()
+      return true
+    } catch (error) {
+      const friendly = friendlyError(error)
+      playSound(friendly.rejected ? 'cancel' : 'error')
+      setBox({
+        title: 'Still on another network',
+        message: friendly.rejected
+          ? 'you turned down the switch in your wallet. r3OS paints on Monad: press Switch to Monad again when you are ready.'
+          : friendly.message,
+        kind: friendly.rejected ? 'warning' : 'error',
+      })
+      return false
+    }
+  }
+
   async function paintChunks(andFrame = false) {
     if (andFrame && isLive) return
     if (needsLive) {
-      if (!walletOnCorrectChain()) await switchToMonad()
+      if (!walletOnCorrectChain()) await switchNetwork()
       else void startLiveFor()
       return
     }
@@ -870,7 +890,7 @@ export function PaintProgram() {
     }
     if (!config.paintAddress) return
     if ((!isLive || andFrame) && !walletOnCorrectChain()) {
-      await switchToMonad()
+      await switchNetwork()
       return
     }
     if (patch.pixelWrites === 0) return
@@ -995,7 +1015,7 @@ export function PaintProgram() {
           if (frameId != null) {
             pushBalloon({
               title: 'Frame saved',
-              body: `frame #${frameId} saved · block #${result.blockNumber} · sealed by block.coinbase`,
+              body: `frame #${frameId} is saved onchain in block #${result.blockNumber}.`,
               href: `#/frames?frame=${frameId}`,
               hrefLabel: 'Open in My Frames',
             })
@@ -1095,7 +1115,9 @@ export function PaintProgram() {
         }
         pushBalloon({
           title: 'Frame saved',
-          body: `frame #${frameId ?? '?'} saved · block #${result.blockNumber} · sealed by block.coinbase`,
+          body: frameId == null
+            ? `your frame is saved onchain in block #${result.blockNumber}.`
+            : `frame #${frameId} is saved onchain in block #${result.blockNumber}.`,
           href: frameId == null ? undefined : `#/frames?frame=${frameId}`,
           hrefLabel: frameId == null ? undefined : 'Open in My Frames',
         })
@@ -1532,7 +1554,7 @@ export function PaintProgram() {
                 if (!wallet.account) {
                   setWalletIntent('paint')
                   setWalletDialog(true)
-                } else if (!isLive && !walletOnCorrectChain()) void switchToMonad()
+                } else if (!isLive && !walletOnCorrectChain()) void switchNetwork()
                 else if (needsLive) void startLiveFor()
                 else void paintChunks(false)
               }}
