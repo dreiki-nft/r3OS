@@ -4,16 +4,36 @@ import { readMany, type ReadManyResult } from '../chain/readMany'
 import { R3OS_PAINTER_PASS_ABI } from '../lib/generated/abi'
 
 export const STAMP_ABI = parseAbi(['function stamp(address painter) view returns (string name,bool earned)'])
+const RECYCLE_BIN_ABI = parseAbi(['function burnedBy(address) view returns (uint256)'])
+/** RecycleBin.RECYCLER_STAMP_BURNS in the deployed Lab. */
+export const RECYCLER_BURNS = 100n
 
 export interface StampRow {
   name: string
   earned: boolean
   source?: Address
+  /** how to earn it, in plain words */
   rule: string
+  /** where the painter stands, e.g. "4 of 7 days" */
+  progress?: string
+  /** program that earns it */
+  program?: string
+  /** group for "View by Lab" */
+  lab: string
 }
 
-const rules: Record<string, string> = {
-  'MONAD CARD': 'hold a Monad Card',
+/** How each Lab stamp is earned, keyed by the name its contract returns. */
+export function labStampInfo(name: string): Pick<StampRow, 'rule' | 'program' | 'lab'> {
+  if (name.startsWith('QUESTS '))
+    return { rule: 'claim a quest in Quests.', program: 'quests', lab: 'Quests' }
+  if (name === 'RECYCLER')
+    return {
+      rule: `recycle ${RECYCLER_BURNS} frames in the Recycle Bin.`,
+      program: 'bin',
+      lab: 'Recycle Bin',
+    }
+  if (name === 'MONAD CARD') return { rule: 'hold a Monad Card in this wallet.', lab: 'Monad Card' }
+  return { rule: 'earned through one of the Labs.', lab: 'Other Labs' }
 }
 
 export async function loadLabStamps(pass: Address, owner: Address) {
@@ -44,18 +64,38 @@ export async function loadLabStamps(pass: Address, owner: Address) {
     { allowFailure: true },
   )) as ReadManyResult[]
 
-  return sources.map((source, index): StampRow => {
+  const rows = sources.map((source, index): StampRow => {
     const row = stampRows[index]
     if (row?.status !== 'success')
-      return { name: `Lab ${index}`, earned: false, source, rule: 'stamp source unavailable' }
+      return {
+        name: `Lab ${index}`,
+        earned: false,
+        source,
+        rule: 'this Lab could not be read right now.',
+        lab: 'Other Labs',
+      }
     const [name, earned] = row.result as readonly [string, boolean]
-    return {
-      name,
-      earned,
-      source,
-      rule: name.startsWith('QUESTS ') ? 'n quests claimed' : (rules[name] ?? 'Lab-specific rule'),
-    }
+    const info = labStampInfo(name)
+    const count = name.startsWith('QUESTS ') ? name.slice('QUESTS '.length) : undefined
+    return { name, earned, source, ...info, ...(count ? { progress: `${count} claimed so far` } : {}) }
   })
+
+  // RECYCLER needs 100 burns, so show how far along the painter is.
+  const recycler = rows.find((row) => row.name === 'RECYCLER' && !row.earned && row.source)
+  if (recycler?.source) {
+    try {
+      const burned = (await client.readContract({
+        address: recycler.source,
+        abi: RECYCLE_BIN_ABI,
+        functionName: 'burnedBy',
+        args: [owner],
+      })) as bigint
+      recycler.progress = `${burned} of ${RECYCLER_BURNS} recycled`
+    } catch {
+      // Progress is a nice-to-have.
+    }
+  }
+  return rows
 }
 
 export const builtInStamps = (stats: {
@@ -65,11 +105,51 @@ export const builtInStamps = (stats: {
   stormPaints: bigint
   activeDays: bigint
   holder: boolean
-}): StampRow[] => [
-  { name: 'FIRST PAINT', earned: stats.firstPaintBlock > 0n, rule: 'paint once' },
-  { name: 'FIRST FRAME', earned: stats.framesMinted > 0n, rule: 'mint a frame' },
-  { name: 'LIVE PAINTER', earned: stats.sessionPaints >= 10n, rule: '10 session-key paints' },
-  { name: 'STORM CHASER', earned: stats.stormPaints >= 1n, rule: 'paint during a storm' },
-  { name: 'REGULAR', earned: stats.activeDays >= 7n, rule: '7 active days' },
-  { name: 'HOLDER', earned: stats.holder, rule: 'own at least 1 r3tard now' },
-]
+  /** "a storm is on now" / "next storm in 2 h 10 m", from the block clock */
+  stormNote?: string
+}): StampRow[] => {
+  const lab = 'Painter Pass'
+  const of = (value: bigint, goal: bigint, unit: string) =>
+    `${value > goal ? goal : value} of ${goal} ${unit}`
+  return [
+    {
+      name: 'FIRST PAINT',
+      earned: stats.firstPaintBlock > 0n,
+      rule: 'paint anything once.',
+      program: 'paint',
+      lab,
+    },
+    {
+      name: 'FIRST FRAME',
+      earned: stats.framesMinted > 0n,
+      rule: 'save a frame: in Paint, File › Save frame…',
+      program: 'paint',
+      lab,
+    },
+    {
+      name: 'LIVE PAINTER',
+      earned: stats.sessionPaints >= 10n,
+      rule: 'paint 10 times with Live Mode on.',
+      progress: of(stats.sessionPaints, 10n, 'Live Mode paints'),
+      program: 'paint',
+      lab,
+    },
+    {
+      name: 'STORM CHASER',
+      earned: stats.stormPaints >= 1n,
+      rule: 'paint while a DF1 storm is on.',
+      progress: stats.stormNote,
+      program: 'paint',
+      lab,
+    },
+    {
+      name: 'REGULAR',
+      earned: stats.activeDays >= 7n,
+      rule: 'paint on 7 different days.',
+      progress: of(stats.activeDays, 7n, 'days'),
+      program: 'paint',
+      lab,
+    },
+    { name: 'HOLDER', earned: stats.holder, rule: 'hold at least one r3tard in this wallet.', lab },
+  ]
+}

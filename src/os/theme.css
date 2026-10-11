@@ -1637,6 +1637,33 @@ button:disabled {
   grid-row: 2/4;
 }
 
+.stamp-status {
+  display: grid;
+  gap: 8px;
+}
+
+.stamp-status p {
+  margin: 0;
+}
+
+.stamp-status-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.stamp-status-head .ico {
+  flex: 0 0 auto;
+}
+
+.stamp-progress {
+  color: var(--accent, #5feddf);
+}
+
+.stamp-status .r3-button {
+  justify-self: start;
+}
+
 .advanced-buttons {
   display: flex;
   gap: 8px;

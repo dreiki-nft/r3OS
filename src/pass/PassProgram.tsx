@@ -2,7 +2,7 @@ import { helpHash } from '../os/helpTopics'
 import { screenSafeMessage } from '../chain/errors'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { parseAbi, type Address } from 'viem'
-import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
+import { blockEta, getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { config } from '../chain/config'
 import { discoverContracts } from '../chain/contracts'
@@ -17,7 +17,7 @@ import { markProgramDataReady } from '../chain/perf'
 import { readPassCoreIdentity, readPassIdentity } from './passData'
 import { clearAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
-import { openProgram } from '../os/programs'
+import { openProgram, programById } from '../os/programs'
 import { closeWindow } from '../os/windows'
 import { playSound } from '../os/sound'
 import { Button } from '../os/ui/Button'
@@ -124,6 +124,7 @@ export function PassProgram() {
   const [scatterFailed, setScatterFailed] = useState<ReadonlySet<string>>(new Set())
   const [labStamps, setLabStamps] = useState<StampRow[]>([])
   const [selectedStamp, setSelectedStamp] = useState<StampRow>()
+  const [stampView, setStampView] = useState<'type' | 'lab'>('type')
   const [budget, setBudget] = useState<readonly bigint[]>([0n, 0n, 0n, 0n, 0n])
   const [box, setBox] = useState<{ title: string; message: string; kind?: 'info' | 'warning' | 'error' }>()
   const [identityLoaded, setIdentityLoaded] = useState(false)
@@ -311,6 +312,12 @@ export function PassProgram() {
       .then((value) => setBudget(value as readonly bigint[]))
   }, [tab, wallet.account, ids])
 
+  // Minute resolution is plenty for "next storm in …", and keeps this from recomputing every block.
+  const stormNote = block.storm
+    ? 'a storm is on right now: paint to earn it.'
+    : block.nextStormIn > 0n
+      ? `next storm in about ${formatLiveTime(blockEta(block.nextStormIn))}.`
+      : undefined
   const builtIns = useMemo(
     () =>
       builtInStamps({
@@ -320,8 +327,9 @@ export function PassProgram() {
         stormPaints: stats.stormPaints,
         activeDays: stats.activeDays,
         holder: stats.holder,
+        stormNote,
       }),
-    [stats],
+    [stats, stormNote],
   )
   const stamps = [...builtIns, ...labStamps]
 
@@ -591,46 +599,72 @@ export function PassProgram() {
         {tab === 'Stamps' && (
           <div className="device-manager">
             <label>
-              <input type="radio" defaultChecked name="view" /> View stamps by type
+              <input type="radio" checked={stampView === 'type'} onChange={() => setStampView('type')} name="view" />{' '}
+              View stamps by type
             </label>
             <label>
-              <input type="radio" name="view" /> View by Lab
+              <input type="radio" checked={stampView === 'lab'} onChange={() => setStampView('lab')} name="view" />{' '}
+              View by Lab
             </label>
             <TreeView label="Painter Pass stamps">
-              <div role="treeitem">
-                PAINTER-PASS-{passId.toString()}
-                <div role="group">
-                  {stamps.map((stamp, index) => (
-                    <button
-                      role="treeitem"
-                      key={`${stamp.name}-${index}`}
-                      onClick={() => {
-                        setSelectedStamp(stamp)
-                        playSound(stamp.earned ? 'select' : 'error')
-                      }}
-                    >
-                      <Icon
-                        name={stamp.earned ? 'medal' : 'warning'}
-                        size={20}
-                        colour={stamp.earned ? '#5FEDDF' : '#FEC343'}
-                      />
-                      {stamp.name}
-                    </button>
-                  ))}
+              {(stampView === 'type'
+                ? [{ group: `PAINTER-PASS-${passId.toString()}`, rows: stamps }]
+                : [...new Set(stamps.map((stamp) => stamp.lab))].map((lab) => ({
+                    group: lab,
+                    rows: stamps.filter((stamp) => stamp.lab === lab),
+                  }))
+              ).map(({ group, rows }) => (
+                <div role="treeitem" key={group}>
+                  {group}
+                  <div role="group">
+                    {rows.map((stamp, index) => (
+                      <button
+                        role="treeitem"
+                        key={`${stamp.name}-${index}`}
+                        aria-selected={selectedStamp?.name === stamp.name}
+                        onClick={() => {
+                          setSelectedStamp(stamp)
+                          playSound(stamp.earned ? 'select' : 'error')
+                        }}
+                      >
+                        <Icon
+                          name={stamp.earned ? 'medal' : 'warning'}
+                          size={20}
+                          colour={stamp.earned ? '#5FEDDF' : '#FEC343'}
+                        />
+                        {stamp.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ))}
             </TreeView>
             <GroupBox title="Device status">
               {selectedStamp ? (
-                <p>
-                  <Icon name={selectedStamp.earned ? 'info' : 'warning'} size={24} />
-                  {selectedStamp.name} is{' '}
-                  {selectedStamp.earned ? 'working properly.' : 'not working properly. (Code 10)'}
-                  <br />
-                  <small>{selectedStamp.rule}</small>
-                </p>
+                <div className="stamp-status">
+                  <p className="stamp-status-head">
+                    <Icon name={selectedStamp.earned ? 'info' : 'warning'} size={24} />
+                    <span>
+                      {selectedStamp.name} is{' '}
+                      {selectedStamp.earned ? 'working properly.' : 'not working properly. (Code 10)'}
+                    </span>
+                  </p>
+                  {selectedStamp.earned ? (
+                    <p>earned: {selectedStamp.rule}</p>
+                  ) : (
+                    <>
+                      <p>not earned yet. to fix it, {selectedStamp.rule}</p>
+                      {selectedStamp.progress && <p className="stamp-progress">{selectedStamp.progress}</p>}
+                      {selectedStamp.program && (
+                        <Button onClick={() => openProgram(selectedStamp.program!)}>
+                          Open {programById(selectedStamp.program)?.title ?? 'program'}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
               ) : (
-                <p>Select a stamp.</p>
+                <p>Select a stamp to see how to earn it.</p>
               )}
             </GroupBox>
           </div>
