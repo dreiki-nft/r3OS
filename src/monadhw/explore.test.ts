@@ -7,6 +7,7 @@ import {
   observedBlockMs,
   pushBlockSample,
   sampleGap,
+  steadyBlockMs,
   storageRace,
 } from './explore'
 
@@ -106,5 +107,24 @@ describe('liquidity race', () => {
   it('shortens venue labels', () => {
     expect(marketName('poe-mon-usdc')).toBe('POE')
     expect(marketName('view')).toBe('VIEW')
+  })
+})
+
+describe('boot block clock', () => {
+  const at = (block: number, ms: number) => ({ block: BigInt(block), at: ms })
+
+  it('waits while a burst of headers would fake a fast chain', () => {
+    // three headers in 360 ms, two blocks apart: the old reading said 0.18 s per block
+    expect(steadyBlockMs([at(103, 1360), at(102, 1180), at(101, 1000)])).toBeUndefined()
+  })
+
+  it('reports the cadence once the samples span enough time and blocks', () => {
+    // a burst, then normal arrivals: 5 blocks over 2 s
+    const samples = [at(105, 3000), at(104, 2600), at(103, 2200), at(102, 1100), at(101, 1050), at(100, 1000)]
+    expect(steadyBlockMs(samples)).toBe(400)
+  })
+
+  it('needs at least three blocks even over a long span', () => {
+    expect(steadyBlockMs([at(102, 3000), at(100, 1000)])).toBeUndefined()
   })
 })

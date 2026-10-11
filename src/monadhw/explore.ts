@@ -30,6 +30,24 @@ export function observedBlockMs(samples: readonly BlockSample[]): number | undef
   return ms / blocks
 }
 
+/** A boot-screen measurement must cover at least this much time and this many blocks before it is shown. */
+export const STEADY_SPAN_MS = 1_200
+export const STEADY_SPAN_BLOCKS = 3
+
+/**
+ * Like observedBlockMs, but undefined until the samples span enough time and blocks to mean something. A phone
+ * on mobile data often receives several headers in one burst; averaging two gaps from one burst printed
+ * "0.18 s per block" on a chain that makes one every ~0.4 s.
+ */
+export function steadyBlockMs(samples: readonly BlockSample[]): number | undefined {
+  if (samples.length < 2) return undefined
+  const newest = samples[0]
+  const oldest = samples[samples.length - 1]
+  if (newest.at - oldest.at < STEADY_SPAN_MS) return undefined
+  if (newest.block - oldest.block < BigInt(STEADY_SPAN_BLOCKS)) return undefined
+  return observedBlockMs(samples)
+}
+
 export function formatBlockMs(ms?: number) {
   if (ms == null || !Number.isFinite(ms)) return '—'
   return ms >= 1_000 ? `${(ms / 1_000).toFixed(2)} s` : `${Math.round(ms)} ms`

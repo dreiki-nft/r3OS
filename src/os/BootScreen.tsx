@@ -3,7 +3,7 @@ import { PoweredByMonad } from './ui/PoweredByMonad'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { chainName, config } from '../chain/config'
 import { recordPerf } from '../chain/perf'
-import { observedBlockMs, pushBlockSample, type BlockSample } from '../monadhw/explore'
+import { steadyBlockMs, pushBlockSample, type BlockSample } from '../monadhw/explore'
 import { BOOT_TIMING, POST_WAITS, bootMode, postLines, rememberBoot, setBooting, type BootMode } from './bootState'
 import { openProgram } from './programs'
 import { playSound } from './sound'
@@ -78,9 +78,9 @@ export function BootScreen() {
     chainName,
     chainId: config.chainId,
     block: block.block,
-    // The first sample is the app's initial header read, not an arrival: measure from the arrivals after it
-    // (two gaps at least), so the number is the real cadence.
-    blockMs: samples.length >= 4 ? observedBlockMs(samples.slice(0, -1)) : undefined,
+    // The first sample is the app's initial header read, not an arrival: measure from the arrivals after it,
+    // and only once they span long enough that a burst of headers can't fake the cadence.
+    blockMs: samples.length >= 3 ? steadyBlockMs(samples.slice(0, -1)) : undefined,
     // Never claim "no signal" during a 3 s boot: an RPC that hasn't answered yet just reads "searching…".
     offline: false,
     demo: config.demo,

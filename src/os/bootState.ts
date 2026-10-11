@@ -24,7 +24,7 @@ export const BOOT_TIMING = {
  */
 export const POST_WAITS: Readonly<Record<number, { until: 'block' | 'clock'; maxMs: number }>> = {
   6: { until: 'block', maxMs: 1_500 },
-  7: { until: 'clock', maxMs: 1_200 },
+  7: { until: 'clock', maxMs: 2_000 },
 }
 
 export interface SessionLike {
