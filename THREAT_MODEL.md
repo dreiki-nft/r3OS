@@ -52,6 +52,18 @@ Owners can call `incrementSessionNonce()` to invalidate signed but not-yet-start
 
 An active session key cannot use delegated identity to mint frames, flip face/background, or claim the Painter Pass. The frontend revokes before sweeping unused MON (Hardware Profiles → End session).
 
+### Browser-held burner key (by design)
+
+The Live Mode burner key is generated in the browser from `crypto.getRandomValues` and stored **unencrypted** in `localStorage` under `r3os.burner.<chainId>.<owner>`. This is deliberate: r3OS has no backend, so the key that signs strokes without a wallet popup has to live in the browser. Anything that can run script on r3os.app (an XSS, a malicious extension) or anyone using the same browser profile can read it.
+
+What a stolen burner gets is bounded:
+
+- **Its own MON.** The app never funds a burner above **10 MON** (`MAX_BURNER_FUND`); a normal quick start funds roughly twenty paints of gas.
+- **Painting as the owner** within the signed `maxUnits`, until `expiryBlock` or until the owner revokes it. This spends the owner's hourly paint budget.
+- **Nothing else.** A session key holds no token approvals and cannot move the owner's MON, r3tards, frames, CDs or Pass. Minting frames, face/background flips, Pass claims, CD burns and recycling all reject active session keys. Quests it claims are credited to the owner and cannot be redirected.
+
+Owners end the session and sweep the leftover MON in My Pass → Hardware Profiles → End session. Encrypting the key with a password was considered and rejected: it brings back a prompt on every visit, which is exactly what Live Mode removes. Reported during the October 2026 community bug hunt and accepted as designed; please don't re-report it.
+
 The EIP-712 domain is part of the signed-session security boundary. Existing chain-10143 Paint keeps the deployed `r3tards paint` / version `2` domain; fresh local/mainnet `R3OSPaint` uses `r3OS paint` / version `2`. The frontend selects by chain id. A silent domain rename on the existing testnet contract would invalidate signatures and is explicitly forbidden.
 
 ## Partner holder bonuses
