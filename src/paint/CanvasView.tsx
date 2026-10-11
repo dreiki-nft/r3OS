@@ -31,6 +31,8 @@ interface CanvasViewProps {
   onDown: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
   onMove: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
   onUp: (point: Point, event: PointerEvent<HTMLCanvasElement>) => void
+  /** the browser took the touch over (a pinch-zoom started): drop the stroke instead of finishing it */
+  onCancel?: () => void
   onHover: (point: Point) => void
 }
 
@@ -54,6 +56,7 @@ export function CanvasView({
   onDown,
   onMove,
   onUp,
+  onCancel,
   onHover,
 }: CanvasViewProps) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -244,9 +247,17 @@ export function CanvasView({
     pendingPaintInputAt.current ??= perfNow()
   }
 
+  const active = useRef(false)
   const finish = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (!active.current) return
+    active.current = false
     if (previewInputMode === 'up') markPaintInput()
     onUp(point(event), event)
+  }
+  const cancel = () => {
+    if (!active.current) return
+    active.current = false
+    if (onCancel) onCancel()
   }
 
   return (
@@ -264,6 +275,7 @@ export function CanvasView({
         style={{ width: 256 * effectiveZoom, height: 256 * effectiveZoom }}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
+          active.current = true
           if (previewInputMode === 'down' || previewInputMode === 'stroke') markPaintInput()
           onDown(point(event), event)
         }}
@@ -274,7 +286,7 @@ export function CanvasView({
           onMove(next, event)
         }}
         onPointerUp={finish}
-        onPointerCancel={finish}
+        onPointerCancel={(event) => (onCancel ? cancel() : finish(event))}
         onLostPointerCapture={finish}
       />
     </div>

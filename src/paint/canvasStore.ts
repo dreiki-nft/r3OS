@@ -14,6 +14,7 @@ import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { OUTLINE_MASK } from '../lib/layers'
 import { decodePackedCanvas } from '../lib/patch'
 import { applyPainted, expandOutlineRuns } from './replay'
+import { applyDraft, loadDraft, saveDraft } from './draft'
 import type { TilePreviewState } from './cost'
 
 export interface CanvasSnapshot {
@@ -538,6 +539,7 @@ async function loadCanvasAt(block: bigint, options: { replayDelivered?: boolean 
   }
   tileCache.clear()
   appliedLogKeys.clear()
+  restoreDraftOnce()
   await seedCanonicalOverlap(block)
   // Strokes the websocket or a receipt delivered during the reload, on top of the fresh canvas. Not advancing
   // snapshotBlock keeps any catch-up reading from `block`; the remembered keys stop double application.
@@ -546,6 +548,25 @@ async function loadCanvasAt(block: bigint, options: { replayDelivered?: boolean 
   if (tail.length) await applyDeliveredLogs(tail, { advanceSnapshot: false, replay: true })
   emitTiles()
   emitCanvas()
+}
+
+const draftKey = () => `r3os.paintDraft.${config.chainId}.${(config.paintAddress ?? 'none').toLowerCase()}`
+let draftRestored = false
+let draftTimer: ReturnType<typeof setTimeout> | undefined
+
+/** The first real canvas of this page load gets back the drawing that wasn't sent before a reload. */
+function restoreDraftOnce() {
+  if (draftRestored || typeof localStorage === 'undefined') return
+  draftRestored = true
+  const pixels = loadDraft(draftKey(), snapshot.season)
+  if (pixels?.length) {
+    snapshot = { ...snapshot, working: applyDraft(snapshot.working, snapshot.outline, pixels) }
+  }
+  // From now on, keep the unsent drawing in sync (a short pause after each change, never on every pixel).
+  canvasListeners.add(() => {
+    if (draftTimer) clearTimeout(draftTimer)
+    draftTimer = setTimeout(() => saveDraft(draftKey(), snapshot.season, snapshot.background, snapshot.working), 600)
+  })
 }
 
 export async function loadCanvasNow() {

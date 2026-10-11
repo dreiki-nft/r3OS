@@ -303,6 +303,13 @@ html {
     height: 100% !important;
   }
 
+  /* Two fingers pinch-zoom and pan with the browser's own zoom; one finger still draws. A pinch that starts
+     with a finger already down cancels that half-stroke (see cancelStroke). */
+  .canvas-well,
+  .canvas-well canvas {
+    touch-action: pinch-zoom;
+  }
+
   .paint-info {
     display: none;
   }

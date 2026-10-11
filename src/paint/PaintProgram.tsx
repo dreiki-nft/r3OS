@@ -727,6 +727,24 @@ export function PaintProgram() {
     strokeLast.current = null
   }
 
+  // A pinch-zoom on a phone starts with one finger already drawing. The browser then takes the touch over, and
+  // that half-stroke must not be kept (in Live Mode it would be sent onchain as a stray dot or line).
+  const cancelStroke = () => {
+    if (renderFrame.current != null) {
+      cancelAnimationFrame(renderFrame.current)
+      renderFrame.current = undefined
+    }
+    setDragStart(undefined)
+    if (!strokeBuffer.current) return
+    strokeBuffer.current = null
+    strokeLast.current = null
+    const stack = undoStackRef.current
+    const before = stack[stack.length - 1]
+    if (!before) return
+    setHistory(stack.slice(0, -1), redoStackRef.current)
+    setWorking(before.slice())
+  }
+
   const scheduleAutoPaint = () => {
     if (!isLive || !autoPaint) return
     // Pointer-up is the earliest moment we know the final stroke bytes. Start eth_estimateGas immediately
@@ -1389,6 +1407,7 @@ export function PaintProgram() {
           onDown={onDown}
           onMove={onMove}
           onUp={onUp}
+          onCancel={cancelStroke}
           onHover={(point) => {
             setHover(point)
           }}
