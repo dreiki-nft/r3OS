@@ -29,9 +29,19 @@ export type FriendlyError = {
   rejected?: boolean
 }
 
+// Wallets say "no" in different ways: EIP-1193 code 4001, viem's UserRejectedRequestError, ethers' ACTION_REJECTED,
+// or only a message ("User denied message signature"). viem can also wrap the wallet's error several causes deep.
+const REJECTED_TEXT = /user (rejected|denied|cancell?ed|disapproved)|rejected by (the )?user|request (was )?rejected/i
+
 export function isUserRejected(error: unknown) {
-  const candidate = error as { code?: number; cause?: { code?: number } }
-  return candidate?.code === 4001 || candidate?.cause?.code === 4001
+  let current = error as { code?: unknown; name?: unknown; message?: unknown; cause?: unknown } | undefined
+  for (let depth = 0; current && typeof current === 'object' && depth < 8; depth++) {
+    if (current.code === 4001 || current.code === 'ACTION_REJECTED') return true
+    if (current.name === 'UserRejectedRequestError') return true
+    if (typeof current.message === 'string' && REJECTED_TEXT.test(current.message)) return true
+    current = current.cause as typeof current
+  }
+  return false
 }
 
 function copy(name: string, args: readonly unknown[] = [], action?: string): FriendlyError {

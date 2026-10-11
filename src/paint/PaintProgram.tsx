@@ -1048,6 +1048,13 @@ export function PaintProgram() {
         (error as { friendly?: ReturnType<typeof friendlyError> }).friendly ?? friendlyError(error)
       // A quote primed at pointer-up that failed must not be reused: the next try has to ask the chain again.
       liveQuoteRef.current = undefined
+      // Cancelling (in the wallet, or the "gas went up" confirm) is a choice, not a failure: nothing was sent and
+      // the pipeline already played the cancel sound, so no red "Paint failed" box. A stroke you sent yourself
+      // stays to retry; an auto-painted Live stroke comes off, so the canvas keeps showing only what's onchain.
+      if (friendly.rejected) {
+        if (attempted) dropInFlight(attempted)
+        return
+      }
       if (attempted && friendly.name === 'RegionBusy' && regionRetriesRef.current < 3) {
         regionRetriesRef.current++
         window.setTimeout(() => strokeQueueRef.current?.schedule(), 800)
@@ -1157,6 +1164,7 @@ export function PaintProgram() {
       const friendly =
         (error as { friendly?: ReturnType<typeof friendlyError> }).friendly ??
         friendlyError(error, functionName)
+      if (friendly.rejected) return
       setBox({ title: 'Action failed', message: friendly.message, kind: 'error', details: friendly.details })
     }
   }

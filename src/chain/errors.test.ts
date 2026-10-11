@@ -3,6 +3,7 @@ import {
   ContractFunctionRevertedError,
   encodeErrorResult,
   parseAbi,
+  UserRejectedRequestError,
   type Abi,
   type Hex,
 } from 'viem'
@@ -24,6 +25,21 @@ describe('friendly errors', () => {
   it('recognises wallet rejection', () => {
     expect(isUserRejected({ code: 4001 })).toBe(true)
     expect(friendlyError({ code: 4001 }).message).toContain('nothing was sent')
+  })
+
+  it('recognises a cancel however the wallet words or wraps it', () => {
+    // viem wraps the wallet's answer a few causes deep
+    expect(isUserRejected({ message: 'Transaction failed', cause: { cause: { code: 4001 } } })).toBe(true)
+    expect(isUserRejected(new UserRejectedRequestError(new Error('no')))).toBe(true)
+    // ethers-style code, and wallets that only send a message
+    expect(isUserRejected({ code: 'ACTION_REJECTED' })).toBe(true)
+    expect(isUserRejected(new Error('MetaMask Tx Signature: User denied transaction signature.'))).toBe(true)
+    expect(isUserRejected({ code: -32603, message: 'Request rejected by user' })).toBe(true)
+    expect(friendlyError({ cause: { cause: { code: 4001 } } }).rejected).toBe(true)
+    // real failures are not cancels
+    expect(isUserRejected(new Error('insufficient funds for gas * price + value'))).toBe(false)
+    expect(isUserRejected({ code: -32000, message: 'execution reverted' })).toBe(false)
+    expect(isUserRejected(undefined)).toBe(false)
   })
 
   it('walks a real viem FramePaintRequired error', () => {
