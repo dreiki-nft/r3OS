@@ -33,16 +33,16 @@ export function welcomeSteps(facts: WelcomeFacts): WelcomeStep[] {
       done: facts.connected && (facts.paintCount ?? 0n) > 0n,
     },
     {
-      id: 'frame',
-      label: 'save your first frame',
-      hint: 'in Paint: File › Save frame…',
-      done: facts.connected && (facts.framesMinted ?? 0n) > 0n,
-    },
-    {
       id: 'pass',
       label: 'claim your Pass',
-      hint: 'free, one per wallet. it collects stamps.',
+      hint: 'free, one per wallet, open in My Pass once you have painted. it collects stamps.',
       done: facts.connected && Boolean(facts.hasPass),
+    },
+    {
+      id: 'frame',
+      label: 'save your first frame',
+      hint: 'in Paint: File › Save frame… mints it onchain. Save canvas to floppy only downloads a picture.',
+      done: facts.connected && (facts.framesMinted ?? 0n) > 0n,
     },
   ]
 }

@@ -84,3 +84,25 @@ describe('screenSafeMessage', () => {
     expect(screenSafeMessage('wss://x.example/ws?key=abc down')).toBe('[rpc] down')
   })
 })
+
+describe('readable errors everywhere', () => {
+  it('turns internal codes into sentences in every window, not just Paint', async () => {
+    const { screenSafeMessage } = await import('./errors')
+    expect(screenSafeMessage(new Error('ACTION_RECEIPT_TIMEOUT'))).toContain('could not read its receipt')
+    expect(screenSafeMessage(new Error('SOME_NEW_CODE'))).toBe(
+      'something went wrong (some new code). check the explorer before retrying.',
+    )
+    expect(screenSafeMessage(new Error('plain words stay'))).toBe('plain words stay')
+  })
+
+  it('explains that the budget is in units, not pixels', async () => {
+    const { friendlyError } = await import('./errors')
+    const { encodeErrorResult } = await import('viem')
+    const { R3OS_PAINT_ABI } = await import('../lib/generated/abi')
+    const data = encodeErrorResult({ abi: R3OS_PAINT_ABI, errorName: 'InsufficientBudget', args: [595n, 591n] })
+    const message = friendlyError({ data }).message
+    expect(message).toContain('this stroke costs 595, you have 591 left')
+    expect(message).toContain('already-painted pixels costs 2 each')
+    expect(message).not.toContain('not enough pixels')
+  })
+})

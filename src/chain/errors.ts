@@ -39,7 +39,9 @@ function copy(name: string, args: readonly unknown[] = [], action?: string): Fri
     case 'InsufficientBudget':
       return {
         name,
-        message: `not enough pixels: this needs ${args[0]}, you have ${args[1]}. budget refills every hour.`,
+        // The budget is in units, not pixels: repainting an already-painted (dry) pixel costs 2. Saying
+        // "pixels" here made a 406 px stroke that cost 595 look like a miscount.
+        message: `not enough budget: this stroke costs ${args[0]}, you have ${args[1]} left. painting over already-painted pixels costs 2 each. budget refills every hour.`,
       }
     case 'TileTooHot':
       return { name, message: `tile ${args[0]} is too hot from recent paint. let it cool or paint elsewhere.` }
@@ -207,15 +209,31 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
         'the transaction was sent, but r3OS could not read its receipt yet. check the explorer before retrying.',
     }
   }
-  return { name: 'Unknown', message: screenSafeMessage(error), details: raw }
+  // An internal code that reached the screen raw (ACTION_SOMETHING) still gets a readable sentence.
+  if (/^[A-Z][A-Z0-9_]{3,}$/.test(message)) {
+    return {
+      name: 'Unknown',
+      message: `something went wrong (${message.toLowerCase().replace(/_/g, ' ')}). check the explorer before retrying.`,
+    }
+  }
+  return { name: 'Unknown', message: sanitizedMessage(error), details: raw }
 }
 
 /**
  * Raw errors from viem embed the RPC URL ("URL: https://…/v2/KEY") and long request dumps. On screen we show
  * viem's short message, with any URL removed, so a screenshot of an error never leaks an endpoint.
  */
-export function screenSafeMessage(error: unknown) {
+function sanitizedMessage(error: unknown) {
   const short = error instanceof BaseError ? error.shortMessage : undefined
   const text = short || (error instanceof Error ? error.message : String(error))
   return text.replace(/\b(?:https?|wss?):\/\/[^\s"'<>)]+/gi, '[rpc]').slice(0, 300)
+}
+
+/**
+ * What any window shows for an error: the readable explanation when r3OS knows the error (contract reverts,
+ * internal codes like ACTION_RECEIPT_TIMEOUT, a closed wallet), otherwise viem's short message with every URL
+ * removed. Programs used to show the raw text, so a code like ACTION_RECEIPT_TIMEOUT reached the screen as is.
+ */
+export function screenSafeMessage(error: unknown) {
+  return friendlyError(error).message
 }
