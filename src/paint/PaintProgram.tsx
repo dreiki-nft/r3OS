@@ -226,6 +226,8 @@ export function PaintProgram() {
   const budgetKey = wallet.account ? `${wallet.account.toLowerCase()}:${holderKey}` : ''
   const budgetKeyRef = useRef(budgetKey)
   const budgetRefreshInFlight = useRef<{ key: string; promise: Promise<void> } | undefined>(undefined)
+  // The UTC hour the shown budget belongs to, so a stroke right after the refill isn't judged by last hour's zero.
+  const budgetHourRef = useRef(-1)
   budgetKeyRef.current = budgetKey
   const patch = useMemo(
     () => encodeChangedRuns(canvas.background, canvas.working),
@@ -431,6 +433,7 @@ export function PaintProgram() {
           args: [owner, holderIds],
         })) as readonly bigint[]
         if (budgetKeyRef.current !== requestKey) return
+        budgetHourRef.current = Math.floor(Date.now() / 3_600_000)
         setBudget({
           hourly: Number(values[0]),
           holder: Number(values[1]),
@@ -928,6 +931,30 @@ export function PaintProgram() {
         },
       })
       if (autoSent) attempted = beginInFlight(runsToBytes(chunks.flatMap((chunk) => chunk.runs)))
+      // In Live Mode a stroke that doesn't fit this hour's budget used to stay on the canvas unsent, looking painted.
+      // The pile grew with every stroke, and after the hourly refill the next small stroke sent all of it, so the
+      // budget went straight back to 0. Now what fits is painted and the rest comes off, with a note saying why.
+      const fitting = chunks.reduce((sum, chunk) => sum + chunk.pixels, 0)
+      if (autoSent && fitting < patch.pixelWrites) {
+        const hour = Math.floor(Date.now() / 3_600_000)
+        if (budgetHourRef.current !== hour) {
+          // The refill may not be loaded yet: read the budget once for this hour, then try the stroke again.
+          budgetHourRef.current = hour
+          await refreshBudget()
+          strokeQueueRef.current?.schedule()
+          return
+        }
+        const sending = attempted ?? new Map<number, number>()
+        const leftover = new Map([...beginInFlight(patch.bytes)].filter(([index]) => !sending.has(index)))
+        dropInFlight(leftover)
+        const minutes = 60 - new Date().getUTCMinutes()
+        pushBalloon({
+          id: 'out-of-paint',
+          title: 'Out of paint',
+          body: `${leftover.size.toLocaleString()} px didn't fit this hour's budget, so they came off the canvas. it refills in ${minutes} min.`,
+        })
+        if (!chunks.length) return
+      }
       // The whole-drawing quote only fits when the drawing goes out as one paint. A drawing with more than
       // 512 px in one region (a fill, a big shape) is split into several paints, and estimating it as one
       // transaction always reverted with RegionBusy, so nothing was ever sent. Those quote their first chunk.
