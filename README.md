@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 6, 2026</b>
+  Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b>
 </p>
 
 ---
@@ -183,7 +183,7 @@ flowchart LR
 
 ## Mainnet
 
-Live on Monad mainnet (`chainId 143`) since **October 6, 2026, 11:00 UTC** at **[r3os.app](https://r3os.app/)**. All 16 contracts are deployed.
+Open to the public at **[r3os.app](https://r3os.app/)** since **October 10, 2026, 19:00 UTC**. All 16 contracts were deployed to Monad mainnet (`chainId 143`) on **October 6, 2026, 11:00 UTC** and tested there before launch.
 
 | Contract | Mainnet address / explorer |
 | --- | --- |
