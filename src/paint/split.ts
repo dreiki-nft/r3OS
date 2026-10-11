@@ -91,6 +91,10 @@ export function splitPaintRuns(input: Run[], limits: SplitLimits) {
         take++
       }
       if (take === 0) {
+        // The budget left can't pay for this pixel (an already-painted pixel costs 2 and 1 unit is left). With
+        // an empty chunk nothing can change any more, and looping here froze the whole tab ("page not
+        // responding"), so stop: what didn't fit waits for the next refill.
+        if (!current.runs.length) return chunks
         flush()
         continue
       }

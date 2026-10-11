@@ -15,6 +15,20 @@ describe('split', () => {
     expect(chunks[0].regionPixels.get(0)).toBeLessThanOrEqual(4)
     expect(chunks.reduce((n, c) => n + c.pixels, 0)).toBe(16)
   })
+  it('stops instead of freezing when the budget left is smaller than the next pixel costs', () => {
+    // 597 units over already-painted pixels (2 units each): 298 px fit, 1 unit is left over.
+    const runs: Run[] = Array.from({ length: 10 }, (_, i) => ({ y: 10 + i, x0: 0, x1: 60, color: 3 }))
+    const chunks = splitPaintRuns(runs, {
+      maxRawPixels: 4096,
+      regionCap: 512,
+      currentBlock: 1n,
+      regionUsage: new Map(),
+      budgetUnits: 597,
+      unitCostAt: () => 2,
+    })
+    expect(chunks.reduce((n, c) => n + c.units, 0)).toBe(596)
+    expect(chunks.reduce((n, c) => n + c.pixels, 0)).toBe(298)
+  })
   it('preserves run order inside region/row and splits only when needed', () => {
     const runs: Run[] = [{ y: 1, x0: 1, x1: 2, color: 3 }]
     expect(
