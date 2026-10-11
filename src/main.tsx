@@ -5,6 +5,7 @@ import { startBlockClock } from './chain/blocks'
 import { initWalletDiscovery } from './chain/wallet'
 import { startBootPrefetch } from './os/bootPrefetch'
 import { startBrowserPerfObserver } from './chain/perf'
+import { installDomGuard } from './os/domGuard'
 import './os/theme.css'
 import './os/phone.css'
 
@@ -27,6 +28,8 @@ window.addEventListener('vite:preloadError', (event) => {
   location.reload()
 })
 
+// Before React renders: page translators must not be able to crash a window.
+installDomGuard()
 startBrowserPerfObserver()
 initWalletDiscovery()
 void startBlockClock()
