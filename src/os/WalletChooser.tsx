@@ -26,6 +26,14 @@ export function WalletChooser({
   const choose = async (choice: ReturnType<typeof walletChoices>[number]) => {
     setConnecting(choice.info.uuid)
     setMessage('')
+    // A wallet whose popup never appears (locked, or a request already waiting) must not freeze the chooser:
+    // after a while, say where to look and let the buttons work again.
+    const stuck = window.setTimeout(() => {
+      setConnecting(undefined)
+      setMessage(
+        `no answer from ${choice.info.name} yet. open the wallet extension: it may be locked or have a request waiting. then try again.`,
+      )
+    }, 20_000)
     try {
       const next = await connectWallet(choice)
       playSound('system-initiate')
@@ -36,6 +44,7 @@ export function WalletChooser({
       playSound(friendly.rejected ? 'cancel' : 'error')
       setMessage(friendly.message)
     } finally {
+      window.clearTimeout(stuck)
       setConnecting(undefined)
     }
   }

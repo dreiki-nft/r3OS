@@ -106,3 +106,11 @@ describe('readable errors everywhere', () => {
     expect(message).not.toContain('not enough pixels')
   })
 })
+
+describe('wallet with a request already waiting', () => {
+  it('says to open the wallet instead of showing the raw -32002 text', async () => {
+    const { friendlyError } = await import('./errors')
+    const message = friendlyError({ code: -32002, message: "Request of type 'wallet_requestPermissions' already pending" }).message
+    expect(message).toContain('open the wallet extension')
+  })
+})

@@ -152,6 +152,15 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
   const wrapped = error as { friendly?: FriendlyError }
   if (wrapped?.friendly) return wrapped.friendly
 
+  // EIP-1193 -32002: the wallet already has a request waiting (a popup the user closed or never saw).
+  const pending = error as { code?: number; cause?: { code?: number } } | undefined
+  if ((pending?.code ?? pending?.cause?.code) === -32002) {
+    return {
+      name: 'WalletRequestPending',
+      message: 'your wallet already has a request waiting. open the wallet extension, approve or reject it, then try again.',
+    }
+  }
+
   if (isUserRejected(error)) {
     return {
       name: 'UserRejected',

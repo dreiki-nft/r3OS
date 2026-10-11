@@ -260,6 +260,24 @@ export async function connectWallet(choice?: WalletChoice) {
   return adoptAccounts(selected, accounts)
 }
 
+/**
+ * "This wallet doesn't know the chain yet": MetaMask says 4902, but several wallets (MetaMask mobile, some
+ * Rabby builds) wrap it as -32603 with the 4902 inside, or only say so in the message. Any of those means
+ * "add Monad", not "fail".
+ */
+export function isUnknownChainError(error: unknown) {
+  const e = error as {
+    code?: number
+    message?: string
+    data?: { originalError?: { code?: number } }
+    cause?: { code?: number }
+  }
+  if (e?.code === 4902 || e?.cause?.code === 4902 || e?.data?.originalError?.code === 4902) return true
+  return /unrecognized chain|unknown chain|chain .*not (been )?added|not added|try adding the chain/i.test(
+    String(e?.message ?? ''),
+  )
+}
+
 export async function switchToMonad() {
   if (!state.provider) throw new Error('NO_WALLET')
   try {
@@ -268,8 +286,7 @@ export async function switchToMonad() {
       params: [{ chainId: `0x${config.chainId.toString(16)}` }],
     })
   } catch (error) {
-    const code = (error as { code?: number }).code
-    if (code !== 4902) throw error
+    if (!isUnknownChainError(error)) throw error
     const params = buildAddChainParams()
     if (!params) throw new Error('WALLET_RPC_MISSING')
     await state.provider.request({ method: 'wallet_addEthereumChain', params: [params] })
