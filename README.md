@@ -38,7 +38,7 @@ r3OS boots like a 1998 PC and opens on one shared **256 × 256, 16-colour canvas
 
 **Everything you can own is drawn by a contract.** Frames, CDs, block portraits, the finale and your Painter Pass are SVG images that the contracts build on every read, with the pixels embedded. No IPFS, no image server, and the Pass redraws itself as you paint.
 
-Anyone can watch without a wallet. Painting needs a wallet, or **Live Mode**: sign once, then paint with no popups.
+Anyone can watch without a wallet. To paint, connect a wallet and approve **Live Mode** once; after that every stroke goes through with no popups.
 
 ## Try it as a judge
 
@@ -287,8 +287,10 @@ Ideas this makes possible (not built yet):
 
 ## Security
 
-The contracts are **not professionally audited**. See [`THREAT_MODEL.md`](THREAT_MODEL.md) for owner powers, trust boundaries and the Live Mode limits. Live Mode keeps a key in the browser on purpose, so it is capped at 1 MON, scoped to painting and quests, and expires; diagnostics never show keys or RPC URLs.
+The contracts are **not professionally audited**. See [`THREAT_MODEL.md`](THREAT_MODEL.md) for owner powers, trust boundaries and the Live Mode limits. Live Mode keeps a key in the browser on purpose, so it is funded with at most 10 MON, scoped to painting and quests, and expires; diagnostics never show keys or RPC URLs.
 
 ## Credits
 
 Built solo by **dreiki** for the **Monad** community, using Claude and ChatGPT as coding assistants. Art, palette and r3tards characters by dreiki.
+
+The code is released under the [MIT License](LICENSE). The r3tards artwork and characters are not covered by it.
