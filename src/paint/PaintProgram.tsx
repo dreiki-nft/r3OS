@@ -209,6 +209,9 @@ export function PaintProgram() {
   const pendingTimer = useRef<number | undefined>(undefined)
   const paintChunksRef = useRef<(andFrame?: boolean) => Promise<void>>(async () => undefined)
   const strokeQueueRef = useRef<ReturnType<typeof createStrokeQueue> | undefined>(undefined)
+  // RegionBusy usually means someone else filled that region's per-block allowance a moment ago. Live
+  // strokes try again by themselves a few times before giving up, instead of popping an error at once.
+  const regionRetriesRef = useRef(0)
   const liveQuoteRef = useRef<{ hex: string; quote: Promise<ActionQuote> } | undefined>(undefined)
   const paintQuoteHexRef = useRef<string | undefined>(undefined)
   const budgetReconcileTimer = useRef<number | undefined>(undefined)
@@ -901,34 +904,14 @@ export function PaintProgram() {
     // Auto-painted Live strokes have no Paint button to press again, so a stroke that fails comes back off the
     // canvas instead of sitting there looking painted. A stroke you send yourself stays put so you can retry it.
     const autoSent = isLive && autoPaint && !andFrame
-    const attempted = autoSent ? beginInFlight(patch.bytes) : undefined
+    let attempted: Map<number, number> | undefined
     try {
       const preflightStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
-      const primedLiveQuote =
-        isLive && liveQuoteRef.current?.hex === patch.hex ? liveQuoteRef.current.quote : undefined
-      const matchingPaintQuote = paintQuoteHexRef.current === patch.hex ? paintQuote : undefined
-      const initialQuotePromise =
-        !andFrame && !matchingPaintQuote
-          ? (primedLiveQuote ??
-            quoteAction({
-              kind: 'corePaint',
-              address: config.paintAddress,
-              abi: R3OS_PAINT_ABI,
-              functionName: 'paint',
-              args: [patch.hex, stableHolderIds],
-              account: wallet.account,
-              pixels: patch.pixelWrites,
-              signer: isLive ? 'burner' : 'wallet',
-            }))
-          : Promise.resolve(matchingPaintQuote)
       // A network read of all 16 region counters was adding hundreds of ms (and occasional seconds)
       // before every Live send, while the 300ms block could change underneath it anyway. Use the
       // current-block Painted events already delivered to this tab as a best-effort split hint; the
       // contract remains authoritative and still enforces the region cap onchain.
       const usage = isLive ? liveRegionUsage() : new Map<number, { block: bigint; pixels: number }>()
-      const initialPaintQuote = await initialQuotePromise
-      const preflightEnded = typeof performance === 'undefined' ? Date.now() : performance.now()
-      recordPerf('paint-preflight', isLive ? 'live' : 'wallet', preflightEnded - preflightStarted)
       const chunks = splitPaintRuns(bytesToRuns(patch.bytes), {
         maxRawPixels: Number(constants.MAX_RAW_PIXELS_PER_PAINT),
         regionCap: Number(constants.MAX_PIXELS_PER_REGION_PER_BLOCK),
@@ -944,6 +927,31 @@ export function PaintProgram() {
           return state && ((state.wetBitmap >> bit) & 1n) !== 0n ? 1 : 2
         },
       })
+      if (autoSent) attempted = beginInFlight(runsToBytes(chunks.flatMap((chunk) => chunk.runs)))
+      // The whole-drawing quote only fits when the drawing goes out as one paint. A drawing with more than
+      // 512 px in one region (a fill, a big shape) is split into several paints, and estimating it as one
+      // transaction always reverted with RegionBusy, so nothing was ever sent. Those quote their first chunk.
+      const wholePatch = chunks.length === 1 && chunks[0].pixels === patch.pixelWrites
+      const primedLiveQuote =
+        isLive && liveQuoteRef.current?.hex === patch.hex ? liveQuoteRef.current.quote : undefined
+      const matchingPaintQuote = paintQuoteHexRef.current === patch.hex ? paintQuote : undefined
+      const initialPaintQuote =
+        wholePatch && !andFrame
+          ? (matchingPaintQuote ??
+            (await (primedLiveQuote ??
+              quoteAction({
+                kind: 'corePaint',
+                address: config.paintAddress,
+                abi: R3OS_PAINT_ABI,
+                functionName: 'paint',
+                args: [patch.hex, stableHolderIds],
+                account: wallet.account,
+                pixels: patch.pixelWrites,
+                signer: isLive ? 'burner' : 'wallet',
+              }))))
+          : undefined
+      const preflightEnded = typeof performance === 'undefined' ? Date.now() : performance.now()
+      recordPerf('paint-preflight', isLive ? 'live' : 'wallet', preflightEnded - preflightStarted)
       if (andFrame && chunks.length !== 1) {
         setBox({
           title: 'Paint and save frame',
@@ -975,7 +983,7 @@ export function PaintProgram() {
           successSound: andFrame ? 'success-heavy' : 'success-light',
           quote: andFrame
             ? (quotes[quoteKey('paintAndMintFrame', patch.hex)] as ActionQuote | undefined)
-            : index === 0
+            : index === 0 && initialPaintQuote
               ? initialPaintQuote
               : await quoteAction({
                   kind: 'corePaint',
@@ -996,6 +1004,7 @@ export function PaintProgram() {
           const result = await sendAction(options)
           // Measured by the tx pipeline: from the RPC accepting the transaction to this app holding its receipt.
           setLastPaint({ block: result.blockNumber, hash: result.hash, receiptMs: result.receiptMs })
+          regionRetriesRef.current = 0
           // The receipt already contains the exact Painted log. Apply it immediately so the local canvas
           // becomes canonical without waiting for another getLogs/catch-up round trip. Budget refresh is
           // informative, not part of visual confirmation, so let it happen in the background.
@@ -1037,6 +1046,14 @@ export function PaintProgram() {
     } catch (error) {
       const friendly =
         (error as { friendly?: ReturnType<typeof friendlyError> }).friendly ?? friendlyError(error)
+      // A quote primed at pointer-up that failed must not be reused: the next try has to ask the chain again.
+      liveQuoteRef.current = undefined
+      if (attempted && friendly.name === 'RegionBusy' && regionRetriesRef.current < 3) {
+        regionRetriesRef.current++
+        window.setTimeout(() => strokeQueueRef.current?.schedule(), 800)
+        return
+      }
+      regionRetriesRef.current = 0
       if (attempted) dropInFlight(attempted)
       const dropped = attempted ? ", so that stroke was taken off your canvas" : ''
       if (friendly.name === 'TileTooHot')
