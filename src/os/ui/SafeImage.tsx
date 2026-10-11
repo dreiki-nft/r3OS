@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Icon } from './Icon'
 export function SafeImage({
   src,
@@ -7,6 +7,8 @@ export function SafeImage({
   height,
   className,
   style,
+  noReferrer = false,
+  onFail,
 }: {
   src: string
   alt: string
@@ -14,8 +16,14 @@ export function SafeImage({
   height: number
   className?: string
   style?: CSSProperties
+  /** load without telling the image host which site it is on (some hosts refuse embeds by referrer) */
+  noReferrer?: boolean
+  /** called once when the image fails, so the caller can offer another source */
+  onFail?: () => void
 }) {
   const [bad, setBad] = useState(false)
+  // A new source gets a fresh chance.
+  useEffect(() => setBad(false), [src])
   if (bad || !src)
     return (
       <span
@@ -33,7 +41,11 @@ export function SafeImage({
       height={height}
       className={className}
       style={style}
-      onError={() => setBad(true)}
+      referrerPolicy={noReferrer ? 'no-referrer' : undefined}
+      onError={() => {
+        setBad(true)
+        onFail?.()
+      }}
     />
   )
 }

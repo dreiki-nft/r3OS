@@ -36,6 +36,7 @@ import {
 } from '../live/liveStore'
 import { HardwareProfiles } from './HardwareProfiles'
 import { SafeImage } from '../os/ui/SafeImage'
+import { resolveTokenImage, scatterImageUrl } from './r3tardImages'
 import { PoweredByMonad } from '../os/ui/PoweredByMonad'
 import {
   nadNameStatus,
@@ -96,10 +97,6 @@ function writeStoredDisplay(owner: Address, value: bigint | null) {
   }
 }
 
-function ipfsUrl(uri: string) {
-  return uri.startsWith('ipfs://') ? `${config.ipfsGateway}${uri.slice(7)}` : uri
-}
-
 export function PassProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   usePainterNames()
@@ -123,6 +120,8 @@ export function PassProgram() {
   const [displayId, setDisplayId] = useState<bigint | null>(null)
   const [displayOpen, setDisplayOpen] = useState(false)
   const [images, setImages] = useState(new Map<string, string>())
+  // r3tards whose Scatter image failed in this browser; those fall back to their IPFS metadata.
+  const [scatterFailed, setScatterFailed] = useState<ReadonlySet<string>>(new Set())
   const [labStamps, setLabStamps] = useState<StampRow[]>([])
   const [selectedStamp, setSelectedStamp] = useState<StampRow>()
   const [budget, setBudget] = useState<readonly bigint[]>([0n, 0n, 0n, 0n, 0n])
@@ -264,10 +263,16 @@ export function PassProgram() {
   }, [tab, passAddress, wallet.account])
 
   useEffect(() => {
-    if (!displayOpen || !collection || !publicClient) return
+    if (!collection || !publicClient) return
+    // The chosen r3tard is shown on the monitor at once, so its picture loads even with the picker closed
+    // (it used to load only while the picker was open, so after a reload the monitor showed the logo).
+    const shown = displayOpen ? ids : displayId != null ? [displayId] : []
+    // Scatter serves mainnet r3tards directly; read metadata only where it doesn't apply or failed.
+    const wanted = shown.filter((id) => !scatterImageUrl(id, collection) || scatterFailed.has(id.toString()))
+    if (!wanted.length) return
     let cancelled = false
     void (async () => {
-      const missing = ids.filter((id) => !imageMemory.has(`${collection}:${id}`))
+      const missing = wanted.filter((id) => !imageMemory.has(`${collection}:${id}`))
       const rows = await readHeavy(
         missing.map((id) => ({
           address: collection,
@@ -280,11 +285,7 @@ export function PassProgram() {
         const row = rows[index]
         if (row?.status !== 'success') continue
         try {
-          const uri = String(row.result)
-          const metadata = uri.startsWith('data:')
-            ? decodeJsonDataUri<{ image?: string }>(uri)
-            : ((await (await fetch(ipfsUrl(uri))).json()) as { image?: string })
-          const image = metadata.image ? ipfsUrl(metadata.image) : ''
+          const image = await resolveTokenImage(String(row.result))
           if (image) imageMemory.set(`${collection}:${missing[index]}`, image)
         } catch {
           // A single broken metadata URI should not block the picker.
@@ -296,7 +297,7 @@ export function PassProgram() {
     return () => {
       cancelled = true
     }
-  }, [displayOpen, collection, ids])
+  }, [displayOpen, displayId, collection, ids, scatterFailed])
 
   useEffect(() => {
     if (tab !== 'Performance' || !wallet.account || !publicClient || !config.paintAddress) return
@@ -350,7 +351,15 @@ export function PassProgram() {
     }
   }
 
-  const selectedImage = displayId == null ? undefined : images.get(displayId.toString())
+  const r3tardImage = (id: bigint) => {
+    const scatter = scatterFailed.has(id.toString()) ? '' : scatterImageUrl(id, collection)
+    return scatter || images.get(id.toString()) || ''
+  }
+  const markScatterFailed = (id: bigint) => {
+    if (!scatterImageUrl(id, collection)) return
+    setScatterFailed((current) => new Set(current).add(id.toString()))
+  }
+  const selectedImage = displayId == null ? undefined : r3tardImage(displayId)
   const eligible = stats.paintCount > 0n && !hasClaimed
 
   return (
@@ -418,6 +427,8 @@ export function PassProgram() {
                             alt={displayId == null ? 'r3tards logo' : `r3tard #${displayId}`}
                             width={170}
                             height={140}
+                            noReferrer
+                            onFail={() => displayId != null && markScatterFailed(displayId)}
                           />
                         ) : (
                           <SafeImage src="/os/brand/logo.png" alt="r3tards logo" width={170} height={140} />
@@ -454,12 +465,14 @@ export function PassProgram() {
                                 playSound('select')
                               }}
                             >
-                              {images.get(id.toString()) ? (
+                              {r3tardImage(id) ? (
                                 <SafeImage
-                                  src={images.get(id.toString())!}
+                                  src={r3tardImage(id)}
                                   alt={`r3tard #${id}`}
                                   width={24}
                                   height={24}
+                                  noReferrer
+                                  onFail={() => markScatterFailed(id)}
                                 />
                               ) : (
                                 <Icon name="frog" size={24} />
