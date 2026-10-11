@@ -14,12 +14,19 @@ import './os/phone.css'
 // After a deploy, a tab that was already open asks for program chunks that no longer exist (their file names
 // changed with the build). Reload once to pick up the new build instead of showing a broken window. The
 // timestamp stops a loop if the chunk is missing for some other reason.
+// A plain reload can be served the same stale cached page (MetaMask's Android browser does), so public/stale-guard.js
+// loads a fresh copy under a new query instead; it also allows only one try a minute.
+type FreshReload = () => boolean
 window.addEventListener('vite:preloadError', (event) => {
-  const KEY = 'r3os.chunkReloadAt'
-  let last = 0
+  const fresh = (window as unknown as { __r3osFreshReload?: FreshReload }).__r3osFreshReload
+  if (fresh) {
+    if (fresh()) event.preventDefault()
+    return
+  }
+  // The guard script didn't load: fall back to one plain reload a minute.
   try {
-    last = Number(sessionStorage.getItem(KEY)) || 0
-    if (Date.now() - last < 60_000) return
+    const KEY = 'r3os.freshReloadAt'
+    if (Date.now() - (Number(sessionStorage.getItem(KEY)) || 0) < 60_000) return
     sessionStorage.setItem(KEY, String(Date.now()))
   } catch {
     return
@@ -27,6 +34,14 @@ window.addEventListener('vite:preloadError', (event) => {
   event.preventDefault()
   location.reload()
 })
+// Tidy the address bar after a fresh reload; every other query parameter stays.
+{
+  const url = new URL(location.href)
+  if (url.searchParams.has('fresh')) {
+    url.searchParams.delete('fresh')
+    history.replaceState(history.state, '', url)
+  }
+}
 
 // Before React renders: page translators must not be able to crash a window.
 installDomGuard()
