@@ -79,6 +79,7 @@ import {
   applyReceiptActivity,
   beginInFlight,
   clearPending,
+  dropInFlight,
   getActivityFeedSnapshot,
   getCanvasSnapshot,
   getTileCacheSnapshot,
@@ -897,6 +898,10 @@ export function PaintProgram() {
 
     setBusy(true)
     cancelRef.current = false
+    // Auto-painted Live strokes have no Paint button to press again, so a stroke that fails comes back off the
+    // canvas instead of sitting there looking painted. A stroke you send yourself stays put so you can retry it.
+    const autoSent = isLive && autoPaint && !andFrame
+    const attempted = autoSent ? beginInFlight(patch.bytes) : undefined
     try {
       const preflightStarted = typeof performance === 'undefined' ? Date.now() : performance.now()
       const primedLiveQuote =
@@ -1032,6 +1037,8 @@ export function PaintProgram() {
     } catch (error) {
       const friendly =
         (error as { friendly?: ReturnType<typeof friendlyError> }).friendly ?? friendlyError(error)
+      if (attempted) dropInFlight(attempted)
+      const dropped = attempted ? ", so that stroke was taken off your canvas" : ''
       if (friendly.name === 'TileTooHot')
         setAssistantTip(
           "it looks like you're trying to paint over someone's piece. heat's gonna stop you lol",
@@ -1040,7 +1047,7 @@ export function PaintProgram() {
         pushBalloon({
           id: 'burner-out-of-mon',
           title: 'Live mode',
-          body: 'the burner is out of MON',
+          body: `the burner is out of MON${dropped}`,
           href: '#/pass?tab=Hardware%20Profiles',
           hrefLabel: 'Top up…',
         })
@@ -1050,12 +1057,19 @@ export function PaintProgram() {
         pushBalloon({
           id: 'session-units-used',
           title: 'Live mode',
-          body: 'session allowance used up',
+          body: `session allowance used up${dropped}`,
           href: '#/live-wizard',
           hrefLabel: 'start a new one',
         })
       } else {
-        setBox({ title: 'Paint failed', message: friendly.message, kind: 'error', details: friendly.details })
+        setBox({
+          title: 'Paint failed',
+          message: attempted
+            ? `${friendly.message}\n\nthat stroke didn't land, so it was taken off your canvas. draw it again to retry.`
+            : friendly.message,
+          kind: 'error',
+          details: friendly.details,
+        })
       }
     } finally {
       setBusy(false)

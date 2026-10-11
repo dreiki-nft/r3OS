@@ -6,10 +6,13 @@ import {
   clearMatchingInFlight,
   createSerialQueue,
   deliveredAfter,
+  dropInFlight,
+  getCanvasSnapshot,
   logSetsDiffer,
   paintedUnitsFromArgs,
   reloadOnSpeculativeMismatch,
   receiptCoreLogs,
+  setWorking,
   tileNeedsFetch,
   tilesTouchedByPainted,
   type TileCacheEntry,
@@ -38,6 +41,25 @@ describe('canvas store helpers', () => {
       [1, 8],
     ])
     expect([...clearMatchingInFlight(working, background, sent)]).toEqual([4, 9, 8])
+  })
+
+  it('takes a failed stroke back off the canvas but keeps pixels drawn again since', () => {
+    const working = getCanvasSnapshot().background.slice()
+    working[10] = 3
+    working[11] = 4
+    working[12] = 2
+    setWorking(working)
+    // 10 and 11 were sent; 11 has since been redrawn in another colour; 12 was never sent.
+    dropInFlight(
+      new Map([
+        [10, 3],
+        [11, 9],
+      ]),
+    )
+    const after = getCanvasSnapshot()
+    expect(after.working[10]).toBe(after.background[10])
+    expect(after.working[11]).toBe(4)
+    expect(after.working[12]).toBe(2)
   })
 
   it('serializes queued reconciliation jobs', async () => {

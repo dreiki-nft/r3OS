@@ -824,6 +824,16 @@ export function clearMatchingInFlight(
   return next
 }
 
+/**
+ * Takes a failed send's pixels back off the canvas, wherever they still show the colour that was sent. In Live
+ * Mode the canvas has to show what is onchain: a stroke that didn't land used to stay on screen looking painted,
+ * and because every send carries all unsent pixels, it was also resent with (and could sink) each later stroke.
+ */
+export function dropInFlight(sent: ReadonlyMap<number, number>) {
+  snapshot = { ...snapshot, working: clearMatchingInFlight(snapshot.working, snapshot.background, sent) }
+  emitCanvas()
+}
+
 export async function settleInFlight(sent: ReadonlyMap<number, number>, receiptBlock: bigint) {
   await catchUp(receiptBlock)
   if (snapshot.snapshotBlock < receiptBlock) await catchUp()
