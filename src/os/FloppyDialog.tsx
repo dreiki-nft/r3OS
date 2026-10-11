@@ -27,13 +27,18 @@ async function prepare(resource: ImageResource): Promise<PreparedFile> {
     }
   }
   if (resource.kind === 'canvas') {
-    const result = canvasBmp()
+    const result = canvasBmp(resource.withDraft)
     const block = result.blockNumber
+    const unsent = result.unsentPixels
     return {
       bytes: result.bytes,
       type: 'image/bmp',
       description: `${resourceFileName(resource)} · ${result.bytes.length.toLocaleString()} bytes · ${
         block > 0n ? `the shared canvas as of block #${block}` : 'the latest locally available shared canvas'
+      }${
+        unsent
+          ? `, plus your ${unsent.toLocaleString()} unsent pixel${unsent === 1 ? '' : 's'} (in this file only, not onchain until you paint them)`
+          : ''
       }`,
     }
   }

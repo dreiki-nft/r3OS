@@ -1171,7 +1171,7 @@ export function PaintProgram() {
         },
         {
           label: 'Save canvas to floppy…',
-          action: () => requestFloppy({ kind: 'canvas' }),
+          action: () => requestFloppy({ kind: 'canvas', withDraft: true }),
         },
         {
           label: 'Set canvas as wallpaper',

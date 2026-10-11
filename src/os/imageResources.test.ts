@@ -4,11 +4,13 @@ import { PALETTE } from '../lib/palette'
 import {
   basePalette16,
   bmp4,
+  canvasBmp,
   framePalette16,
   imageActions,
   packCanvas4Bpp,
   resourceFileName,
   resourceLabel,
+  unsentPixelCount,
 } from './imageResources'
 
 describe('image resources', () => {
@@ -69,5 +71,57 @@ describe('image resources', () => {
     expect(rgbAt(1, 0)).toEqual(PALETTE[5].rgb)
     expect(rgbAt(255, 0)).toEqual(PALETTE[8].rgb)
     expect(rgbAt(0, 1)).toEqual(PALETTE[11].rgb)
+  })
+
+  it('saves the unsent drawing only when asked, and never over the outline', () => {
+    const background = new Uint8Array(65_536)
+    const outline = new Uint8Array(65_536)
+    background[0] = 4
+    outline[256] = 1
+    const working = background.slice()
+    working[1] = 9
+    working[2] = 3
+    working[256] = 7
+    const canvas = {
+      background,
+      working,
+      outline,
+      season: 0n,
+      face: 11,
+      backgroundColor: 5,
+      snapshotBlock: 12n,
+      status: 'live' as const,
+    }
+    expect(unsentPixelCount(canvas)).toBe(2)
+
+    const onchain = canvasBmp(false, canvas)
+    expect(onchain.unsentPixels).toBe(0)
+    expect(onchain.blockNumber).toBe(12n)
+
+    const withDraft = canvasBmp(true, canvas)
+    expect(withDraft.unsentPixels).toBe(2)
+    expect(withDraft.bytes).not.toEqual(onchain.bytes)
+    const image = decodePacked4Bpp(packCanvas4Bpp(canvas, canvas.working), 5)
+    const rgbAt = (x: number, y: number) => Array.from(image.rgba.slice((y * 256 + x) * 4, (y * 256 + x) * 4 + 3))
+    expect(rgbAt(0, 0)).toEqual(PALETTE[4].rgb)
+    expect(rgbAt(1, 0)).toEqual(PALETTE[9].rgb)
+    expect(rgbAt(2, 0)).toEqual(PALETTE[3].rgb)
+    expect(rgbAt(0, 1)).toEqual(PALETTE[11].rgb)
+  })
+
+  it('keeps the onchain canvas when nothing is unsent', () => {
+    const background = new Uint8Array(65_536)
+    background[5] = 2
+    const canvas = {
+      background,
+      working: background.slice(),
+      outline: new Uint8Array(65_536),
+      season: 0n,
+      face: 11,
+      backgroundColor: 5,
+      snapshotBlock: 3n,
+      status: 'live' as const,
+    }
+    expect(canvasBmp(true, canvas)).toEqual(canvasBmp(false, canvas))
   })
 })

@@ -12,7 +12,8 @@ import { readLabsToken } from '../labs/labsToken'
 
 export type ImageResource =
   | { kind: 'frame'; tokenId: number }
-  | { kind: 'canvas' }
+  /** withDraft: include the unsent drawing on top (Paint's own Save to floppy), so the file matches the screen. */
+  | { kind: 'canvas'; withDraft?: boolean }
   | { kind: 'photo'; labsId: bigint }
 
 export type LoadedImageResource =
@@ -109,8 +110,8 @@ export function framePalette16(backgroundColor: number) {
   return palette
 }
 
-/** Pack the current displayed canvas into BMP's bottom-up, high-nibble-left 4-bpp layout. */
-export function packCanvas4Bpp(canvas = getCanvasSnapshot()) {
+/** Pack the canvas into BMP's bottom-up, high-nibble-left 4-bpp layout; `pixels` defaults to the onchain layer. */
+export function packCanvas4Bpp(canvas = getCanvasSnapshot(), pixels: Uint8Array = canvas.background) {
   const packed = new Uint8Array(32_768)
   for (let y = 0; y < 256; y++) {
     const targetRow = 255 - y
@@ -119,14 +120,14 @@ export function packCanvas4Bpp(canvas = getCanvasSnapshot()) {
       const rightIndex = leftIndex + 1
       const left = canvas.outline[leftIndex]
         ? canvas.face
-        : canvas.background[leftIndex] === 0
+        : pixels[leftIndex] === 0
           ? canvas.backgroundColor
-          : canvas.background[leftIndex]
+          : pixels[leftIndex]
       const right = canvas.outline[rightIndex]
         ? canvas.face
-        : canvas.background[rightIndex] === 0
+        : pixels[rightIndex] === 0
           ? canvas.backgroundColor
-          : canvas.background[rightIndex]
+          : pixels[rightIndex]
       packed[targetRow * 128 + (x >> 1)] = ((left & 0x0f) << 4) | (right & 0x0f)
     }
   }
@@ -140,11 +141,21 @@ export async function frameBmp(tokenId: number) {
   return { bytes: bmp4(pixels, framePalette16(info.backgroundColor)), blockNumber: info.blockNumber }
 }
 
-export function canvasBmp() {
-  const canvas = getCanvasSnapshot()
+/** Pixels the person has drawn in Paint but not sent yet (outline pixels never take paint). */
+export function unsentPixelCount(canvas = getCanvasSnapshot()) {
+  let count = 0
+  for (let index = 0; index < canvas.working.length; index++) {
+    if (!canvas.outline[index] && canvas.working[index] !== canvas.background[index]) count++
+  }
+  return count
+}
+
+export function canvasBmp(withDraft = false, canvas = getCanvasSnapshot()) {
   if (canvas.status !== 'demo' && canvas.snapshotBlock === 0n) throw new Error('canvas unavailable')
+  const unsentPixels = withDraft ? unsentPixelCount(canvas) : 0
   return {
-    bytes: bmp4(packCanvas4Bpp(canvas), basePalette16()),
+    bytes: bmp4(packCanvas4Bpp(canvas, unsentPixels ? canvas.working : canvas.background), basePalette16()),
     blockNumber: canvas.snapshotBlock,
+    unsentPixels,
   }
 }
