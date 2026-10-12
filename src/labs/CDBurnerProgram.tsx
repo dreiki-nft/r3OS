@@ -695,7 +695,10 @@ export function CDBurnerProgram() {
                 <button
                   key={String(token.id)}
                   className={routeToken === token.id ? 'selected' : ''}
-                  onClick={() => setMinted(token.data ? { id: token.id, data: token.data } : undefined)}
+                  // Opens the CD in My Frames › Labs. It used to load the CD into this window as if it had just been
+                  // burned, which disabled Burn, and "Burn another CD" then wiped the mix being built.
+                  title={`open ${token.data?.name ?? `CD #${token.id}`} in My Frames`}
+                  onClick={() => openProgram('frames', true, `#/frames?labs=1&token=${token.id}`)}
                 >
                   <SafeImage
                     src={token.data?.image ?? ''}

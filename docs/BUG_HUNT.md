@@ -4,12 +4,12 @@ During the launch window the r3tards community was invited to break r3OS on main
 
 | | |
 | --- | ---: |
-| Community reports | 45 |
+| Community reports | 48 |
 | Reporters | 8 |
-| Bugs fixed (community and team) | 39 |
+| Bugs fixed (community and team) | 42 |
 | Still open | 1 |
 | Questions answered (working as intended) | 8 |
-| Community bugs by severity | Critical 1 · High 6 · Medium 12 · Low 16 · Info 2 |
+| Community bugs by severity | Critical 1 · High 6 · Medium 14 · Low 17 · Info 2 |
 
 Reporters are named where they agreed to it.
 
@@ -57,6 +57,9 @@ Reporters are named where they agreed to it.
 | 2026-10-11 | team | Paint | Save canvas to floppy left out what you had drawn but not painted yet (e.g. drawing without a wallet) | Low | Fixed | [`12266dc`](https://github.com/dreiki-nft/r3OS/commit/12266dc) |
 | 2026-10-11 | community member | Other | Getting-started card stayed at 1/4 although all four steps were done | Low | Open | [`4d2045f`](https://github.com/dreiki-nft/r3OS/commit/4d2045f) |
 | 2026-10-11 | community member | My Pass | Painted and saved, but the getting-started card never offered the Pass claim | Low | Fixed | [`e0e4577`](https://github.com/dreiki-nft/r3OS/commit/e0e4577) |
+| 2026-10-12 | community member | Frames / CDs | Tapping one of your CDs in Burn a CD wiped the mix being built (tracks and label), with no warning | Medium | Fixed |  |
+| 2026-10-12 | community member | Phone layout | Window close buttons were tiny on phones, and they're the only way to close a window | Medium | Fixed |  |
+| 2026-10-12 | community member | Phone layout | On phones the desktop icons stacked in one narrow strip on the left | Low | Fixed |  |
 
 ## Questions answered
 
