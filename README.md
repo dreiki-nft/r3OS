@@ -58,7 +58,7 @@ The guide also links a real recent paint transaction on the explorer, so every c
 
 ## Community
 
-r3OS opened to the public on **October 10, 2026 at 19:00 UTC**. This is the shared canvas during its first 24 public hours, replayed stroke by stroke from the Paint contract's own events:
+r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](https://x.com/Dreiki10/status/2108996635313549550)). This is the shared canvas during its first 24 public hours, replayed stroke by stroke from the Paint contract's own events:
 
 <p align="center"><img src="docs/media/launch-24h.gif" alt="The shared r3OS canvas filling up during its first 24 public hours, replayed from onchain paint events" width="512"></p>
 
@@ -90,7 +90,9 @@ node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range
 
 ### Community bug hunt
 
-During the launch the community was invited to break r3OS on mainnet, for 2,500 MON and one r3tard NFT, rewarded by what was found rather than how many reports were sent. **8 reporters sent 48 reports**: 40 real bugs (1 critical, 6 high, 14 medium) and 8 questions that turned out to be intended behaviour. Every bug but one is fixed; the full log, with links to the fixing commits, is in [`docs/BUG_HUNT.md`](docs/BUG_HUNT.md).
+Right after launch the community was invited to break r3OS on mainnet in a 24-hour bug hunt ([announcement](https://x.com/Dreiki10/status/2109254669050552563)), for 2,500 MON and one r3tard NFT. Reports were scored by what they found, not by how many were sent: every confirmed bug scored by severity (Critical 40, High 20, Medium 10, Low 5), and a report that turned out to be intended behaviour still scored a point for the question.
+
+**8 hunters sent 48 reports**: 40 real bugs (1 critical, 6 high, 14 medium) and 8 questions answered. Every bug but one is fixed. Top of the leaderboard: **Large Eyes** (99 points), **Cranium** (86, including the one critical) and **Dragon Warrior** (71) ([winners](https://x.com/Dreiki10/status/2109645766901862451)). The full leaderboard and every report, with links to the fixing commits, are in [`docs/BUG_HUNT.md`](docs/BUG_HUNT.md).
 
 ## A tour of r3OS
 
