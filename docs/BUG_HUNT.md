@@ -30,18 +30,18 @@ Severity reflects impact on people using r3OS: Critical stops the app for everyo
 
 ## Leaderboard
 
-| # | Reporter | Points | Bugs | Most severe | Questions |
-| ---: | --- | ---: | ---: | --- | ---: |
-| 1 | Large Eyes | 99 | 10 | High | 0 |
-| 2 | Cranium | 86 | 6 | Critical | 1 |
-| 3 | Dragon Warrior | 71 | 10 | Medium | 1 |
-| 4 | Levi | 39 | 4 | Medium | 4 |
-| 5 | noajolouis | 35 | 3 | High | 0 |
-| 6 | WillAlves | 30 | 3 | High | 0 |
-| 7 | Jans | 25 | 2 | High | 0 |
-| 8 | Dobby | 6 | 1 | Low | 1 |
+| # | Reporter | Points | Bugs | Most severe | Questions | Prize |
+| ---: | --- | ---: | ---: | --- | ---: | --- |
+| 1 | Large Eyes | 99 | 10 | High | 0 | 1 r3tard NFT |
+| 2 | Cranium | 86 | 6 | Critical | 1 | 2,500 MON |
+| 3 | Dragon Warrior | 71 | 10 | Medium | 1 | 1,000 MON (extra prize) |
+| 4 | Levi | 39 | 4 | Medium | 4 |  |
+| 5 | noajolouis | 35 | 3 | High | 0 |  |
+| 6 | WillAlves | 30 | 3 | High | 0 |  |
+| 7 | Jans | 25 | 2 | High | 0 |  |
+| 8 | Dobby | 6 | 1 | Low | 1 |  |
 
-391 points in total. Winners were announced [here](https://x.com/Dreiki10/status/2109645766901862451).
+391 points in total. The prizes went to the top three ([winners announcement](https://x.com/Dreiki10/status/2109645766901862451)): the r3tard NFT to Large Eyes, 2,500 MON to Cranium, and an extra 1,000 MON prize, on top of the announced pool, to Dragon Warrior.
 
 ## Bugs found
 
