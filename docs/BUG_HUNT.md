@@ -6,8 +6,8 @@ During the launch window the r3tards community was invited to break r3OS on main
 | --- | ---: |
 | Community reports | 45 |
 | Reporters | 8 |
-| Bugs fixed (community and team) | 38 |
-| Still open | 2 |
+| Bugs fixed (community and team) | 39 |
+| Still open | 1 |
 | Questions answered (working as intended) | 8 |
 | Community bugs by severity | Critical 1 · High 6 · Medium 12 · Low 16 · Info 2 |
 
@@ -21,7 +21,7 @@ Reporters are named where they agreed to it.
 | 2026-10-10 | community member | Network / RPC | One websocket drop left the tab on HTTP polling for good, at about 10x the RPC traffic | High | Fixed | [`874ac10`](https://github.com/dreiki-nft/r3OS/commit/874ac10) |
 | 2026-10-10 | community member | Network / RPC | A silently stalled websocket froze the block feed with no warning or recovery | High | Fixed | [`874ac10`](https://github.com/dreiki-nft/r3OS/commit/874ac10) |
 | 2026-10-10 | community member | Wallet | Couldn't connect with Rabby wallet | Medium | Fixed | [`f6e71b7`](https://github.com/dreiki-nft/r3OS/commit/f6e71b7) |
-| 2026-10-10 | community member | Security | Security policy allowed connections and images from any https address (no exfiltration protection) | Medium | Open |  |
+| 2026-10-10 | community member | Security | Security policy allowed connections and images from any https address (no exfiltration protection) | Medium | Fixed |  |
 | 2026-10-10 | community member | Security | The whole build environment was dumped into the public JS (repo, commit, Vercel deployment and project IDs) | Medium | Fixed |  |
 | 2026-10-10 | community member | Security | Every missing path returned 200 (/.env, /robots.txt, /sitemap.xml, /.git/config) and there was no security.txt | Medium | Fixed |  |
 | 2026-10-10 | community member | Live Mode | Two tabs in Live Mode reused the same transaction number, and two tabs could each create a Live Mode key | Medium | Fixed | [`874ac10`](https://github.com/dreiki-nft/r3OS/commit/874ac10) |

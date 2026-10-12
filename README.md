@@ -90,7 +90,7 @@ node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range
 
 ### Community bug hunt
 
-During the launch the community was invited to break r3OS on mainnet, for 2,500 MON and one r3tard NFT, rewarded by what was found rather than how many reports were sent. **8 reporters sent 45 reports**: 37 real bugs (1 critical, 6 high, 12 medium) and 8 questions that turned out to be intended behaviour. Every bug but two is fixed, each linked to its commit, in [`docs/BUG_HUNT.md`](docs/BUG_HUNT.md).
+During the launch the community was invited to break r3OS on mainnet, for 2,500 MON and one r3tard NFT, rewarded by what was found rather than how many reports were sent. **8 reporters sent 45 reports**: 37 real bugs (1 critical, 6 high, 12 medium) and 8 questions that turned out to be intended behaviour. Every bug but one is fixed, each linked to its commit, in [`docs/BUG_HUNT.md`](docs/BUG_HUNT.md).
 
 ## A tour of r3OS
 
