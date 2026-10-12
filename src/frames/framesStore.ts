@@ -585,6 +585,24 @@ async function applyTransfer(activity: CanvasActivity) {
   emit({})
 }
 
+/**
+ * Ownership just read from the chain for frames the cached owner map had wrong (one recycled or moved
+ * while this browser wasn't watching). Corrects every loaded owner map and its stored copy, so lists like
+ * My Frames and Burn a CD stop offering it. `null` means the frame no longer exists.
+ */
+export async function noteFrameOwners(updates: ReadonlyArray<readonly [number, Address | null]>) {
+  if (!updates.length) return
+  for (const [tokenId, owner] of updates) ownershipHints.set(tokenId, owner)
+  trimHintMap(ownershipHints)
+  await Promise.all(
+    [...ownerCaches.entries()].map(async ([key, cache]) => {
+      for (const [tokenId, owner] of updates) cache.ownerById[String(tokenId)] = owner
+      await idbSet('owners', key, cache)
+    }),
+  )
+  emit({})
+}
+
 export async function mineTokenIds(account: Address) {
   await refreshFrameIndex()
   const cache = await scanOwners(account)

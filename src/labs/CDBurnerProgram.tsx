@@ -10,7 +10,7 @@ import { readMany } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { getFrameImage } from '../frames/frameImage'
-import { getFrameInfoBatch, mineTokenIds, type FrameInfo } from '../frames/framesStore'
+import { getFrameInfoBatch, mineTokenIds, noteFrameOwners, type FrameInfo } from '../frames/framesStore'
 import {
   labsAddress,
   labsBucket,
@@ -35,6 +35,7 @@ import { Icon } from '../os/ui/Icon'
 import { MenuBar } from '../os/ui/MenuBar'
 import { SafeImage } from '../os/ui/SafeImage'
 import { readLabsToken, type LabsTokenData } from './labsToken'
+import { staleTracks, type OwnerRow } from './cdTracks'
 import { cdEligibleFrames } from './recycle'
 
 type FrameTrack = { kind: 'frame'; id: number; info: FrameInfo }
@@ -111,28 +112,54 @@ async function countsForTrack(track: Track) {
   return track.kind === 'frame' ? countsForFrame(track.id, track.info) : countsForPhoto(track.id)
 }
 
-async function staleTrackKeys(owner: Address, tracks: readonly Track[]) {
-  if (!tracks.length) return []
+async function staleTrackKeys(
+  owner: Address,
+  tracks: readonly Track[],
+): Promise<{ stale: string[]; gone: string[] }> {
+  if (!tracks.length) return { stale: [], gone: [] }
   const contracts = await discoverContracts()
   const needsFrames = tracks.some((track) => track.kind === 'frame')
   const needsLabs = tracks.some((track) => track.kind === 'block-photo')
   if (needsFrames && !contracts.paint) throw new Error('paint is not deployed on this network')
   const labs = needsLabs ? await labsAddress() : undefined
-  const rows = await readMany(
-    tracks.map((track) => ({
-      address: track.kind === 'frame' ? contracts.paint! : labs!,
-      abi: track.kind === 'frame' ? R3OS_PAINT_ABI : R3OS_LABS_ABI,
-      functionName: 'ownerOf',
-      args: [BigInt(track.id)],
-    })),
-    { allowFailure: true },
-  )
-  const failed = rows.find((row: any) => row?.status !== 'success') as any
-  if (failed) throw failed.error ?? new Error('CD_OWNERSHIP_UNAVAILABLE')
-  const account = owner.toLowerCase()
-  return tracks
-    .filter((_, index) => String((rows[index] as any).result).toLowerCase() !== account)
-    .map(trackKey)
+  const read = () =>
+    readMany(
+      tracks.map((track) => ({
+        address: track.kind === 'frame' ? contracts.paint! : labs!,
+        abi: track.kind === 'frame' ? R3OS_PAINT_ABI : R3OS_LABS_ABI,
+        functionName: 'ownerOf',
+        args: [BigInt(track.id)],
+      })),
+      { allowFailure: true },
+    ) as Promise<OwnerRow[]>
+  const keys = tracks.map(trackKey)
+  let result = staleTracks(owner, keys, await read(), isMissingToken)
+  // A token that just appeared can briefly read as missing on a lagging RPC: look once more before
+  // treating anything as gone.
+  if (!result.failure && [...result.owners.values()].includes(null)) {
+    await new Promise((resolve) => setTimeout(resolve, 1_500))
+    result = staleTracks(owner, keys, await read(), isMissingToken)
+  }
+  if (result.failure) throw result.failure
+  // Frames this browser still listed as ours: fix the cached owners so they stop being offered.
+  const frameOwners = tracks
+    .filter((track) => track.kind === 'frame' && result.owners.has(trackKey(track)))
+    .map((track) => [track.id, (result.owners.get(trackKey(track)) ?? null) as Address | null] as const)
+  await noteFrameOwners(frameOwners)
+  return { stale: result.stale, gone: keys.filter((key) => result.owners.get(key) === null) }
+}
+
+function staleTracksMessage(removed: readonly Track[], gone: readonly string[]) {
+  const names = removed.map(trackLabel).join(', ')
+  const one = removed.length === 1
+  const why = removed.every((track) => gone.includes(trackKey(track)))
+    ? `${one ? 'was' : 'were'} recycled`
+    : `${one ? 'is' : 'are'} no longer in this wallet`
+  return `${names} ${why}, so ${one ? 'it was' : 'they were'} taken off the mix.`
+}
+
+function isMissingToken(error: unknown) {
+  return friendlyError(error).name === 'ERC721NonexistentToken'
 }
 
 function TrackChoice({
@@ -325,14 +352,13 @@ export function CDBurnerProgram() {
     const hasPhotos = tracks.some((track) => track.kind === 'block-photo')
     const functionName = hasPhotos ? 'burnMixedCD' : 'burnCD'
     void (async () => {
-      const stale = await staleTrackKeys(wallet.account!, tracks)
+      const { stale, gone } = await staleTrackKeys(wallet.account!, tracks)
       if (cancelled) return
       if (stale.length) {
         const staleSet = new Set(stale)
-        const removed = tracks.filter((track) => staleSet.has(trackKey(track))).map(trackLabel)
         setTracks((current) => current.filter((track) => !staleSet.has(trackKey(track))))
         setQuote(undefined)
-        setMessage(`${removed.join(', ')} ${removed.length === 1 ? 'is' : 'are'} no longer in this wallet and ${removed.length === 1 ? 'was' : 'were'} removed from the mix.`)
+        setNotice(staleTracksMessage(tracks.filter((track) => staleSet.has(trackKey(track))), gone))
         void load()
         return
       }
@@ -400,13 +426,12 @@ export function CDBurnerProgram() {
     setMinted(undefined)
     setNotice('')
     try {
-      const stale = await staleTrackKeys(wallet.account, tracks)
+      const { stale, gone } = await staleTrackKeys(wallet.account, tracks)
       if (stale.length) {
         const staleSet = new Set(stale)
-        const removed = tracks.filter((track) => staleSet.has(trackKey(track))).map(trackLabel)
         setTracks((current) => current.filter((track) => !staleSet.has(trackKey(track))))
         setQuote(undefined)
-        setMessage(`${removed.join(', ')} ${removed.length === 1 ? 'is' : 'are'} no longer in this wallet and ${removed.length === 1 ? 'was' : 'were'} removed from the mix.`)
+        setNotice(staleTracksMessage(tracks.filter((track) => staleSet.has(trackKey(track))), gone))
         void load()
         setTxState('idle')
         return
