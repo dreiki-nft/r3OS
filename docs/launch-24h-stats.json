@@ -1,0 +1,183 @@
+{
+  "painters": 33,
+  "returningPainters": 5,
+  "paints": 440,
+  "pixels": 32827,
+  "frames": {
+    "count": 48,
+    "owners": 22
+  },
+  "cds": {
+    "count": 12,
+    "owners": 9
+  },
+  "passes": {
+    "count": 21,
+    "owners": 21
+  },
+  "excluded": 2,
+  "fromBlock": "112260243",
+  "toBlock": "112546451",
+  "asOf": "2026-10-12 03:04 UTC",
+  "window": {
+    "fromTime": 1791658800,
+    "toTime": 1791745200,
+    "painters": 33,
+    "newPainters": 32,
+    "cameBackLater": 8,
+    "paints": 440,
+    "pixels": 32827,
+    "peakHour": {
+      "hour": 0,
+      "paints": 56,
+      "pixels": 8799,
+      "painters": 15
+    },
+    "hourly": [
+      {
+        "hour": 0,
+        "paints": 56,
+        "pixels": 8799,
+        "painters": 15
+      },
+      {
+        "hour": 1,
+        "paints": 38,
+        "pixels": 1942,
+        "painters": 5
+      },
+      {
+        "hour": 2,
+        "paints": 9,
+        "pixels": 1240,
+        "painters": 3
+      },
+      {
+        "hour": 3,
+        "paints": 27,
+        "pixels": 1612,
+        "painters": 3
+      },
+      {
+        "hour": 4,
+        "paints": 20,
+        "pixels": 1463,
+        "painters": 3
+      },
+      {
+        "hour": 5,
+        "paints": 18,
+        "pixels": 2274,
+        "painters": 3
+      },
+      {
+        "hour": 6,
+        "paints": 16,
+        "pixels": 1297,
+        "painters": 2
+      },
+      {
+        "hour": 7,
+        "paints": 30,
+        "pixels": 2128,
+        "painters": 3
+      },
+      {
+        "hour": 8,
+        "paints": 7,
+        "pixels": 882,
+        "painters": 2
+      },
+      {
+        "hour": 9,
+        "paints": 11,
+        "pixels": 187,
+        "painters": 1
+      },
+      {
+        "hour": 10,
+        "paints": 61,
+        "pixels": 2685,
+        "painters": 5
+      },
+      {
+        "hour": 11,
+        "paints": 0,
+        "pixels": 0,
+        "painters": 0
+      },
+      {
+        "hour": 12,
+        "paints": 3,
+        "pixels": 259,
+        "painters": 1
+      },
+      {
+        "hour": 13,
+        "paints": 25,
+        "pixels": 779,
+        "painters": 1
+      },
+      {
+        "hour": 14,
+        "paints": 0,
+        "pixels": 0,
+        "painters": 0
+      },
+      {
+        "hour": 15,
+        "paints": 8,
+        "pixels": 233,
+        "painters": 2
+      },
+      {
+        "hour": 16,
+        "paints": 16,
+        "pixels": 1308,
+        "painters": 2
+      },
+      {
+        "hour": 17,
+        "paints": 25,
+        "pixels": 1523,
+        "painters": 4
+      },
+      {
+        "hour": 18,
+        "paints": 44,
+        "pixels": 1940,
+        "painters": 4
+      },
+      {
+        "hour": 19,
+        "paints": 2,
+        "pixels": 330,
+        "painters": 1
+      },
+      {
+        "hour": 20,
+        "paints": 10,
+        "pixels": 429,
+        "painters": 1
+      },
+      {
+        "hour": 21,
+        "paints": 0,
+        "pixels": 0,
+        "painters": 0
+      },
+      {
+        "hour": 22,
+        "paints": 6,
+        "pixels": 854,
+        "painters": 2
+      },
+      {
+        "hour": 23,
+        "paints": 8,
+        "pixels": 663,
+        "painters": 2
+      }
+    ]
+  }
+}

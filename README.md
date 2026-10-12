@@ -58,13 +58,39 @@ The guide also links a real recent paint transaction on the explorer, so every c
 
 ## Community
 
-<!-- Season Replay GIF: node scripts/export-replay.mjs && node scripts/replay-gif.mjs, then add:
-<p align="center"><img src="docs/media/season-replay.gif" alt="Season 1 of the shared canvas, replayed paint by paint" width="512"></p>
--->
+r3OS opened to the public on **October 10, 2026 at 19:00 UTC**. This is the shared canvas during its first 24 public hours, replayed stroke by stroke from the Paint contract's own events:
 
-<!-- Paste the output of: node scripts/community-stats.mjs --exclude <builder wallets> -->
+<p align="center"><img src="docs/media/launch-24h.gif" alt="The shared r3OS canvas filling up during its first 24 public hours, replayed from onchain paint events" width="512"></p>
 
-Numbers are counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), not counting the builder's wallets. Anyone can rerun it against mainnet.
+**The first 24 hours** (Oct 10 19:00 → Oct 11 19:00 UTC · blocks 112,260,243–112,546,451)
+
+| | |
+| --- | ---: |
+| Painters | **33**, 32 of them new to r3OS |
+| Painters who came back 1+ hour after their first stroke | 8 |
+| Paint transactions | 440 |
+| Pixels painted | 32,827 |
+| Busiest hour | 15 painters at once (the launch hour) |
+| Frames saved | 48, by 22 wallets |
+| CDs burned | 12, by 9 wallets |
+| Painter Passes claimed | 21 |
+
+<p align="center"><img src="docs/media/launch-24h.svg" alt="Bar charts of painters and paint transactions in each hour of the first 24 hours after launch" width="100%"></p>
+
+**Season 1 so far** (Oct 6 → Oct 12 03:18 UTC): **41 painters**, 11 of them back on another day, 794 paint transactions, 55,022 pixels, 80 frames saved by 29 wallets, 23 CDs burned by 12 wallets and 27 Painter Passes.
+
+The whole season is also watchable in the app: **Run → `replay`** plays every paint, in order, from [`public/replay/season-0.json`](public/replay/season-0.json).
+
+Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), not counting the builder's two wallets. Anyone can rerun it against mainnet:
+
+```bash
+node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range 100 \
+  --exclude 0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA,0x649995F20D11F54188e865D8a4ADcFDE4692ecd1
+```
+
+### Community bug hunt
+
+During the launch the community was invited to break r3OS on mainnet, for 2,500 MON and one r3tard NFT, rewarded by what was found rather than how many reports were sent. **8 reporters sent 45 reports**: 37 real bugs (1 critical, 6 high, 12 medium) and 8 questions that turned out to be intended behaviour. Every bug but two is fixed, each linked to its commit, in [`docs/BUG_HUNT.md`](docs/BUG_HUNT.md).
 
 ## A tour of r3OS
 
