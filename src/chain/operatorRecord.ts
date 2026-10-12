@@ -297,8 +297,10 @@ function sourceFor(facts: OperatorFacts, id: number): OperatorSource {
   return bit(facts.answeredMask, id) ? 'ONCHAIN' : 'UNKNOWN'
 }
 
+// Retired experiments were never deployed on mainnet, so the driver can't answer for them. Waiting for those
+// answers left LAST ACTIVE and SUBSYSTEMS USED on UNKNOWN for everyone; only the live subsystems are required.
 function answered(facts: OperatorFacts, ids: readonly number[]) {
-  return ids.every((id) => bit(facts.answeredMask, id))
+  return ids.filter((id) => !RETIRED_SUBSYSTEMS.has(id)).every((id) => bit(facts.answeredMask, id))
 }
 
 function onchainValue(facts: OperatorFacts, id: number, value: ReactNode): ReactNode {
@@ -341,8 +343,13 @@ export function recordRows(
     },
     {
       label: OPERATOR_COPY.rows.lastActive,
-      value: lastActiveAnswered && latest ? `${OPERATOR_COPY.block} ${latest}` : OPERATOR_COPY.unknown,
-      source: lastActiveAnswered && latest ? 'DERIVED' : 'UNKNOWN',
+      // Every source answered and none has a block: the wallet just hasn't done anything yet.
+      value: !lastActiveAnswered
+        ? OPERATOR_COPY.unknown
+        : latest
+          ? `${OPERATOR_COPY.block} ${latest}`
+          : OPERATOR_COPY.none,
+      source: lastActiveAnswered ? 'DERIVED' : 'UNKNOWN',
     },
     {
       label: OPERATOR_COPY.rows.firstPaint,

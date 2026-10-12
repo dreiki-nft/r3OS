@@ -21,6 +21,7 @@ import { openProgram, programById } from '../os/programs'
 import { closeWindow } from '../os/windows'
 import { playSound } from '../os/sound'
 import { Button } from '../os/ui/Button'
+import { FeeNote } from '../os/ui/FeeNote'
 import { GroupBox } from '../os/ui/GroupBox'
 import { Icon } from '../os/ui/Icon'
 import { ListBox } from '../os/ui/ListBox'
@@ -402,6 +403,7 @@ export function PassProgram() {
                 ) : (
                   <>
                     <p>max cost: {claimQuote?.maxCost ?? (eligible ? 'quoting…' : '—')}</p>
+                    <FeeNote />
                     <Button
                       primary
                       disabled={!eligible || !claimQuote}

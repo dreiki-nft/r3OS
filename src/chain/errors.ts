@@ -136,6 +136,11 @@ function copy(name: string, args: readonly unknown[] = [], action?: string): Fri
       return { name, message: 'that track type cannot be written to this CD.' }
     case 'NotBlockCameraToken':
       return { name, message: `Labs token #${args[0]} is not a Block Camera photo.` }
+    case 'ERC721NonexistentToken':
+      return {
+        name,
+        message: `token #${args[0] ?? '?'} doesn't exist, or the network hasn't caught up with it yet. wait a few seconds and try again.`,
+      }
     case 'BlockCameraTrackReadFailed':
       return { name, message: `Block Camera photo #${args[0]} could not be read. refresh and try again.` }
     default:

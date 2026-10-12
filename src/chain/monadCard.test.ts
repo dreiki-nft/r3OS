@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Address, Hex } from 'viem'
 import {
+  parseCardNumber,
   cardPageBaseSlot,
   isOfficialCard,
   cardPropertySources,
@@ -150,5 +151,20 @@ describe('Monad Card helpers', () => {
       soulbound: 'unknown',
       code: 'measured',
     })
+  })
+})
+
+describe('typed card numbers', () => {
+  it('accepts the number however it is written', () => {
+    expect(parseCardNumber('1234')).toBe(1234n)
+    expect(parseCardNumber(' #1234 ')).toBe(1234n)
+    expect(parseCardNumber('Monad Card #77')).toBe(77n)
+    expect(parseCardNumber('0')).toBe(0n)
+  })
+  it('rejects anything that is not a card number', () => {
+    expect(parseCardNumber('')).toBeUndefined()
+    expect(parseCardNumber('12a')).toBeUndefined()
+    expect(parseCardNumber('-5')).toBeUndefined()
+    expect(parseCardNumber('1'.repeat(79))).toBeUndefined()
   })
 })

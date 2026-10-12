@@ -126,9 +126,10 @@ Discovery order is:
 
 1. `R3OSCardMemory.cardOf(wallet)`, revalidated with the card's `ownerOf`;
 2. a per-chain/per-wallet id already remembered locally, also revalidated with `ownerOf`;
-3. otherwise `balanceOf(wallet)` can still prove that a card exists even when its id is unknown.
+3. the card contract's own owner lookups, `tokenOfOwnerByIndex(wallet, 0)` or `tokensOfOwner(wallet)`, when it implements them; any id they return is revalidated with `ownerOf` and remembered;
+4. otherwise `balanceOf(wallet)` can still prove that a card exists even when its id is unknown.
 
-If `balanceOf(wallet) > 0` but no id is resolvable, the truthful state is `card detected, number unknown`. Local storage is convenience only and grants no authorization.
+If `balanceOf(wallet) > 0` but no id is resolvable, the truthful state is `card detected, number unknown`, and System Information lets the holder type the card number. A typed number is used only if `ownerOf` returns the connected wallet. Local storage is convenience only and grants no authorization.
 
 CARD.DRV remains composable even though the hackathon UI does not expose a general EEPROM editor: owners or contract wallets can call `write` directly, and Block Camera/Operator/System Information consume the resulting onchain state.
 

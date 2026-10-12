@@ -159,6 +159,29 @@ describe('operator record helpers', () => {
     })
   })
 
+  it('answers LAST ACTIVE and SUBSYSTEMS USED on mainnet, where retired experiments never reply', () => {
+    // Mainnet: only the live subsystems (and CARD.DRV) answer; FLIPBOOK, WEEDS, FORKS, BLOCK DNA, SLEEPWALKER,
+    // KERNEL DEBUGGER and PAGE.EXE have no contract there.
+    const mainnetMask = [0, 1, 2, 3, 8, 10, 11, 14, 15].reduce((mask, id) => mask | (1n << BigInt(id)), 0n)
+    const f = facts({
+      answeredMask: mainnetMask,
+      firstPaintBlock: 112455428n,
+      lastPaintBlock: 112559000n,
+      framesMinted: 2n,
+      questsCompleted: 1n,
+      lastCaptureBlock: 112559857n,
+    })
+    const rows = recordRows(f, record())
+    expect(rows.find((row) => row.label === OPERATOR_COPY.rows.lastActive)).toMatchObject({
+      value: `${OPERATOR_COPY.block} 112559857`,
+      source: 'DERIVED',
+    })
+    expect(rows.find((row) => row.label === OPERATOR_COPY.rows.subsystemsUsed)).toMatchObject({
+      value: '4',
+      source: 'DERIVED',
+    })
+  })
+
   it('excludes identity from subsystem count', () => {
     expect(subsystemCount(1n << 15n)).toBe(0)
     expect(subsystemCount((1n << 0n) | (1n << 3n) | (1n << 15n))).toBe(2)

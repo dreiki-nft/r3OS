@@ -55,6 +55,7 @@ import { playSound } from '../os/sound'
 import { requestFloppy } from '../os/floppy'
 import { applyWallpaperResource } from '../os/wallpaper'
 import { Button } from '../os/ui/Button'
+import { FeeNote } from '../os/ui/FeeNote'
 import { MenuBar } from '../os/ui/MenuBar'
 import { MessageBox } from '../os/ui/MessageBox'
 import { WalletChooser } from '../os/WalletChooser'
@@ -1777,6 +1778,7 @@ export function PaintProgram() {
               ))}
             </div>
             <p>max cost: {quoteText(bgKey)}</p>
+            <FeeNote />
             <div className="dialog-actions">
               <Button
                 primary

@@ -32,6 +32,8 @@ export const MONAD_CARD_ABI = parseAbi([
   'function supportsInterface(bytes4 interfaceId) view returns (bool)',
   'function locked(uint256 tokenId) view returns (bool)',
   'function claim() returns (uint256)',
+  'function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)',
+  'function tokensOfOwner(address owner) view returns (uint256[])',
 ])
 
 export type MonadCardStatus = 'no-wallet' | 'no-driver' | 'empty' | 'unknown-id' | 'present'
@@ -296,6 +298,57 @@ export function rememberCardId(chainId: number, owner: Address, cardId: bigint) 
   notifyMonadCardChanged()
 }
 
+/** Reads a card number typed by a person: "1234", "#1234" or "Monad Card #1234". */
+export function parseCardNumber(text: string): bigint | undefined {
+  const digits = text.trim().replace(/^.*#/, '').trim()
+  if (!/^\d{1,78}$/.test(digits)) return undefined
+  const value = BigInt(digits)
+  return value < 1n << 256n ? value : undefined
+}
+
+/**
+ * Use a card number the person typed in. It is only kept when the card contract says this wallet owns it, so a
+ * typo or someone else's number never shows as yours.
+ */
+export async function adoptCardNumber(owner: Address, cardId: bigint, cardAddress: Address) {
+  const current = await safeOwnerOf(cardAddress, cardId)
+  if (!current) throw new Error(`card #${cardId} doesn't exist (or the network didn't answer). check the number.`)
+  if (!sameAddress(current, owner)) throw new Error(`card #${cardId} belongs to another wallet.`)
+  rememberCardId(config.chainId, owner, cardId)
+}
+
+/**
+ * Asks the card contract which card this wallet holds, through the standard owner lookups (ERC-721
+ * Enumerable `tokenOfOwnerByIndex`, or `tokensOfOwner`). Either may be missing; every answer is double-checked
+ * with `ownerOf`. Returns undefined when the contract can't say.
+ */
+async function enumerateCardId(cardAddress: Address, owner: Address) {
+  const rows = await readMany(
+    [
+      { address: cardAddress, abi: MONAD_CARD_ABI, functionName: 'tokenOfOwnerByIndex', args: [owner, 0n] },
+      { address: cardAddress, abi: MONAD_CARD_ABI, functionName: 'tokensOfOwner', args: [owner] },
+    ],
+    { allowFailure: true },
+  ).catch(() => [])
+  const candidates: bigint[] = []
+  const byIndex = rows[0] as any
+  if (byIndex?.status === 'success') candidates.push(BigInt(byIndex.result))
+  const list = rows[1] as any
+  if (list?.status === 'success' && Array.isArray(list.result)) candidates.push(...list.result.map((id: unknown) => BigInt(id as bigint)))
+  for (const candidate of candidates) {
+    if (sameAddress(await safeOwnerOf(cardAddress, candidate), owner)) return candidate
+  }
+  return undefined
+}
+
+function storeCardIdQuietly(chainId: number, owner: Address, cardId: bigint) {
+  try {
+    localStorage.setItem(rememberedCardKey(chainId, owner), cardId.toString())
+  } catch {
+    // Convenience only.
+  }
+}
+
 export function loadRememberedCardId(chainId: number, owner: Address) {
   try {
     const raw = localStorage.getItem(rememberedCardKey(chainId, owner))
@@ -452,7 +505,7 @@ export async function readMonadCard(account?: Address): Promise<MonadCardSnapsho
     indexedFound && indexedId != null ? await safeOwnerOf(cardAddress, indexedId) : undefined
   const rememberedId = loadRememberedCardId(config.chainId, account)
   const rememberedOwner = rememberedId != null ? await safeOwnerOf(cardAddress, rememberedId) : undefined
-  const discovery = resolveCardDiscovery({
+  let discovery = resolveCardDiscovery({
     indexedFound,
     indexedId,
     indexedOwner,
@@ -461,6 +514,15 @@ export async function readMonadCard(account?: Address): Promise<MonadCardSnapsho
     wallet: account,
     balance,
   })
+  // CARD.DRV only indexes a card once its owner writes to it, so most holders showed "number unknown". Ask the
+  // card contract itself before giving up; a number found this way is remembered for next time.
+  if (discovery.status === 'unknown-id') {
+    const enumerated = await enumerateCardId(cardAddress, account)
+    if (enumerated != null) {
+      storeCardIdQuietly(config.chainId, account, enumerated)
+      discovery = { status: 'present', cardId: enumerated, source: 'remembered' }
+    }
+  }
 
   const cardId = discovery.status === 'present' ? discovery.cardId : undefined
   let cardInfo: CardInfo | undefined

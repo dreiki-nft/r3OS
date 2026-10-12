@@ -32,6 +32,7 @@ import { idbGet, idbSet } from '../../lib/idb'
 import { openProgram } from '../programs'
 import { playSound } from '../sound'
 import { Button } from '../ui/Button'
+import { FEE_NOTE } from '../ui/FeeNote'
 import { Icon } from '../ui/Icon'
 import { MenuBar } from '../ui/MenuBar'
 import { MessageBox } from '../ui/MessageBox'
@@ -806,8 +807,8 @@ export function RecycleBin() {
           message={`Are you sure you want to send ${describeFrames(picked)} to the Recycle Bin? Recycling burns ${picked.length === 1 ? 'it' : 'them'} forever. This can't be undone.`}
           details={
             picked.length > 1 && !operatorApproved
-              ? `one-time permission so the Bin can burn frames you pick\napproval max cost: ${quote?.maxCost ?? 'quoting…'}\nrecycle max cost: ${recycleQuote?.maxCost ?? 'quoted immediately after approval, before the second wallet prompt'}\nconfirming this batch continues straight from approval into recycle.`
-              : `recycle max cost: ${quote?.maxCost ?? recycleQuote?.maxCost ?? 'quoting…'}`
+              ? `one-time permission so the Bin can burn frames you pick\napproval max cost: ${quote?.maxCost ?? 'quoting…'}\nrecycle max cost: ${recycleQuote?.maxCost ?? 'quoted immediately after approval, before the second wallet prompt'}\nconfirming this batch continues straight from approval into recycle.\n${FEE_NOTE}`
+              : `recycle max cost: ${quote?.maxCost ?? recycleQuote?.maxCost ?? 'quoting…'}\n${FEE_NOTE}`
           }
           defaultLabel={busy ? 'Recycling…' : 'Recycle'}
           onDefault={() => void executeRecycle()}

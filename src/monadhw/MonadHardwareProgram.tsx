@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } fr
 import { screenSafeMessage } from '../chain/errors'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { MONAD_NAMES, config } from '../chain/config'
-import { cardPropertySources, isOfficialCard, useMonadCard } from '../chain/monadCard'
+import { adoptCardNumber, cardPropertySources, isOfficialCard, parseCardNumber, useMonadCard } from '../chain/monadCard'
 import { MONAD_HW_SPEC, useMonadHardware, type HardwareSource } from '../chain/monadHardware'
 import { getTxTraceSnapshot, subscribeTxTrace } from '../chain/txTrace'
 import { eventState, formatUsd, useSystemEvent } from '../chain/systemEvent'
@@ -98,8 +98,63 @@ function cardStatusText(card: ReturnType<typeof useMonadCard>) {
   if (card.status === 'present' && card.cardInfo?.exists) return 'This device is working properly.'
   if (card.status === 'no-driver') return 'The driver for this device is not installed.'
   if (card.status === 'empty' || card.status === 'no-wallet') return 'No card in this slot.'
-  if (card.status === 'unknown-id') return 'Card detected; its number is not indexed yet.'
+  if (card.status === 'unknown-id') return 'Card detected, but its number is unknown. Type it below to read its page.'
   return 'Card state unavailable.'
+}
+
+/**
+ * The card contract may not say which card a wallet holds, and CARD.DRV only learns it once the card is written
+ * to. The holder can type their number instead; it is checked against the card contract before it is used.
+ */
+function CardNumberForm({ owner, cardAddress }: { owner: `0x${string}`; cardAddress: `0x${string}` }) {
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    const id = parseCardNumber(text)
+    if (id == null) {
+      setMessage('type the number of your card, for example 1234.')
+      return
+    }
+    setBusy(true)
+    setMessage('checking with the card contract…')
+    try {
+      await adoptCardNumber(owner, id, cardAddress)
+      setMessage(`card #${id} is yours. reading its page…`)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'could not check that card. try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <form className="card-number-form" onSubmit={submit}>
+      <label>
+        Your card number
+        <input
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          inputMode="numeric"
+          placeholder="e.g. 1234"
+          autoComplete="off"
+          aria-describedby="card-number-help"
+        />
+      </label>
+      <Button type="submit" disabled={busy || !text.trim()}>
+        Use this card
+      </Button>
+      <p id="card-number-help" className="hw-note">
+        it's on your Monad Card and in your wallet's NFT list. r3OS checks with the card contract that this wallet
+        owns it.
+      </p>
+      {message && (
+        <p className="hw-message" role="status">
+          {message}
+        </p>
+      )}
+    </form>
+  )
 }
 
 const TABS = ['Explore', 'System Information'] as const
@@ -562,13 +617,18 @@ function SystemInformation() {
               <b>Writes</b>
               <span>
                 {card.cardInfo
-                  ? `${card.cardInfo.writes} · last block ${card.cardInfo.lastWriteBlock}`
+                  ? card.cardInfo.writes
+                    ? `${card.cardInfo.writes} · last block ${card.cardInfo.lastWriteBlock}`
+                    : 'none yet'
                   : 'unknown'}
               </span>
               <SourceBadge source={card.cardInfo ? 'onchain' : 'unknown'} />
             </div>
           </div>
           <p className="hw-note">{cardStatusText(card)}</p>
+          {card.status === 'unknown-id' && card.cardAddress && wallet.account && (
+            <CardNumberForm owner={wallet.account} cardAddress={card.cardAddress} />
+          )}
         </GroupBox>
 
         <GroupBox title="Contract ROM">

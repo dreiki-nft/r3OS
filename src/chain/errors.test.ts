@@ -130,3 +130,14 @@ describe('wallet with a request already waiting', () => {
     expect(message).toContain('open the wallet extension')
   })
 })
+
+describe('a token the network has not caught up with', () => {
+  it('explains ERC721NonexistentToken instead of showing the bare name', () => {
+    const abi = parseAbi(['error ERC721NonexistentToken(uint256 tokenId)'])
+    const data = encodeErrorResult({ abi, errorName: 'ERC721NonexistentToken', args: [181n] })
+    const friendly = friendlyError({ data })
+    expect(friendly.name).toBe('ERC721NonexistentToken')
+    expect(friendly.message).toContain('#181')
+    expect(friendly.message).toContain("hasn't caught up")
+  })
+})

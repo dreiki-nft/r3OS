@@ -30,6 +30,7 @@ import { openProgram } from '../os/programs'
 import { LabNotDeployedError } from './labCommon'
 import { closeWindow } from '../os/windows'
 import { Button } from '../os/ui/Button'
+import { FeeNote } from '../os/ui/FeeNote'
 import { Icon } from '../os/ui/Icon'
 import { MenuBar } from '../os/ui/MenuBar'
 import { SafeImage } from '../os/ui/SafeImage'
@@ -207,6 +208,8 @@ export function CDBurnerProgram() {
   const [minted, setMinted] = useState<{ id: bigint; data: LabsTokenData }>()
   const [cds, setCds] = useState<LabsOwnedToken[]>([])
   const [message, setMessage] = useState('')
+  // Good news that isn't an error (a burn whose picture isn't readable yet) gets its own calm line.
+  const [notice, setNotice] = useState('')
 
   const load = useCallback(async () => {
     if (!wallet.account || !publicClient) {
@@ -395,6 +398,7 @@ export function CDBurnerProgram() {
     if (!wallet.account || !burner || !quote || !normalized.valid || burningRef.current || minted) return
     burningRef.current = true
     setMinted(undefined)
+    setNotice('')
     try {
       const stale = await staleTrackKeys(wallet.account, tracks)
       if (stale.length) {
@@ -441,16 +445,43 @@ export function CDBurnerProgram() {
               functionName: 'totalMinted',
             }),
           )
-      const data = await readLabsToken(id)
-      setMinted({ id, data })
       setPreviewToken(id + 1n)
-      setCds((current) => [{ id, data }, ...current.filter((token) => token.id !== id)])
+      const data = await readMintedCd(id)
+      if (data) {
+        setMinted({ id, data })
+        setCds((current) => [{ id, data }, ...current.filter((token) => token.id !== id)])
+      } else {
+        // The burn worked; only the picture isn't readable yet. Say so instead of showing a red error, and keep
+        // the Burn button off for these tracks.
+        setTracks([])
+        setQuote(undefined)
+        setStep(0)
+        setMessage('')
+        setNotice(`CD #${id} is burned in block #${result.blockNumber}. its picture shows up in Your CDs in a moment.`)
+        window.setTimeout(() => void load(), 4_000)
+      }
     } catch (error) {
       setMessage(screenSafeMessage(error))
       setTxState('idle')
     } finally {
       burningRef.current = false
     }
+  }
+
+  /**
+   * The receipt comes from the RPC that took the transaction; the public node that serves reads can still be a
+   * block behind and answer ERC721NonexistentToken for the brand-new CD. That showed as a red error right after a
+   * successful burn. Ask again for a few seconds; undefined if it still isn't visible.
+   */
+  async function readMintedCd(id: bigint) {
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        return await readLabsToken(id)
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 400 + attempt * 400))
+      }
+    }
+    return undefined
   }
 
   const burnAnother = () => {
@@ -625,6 +656,7 @@ export function CDBurnerProgram() {
                   <p>
                     max cost: <b>{quote?.maxCost ?? 'quoting…'}</b>
                   </p>
+                  <FeeNote />
                   <Button
                     primary
                     disabled={!quote || txState === 'signing' || txState === 'sent' || !!minted}
@@ -676,6 +708,11 @@ export function CDBurnerProgram() {
               ))}
             </div>
           </section>
+          {notice && (
+            <div className="cd-notice" role="status">
+              {notice}
+            </div>
+          )}
           {message && <div className="cd-message">{message}</div>}
         </main>
       </div>

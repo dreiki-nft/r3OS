@@ -795,3 +795,26 @@
 .explore-text-link:focus-visible {
   color: var(--text);
 }
+
+/* Card number entry, shown when a card is detected but its number isn't known yet. */
+.card-number-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 6px 10px;
+  margin-top: 8px;
+}
+.card-number-form label {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+}
+.card-number-form input {
+  width: 12ch;
+  font: inherit;
+}
+.card-number-form .hw-note,
+.card-number-form .hw-message {
+  flex-basis: 100%;
+  margin: 0;
+}

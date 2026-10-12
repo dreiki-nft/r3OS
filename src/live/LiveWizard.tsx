@@ -11,6 +11,7 @@ import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { closeWindow } from '../os/windows'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
+import { FeeNote } from '../os/ui/FeeNote'
 import { SafeImage } from '../os/ui/SafeImage'
 import { createBurnerOnce, loadBurner, setCachedBurnerBalance } from './burner'
 import { QUICK_ALLOWANCE, samplePaint64, startLiveQuick, type QuickProgress } from './quickStart'
@@ -471,6 +472,7 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                   </label>
                   <small>target ≈ {FUNDING_TARGET_PAINTS.toString()} paints · capped at {formatEther(MAX_BURNER_FUND)} MON</small>
                   <p>max cost: {fundQuote ? `${amount} MON + ${fundQuote.maxCost}` : 'quoting…'}</p>
+                  <FeeNote />
                   <Button disabled={busy || !fundQuote} onClick={() => void fund()}>
                     Send
                   </Button>

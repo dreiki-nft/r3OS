@@ -3791,3 +3791,13 @@ button:disabled {
     border-top: 1px solid #555;
   }
 }
+
+/* One line under a fee quote: the wallet's own gas setting decides the final fee. */
+.fee-note {
+  display: block;
+  max-width: 46ch;
+  margin: 2px 0 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}

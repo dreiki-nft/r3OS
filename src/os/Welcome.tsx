@@ -81,25 +81,36 @@ export function Welcome() {
     let cancelled = false
     const client = publicClient
     void (async () => {
-      const [stats, contracts] = await Promise.all([
+      // Each fact is read on its own: a busy public RPC failing one read (the Pass lookup, say) used to throw
+      // away the others too, leaving finished steps unticked until a later read happened to succeed.
+      const [stats, passId] = await Promise.allSettled([
         client.readContract({
           address: config.paintAddress!,
           abi: R3OS_PAINT_ABI,
           functionName: 'painterStats',
           args: [account],
         }) as Promise<readonly bigint[]>,
-        discoverContracts(),
+        discoverContracts().then((contracts) =>
+          contracts.pass
+            ? (client.readContract({
+                address: contracts.pass,
+                abi: R3OS_PAINTER_PASS_ABI,
+                functionName: 'passOf',
+                args: [account],
+              }) as Promise<bigint>)
+            : 0n,
+        ),
       ])
-      const passId = contracts.pass
-        ? ((await client.readContract({
-            address: contracts.pass,
-            abi: R3OS_PAINTER_PASS_ABI,
-            functionName: 'passOf',
-            args: [account],
-          })) as bigint)
-        : 0n
-      if (!cancelled)
-        setFacts({ account, framesMinted: stats[3], paintCount: stats[6], hasPass: passId > 0n })
+      if (cancelled) return
+      setFacts((current) => {
+        const base = current.account === account ? current : {}
+        return {
+          ...base,
+          account,
+          ...(stats.status === 'fulfilled' ? { framesMinted: stats.value[3], paintCount: stats.value[6] } : {}),
+          ...(passId.status === 'fulfilled' ? { hasPass: passId.value > 0n } : {}),
+        }
+      })
     })().catch(() => undefined)
     return () => {
       cancelled = true
