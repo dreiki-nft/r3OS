@@ -10,7 +10,7 @@ const pages: Record<HelpSlug, ReactNode> = {
   welcome: (
     <>
       <p>
-        r3OS is an operating system for the world computer, presented as a Windows 98 style desktop. the app is static: it reads
+        r3OS is an onchain operating system for the world computer, styled like a 1998 desktop. the app is static: it reads
         contracts and chain events directly, with no app backend or database.
       </p>
       <p>

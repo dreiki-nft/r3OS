@@ -4,7 +4,7 @@
 >
 > paint monad. pay gas. try not to ruin it.
 
-r3OS is a Windows 98-style onchain computer whose signature app is a shared 256×256 fully onchain canvas and frame collection. The contract is designed around Monad's page storage and parallel execution: the canvas is split into **16 independent 64×64 regions**, so it behaves like a living canvas running as 16 parallel worlds. The accurate claim is that this is **one of the first apps designed for Monad's page storage and parallel execution**. Onchain canvases and onchain Game of Life systems exist elsewhere; this project does not claim otherwise.
+r3OS is an onchain operating system whose signature app is a shared 256×256 fully onchain canvas and frame collection. The contract is designed around Monad's page storage and parallel execution: the canvas is split into **16 independent 64×64 regions**, so it behaves like a living canvas running as 16 parallel worlds. The accurate claim is that this is **one of the first apps designed for Monad's page storage and parallel execution**. Onchain canvases and onchain Game of Life systems exist elsewhere; this project does not claim otherwise.
 
 The r3OS 98 frontend lives in `src/os`, `src/paint`, `src/pass` and `src/chain`.
 
@@ -282,7 +282,7 @@ My Pass exposes the address's record under the **Operator** tab and System Infor
 
 ### CD-ROM (D:)
 
-Burned CDs open in a Windows 98 CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](specs/CDROM.md).
+Burned CDs open in a 1998-style CD-ROM drive: insert a CD your wallet holds and its tracks appear as `TRACKnn.BMP` files, readable in an Imaging viewer even after the CD is traded or a source frame is recycled. See [`docs/specs/CDROM.md`](specs/CDROM.md).
 
 ### Router Lab backend
 
@@ -402,7 +402,7 @@ After deployment, verify token #0 ownership, immutable royalty receivers and eve
 
 ## Frontend: r3OS 98
 
-The current frontend is a complete Windows 98-style desktop shell. `src/os/programs.ts` is the active program boundary; launch-critical modules are prefetched during the real boot sequence and resolved into the registry before the desktop appears.
+The current frontend is a complete 1998-style desktop shell. `src/os/programs.ts` is the active program boundary; launch-critical modules are prefetched during the real boot sequence and resolved into the registry before the desktop appears.
 
 Static UI assets live in `public/os/`. The app references those PNG/WebP/MP3 assets by URL and does not inline them.
 

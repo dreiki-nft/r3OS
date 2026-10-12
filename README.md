@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="public/og.jpg" alt="r3OS 98: a Windows 98 desktop around a shared onchain pixel canvas" width="720">
+  <img src="public/og.jpg" alt="r3OS: an onchain operating system around a shared pixel canvas" width="720">
 </p>
 
 <h1 align="center">r3OS</h1>
 
 <p align="center">
-  <b>A Windows 98 computer on Monad where a whole community paints one canvas together, live.</b><br>
+  <b>An onchain operating system on Monad where a whole community paints one canvas together, live.</b><br>
   Every stroke is a Monad transaction. No app-owned state server or database.
 </p>
 
@@ -28,7 +28,7 @@
 
 ## What it is
 
-r3OS boots like a 1998 PC and opens on one shared **256 × 256, 16-colour canvas** that a community paints together on Monad. You draw with Win98 tools, press Paint, and your stroke lands in the next block, about a second later, on everyone's screen at once.
+r3OS boots like a 1998 PC and opens on one shared **256 × 256, 16-colour canvas** that a community paints together on Monad. You draw with classic paint tools, press Paint, and your stroke lands in the next block, about a second later, on everyone's screen at once.
 
 **You're never painting alone.** Paint shows how many wallets are painting right now and their latest strokes. Other people's strokes flash on your canvas as they land. If you're in another program, a **"You've got paint"** note tells you, and *Open Paint* outlines exactly where.
 
@@ -102,7 +102,7 @@ Every program below is live on mainnet and reachable from the desktop, the Start
 
 | | |
 | --- | --- |
-| **Win98 tools** | Pencil, brush, fill, picker, line, rectangle, ellipse, eraser and zoom, 1/3/5 px sizes and the 16-colour r3tards palette. What you draw is sent as one compact `paint` transaction of pixel runs. |
+| **Classic tools** | Pencil, brush, fill, picker, line, rectangle, ellipse, eraser and zoom, 1/3/5 px sizes and the 16-colour r3tards palette. What you draw is sent as one compact `paint` transaction of pixel runs. |
 | **Fair budgets** | An hourly pixel budget (512 px/h on mainnet) that grows with every day you paint, up to 2,048 px/h. Holders get more (table below). The budget meter shows what a stroke costs before you send it. |
 | **Wet, dry and hot paint** | Blank or still-wet pixels are cheap; painting over dry art costs double. Busy 16 × 16 tiles heat up and refuse paint for a while, and each region has a per-block cap, so nobody can wipe the canvas. *View → Wet paint & heat* shows it all on the canvas. |
 | **The character** | Each season has a protected r3tard outline that nobody can paint over, a face colour the community can flip black/white, and a background colour. |
@@ -137,7 +137,7 @@ Every program below is live on mainnet and reachable from the desktop, the Start
 | **Renderers** | Frame holders can opt into alternative onchain renderers: **Diff** (only what changed since the previous frame), **Season Timelapse** (an animated finale) and **DF1** (the exact DF1 glitch algorithm, computed onchain at 64 × 64). |
 | **My Frames** | Your frames by season, with Frame Properties showing every onchain trait, renderer and the seal. |
 | **Burn a CD** | Burn 1–12 frames and Block Camera photos onto one mix CD NFT with a label. Sources are snapshotted, never touched. |
-| **CD-ROM (D:)** | Insert a CD and play it back: track list, a Win98 Imaging viewer and the disc art, all decoded from the CD's onchain snapshot. |
+| **CD-ROM (D:)** | Insert a CD and play it back: track list, an Imaging viewer and the disc art, all decoded from the CD's onchain snapshot. |
 | **Recycle Bin** | Throw away frames you don't want: the Bin burns them through the core contract, keeps a tombstone and earns you the RECYCLER stamp. |
 
 ### Seasons and the finale
@@ -173,7 +173,7 @@ r3OS shows Monad's own behaviour as parts of the computer rather than hiding it 
 
 ### The 1998 layer
 
-A BIOS boot that reads the live chain, a desktop, a Start menu and **Run…** (`demo.exe`, `paint`, `tv`, `replay`…), draggable windows, a taskbar with the live block and painter count, Win98 sounds, Help, a desktop assistant, Display Properties and the canvas screensaver. It works on phones too, one full-screen window at a time.
+A BIOS boot that reads the live chain, a desktop, a Start menu and **Run…** (`demo.exe`, `paint`, `tv`, `replay`…), draggable windows, a taskbar with the live block and painter count, retro system sounds, Help, a desktop assistant, Display Properties and the canvas screensaver. It works on phones too, one full-screen window at a time.
 
 ## Why Monad
 
@@ -193,7 +193,7 @@ The idea underneath: r3OS puts the chain where apps normally put their servers, 
 
 ```mermaid
 flowchart LR
-  UI["Static React / Win98 shell"] --> READ["rate-limited read RPC pool"]
+  UI["Static React OS shell"] --> READ["rate-limited read RPC pool"]
   UI --> WS["WebSocket block + event stream"]
   UI --> WALLET["connected wallet"]
   UI --> LIVE["browser-held Live session key"]

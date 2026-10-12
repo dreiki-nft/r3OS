@@ -1,6 +1,6 @@
 # CD-ROM (D:)
 
-A Windows 98 CD-ROM drive for the CDs made in **Burn a CD**. It reads chain data only; there is no contract.
+A 1998-style CD-ROM drive for the CDs made in **Burn a CD**. It reads chain data only; there is no contract.
 
 ## What a CD holds
 
