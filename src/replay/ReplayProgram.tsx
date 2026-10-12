@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { getCanvasSnapshot } from '../paint/canvasStore'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { getCanvasSnapshot, subscribeCanvas } from '../paint/canvasStore'
 import { PALETTE } from '../lib/palette'
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
@@ -9,6 +9,7 @@ import {
   eventsAtFraction,
   formatReplayTime,
   fractionOfEvent,
+  liveCanvasFollows,
   parseReplay,
   type Replay,
 } from './replayData'
@@ -68,15 +69,20 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
   const [t, setT] = useState(() => (reducedMotion() ? 1 : 0))
   const [playing, setPlaying] = useState(() => !reducedMotion())
   const count = axis === 'strokes' ? Math.round(t * total) : eventsAtFraction(replay, t)
+  // At the end, show the live canvas: it includes everything painted after the file was exported.
+  const live = useSyncExternalStore(subscribeCanvas, getCanvasSnapshot)
+  const showLive = t >= 1 && liveCanvasFollows(replay.file, live)
+  const liveFrame = showLive ? live : undefined
 
-  // Draw whenever the number of applied events changes.
+  // Draw whenever the number of applied events changes (or the live canvas does, once it is on screen).
   useEffect(() => {
     const context = ref.current?.getContext('2d')
     if (!context) return
-    const pixels = canvasAt(count)
+    const pixels = liveFrame ? liveFrame.background : canvasAt(count)
+    const outlineMask = liveFrame ? liveFrame.outline : replay.outlineMask
+    const face = liveFrame ? liveFrame.face : replay.file.face
+    const background = liveFrame ? liveFrame.backgroundColor : replay.file.background
     const image = context.createImageData(256, 256)
-    const { outlineMask } = replay
-    const { face, background } = replay.file
     for (let i = 0; i < pixels.length; i++) {
       const index = outlineMask[i] ? face : pixels[i] === 0 ? background : pixels[i]
       const [r, g, b] = PALETTE[index].rgb
@@ -86,7 +92,7 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
       image.data[i * 4 + 3] = 255
     }
     context.putImageData(image, 0, 0)
-  }, [count, canvasAt, replay])
+  }, [count, canvasAt, replay, liveFrame])
 
   // Playback: the whole season in `duration` seconds.
   useEffect(() => {
@@ -119,8 +125,11 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
 
   const painters = count > 0 ? replay.paintersSoFar[count - 1] : 0
   const latest = count > 0 ? replay.file.painters[replay.events[count - 1].painter] : undefined
-  const when =
-    count > 0 ? formatReplayTime(eventTime(replay, count - 1)) : formatReplayTime(replay.file.fromTime)
+  const when = showLive
+    ? 'now'
+    : count > 0
+      ? formatReplayTime(eventTime(replay, count - 1))
+      : formatReplayTime(replay.file.fromTime)
 
   return (
     <div className="replay-program">
@@ -140,7 +149,9 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
         <span>
           <b>{count.toLocaleString('en-US')}</b> / {total.toLocaleString('en-US')} paints
         </span>
-        <span className="replay-latest">{latest ? `last: ${painterName(latest)}` : 'blank canvas'}</span>
+        <span className="replay-latest">
+          {showLive ? 'the live canvas' : latest ? `last: ${painterName(latest)}` : 'blank canvas'}
+        </span>
       </div>
       <input
         className="replay-scrub"
@@ -188,6 +199,7 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
       <small className="replay-source">
         every paint of season {replay.file.season + 1} from the contract's Painted events, blocks{' '}
         {replay.file.fromBlock}–{replay.file.toBlock}
+        {showLive ? `, ending on the live canvas at block ${live.snapshotBlock}` : ''}
       </small>
     </div>
   )

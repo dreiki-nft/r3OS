@@ -4,15 +4,19 @@
  * static file the site serves (public/replay/season-N.json). Read-only: never signs or sends anything.
  *
  *   node scripts/export-replay.mjs                 # mainnet defaults, current season
- *   node scripts/export-replay.mjs --season 0 --range 100
+ *   node scripts/export-replay.mjs --season 0 --range 100 --concurrency 8
+ *
+ * If public/replay/season-N.json already exists for the same season, only the blocks after its last
+ * block are scanned and appended, so refreshing the replay takes minutes, not the whole season again.
+ * Pass --full to rescan the season from its first block.
  *
  * Anyone can rerun it and get the same events, so the replay can be checked against the chain.
  * Pass --rpc to use another endpoint; the URL is never printed.
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createPublicClient, http, parseAbi } from 'viem'
 import { chunks, PAINTED } from './community-stats-lib.mjs'
-import { buildReplay, defaultOutlineHex } from './replay-lib.mjs'
+import { appendReplay, buildReplay, defaultOutlineHex } from './replay-lib.mjs'
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/
 const options = {
@@ -27,6 +31,10 @@ try {
   const argv = process.argv.slice(2)
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i]
+    if (flag === '--full') {
+      options.full = true
+      continue
+    }
     const value = argv[++i]
     if (value == null) throw new Error(`${flag} needs a value`)
     if (flag === '--rpc') options.rpc = value
@@ -34,12 +42,15 @@ try {
     else if (flag === '--season') options.season = BigInt(value)
     else if (flag === '--from-block') options.fromBlock = BigInt(value)
     else if (flag === '--range') options.range = Number(value)
+    else if (flag === '--concurrency') options.concurrency = Number(value)
     else if (flag === '--out') options.out = value
     else throw new Error(`unknown flag ${flag.split('=')[0]}`)
   }
   if (!ADDRESS.test(options.paint)) throw new Error('--paint is not an address')
   if (!Number.isInteger(options.range) || options.range < 1)
     throw new Error('--range must be a positive integer')
+  if (!Number.isInteger(options.concurrency) || options.concurrency < 1 || options.concurrency > 16)
+    throw new Error('--concurrency must be 1-16')
 } catch (error) {
   console.error(`export-replay: ${error.message}`)
   process.exit(2)
@@ -108,34 +119,59 @@ async function paintedLogs(fromBlock, toBlock) {
 
 try {
   const head = await client.getBlockNumber()
+  const chainId = await client.getChainId()
   const season = options.season ?? (await read('currentSeason'))
-  const startsAt = await read('seasonStartTime', [season])
-  const fromBlock = options.fromBlock ?? (await firstBlockAtOrAfter(BigInt(startsAt), head))
+  const file = `${options.out}/season-${season}.json`
   const info = await read('seasonInfo', [season])
   const custom = await read('hasCustomOutline', [season])
-  const outline = custom ? await read('seasonOutlineRuns', [season]) : defaultOutlineHex()
-  const logs = await paintedLogs(fromBlock, head)
+  const outline = String(custom ? await read('seasonOutlineRuns', [season]) : defaultOutlineHex()).toLowerCase()
+
+  // Refresh: reuse the existing file for this season and scan only what came after it.
+  let existing
+  if (!options.full && options.fromBlock == null && existsSync(file)) {
+    const previous = JSON.parse(readFileSync(file, 'utf8'))
+    const same =
+      previous.version === 1 &&
+      previous.chainId === chainId &&
+      previous.season === Number(season) &&
+      String(previous.paint).toLowerCase() === options.paint.toLowerCase() &&
+      String(previous.outline).toLowerCase() === outline
+    if (same) existing = previous
+    else console.log(`${file} is for another chain, contract or season; rescanning the whole season`)
+  }
+
+  const fromBlock = existing
+    ? BigInt(existing.fromBlock)
+    : (options.fromBlock ?? (await firstBlockAtOrAfter(BigInt(await read('seasonStartTime', [season])), head)))
+  const scanFrom = existing ? BigInt(existing.toBlock) + 1n : fromBlock
+  if (existing && scanFrom > head) {
+    console.log(`${file} is already up to date (block ${existing.toBlock})`)
+    process.exit(0)
+  }
+  if (existing) console.log(`appending to ${file}: scanning blocks ${scanFrom}–${head}`)
+  const logs = await paintedLogs(scanFrom, head)
   const [fromHeader, toHeader] = await Promise.all([
-    client.getBlock({ blockNumber: fromBlock }),
+    existing ? undefined : client.getBlock({ blockNumber: fromBlock }),
     client.getBlock({ blockNumber: head }),
   ])
-  const replay = buildReplay(logs, {
-    chainId: await client.getChainId(),
+  const built = buildReplay(logs, {
+    chainId,
     paint: options.paint,
     season,
     fromBlock,
     toBlock: head,
-    fromTime: fromHeader.timestamp,
+    fromTime: existing ? existing.fromTime : fromHeader.timestamp,
     toTime: toHeader.timestamp,
     face: info[2],
     background: info[3],
     outline,
   })
+  const replay = existing ? appendReplay(existing, built) : built
   mkdirSync(options.out, { recursive: true })
-  const file = `${options.out}/season-${season}.json`
   writeFileSync(file, JSON.stringify(replay))
   console.log(
-    `wrote ${file}: ${replay.events.length.toLocaleString('en-US')} paints by ${replay.painters.length} wallets, blocks ${fromBlock}–${head}`,
+    `wrote ${file}: ${replay.events.length.toLocaleString('en-US')} paints by ${replay.painters.length} wallets, blocks ${fromBlock}–${head}` +
+      (existing ? ` (${built.events.length.toLocaleString('en-US')} new)` : ''),
   )
 } catch (error) {
   const message = String(error?.shortMessage ?? error?.message ?? error).replace(/https?:\/\/\S+/g, '[rpc]')

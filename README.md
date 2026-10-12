@@ -79,7 +79,7 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 **Season 1 so far** (Oct 6 → Oct 12 03:18 UTC): **41 painters**, 11 of them back on another day, 794 paint transactions, 55,022 pixels, 80 frames saved by 29 wallets, 23 CDs burned by 12 wallets and 27 Painter Passes.
 
-The whole season is also watchable in the app: **Run → `replay`** plays every paint, in order, from [`public/replay/season-0.json`](public/replay/season-0.json).
+The whole season is also watchable in the app: **Run → `replay`** plays every paint, in order, from [`public/replay/season-0.json`](public/replay/season-0.json), and ends on the live canvas as it is right now. Rerunning `node scripts/export-replay.mjs` only scans the blocks added since the last export.
 
 Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), not counting the builder's two wallets. Anyone can rerun it against mainnet:
 
@@ -126,7 +126,7 @@ Every program below is live on mainnet and reachable from the desktop, the Start
 | --- | --- |
 | **Who's here** | "Painting now", the latest strokes, outlines flashing where others just painted, a painter count in the taskbar and "You've got paint" notes. All read from the contract's `Painted` events; there is no presence server. Painters show up by their **`.nad` name** (Nad Name Service, read onchain) or, without one, a fixed nickname like `cyan crayon·79c8` that everyone sees the same. |
 | **Broadcast view (TV)** | [r3os.app/#/tv](https://r3os.app/#/tv) (or Run → `tv`) puts the canvas full-screen for a projector or stream: every stroke flashes where it lands with who painted it, "painting right now", the session's totals, top painters and a QR code to join. |
-| **Season Replay** | Watch the whole season being made: every paint, in order, rebuilt from the `Painted` events with [`scripts/export-replay.mjs`](scripts/export-replay.mjs). Play, scrub, every-stroke or real-time, and anyone can regenerate the file from the chain. |
+| **Season Replay** | Watch the whole season being made: every paint, in order, rebuilt from the `Painted` events with [`scripts/export-replay.mjs`](scripts/export-replay.mjs). Play, scrub, every-stroke or real-time; playback ends on the live canvas, and anyone can regenerate the file from the chain. |
 | **Monad X-ray** | Follows your own transaction from click to signature, broadcast, receipt and Monad's commit stages (Proposed → Voted → Finalized), with the 16 canvas regions it touched. Stages that weren't observed stay empty; a receipt is never relabelled as finality. |
 
 ### Keep a piece of it

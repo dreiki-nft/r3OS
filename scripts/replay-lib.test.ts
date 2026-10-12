@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { encodeAbiParameters, encodeEventTopics } from 'viem'
 import { PAINTED } from './community-stats-lib.mjs'
-import { buildReplay, defaultOutlineHex, paletteRgb, replayFrames } from './replay-lib.mjs'
+import { appendReplay, buildReplay, defaultOutlineHex, paletteRgb, replayFrames } from './replay-lib.mjs'
 import { parseReplay } from '../src/replay/replayData'
 
 const A = '0x00000000000000000000000000000000000000A1'
@@ -80,5 +80,41 @@ describe('replay export', () => {
     expect([frames[1][0], frames[1][1], frames[1][2]]).toEqual([3, 4, 9])
     const all = replayFrames(replay, 3)
     expect([all[2][0], all[2][1], all[2][2]]).toEqual([3, 4, 5])
+  })
+})
+
+describe('replay refresh', () => {
+  const C = '0x00000000000000000000000000000000000000c3'
+  const meta = (toBlock: bigint, toTime: bigint) => ({
+    chainId: 143,
+    paint: '0x5102de3817ae16b3afaeb9d180130669a70787b3',
+    season: 0n,
+    fromBlock: 100n,
+    toBlock,
+    fromTime: 1_000n,
+    toTime,
+    face: 1,
+    background: 0,
+    outline: defaultOutlineHex(),
+  })
+
+  it('appends only the new blocks and matches a full rescan', () => {
+    const early = [log(A, 0n, 110n, 0, '0x0a000203'), log(B, 0n, 120n, 0, '0x0b000005')]
+    const late = [log(C, 0n, 160n, 0, '0x0c000003'), log(A, 0n, 170n, 0, '0x0d000001')]
+    const existing = buildReplay(early, meta(150n, 1_020n))
+    const tail = buildReplay(late, meta(200n, 1_040n))
+    const merged = appendReplay(existing, tail)
+    const full = buildReplay([...early, ...late], meta(200n, 1_040n))
+    expect(merged).toEqual(full)
+    expect(merged.painters).toEqual([A.toLowerCase(), B, C])
+    expect(parseReplay(JSON.parse(JSON.stringify(merged))).events).toHaveLength(4)
+  })
+
+  it('keeps the file when nothing is newer and refuses mismatched or overlapping exports', () => {
+    const existing = buildReplay([log(A, 0n, 110n, 0, '0x0a000203')], meta(150n, 1_020n))
+    expect(appendReplay(existing, buildReplay([], meta(150n, 1_020n)))).toBe(existing)
+    expect(() => appendReplay(existing, { ...buildReplay([], meta(200n, 1_040n)), season: 1 })).toThrow(/season/)
+    const overlap = buildReplay([log(B, 0n, 140n, 0, '0x0b000005')], meta(200n, 1_040n))
+    expect(() => appendReplay(existing, overlap)).toThrow(/overlap/)
   })
 })

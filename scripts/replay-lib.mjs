@@ -83,6 +83,39 @@ export function buildReplay(logs, meta) {
   }
 }
 
+/**
+ * Appends a later export to an existing replay, so refreshing it only scans the new blocks. Both must be
+ * the same chain, contract, season and starting block (the tail is built with the existing fromBlock, so
+ * event offsets line up). Painters new in the tail are added in order of first appearance.
+ */
+export function appendReplay(existing, tail) {
+  for (const key of ['version', 'chainId', 'paint', 'season', 'fromBlock', 'outline'])
+    if (String(existing[key]) !== String(tail[key])) throw new Error(`can't append: ${key} differs`)
+  if (BigInt(tail.toBlock) <= BigInt(existing.toBlock)) return existing
+  const painters = existing.painters.slice()
+  const index = new Map(painters.map((painter, i) => [painter, i]))
+  const events = existing.events.slice()
+  const firstNew = Number(BigInt(existing.toBlock) - BigInt(existing.fromBlock)) + 1
+  for (const [offset, painter, runs, corruptions] of tail.events) {
+    if (offset < firstNew) throw new Error("can't append: the new events overlap the old ones")
+    const address = tail.painters[painter]
+    if (!index.has(address)) {
+      index.set(address, painters.length)
+      painters.push(address)
+    }
+    events.push([offset, index.get(address), runs, corruptions])
+  }
+  return {
+    ...existing,
+    toBlock: tail.toBlock,
+    toTime: tail.toTime,
+    face: tail.face,
+    background: tail.background,
+    painters,
+    events,
+  }
+}
+
 /** Contract rules for one Painted event, in place: runs skip the outline, DF1 corruptions (x, y, c) land anyway. */
 export function applyEvent(pixels, outline, runs, corruptions) {
   for (let o = 0; o + 3 < runs.length; o += 4) {

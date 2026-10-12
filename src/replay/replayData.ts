@@ -169,6 +169,22 @@ export function fractionOfEvent(replay: Replay, count: number) {
   return replay.events[count - 1].block / span
 }
 
+/**
+ * The replay file stops at the block it was exported at; the live canvas keeps going. When the app's own
+ * canvas is loaded for the same season and is at least as recent as the file, the replay ends on it, so
+ * playback always finishes on the canvas as it is right now.
+ */
+export function liveCanvasFollows(
+  file: Pick<ReplayFile, 'season' | 'toBlock'>,
+  live: { season: bigint; snapshotBlock: bigint; status: string },
+) {
+  return (
+    (live.status === 'live' || live.status === 'polling') &&
+    live.season === BigInt(file.season) &&
+    live.snapshotBlock >= BigInt(file.toBlock)
+  )
+}
+
 export function formatReplayTime(unixSeconds: number) {
   const date = new Date(unixSeconds * 1_000)
   const day = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })

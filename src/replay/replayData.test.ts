@@ -6,6 +6,7 @@ import {
   eventTime,
   eventsAtFraction,
   fractionOfEvent,
+  liveCanvasFollows,
   outlineMask,
   parseReplay,
   type ReplayFile,
@@ -109,5 +110,17 @@ describe('season replay data', () => {
     expect(eventsAtFraction(replay, 1)).toBe(3)
     expect(fractionOfEvent(replay, 2)).toBe(0.5)
     expect(fractionOfEvent(replay, 3)).toBe(1)
+  })
+})
+
+describe('ending on the live canvas', () => {
+  const file = { season: 0, toBlock: '500' }
+  it('follows only a loaded canvas of the same season that is at least as recent as the file', () => {
+    expect(liveCanvasFollows(file, { season: 0n, snapshotBlock: 900n, status: 'live' })).toBe(true)
+    expect(liveCanvasFollows(file, { season: 0n, snapshotBlock: 500n, status: 'polling' })).toBe(true)
+    expect(liveCanvasFollows(file, { season: 0n, snapshotBlock: 499n, status: 'live' })).toBe(false)
+    expect(liveCanvasFollows(file, { season: 1n, snapshotBlock: 900n, status: 'live' })).toBe(false)
+    expect(liveCanvasFollows(file, { season: 0n, snapshotBlock: 900n, status: 'offline' })).toBe(false)
+    expect(liveCanvasFollows(file, { season: 0n, snapshotBlock: 900n, status: 'demo' })).toBe(false)
   })
 })
