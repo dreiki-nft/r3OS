@@ -199,7 +199,17 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
     (typeof candidate?.cause?.data === 'string' ? candidate.cause.data : undefined)
   if (raw?.startsWith('0x')) return decodeRaw(raw, action)
 
+  const rejectedTx = transactionRejected(error)
+  if (rejectedTx) return rejectedTx
+
   const message = error instanceof Error ? error.message : String(error)
+  if (message === 'WALLET_DID_NOT_SWITCH') {
+    return {
+      name: 'WalletDidNotSwitch',
+      message:
+        "your wallet didn't switch to Monad. open the wallet, choose the Monad network (chain ID 143, currency MON), then come back and try again.",
+    }
+  }
   if (message === 'BURNER_OUT_OF_MON') {
     return { name: 'BurnerOutOfMon', message: 'the burner is out of MON. top it up before sending.' }
   }
@@ -241,6 +251,50 @@ export function friendlyError(error: unknown, action?: string): FriendlyError {
     }
   }
   return { name: 'Unknown', message: sanitizedMessage(error), details: raw }
+}
+
+/**
+ * EIP-1474 code -32003: a wallet or node refused to create the transaction. viem's short message for it is only
+ * "Transaction creation failed.", which tells nobody what to do; the reason is in the error's details
+ * (usually "insufficient funds for gas * price + value"). Say the reason in plain words.
+ */
+function transactionRejected(error: unknown): FriendlyError | undefined {
+  let code: number | undefined
+  let details = ''
+  let current: unknown = error
+  for (let depth = 0; current && depth < 8; depth++) {
+    const item = current as { code?: unknown; details?: unknown; message?: unknown; cause?: unknown }
+    if (item.code === -32003) code = -32003
+    if (typeof item.details === 'string' && item.details) details ||= item.details
+    current = item.cause
+  }
+  if (code !== -32003) return undefined
+  const text = details.replace(/\b(?:https?|wss?):\/\/[^\s"'<>)]+/gi, '[rpc]').slice(0, 200)
+  if (/insufficient (funds|balance)|have \d+ want \d+|not enough/i.test(text))
+    return {
+      name: 'InsufficientFunds',
+      message: "not enough MON to pay for this transaction and its gas. top up the wallet and try again. nothing was sent.",
+      details: text,
+    }
+  if (/underpriced|base ?fee|fee cap|max fee|tip/i.test(text))
+    return {
+      name: 'FeeTooLow',
+      message: 'the gas price moved while you were confirming. try again. nothing was sent.',
+      details: text,
+    }
+  if (/nonce/i.test(text))
+    return {
+      name: 'NonceMismatch',
+      message: "the wallet's transaction count is out of sync. wait a few seconds and try again. nothing was sent.",
+      details: text,
+    }
+  return {
+    name: 'TransactionRejected',
+    message: text
+      ? `the network refused the transaction (${text}). nothing was sent.`
+      : 'the network refused the transaction. nothing was sent. try again in a moment.',
+    details: text,
+  }
 }
 
 /**

@@ -3,6 +3,7 @@ import {
   ContractFunctionRevertedError,
   encodeErrorResult,
   parseAbi,
+  TransactionRejectedRpcError,
   UserRejectedRequestError,
   type Abi,
   type Hex,
@@ -139,5 +140,25 @@ describe('a token the network has not caught up with', () => {
     expect(friendly.name).toBe('ERC721NonexistentToken')
     expect(friendly.message).toContain('#181')
     expect(friendly.message).toContain("hasn't caught up")
+  })
+})
+
+describe('refused transactions (-32003)', () => {
+  const refused = (details: string) =>
+    new TransactionRejectedRpcError(Object.assign(new Error(details), { code: -32003, details }))
+
+  it('turns "Transaction creation failed." into the actual reason', () => {
+    expect(friendlyError(refused('insufficient funds for gas * price + value: have 1 want 2')).name).toBe('InsufficientFunds')
+    expect(friendlyError(refused('insufficient funds for gas * price + value')).message).toContain('not enough MON')
+    expect(friendlyError(refused('transaction underpriced')).name).toBe('FeeTooLow')
+    expect(friendlyError(refused('nonce too low')).name).toBe('NonceMismatch')
+  })
+
+  it('shows an unknown reason without any RPC URL, and works when the wallet wraps it', () => {
+    const odd = friendlyError(refused('blocked by https://rpc.example.com/v2/KEY policy'))
+    expect(odd.name).toBe('TransactionRejected')
+    expect(odd.message).toContain('[rpc]')
+    expect(odd.message).not.toContain('example.com')
+    expect(friendlyError({ code: -32603, cause: { code: -32003, details: 'insufficient balance' } }).name).toBe('InsufficientFunds')
   })
 })

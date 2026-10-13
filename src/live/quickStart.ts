@@ -104,10 +104,29 @@ function fail(error: unknown, action = 'startSession'): never {
   throw Object.assign(new Error(friendly.message), { friendly })
 }
 
+const mon = (wei: bigint) => {
+  const [whole, fraction = ''] = formatEther(wei).split('.')
+  const kept = fraction.slice(0, 3).replace(/0+$/, '')
+  return kept ? `${whole}.${kept}` : whole
+}
+
+/**
+ * Live Mode's one wallet transaction moves gas money into this browser's paint key. When the wallet holds less
+ * than that plus the fee, say so with the numbers, before any popup. Unknown balance: let the wallet decide.
+ */
+export function fundingShortfall(balance: bigint | undefined, value: bigint, maxFee: bigint) {
+  if (balance == null) return undefined
+  const needed = value + maxFee
+  if (balance >= needed) return undefined
+  const milli = 1_000_000_000_000_000n
+  const roundedUp = ((needed + milli - 1n) / milli) * milli
+  return `Live Mode moves about ${mon(value)} MON into this browser's paint key to pay for your strokes. your wallet has ${mon(balance)} MON and needs about ${mon(roundedUp)} MON including the fee. top it up and try again. nothing was sent.`
+}
+
 export function retryFreshFundingStart(error: unknown, justFunded: boolean) {
   if (!justFunded) return false
   const text = error instanceof Error ? error.message : String(error)
-  return /missing or invalid parameters|invalid params|insufficient funds|underpriced|max fee per gas|fee cap|did not confirm acceptance/i.test(
+  return /missing or invalid parameters|invalid params|insufficient (funds|balance)|underpriced|max fee per gas|fee cap|did not confirm acceptance|transaction creation failed/i.test(
     text,
   )
 }
@@ -241,6 +260,11 @@ export async function startLiveQuick(owner: Address, onProgress: (progress: Quic
       action: 'fund burner',
     }
     const fundQuote = await quoteAction(transfer).catch((error: unknown) => fail(error, 'transfer'))
+    // Say it before the wallet does: a wallet that cannot cover the top-up plus its fee answers with a bare
+    // "Transaction creation failed." after the person has already confirmed.
+    const ownerBalance = await client.getBalance({ address: owner }).catch(() => undefined)
+    const shortfall = fundingShortfall(ownerBalance, value, fundQuote.gasLimit * fundQuote.maxFeePerGas)
+    if (shortfall) throw new Error(shortfall)
     const fundedBalance = balanceBefore + value
     const fundingResult = await sendAction({
       ...transfer,

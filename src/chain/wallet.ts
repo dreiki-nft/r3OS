@@ -250,6 +250,12 @@ export function initWalletDiscovery() {
     }
   }
   void restoreWallet(800)
+  // A network picked by hand in a wallet that fires no chainChanged shows up when the page gets focus back.
+  const resync = () => {
+    if (typeof document === 'undefined' || document.visibilityState !== 'hidden') void syncWalletChain()
+  }
+  window.addEventListener('focus', resync)
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', resync)
 }
 
 export async function connectWallet(choice?: WalletChoice) {
@@ -278,19 +284,51 @@ export function isUnknownChainError(error: unknown) {
   )
 }
 
-export async function switchToMonad() {
-  if (!state.provider) throw new Error('NO_WALLET')
+/**
+ * Re-read the wallet's chain instead of trusting its events. Some wallets (Brave's and Mises' built-in wallets
+ * among them) switch networks without firing chainChanged, or have no event API at all, which left r3OS
+ * asking to "switch to Monad" forever and refusing to send anything.
+ */
+export async function syncWalletChain() {
+  const provider = state.provider
+  if (!provider) return undefined
+  let chainId: number | undefined
   try {
-    await state.provider.request({
+    chainId = Number(await provider.request({ method: 'eth_chainId' }))
+  } catch {
+    return state.chainId
+  }
+  if (provider !== state.provider || !Number.isSafeInteger(chainId)) return state.chainId
+  if (chainId !== state.chainId) {
+    state = { ...state, chainId }
+    void refreshWalletBalance()
+    emit()
+  }
+  return chainId
+}
+
+export async function switchToMonad(settleMs = 700) {
+  const provider = state.provider
+  if (!provider) throw new Error('NO_WALLET')
+  const switchChain = () =>
+    provider.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: `0x${config.chainId.toString(16)}` }],
     })
+  try {
+    await switchChain()
   } catch (error) {
     if (!isUnknownChainError(error)) throw error
     const params = buildAddChainParams()
     if (!params) throw new Error('WALLET_RPC_MISSING')
-    await state.provider.request({ method: 'wallet_addEthereumChain', params: [params] })
+    await provider.request({ method: 'wallet_addEthereumChain', params: [params] })
+    // Some wallets add the network without selecting it: ask once more.
+    if ((await syncWalletChain()) !== config.chainId) await switchChain().catch(() => undefined)
   }
+  if ((await syncWalletChain()) === config.chainId) return
+  // A wallet can answer before its network actually changes; give it a moment before giving up.
+  await new Promise((resolve) => setTimeout(resolve, settleMs))
+  if ((await syncWalletChain()) !== config.chainId) throw new Error('WALLET_DID_NOT_SWITCH')
 }
 
 export function disconnectWallet() {

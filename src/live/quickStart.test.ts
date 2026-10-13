@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseEther } from 'viem'
-import { FUNDING_SETTLE_BLOCKS, quickFunding, retryFreshFundingStart } from './quickStart'
+import { FUNDING_SETTLE_BLOCKS, fundingShortfall, quickFunding, retryFreshFundingStart } from './quickStart'
 import { burnerFundTooLarge, fundingSuggestion, MAX_BURNER_FUND } from './liveStore'
 
 const GWEI = 1_000_000_000n
@@ -58,5 +58,25 @@ describe('fresh funding start retry', () => {
     expect(retryFreshFundingStart(stale, true)).toBe(true)
     expect(retryFreshFundingStart(stale, false)).toBe(false)
     expect(retryFreshFundingStart(new Error('execution reverted: InvalidSessionSignature'), true)).toBe(false)
+  })
+})
+
+describe('funding shortfall', () => {
+  it('says how much MON Live Mode needs before the wallet popup, and stays quiet when it fits', () => {
+    const value = parseEther('2.4')
+    const fee = 21_000n * 200n * GWEI
+    expect(fundingShortfall(parseEther('5'), value, fee)).toBeUndefined()
+    expect(fundingShortfall(undefined, value, fee)).toBeUndefined()
+    const text = fundingShortfall(parseEther('1.25'), value, fee)!
+    expect(text).toContain('about 2.4 MON')
+    expect(text).toContain('has 1.25 MON')
+    expect(text).toContain('needs about 2.405 MON')
+    expect(text).toContain('nothing was sent')
+  })
+
+  it('retries a just-funded start that the node refused as "Transaction creation failed"', () => {
+    const refused = new Error('Transaction creation failed.\n\nDetails: insufficient balance')
+    expect(retryFreshFundingStart(refused, true)).toBe(true)
+    expect(retryFreshFundingStart(refused, false)).toBe(false)
   })
 })
