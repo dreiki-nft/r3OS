@@ -6,6 +6,7 @@ import {
   getWalletSnapshot,
   metamaskDeepLink,
   subscribeWallet,
+  trustWalletDeepLink,
   walletChoices,
 } from '../chain/wallet'
 import { playSound } from './sound'
@@ -63,8 +64,10 @@ export function WalletChooser({
         ))
       ) : (
         <>
-          <p>no injected wallet found.</p>
+          <p>this browser has no wallet. on a phone, open r3OS inside your wallet app's browser:</p>
           <a href={metamaskDeepLink()}>Open in MetaMask</a>
+          <a href={trustWalletDeepLink()}>Open in Trust Wallet</a>
+          <p>other wallet apps: open their browser tab and go to r3os.app.</p>
           <a href="https://metamask.io/download/" target="_blank" rel="noreferrer">
             Install MetaMask
           </a>

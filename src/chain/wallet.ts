@@ -346,6 +346,13 @@ export function disconnectWallet() {
 export const walletOnCorrectChain = () => state.chainId === config.chainId
 export const formattedBalance = () =>
   state.balance == null ? '—' : `${Number(formatEther(state.balance)).toFixed(4)} MON`
+/** Opens this page inside Trust Wallet's own browser (iOS Safari can't reach the Trust Wallet app otherwise). */
+export const trustWalletDeepLink = () =>
+  typeof location === 'undefined'
+    ? ''
+    : `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(
+        `${location.origin}${location.pathname}${location.hash}`,
+      )}`
 export const metamaskDeepLink = () =>
   typeof location === 'undefined'
     ? ''

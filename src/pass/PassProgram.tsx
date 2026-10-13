@@ -1,5 +1,5 @@
 import { helpHash } from '../os/helpTopics'
-import { screenSafeMessage } from '../chain/errors'
+import { friendlyError, screenSafeMessage } from '../chain/errors'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { parseAbi, type Address } from 'viem'
 import { blockEta, getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
@@ -9,7 +9,13 @@ import { discoverContracts } from '../chain/contracts'
 import { choosePassDisplay } from '../chain/holders'
 import { readHeavy } from '../chain/readMany'
 import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
-import { formattedBalance, getWalletSnapshot, subscribeWallet, walletOnCorrectChain } from '../chain/wallet'
+import {
+  formattedBalance,
+  getWalletSnapshot,
+  subscribeWallet,
+  switchToMonad,
+  walletOnCorrectChain,
+} from '../chain/wallet'
 import { decodeJsonDataUri } from '../lib/dataUri'
 import { R3OS_PAINTER_PASS_ABI, R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { readPainterProfile } from '../chain/painterProfile'
@@ -116,6 +122,8 @@ export function PassProgram() {
   const [ids, setIds] = useState<bigint[]>([])
   const [stats, setStats] = useState(EMPTY_STATS)
   const [claimQuote, setClaimQuote] = useState<ActionQuote>()
+  const [claimQuoteError, setClaimQuoteError] = useState('')
+  const [quoteTry, setQuoteTry] = useState(0)
   const [passImage, setPassImage] = useState<string>()
   const [choosingWallet, setChoosingWallet] = useState(false)
   const [displayId, setDisplayId] = useState<bigint | null>(null)
@@ -205,10 +213,12 @@ export function PassProgram() {
   )
 
   useEffect(() => {
+    setClaimQuoteError('')
     if (!wallet.account || !passAddress || hasClaimed || stats.paintCount === 0n) {
       setClaimQuote(undefined)
       return
     }
+    let cancelled = false
     void quoteAction({
       kind: 'estimate',
       address: passAddress,
@@ -216,9 +226,17 @@ export function PassProgram() {
       functionName: 'claim',
       account: wallet.account,
     })
-      .then(setClaimQuote)
-      .catch(() => setClaimQuote(undefined))
-  }, [wallet.account, passAddress, hasClaimed, stats.paintCount])
+      .then((quote) => !cancelled && setClaimQuote(quote))
+      .catch((error) => {
+        if (cancelled) return
+        setClaimQuote(undefined)
+        // Say why instead of "quoting…" forever.
+        setClaimQuoteError(screenSafeMessage(error))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [wallet.account, passAddress, hasClaimed, stats.paintCount, quoteTry])
 
   const statsKey = [
     stats.activeDays,
@@ -336,7 +354,17 @@ export function PassProgram() {
 
   async function claim() {
     if (!wallet.account || !passAddress || !claimQuote) return
-    if (!walletOnCorrectChain()) return
+    // This used to return silently on another network, so the button looked dead (seen in Trust Wallet's
+    // browser, which can switch networks without telling the page).
+    if (!walletOnCorrectChain()) {
+      try {
+        await switchToMonad()
+      } catch (error) {
+        const friendly = friendlyError(error)
+        setBox({ title: 'Painter Pass', message: friendly.message, kind: friendly.rejected ? 'info' : 'error' })
+        return
+      }
+    }
     try {
       await sendAction({
         kind: 'estimate',
@@ -402,7 +430,17 @@ export function PassProgram() {
                   </>
                 ) : (
                   <>
-                    <p>max cost: {claimQuote?.maxCost ?? (eligible ? 'quoting…' : '—')}</p>
+                    <p>
+                      max cost:{' '}
+                      {claimQuote?.maxCost ??
+                        (!eligible ? '—' : claimQuoteError ? "couldn't check the cost" : 'quoting…')}
+                    </p>
+                    {eligible && !claimQuote && claimQuoteError && (
+                      <p className="pass-claim-error" role="alert">
+                        {claimQuoteError}{' '}
+                        <Button onClick={() => setQuoteTry((count) => count + 1)}>Try again</Button>
+                      </p>
+                    )}
                     <FeeNote />
                     <Button
                       primary

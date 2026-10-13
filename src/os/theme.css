@@ -1858,6 +1858,11 @@ button:disabled {
   line-height: 1.3;
 }
 
+.pass-claim-error {
+  color: #FEC343;
+  line-height: 1.3;
+}
+
 .background-picker {
   display: grid;
   grid-template-columns: repeat(8, 30px);
