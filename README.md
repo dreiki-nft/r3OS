@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://r3os.app/"><b>▶ Live app: r3os.app</b></a> ·
   <a href="#try-it-as-a-judge"><b>Judge path</b></a> ·
+  <a href="#live-community-proof"><b>Live community proof</b></a> ·
   <a href="#a-tour-of-r3os"><b>Feature tour</b></a> ·
   <a href="#community"><b>Community</b></a> ·
   <a href="#mainnet"><b>Mainnet contracts</b></a> ·
@@ -22,6 +23,11 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/qDHCONTArRQ"><b>▶ Watch the real community paint party (87-second timelapse)</b></a> ·
+  <a href="#live-community-proof">See the onchain participation evidence</a>
 </p>
 
 ---
@@ -56,6 +62,30 @@ The guide also links a real recent paint transaction on the explorer, so every c
 
 **Judges:** the private part of the submission has a guest-wallet link. It opens r3os.app with a throwaway wallet holding a little MON, so you can paint on mainnet immediately, with no wallet setup and no popups.
 
+## Live community proof
+
+On **October 13, 2026**, a public [r3OS paint bounty on X](https://x.com/Dreiki10/status/2110113192051454139) invited people to paint **“Hi”** on the same shared canvas for a chance to win r3tard #126. The canvas and live activity were captured on the project's [TV broadcast view](https://r3os.app/#/tv), not recreated for a demo.
+
+**At 1 hour 57 minutes into the broadcast**, the TV view showed:
+
+| Painter wallets | Paint strokes | Pixels painted | Frames saved |
+| :---: | :---: | :---: | :---: |
+| **39** | **396** | **22,352** | **17** |
+
+<p align="center">
+  <a href="https://youtu.be/qDHCONTArRQ"><img src="docs/media/community-paint-bounty.png" alt="October 13 r3OS live TV broadcast: one crowded shared canvas with 39 painters, 396 strokes, 22,352 pixels and 17 frames saved" width="860"></a>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/qDHCONTArRQ"><b>▶ Watch the 87-second timelapse</b></a> ·
+  <a href="https://x.com/Dreiki10/status/2110113192051454139">Original public bounty post</a> ·
+  <a href="https://r3os.app/#/tv">Open the live TV view</a>
+</p>
+
+This is the social loop in the wild: **a public invitation → people changing one shared canvas → live spectator view → saved onchain frames**. The screenshot also shows **Monad block 113,165,765**; the [Paint contract and its transactions](https://monadvision.com/address/0x5102de3817ae16b3afaeb9d180130669a70787b3) are publicly inspectable.
+
+*Evidence notes:* These are **the event-specific counters shown by the TV view at that moment**, not an independently verified count of unique humans or the final totals for the entire season. “Painting right now” counts only the preceding ~1 minute (zero in this end-of-party screenshot), while **39** refers to the full session. The linked video compresses roughly two hours of recorded TV footage at **80× speed**; it does not represent real transaction latency. For normal-speed cross-browser interaction, use the [judge path](#try-it-as-a-judge) and Monad X-ray.
+
 ## Community
 
 r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](https://x.com/Dreiki10/status/2108996635313549550)). This is the shared canvas during its first 24 public hours, replayed stroke by stroke from the Paint contract's own events:
@@ -70,7 +100,7 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 | Painters who came back 1+ hour after their first stroke | 8 |
 | Paint transactions | 440 |
 | Pixels painted | 32,827 |
-| Busiest hour | 15 painters at once (the launch hour) |
+| Busiest one-hour window | 15 painter wallets (the launch hour) |
 | Frames saved | 48, by 22 wallets |
 | CDs burned | 12, by 9 wallets |
 | Painter Passes claimed | 21 |
@@ -79,7 +109,7 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 **Season 1 so far** (Oct 6 → Oct 12 03:18 UTC): **41 painters**, 11 of them back on another day, 794 paint transactions, 55,022 pixels, 80 frames saved by 29 wallets, 23 CDs burned by 12 wallets and 27 Painter Passes.
 
-The whole season is also watchable in the app: **Run → `replay`** plays every paint, in order, from [`public/replay/season-0.json`](public/replay/season-0.json), and ends on the live canvas as it is right now. Rerunning `node scripts/export-replay.mjs` only scans the blocks added since the last export.
+**Season Replay** is watchable in the app: **Run → `replay`** reconstructs the published Season 1 snapshot, stroke by stroke, from [`public/replay/season-0.json`](public/replay/season-0.json), and then links back to the live canvas. The 30-day season is still in progress, so the exported snapshot is **not the complete final-season history**. Rerunning `node scripts/export-replay.mjs` appends the blocks added since the last export.
 
 Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), not counting the builder's two wallets. Anyone can rerun it against mainnet:
 
