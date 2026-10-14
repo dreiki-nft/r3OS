@@ -46,6 +46,16 @@ r3OS boots like a 1998 PC and opens on one shared **256 × 256, 16-colour canvas
 
 Anyone can watch without a wallet. To paint, connect a wallet and approve **Live Mode** once; after that every stroke goes through with no popups.
 
+## OpenSea collections
+
+The r3OS NFT collections are on **Monad mainnet**. Browse them on OpenSea, or explore the underlying art and activity directly in [r3OS](https://r3os.app/). NFT metadata and artwork are generated onchain, not hosted by OpenSea.
+
+| Collection | What you'll find |
+| --- | --- |
+| **[r3OS Paint](https://opensea.io/collection/r3os-paint)** | Shared-canvas frame NFTs and the live canvas token. |
+| **[r3OS Painter Pass](https://opensea.io/collection/r3os-painter-pass)** | Free, soulbound painter identity, achievements and stamps. Not a tradable collection. |
+| **[r3OS Labs](https://opensea.io/collection/r3os-labs)** | Onchain mix CDs and Block Camera artifacts made in the desktop. |
+
 ## Try it as a judge
 
 Open **[r3os.app](https://r3os.app/)** and choose **Run → `demo.exe`** (or go straight to [r3os.app/#/demo](https://r3os.app/#/demo)). It walks through the real programs in seven steps and never signs or fakes anything:
