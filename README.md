@@ -359,6 +359,8 @@ The contracts are **not professionally audited**. See [`THREAT_MODEL.md`](THREAT
 
 ## Credits
 
-Built solo by **dreiki** for the **Monad** community, using Claude and ChatGPT as coding assistants. Art, palette and r3tards characters by dreiki.
+Built solo by **dreiki** for the **Monad** community during the Metropolis hackathon (first commit September 24, 2026), using Claude and ChatGPT as coding assistants. Art, palette and r3tards characters by dreiki.
+
+Built with React, viem, Vite, OpenZeppelin Contracts, Solady, Foundry/forge-std and gifenc (all MIT or MIT/Apache-2.0).
 
 The code is released under the [MIT License](LICENSE). The r3tards artwork and characters are not covered by it.
