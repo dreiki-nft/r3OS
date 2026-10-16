@@ -176,6 +176,8 @@ export function R3OS() {
     for (const id of availableScheduledPrograms(releases)) {
       const program = programById(id)
       if (!program || !consumeInstallAnnouncement(id)) continue
+      // AGENT.EXE is the season 2 surprise: it opens itself the first time a browser sees it go live.
+      if (id === 'agent-exe') openProgram('agent-exe', false)
       pushBalloon({
         id: `installed:${id}`,
         title: `New program installed: ${program.title}`,

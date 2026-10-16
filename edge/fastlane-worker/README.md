@@ -1,11 +1,12 @@
 # r3OS FastLane read accelerator
 
-This Worker is optional transport acceleration. It stores no canonical state, has no database, signs nothing and is never required for r3OS correctness.
+This Worker is optional transport acceleration. It stores no canonical state, signs nothing and is never required for r3OS correctness.
 
 It exposes only:
 
 - `GET /health`
 - `POST /v1/boot-rpc`
+- `GET /v1/agent-exe/scoreboard` and `PUT /v1/agent-exe/scoreboard` (AGENT.EXE, see below)
 
 `/v1/boot-rpc` accepts only the exact ten-member r3OS Boot Packet shape. It rejects arbitrary JSON-RPC, transaction submission, arbitrary contract targets and non-allowed browser origins.
 
@@ -42,3 +43,25 @@ VITE_FASTLANE_ACCELERATOR_URL=https://<worker-host>/v1/boot-rpc
 ```
 
 If the Worker is absent, rate-limited, unhealthy or returns malformed data, r3OS falls back to its direct public Monad RPC Boot Packet and the normal public-client path. Losing this Worker may make startup slower; it must never make canonical application state unavailable.
+
+## AGENT.EXE scoreboard
+
+During the season 2 opener the agents' controller publishes its scoreboard here (`PUT` with
+`Authorization: Bearer <AGENT_EXE_PUBLISH_TOKEN>`), and the AGENT.EXE window reads it (`GET`). The scoreboard is a
+convenience copy of data anyone can rebuild from Painted events; losing it only blanks that window.
+
+- Storage: a Workers KV namespace bound as `AGENT_EXE_KV` (one key). Reads are cached at the edge for 15 s.
+- Before `AGENT_EXE_REVEAL_AT` (unix seconds) the GET route answers a plain 404.
+- KV's free tier allows 1,000 writes a day: keep the controller's `PUBLISH_EVERY_SECONDS` at 120 or more
+  unless the account is on the paid plan.
+
+Setup from this directory:
+
+```bash
+npx wrangler@latest kv namespace create AGENT_EXE_KV          # put the printed id in wrangler.jsonc
+npx wrangler@latest secret put AGENT_EXE_PUBLISH_TOKEN --config wrangler.jsonc
+npx wrangler@latest deploy --config wrangler.jsonc
+```
+
+Use a long random token (for example `openssl rand -hex 32`) and put the same value in the controller's
+`PUBLISH_TOKEN`. Never commit it.

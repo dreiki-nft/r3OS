@@ -123,6 +123,83 @@ async function parseJsonBody(request) {
   return JSON.parse(text)
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// AGENT.EXE scoreboard (season 2 opener). The agents' controller PUTs a JSON scoreboard every couple of
+// minutes with a bearer token; browsers GET it. It is a convenience copy of data anyone can recompute from
+// Painted events, so losing it only blanks the AGENT.EXE window. Stored in Workers KV (binding AGENT_EXE_KV),
+// cached at the edge for 15 s so viewers do not each cost a KV read. Hidden (404) before AGENT_EXE_REVEAL_AT.
+// ---------------------------------------------------------------------------------------------------------
+const SCOREBOARD_PATH = '/v1/agent-exe/scoreboard'
+const SCOREBOARD_KEY = 'scoreboard'
+const SCOREBOARD_MAX_BYTES = 256 * 1024
+const SCOREBOARD_CACHE = 'https://r3os-agent-exe.invalid/scoreboard'
+const SCOREBOARD_EDGE_SECONDS = 15
+
+function scoreboardCors(origin, env) {
+  return allowedOrigins(env).has(origin)
+    ? { 'access-control-allow-origin': origin, 'access-control-allow-methods': 'GET, OPTIONS', vary: 'Origin' }
+    : { vary: 'Origin' }
+}
+
+function revealed(env, now = Date.now()) {
+  const at = Number(env.AGENT_EXE_REVEAL_AT || 0)
+  return Number.isFinite(at) && now >= at * 1000
+}
+
+/** Constant-time string comparison for the publish token. */
+export function sameSecret(a, b) {
+  const x = new TextEncoder().encode(String(a))
+  const y = new TextEncoder().encode(String(b))
+  let diff = x.length ^ y.length
+  for (let i = 0; i < Math.max(x.length, y.length); i += 1) diff |= (x[i] ?? 0) ^ (y[i] ?? 0)
+  return diff === 0 && x.length > 0
+}
+
+const edgeCache = () => (typeof caches !== 'undefined' && caches.default ? caches.default : undefined)
+
+async function getScoreboard(request, env) {
+  const headers = scoreboardCors(request.headers.get('origin') || '', env)
+  if (!revealed(env) || !env.AGENT_EXE_KV) return json({ error: 'NOT_FOUND' }, 404, headers)
+  const cache = edgeCache()
+  let body = null
+  const hit = cache ? await cache.match(SCOREBOARD_CACHE) : undefined
+  if (hit) body = await hit.text()
+  else {
+    body = await env.AGENT_EXE_KV.get(SCOREBOARD_KEY)
+    if (body == null) return json({ error: 'NOT_FOUND' }, 404, headers)
+    if (cache)
+      await cache.put(
+        SCOREBOARD_CACHE,
+        new Response(body, { headers: { 'cache-control': `public, max-age=${SCOREBOARD_EDGE_SECONDS}` } }),
+      )
+  }
+  return new Response(body, {
+    status: 200,
+    headers: { ...headers, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+  })
+}
+
+async function putScoreboard(request, env) {
+  if (!env.AGENT_EXE_PUBLISH_TOKEN || !env.AGENT_EXE_KV) return json({ error: 'EDGE_SCOREBOARD_UNCONFIGURED' }, 503)
+  const auth = request.headers.get('authorization') || ''
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
+  if (!sameSecret(token, env.AGENT_EXE_PUBLISH_TOKEN)) return json({ error: 'EDGE_UNAUTHORIZED' }, 401)
+  const length = Number(request.headers.get('content-length') || '0')
+  if (length > SCOREBOARD_MAX_BYTES) return json({ error: 'EDGE_BODY_TOO_LARGE' }, 413)
+  const text = await request.text()
+  if (new TextEncoder().encode(text).byteLength > SCOREBOARD_MAX_BYTES) return json({ error: 'EDGE_BODY_TOO_LARGE' }, 413)
+  let doc
+  try {
+    doc = JSON.parse(text)
+  } catch {
+    return json({ error: 'EDGE_INVALID_JSON' }, 400)
+  }
+  if (!doc || doc.game !== 'AGENT.EXE' || !Number.isInteger(doc.updatedAt)) return json({ error: 'EDGE_SCOREBOARD_SHAPE' }, 400)
+  await env.AGENT_EXE_KV.put(SCOREBOARD_KEY, text)
+  await edgeCache()?.delete(SCOREBOARD_CACHE)
+  return json({ ok: true, updatedAt: doc.updatedAt })
+}
+
 async function handleRpc(request, env) {
   const origin = request.headers.get('origin') || ''
   const headers = corsHeaders(origin, env)
@@ -177,6 +254,16 @@ export default {
 
     if (url.pathname === '/health' && request.method === 'GET') {
       return json({ ok: true, mode: 'stateless-fastlane-read-accelerator' }, 200, headers)
+    }
+
+    if (url.pathname === SCOREBOARD_PATH) {
+      if (request.method === 'GET') return getScoreboard(request, env)
+      if (request.method === 'PUT') return putScoreboard(request, env)
+      if (request.method === 'OPTIONS') {
+        const sbHeaders = scoreboardCors(origin, env)
+        return new Response(null, { status: allowedOrigins(env).has(origin) ? 204 : 403, headers: sbHeaders })
+      }
+      return json({ error: 'METHOD_NOT_ALLOWED' }, 405)
     }
 
     if (url.pathname !== '/v1/boot-rpc') return json({ error: 'NOT_FOUND' }, 404, headers)

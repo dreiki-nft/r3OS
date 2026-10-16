@@ -79,6 +79,9 @@ const MonadHardwareProgram = lazy(() =>
 const ReplayProgram = lazy(() =>
   import('../replay/ReplayProgram').then((module) => ({ default: module.ReplayProgram })),
 )
+const AgentExeProgram = lazy(() =>
+  import('../agentexe/AgentExeProgram').then((module) => ({ default: module.AgentExeProgram })),
+)
 const CdromProgram = lazy(() =>
   import('../cdrom/CdromProgram').then((module) => ({ default: module.CdromProgram })),
 )
@@ -156,6 +159,18 @@ export const programs: ProgramDef[] = [
     minSize: { width: 620, height: 420 },
     singleInstance: true,
     hash: '#/cdrom',
+  },
+  {
+    // Season 2 opener. Hidden until 2026-11-05 11:00 UTC by public/releases.json.
+    id: 'agent-exe',
+    title: 'AGENT.EXE',
+    icon: 'target',
+    colour: '#07992F',
+    component: AgentExeProgram,
+    defaultSize: { width: 640, height: 720 },
+    minSize: { width: 380, height: 480 },
+    singleInstance: true,
+    hash: '#/agent-exe',
   },
   {
     id: 'replay',
