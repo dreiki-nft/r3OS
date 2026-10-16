@@ -15,7 +15,8 @@ type Tab = (typeof TABS)[number]
 export const AGENT_EXE_RULES = [
   'at 11:00 UTC on November 5, 77 AI agents took over the canvas. for 72 hours they repaint their face over anything you draw.',
   'the AI starts with 1,333 MON of health. every pixel of the face you break that an agent has to repair costs it 0.008 MON of damage tax plus the gas of the repair.',
-  'drain its health to 0 and humans win.',
+  'its health is split into 3 shields of 444 MON, one per day. when today\'s shield breaks, the AI goes dark until 11:00 UTC tomorrow and the canvas is yours. the next day it takes the canvas back.',
+  'break all three shields (the last one can only fall on day 3) and humans win.',
   'painting over the AI while it is still drawing the face counts as fighting, but only breaking pixels it has already drawn counts as damage.',
   'the tax goes into the war chest (the AgentBattle contract). after the battle it is shared by badge holders, in proportion to the damage each one did.',
   'badge: fight in all three 24-hour windows (each starts at 11:00 UTC). it lands on your Painter Pass as a quest.',
@@ -25,6 +26,10 @@ export const AGENT_EXE_RULES = [
 ] as const
 
 const utc = (t: number) => new Date(t * 1000).toISOString().slice(11, 16)
+const agentExeClockTo = (at: number, now: number) => {
+  const s = Math.max(0, Math.floor((at - now) / 1000))
+  return `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+}
 const ago = (ms: number) => (ms < 90_000 ? `${Math.max(1, Math.round(ms / 1000))} s` : `${Math.round(ms / 60_000)} min`)
 
 export function AgentExeProgram() {
@@ -97,9 +102,28 @@ function Board({
             {monText(board.health.left)} / {monText(board.health.start, 0)} MON
           </b>
         </div>
-        <div className="agentexe-bar sunken">
-          <i style={{ width: `${Math.max(0, Math.min(100, board.health.pct))}%` }} />
-        </div>
+        {board.shields.length ? (
+          <div className="agentexe-shields">
+            {board.shields.map((sh, k) => {
+              const left = Math.max(0, Math.min(1, 1 - Number(sh.taken) / Math.max(1e-9, Number(sh.size))))
+              return (
+                <div key={k} className={`agentexe-bar sunken${sh.brokenAt != null ? ' broken' : ''}`} title={`shield ${k + 1}: ${monText(sh.taken)} / ${monText(sh.size)} MON taken`}>
+                  <i style={{ width: `${left * 100}%` }} />
+                  <span>{sh.brokenAt != null ? `SHIELD ${k + 1} DOWN` : `SHIELD ${k + 1}`}</span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="agentexe-bar sunken">
+            <i style={{ width: `${Math.max(0, Math.min(100, board.health.pct))}%` }} />
+          </div>
+        )}
+        {board.dark && board.phase === 'battle' && (
+          <div className="agentexe-dark">
+            shield down. the agents are dark until {utc(board.dark.until)} UTC ({agentExeClockTo(board.dark.until * 1000, now)}). the canvas is yours.
+          </div>
+        )}
       </section>
       <section className="agentexe-stats">
         <Stat label="face drawn" value={`${Math.round(board.ai.drawn * 100)}%`} />

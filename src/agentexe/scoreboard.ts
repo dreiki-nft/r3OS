@@ -25,6 +25,10 @@ export type Scoreboard = {
   updatedAt: number
   block: number
   health: { start: string; left: string; pct: number }
+  /** One shield per day: at most `size` MON of health can go in that day. */
+  shields: { size: string; taken: string; brokenAt: number | null }[]
+  /** Today's shield is down: the agents are dark until `until` (unix seconds). */
+  dark: { until: number } | null
   warChest: { paid: string; owed: string; taxPerPixel: string }
   ai: { agents: number; drawn: number; wrongNow: number; paints: number; gasBurned: string }
   humans: { damage: number; broken: number; paints: number }
@@ -89,6 +93,12 @@ export function parseScoreboard(raw: unknown): Scoreboard | undefined {
     updatedAt,
     block: int(r.block) ?? 0,
     health: { start: health.start, left: health.left, pct },
+    shields: (Array.isArray(r.shields) ? r.shields.slice(0, 3) : []).flatMap((sh: any) => {
+      const size = mon(sh?.size)
+      const taken = mon(sh?.taken)
+      return size && taken ? [{ size, taken, brokenAt: int(sh?.brokenAt) ?? null }] : []
+    }),
+    dark: r.dark && int(r.dark.until) != null ? { until: int(r.dark.until)! } : null,
     warChest: { paid: mon(r.warChest?.paid) ?? '0', owed: mon(r.warChest?.owed) ?? '0', taxPerPixel: mon(r.warChest?.taxPerPixel) ?? '0' },
     ai: {
       agents: int(r.ai?.agents, 10_000) ?? 0,

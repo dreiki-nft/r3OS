@@ -17,6 +17,12 @@ const published = {
   block: 120_000_000,
   head: 120_000_002,
   health: { start: '1333', left: '1200.123456789', pct: 90.03 },
+  shields: [
+    { size: '444.333333333333333333', taken: '132.876543210666666667', brokenAt: null },
+    { size: '444.333333333333333333', taken: '0', brokenAt: null },
+    { size: '444.333333333333333334', taken: '0', brokenAt: null },
+  ],
+  dark: null,
   warChest: { paid: '96.4', owed: '100.8', taxPerPixel: '0.008' },
   ai: { agents: 77, drawn: 0.8123, wrongNow: 412, paints: 812, pixels: 70_000, gasBurned: '24.5' },
   humans: { damage: 12_600, broken: 20_000, paints: 3_100 },
@@ -48,6 +54,10 @@ describe('AGENT.EXE scoreboard', () => {
     expect(b.leaderboard[0].days).toEqual([true, true, false])
     expect(b.feed[1].text).not.toMatch(/‮/)
     expect(b.ai.agents).toBe(77)
+    expect(b.shields).toHaveLength(3)
+    expect(b.shields[0].taken).toBe('132.876543210666666667')
+    expect(b.dark).toBeNull()
+    expect(parseScoreboard({ ...published, dark: { until: 1_793_962_800 } })!.dark).toEqual({ until: 1_793_962_800 })
   })
 
   it('refuses anything that is not a scoreboard', () => {
