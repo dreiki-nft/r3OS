@@ -22,7 +22,8 @@
 </p>
 
 <p align="center">
-  Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b>
+  Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
+  <b>79 painters · 3,604 paint transactions · 324 frames saved</b> in the first 9 days, builder and guest wallets not counted (<a href="#season-1-so-far">the numbers</a>)
 </p>
 
 <p align="center">
@@ -117,15 +118,39 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 <p align="center"><img src="docs/media/launch-24h.svg" alt="Bar charts of painters and paint transactions in each hour of the first 24 hours after launch" width="100%"></p>
 
-**Season 1 so far** (Oct 6 → Oct 12 03:18 UTC): **41 painters**, 11 of them back on another day, 794 paint transactions, 55,022 pixels, 80 frames saved by 29 wallets, 23 CDs burned by 12 wallets and 27 Painter Passes.
+### Season 1 so far
+
+**As of October 18, 2026, 20:50 UTC** (blocks 111,020,589–114,556,094), not counting the builder's two wallets or the judges' guest wallets:
+
+| | |
+| --- | ---: |
+| Painters (distinct wallets) | **79** |
+| Painters who came back on another day | **28** |
+| Paint transactions | **3,604** |
+| Pixels painted | **142,740** |
+| Frames saved | **324**, by 51 wallets |
+| CDs burned | **33**, by 16 wallets |
+| Painter Passes claimed | **55** |
+
+<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 18" width="100%"></p>
+
+The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 28 painters have come back to paint on another day. The whole season so far, every stroke in order (the counters skip the builder and guest wallets; the canvas shows every paint):
+
+<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 18, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
+
+The raw numbers are in [`docs/season-stats.json`](docs/season-stats.json), and the chart is drawn from that file by [`scripts/season-chart.mjs`](scripts/season-chart.mjs).
 
 **Season Replay** is watchable in the app: **Run → `replay`** reconstructs the published Season 1 snapshot, stroke by stroke, from [`public/replay/season-0.json`](public/replay/season-0.json), and then links back to the live canvas. The 30-day season is still in progress, so the exported snapshot is **not the complete final-season history**. Rerunning `node scripts/export-replay.mjs` appends the blocks added since the last export.
 
-Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), not counting the builder's two wallets. Anyone can rerun it against mainnet:
+Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), never counting the builder's two wallets (and, for the season numbers, the judges' guest wallets either). Anyone can rerun it against mainnet:
 
 ```bash
+# the first 24 hours
 node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range 100 \
   --exclude 0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA,0x649995F20D11F54188e865D8a4ADcFDE4692ecd1
+# the whole season so far, day by day (add the guest wallets to --exclude), then the chart
+node scripts/community-stats.mjs --range 100 --concurrency 8 --json --exclude … > docs/season-stats.json
+node scripts/season-chart.mjs
 ```
 
 ### Community bug hunt
@@ -251,26 +276,26 @@ flowchart LR
 
 ## Mainnet
 
-Open to the public at **[r3os.app](https://r3os.app/)** since **October 10, 2026, 19:00 UTC**. All 16 contracts were deployed to Monad mainnet (`chainId 143`) on **October 6, 2026, 11:00 UTC** and tested there before launch.
+Open to the public at **[r3os.app](https://r3os.app/)** since **October 10, 2026, 19:00 UTC**. All 16 contracts were deployed to Monad mainnet (`chainId 143`) on **October 6, 2026, 11:00 UTC** and tested there before launch. **The source code of all 16 is verified** on both explorers, Monadscan and MonadVision (Sourcify), so every address below opens on readable code.
 
-| Contract | Mainnet address / explorer |
-| --- | --- |
-| R3OSPaint | [`0x5102de3817ae16b3afaeb9d180130669a70787b3`](https://monadvision.com/address/0x5102de3817ae16b3afaeb9d180130669a70787b3) |
-| R3OSLabs | [`0xe6b3b17e3b1827fe02183f496e84331ebe74751c`](https://monadvision.com/address/0xe6b3b17e3b1827fe02183f496e84331ebe74751c) |
-| DiffRenderer | [`0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7`](https://monadvision.com/address/0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7) |
-| SeasonTimelapseRenderer | [`0x8c91d7a829569ebf1dfc671f6cf328911813b78d`](https://monadvision.com/address/0x8c91d7a829569ebf1dfc671f6cf328911813b78d) |
-| DF1Renderer | [`0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0`](https://monadvision.com/address/0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0) |
-| R3OSPainterPass | [`0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103`](https://monadvision.com/address/0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103) |
-| R3OSFinaleAuction | [`0x3d3154db1b32724a82ac9ec3f1811808558b9ef8`](https://monadvision.com/address/0x3d3154db1b32724a82ac9ec3f1811808558b9ef8) |
-| R3OSQuests | [`0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1`](https://monadvision.com/address/0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1) |
-| R3OSRecycleBin | [`0x02234e30dac8bed319f30fb1ec123da8bf71a2eb`](https://monadvision.com/address/0x02234e30dac8bed319f30fb1ec123da8bf71a2eb) |
-| R3OSCDBurner | [`0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd`](https://monadvision.com/address/0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd) |
-| R3OSCardMemory | [`0x3D871B434736939748ea1BD08C06c1E8750506ec`](https://monadvision.com/address/0x3D871B434736939748ea1BD08C06c1E8750506ec) |
-| R3OSPageExe | [`0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb`](https://monadvision.com/address/0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb) |
-| R3OSBlockCamera | [`0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430`](https://monadvision.com/address/0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430) |
-| R3OSOperatorRecord | [`0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E`](https://monadvision.com/address/0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E) |
-| R3OSSystemEvent | [`0xB93A2b18437A1f169D39D81aAD19b074D6292066`](https://monadvision.com/address/0xB93A2b18437A1f169D39D81aAD19b074D6292066) |
-| R3OSRouterLab | [`0x1206cD64b805fA612C49DC0296c8813248428661`](https://monadvision.com/address/0x1206cD64b805fA612C49DC0296c8813248428661) |
+| Contract | Address (MonadVision) | Source on Monadscan |
+| --- | --- | :---: |
+| R3OSPaint | [`0x5102de3817ae16b3afaeb9d180130669a70787b3`](https://monadvision.com/address/0x5102de3817ae16b3afaeb9d180130669a70787b3) | [verified](https://monadscan.com/address/0x5102de3817ae16b3afaeb9d180130669a70787b3#code) |
+| R3OSLabs | [`0xe6b3b17e3b1827fe02183f496e84331ebe74751c`](https://monadvision.com/address/0xe6b3b17e3b1827fe02183f496e84331ebe74751c) | [verified](https://monadscan.com/address/0xe6b3b17e3b1827fe02183f496e84331ebe74751c#code) |
+| DiffRenderer | [`0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7`](https://monadvision.com/address/0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7) | [verified](https://monadscan.com/address/0x5d2dcd25d5e847770f6e8a7bfbdf1df4f6e454f7#code) |
+| SeasonTimelapseRenderer | [`0x8c91d7a829569ebf1dfc671f6cf328911813b78d`](https://monadvision.com/address/0x8c91d7a829569ebf1dfc671f6cf328911813b78d) | [verified](https://monadscan.com/address/0x8c91d7a829569ebf1dfc671f6cf328911813b78d#code) |
+| DF1Renderer | [`0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0`](https://monadvision.com/address/0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0) | [verified](https://monadscan.com/address/0x6ec2027e5b2493f2ecc5882bece14b31197c3ce0#code) |
+| R3OSPainterPass | [`0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103`](https://monadvision.com/address/0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103) | [verified](https://monadscan.com/address/0xb2d2d7681f451d9c69ed5ef2a0ed0b6b6494f103#code) |
+| R3OSFinaleAuction | [`0x3d3154db1b32724a82ac9ec3f1811808558b9ef8`](https://monadvision.com/address/0x3d3154db1b32724a82ac9ec3f1811808558b9ef8) | [verified](https://monadscan.com/address/0x3d3154db1b32724a82ac9ec3f1811808558b9ef8#code) |
+| R3OSQuests | [`0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1`](https://monadvision.com/address/0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1) | [verified](https://monadscan.com/address/0x4398f022d7700cf5541ac59d2ff83f1a8a30a6f1#code) |
+| R3OSRecycleBin | [`0x02234e30dac8bed319f30fb1ec123da8bf71a2eb`](https://monadvision.com/address/0x02234e30dac8bed319f30fb1ec123da8bf71a2eb) | [verified](https://monadscan.com/address/0x02234e30dac8bed319f30fb1ec123da8bf71a2eb#code) |
+| R3OSCDBurner | [`0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd`](https://monadvision.com/address/0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd) | [verified](https://monadscan.com/address/0x5556b0ef2ffa3a970c852362ee69313c08f5b1cd#code) |
+| R3OSCardMemory | [`0x3D871B434736939748ea1BD08C06c1E8750506ec`](https://monadvision.com/address/0x3D871B434736939748ea1BD08C06c1E8750506ec) | [verified](https://monadscan.com/address/0x3d871b434736939748ea1bd08c06c1e8750506ec#code) |
+| R3OSPageExe | [`0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb`](https://monadvision.com/address/0xD6182F6F25006f506A0bedC38E6a7C6B02cE15Bb) | [verified](https://monadscan.com/address/0xd6182f6f25006f506a0bedc38e6a7c6b02ce15bb#code) |
+| R3OSBlockCamera | [`0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430`](https://monadvision.com/address/0x1f3d264f0bEf5deDdbf5e92b2A5C0AA0c8c6c430) | [verified](https://monadscan.com/address/0x1f3d264f0bef5deddbf5e92b2a5c0aa0c8c6c430#code) |
+| R3OSOperatorRecord | [`0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E`](https://monadvision.com/address/0xEd7c82243C63eB1Cf51E1210f7846b4EC8725A6E) | [verified](https://monadscan.com/address/0xed7c82243c63eb1cf51e1210f7846b4ec8725a6e#code) |
+| R3OSSystemEvent | [`0xB93A2b18437A1f169D39D81aAD19b074D6292066`](https://monadvision.com/address/0xB93A2b18437A1f169D39D81aAD19b074D6292066) | [verified](https://monadscan.com/address/0xb93a2b18437a1f169d39d81aad19b074d6292066#code) |
+| R3OSRouterLab | [`0x1206cD64b805fA612C49DC0296c8813248428661`](https://monadvision.com/address/0x1206cD64b805fA612C49DC0296c8813248428661) | [verified](https://monadscan.com/address/0x1206cd64b805fa612c49dc0296c8813248428661#code) |
 
 How the deployment was checked (a real canary paint observed Proposed → Voted → Finalized, finalized launch checks, reproducible evidence hashes): [`docs/submission/MAINNET_EVIDENCE.md`](docs/submission/MAINNET_EVIDENCE.md).
 
@@ -282,11 +307,11 @@ Requirements: **Node 22**. Foundry is only required for Solidity build/tests.
 
 ```bash
 npm ci
-cp .env.example .env.local
+cp .env.mainnet.example .env.local   # the live Monad mainnet contracts, public RPCs only
 npm run dev
 ```
 
-The supplied `.env.example` intentionally contains **historical public Monad testnet values**, not production values. For a mainnet local run, change `.env.local` to chain `143`, public RPCs `https://rpc.monad.xyz` and `https://rpc2.monad.xyz`, WebSocket `wss://rpc.monad.xyz`, Paint `0x5102de3817ae16b3afaeb9d180130669a70787b3`, wallet RPC `https://rpc.monad.xyz` and explorer `https://monadvision.com`. Clear any old `VITE_RPC_URL`/`VITE_CONTRACT_ADDRESS` overrides and replace the testnet `VITE_DEPLOY_BLOCK` with the **actual** mainnet Paint deployment block from accepted chain evidence before booting. Never place secret RPC credentials or keys in any `VITE_` variable.
+[`.env.mainnet.example`](.env.mainnet.example) points the app at the live mainnet contracts through Monad's public RPCs, so it shows the same canvas as [r3os.app](https://r3os.app/). The older [`.env.example`](.env.example) keeps the historical public **testnet** values. Never place secret RPC credentials or keys in any `VITE_` variable: everything prefixed `VITE_` ships in the browser bundle.
 
 Frontend gate:
 
@@ -334,10 +359,10 @@ docs            technical reference, protocol specs and security model
 
 The contracts are frozen; everything below happens on top of them.
 
-- **Season 1 ends with its finale.** The last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
+- **Season 1 ends on November 5, 2026, 11:00 UTC.** The last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen, so the canvas keeps getting new painters and the same ones keep coming back.
 - **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
-- **Season 2 is set by the community.** The outline, the face and the prompts for the next 30 days come from the people who painted this one.
+- **Season 2 opens the same minute,** on a fresh canvas, with a guest.
 
 ## Future plans: r3OS as a platform
 

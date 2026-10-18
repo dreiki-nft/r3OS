@@ -1,0 +1,101 @@
+{
+  "painters": 79,
+  "returningPainters": 28,
+  "paints": 3604,
+  "pixels": 142740,
+  "frames": {
+    "count": 324,
+    "owners": 51
+  },
+  "cds": {
+    "count": 33,
+    "owners": 16
+  },
+  "passes": {
+    "count": 55,
+    "owners": 55
+  },
+  "excluded": 7,
+  "daily": [
+    {
+      "day": "2026-10-07",
+      "painters": 1,
+      "newPainters": 1,
+      "paints": 8,
+      "pixels": 8
+    },
+    {
+      "day": "2026-10-09",
+      "painters": 4,
+      "newPainters": 3,
+      "paints": 18,
+      "pixels": 1212
+    },
+    {
+      "day": "2026-10-10",
+      "painters": 24,
+      "newPainters": 21,
+      "paints": 231,
+      "pixels": 27251
+    },
+    {
+      "day": "2026-10-11",
+      "painters": 20,
+      "newPainters": 15,
+      "paints": 419,
+      "pixels": 22590
+    },
+    {
+      "day": "2026-10-12",
+      "painters": 11,
+      "newPainters": 3,
+      "paints": 796,
+      "pixels": 14596
+    },
+    {
+      "day": "2026-10-13",
+      "painters": 40,
+      "newPainters": 26,
+      "paints": 696,
+      "pixels": 29351
+    },
+    {
+      "day": "2026-10-14",
+      "painters": 13,
+      "newPainters": 6,
+      "paints": 593,
+      "pixels": 15595
+    },
+    {
+      "day": "2026-10-15",
+      "painters": 12,
+      "newPainters": 2,
+      "paints": 328,
+      "pixels": 11722
+    },
+    {
+      "day": "2026-10-16",
+      "painters": 12,
+      "newPainters": 2,
+      "paints": 345,
+      "pixels": 9689
+    },
+    {
+      "day": "2026-10-17",
+      "painters": 8,
+      "newPainters": 0,
+      "paints": 115,
+      "pixels": 7004
+    },
+    {
+      "day": "2026-10-18",
+      "painters": 5,
+      "newPainters": 0,
+      "paints": 55,
+      "pixels": 3722
+    }
+  ],
+  "fromBlock": "111020589",
+  "toBlock": "114556094",
+  "asOf": "2026-10-18 20:50 UTC"
+}

@@ -112,6 +112,7 @@ function decode(abiItem, log) {
 export function summarize({ painted = [], frames = [], cds = [], passes = [] }, exclude = []) {
   const skip = new Set(exclude.map((value) => value.toLowerCase()))
   const painters = new Map()
+  const days = new Map() // UTC day → { paints, pixels, owners }
   let paints = 0
   let pixels = 0
   for (const log of painted) {
@@ -119,8 +120,9 @@ export function summarize({ painted = [], frames = [], cds = [], passes = [] }, 
     if (!args) continue
     const owner = String(args.owner).toLowerCase()
     if (skip.has(owner)) continue
+    const runPx = runPixels(args.runs)
     paints += 1
-    pixels += runPixels(args.runs)
+    pixels += runPx
     const day = log.blockTimestamp
       ? new Date(Number(log.blockTimestamp) * 1_000).toISOString().slice(0, 10)
       : 'unknown'
@@ -128,7 +130,26 @@ export function summarize({ painted = [], frames = [], cds = [], passes = [] }, 
     row.paints += 1
     row.days.add(day)
     painters.set(owner, row)
+    if (day !== 'unknown') {
+      const d = days.get(day) ?? { paints: 0, pixels: 0, owners: new Set() }
+      d.paints += 1
+      d.pixels += runPx
+      d.owners.add(owner)
+      days.set(day, d)
+    }
   }
+  // Day by day: distinct painters, how many of them painted for the first time that day, strokes and pixels.
+  const firstDay = new Map()
+  for (const [owner, row] of painters) firstDay.set(owner, [...row.days].filter((d) => d !== 'unknown').sort()[0])
+  const daily = [...days.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([day, d]) => ({
+      day,
+      painters: d.owners.size,
+      newPainters: [...d.owners].filter((owner) => firstDay.get(owner) === day).length,
+      paints: d.paints,
+      pixels: d.pixels,
+    }))
   const countOwners = (logs, abiItem, field) => {
     let count = 0
     const owners = new Set()
@@ -157,6 +178,7 @@ export function summarize({ painted = [], frames = [], cds = [], passes = [] }, 
     cds: countOwners(cds, CD_BURNED, 'owner'),
     passes: countOwners(passMints, TRANSFER, 'to'),
     excluded: skip.size,
+    daily,
   }
 }
 

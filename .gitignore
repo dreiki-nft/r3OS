@@ -16,6 +16,7 @@ contracts/cache-deploy/
 # Secrets and local config: never commit
 .env.*
 !.env.example
+!.env.mainnet.example
 contracts/.env*
 !contracts/.env.example
 *.keystore

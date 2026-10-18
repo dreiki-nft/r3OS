@@ -126,11 +126,20 @@ try {
   const cds = (await logsFor(options.cdBurner, CD_BURNED, statsFrom, head, 'cds')).filter(inRange)
   const passes = (await logsFor(options.pass, TRANSFER, statsFrom, head, 'passes')).filter(inRange)
 
-  // Timestamps for "came back on another day": one header read per distinct block with a paint.
+  // Timestamps for "came back on another day" and the day-by-day rows: one header read per distinct block with
+  // a paint, several at a time.
   const times = new Map()
-  for (const block of new Set(painted.map((log) => log.blockNumber))) {
-    times.set(block, (await client.getBlock({ blockNumber: block })).timestamp)
+  const blocks = [...new Set(painted.map((log) => log.blockNumber))]
+  let next = 0
+  const timeWorker = async () => {
+    while (next < blocks.length) {
+      const block = blocks[next++]
+      times.set(block, (await client.getBlock({ blockNumber: block })).timestamp)
+      if (process.stderr.isTTY && times.size % 50 === 0) process.stderr.write(`\rblock times: ${times.size}/${blocks.length}`)
+    }
   }
+  await Promise.all(Array.from({ length: options.concurrency }, timeWorker))
+  if (process.stderr.isTTY) process.stderr.write(`\rblock times: ${times.size}/${blocks.length}\n`)
   for (const log of painted) log.blockTimestamp = times.get(log.blockNumber)
 
   const stats = summarize({ painted: painted.filter(inRange), frames, cds, passes }, options.exclude)

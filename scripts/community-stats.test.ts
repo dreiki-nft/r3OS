@@ -83,6 +83,10 @@ describe('community stats', () => {
       cds: { count: 1, owners: 1 },
       passes: { count: 1, owners: 1 },
       excluded: 1,
+      daily: [
+        { day: '1972-09-27', painters: 2, newPainters: 2, paints: 2, pixels: 6 },
+        { day: '1972-09-28', painters: 1, newPainters: 0, paints: 1, pixels: 1 },
+      ],
     })
     const text = markdown(stats, { fromBlock: 10n, toBlock: 20n, asOf: '2026-10-08 00:00 UTC' })
     expect(text).toContain('| Painters (distinct wallets) | 2 |')
