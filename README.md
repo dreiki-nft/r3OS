@@ -23,7 +23,7 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  <b>79 painters · 3,604 paint transactions · 324 frames saved</b> in the first 9 days, builder and guest wallets not counted (<a href="#season-1-so-far">the numbers</a>)
+  <b>80 painters · 3,697 paint transactions · 332 frames saved</b> in the first 10 days, builder and guest wallets not counted (<a href="#season-1-so-far">the numbers</a>)
 </p>
 
 <p align="center">
@@ -120,23 +120,23 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 ### Season 1 so far
 
-**As of October 18, 2026, 20:50 UTC** (blocks 111,020,589–114,556,094), not counting the builder's two wallets or the judges' guest wallets:
+**As of October 19, 2026, 23:23 UTC** (blocks 111,020,589–114,817,281), not counting the builder's two wallets, the judges' guest wallets or other project-run wallets:
 
 | | |
 | --- | ---: |
-| Painters (distinct wallets) | **79** |
-| Painters who came back on another day | **28** |
-| Paint transactions | **3,604** |
-| Pixels painted | **142,740** |
-| Frames saved | **324**, by 51 wallets |
+| Painters (distinct wallets) | **80** |
+| Painters who came back on another day | **31** |
+| Paint transactions | **3,697** |
+| Pixels painted | **153,946** |
+| Frames saved | **332**, by 53 wallets |
 | CDs burned | **33**, by 16 wallets |
-| Painter Passes claimed | **55** |
+| Painter Passes claimed | **56** |
 
-<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 18" width="100%"></p>
+<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 19" width="100%"></p>
 
-The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 28 painters have come back to paint on another day. The whole season so far, every stroke in order (the counters skip the builder and guest wallets; the canvas shows every paint):
+The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 31 painters have come back to paint on another day. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
 
-<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 18, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
+<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 19, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
 
 The raw numbers are in [`docs/season-stats.json`](docs/season-stats.json), and the chart is drawn from that file by [`scripts/season-chart.mjs`](scripts/season-chart.mjs).
 
@@ -297,6 +297,13 @@ Open to the public at **[r3os.app](https://r3os.app/)** since **October 10, 2026
 | R3OSSystemEvent | [`0xB93A2b18437A1f169D39D81aAD19b074D6292066`](https://monadvision.com/address/0xB93A2b18437A1f169D39D81aAD19b074D6292066) | [verified](https://monadscan.com/address/0xb93a2b18437a1f169d39d81aad19b074d6292066#code) |
 | R3OSRouterLab | [`0x1206cD64b805fA612C49DC0296c8813248428661`](https://monadvision.com/address/0x1206cD64b805fA612C49DC0296c8813248428661) | [verified](https://monadscan.com/address/0x1206cd64b805fa612c49dc0296c8813248428661#code) |
 
+**Add-on contracts** (deployed later; the core above is frozen and untouched):
+
+| Contract | Address (MonadVision) | Source on Monadscan |
+| --- | --- | :---: |
+| R3Names (`.r3` names, shown before `.nad`) | [`0x4B8F275be37A312B08f229bc15c84f529Be57853`](https://monadvision.com/address/0x4B8F275be37A312B08f229bc15c84f529Be57853) | [verified](https://monadscan.com/address/0x4b8f275be37a312b08f229bc15c84f529be57853#code) |
+| r3tards raffle (Pyth Entropy draws) | [`0x478844840df2096Ca08AF5ce8a5CdC632493228f`](https://monadvision.com/address/0x478844840df2096Ca08AF5ce8a5CdC632493228f) | [verified](https://monadscan.com/address/0x478844840df2096ca08af5ce8a5cdc632493228f#code) |
+
 How the deployment was checked (a real canary paint observed Proposed → Voted → Finalized, finalized launch checks, reproducible evidence hashes): [`docs/submission/MAINNET_EVIDENCE.md`](docs/submission/MAINNET_EVIDENCE.md).
 
 **Naming:** r3OS is the product. The historical testnet keeps its `R3tards*` contract names; mainnet uses `R3OS*`. The **r3tards** NFT collection keeps its real name.
@@ -361,6 +368,7 @@ The contracts are frozen; everything below happens on top of them.
 
 - **Season 1 ends on November 5, 2026, 11:00 UTC.** The last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen, so the canvas keeps getting new painters and the same ones keep coming back.
+- **Storm Chaser Trilogy (October 21–24).** Paint during all three DF1 storms (blocks 115,400,000, 116,000,000 and 116,200,000, 600 blocks each) to enter a raffle for an r3tard. The entrant list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn by the raffle contract above with Pyth Entropy randomness.
 - **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
 - **Season 2 opens the same minute,** on a fresh canvas, with a guest.
 
