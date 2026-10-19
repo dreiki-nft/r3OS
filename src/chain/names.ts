@@ -1,9 +1,10 @@
 /**
  * Painter names. A shared space feels social when you can recognize people, so instead of 0x7099…79C8 r3OS
  * shows, for every wallet:
- *   1. its Nad Name Service primary name (`dreiki.nad`), read onchain on Monad mainnet, or
- *   2. a fixed nickname made from the address (`cyan crayon·79c8`), identical for every viewer.
- * No server, nothing stored: names are read from the NNS contract in batches and cached for this tab.
+ *   1. its r3OS name (`dreiki.r3`) from the R3Names registry, when one is set, else
+ *   2. its Nad Name Service primary name (`dreiki.nad`), read onchain on Monad mainnet, or
+ *   3. a fixed nickname made from the address (`cyan crayon·79c8`), identical for every viewer.
+ * No server, nothing stored: names are read from the registries in batches and cached for this tab.
  */
 import { useSyncExternalStore } from 'react'
 import { parseAbi, type Address } from 'viem'
@@ -13,6 +14,13 @@ import { readMany } from './readMany'
 /** Nad Name Service on Monad mainnet (docs.nad.domains › Contract addresses). */
 export const NNS_MAINNET = '0xCc7a1bfF8845573dbF0B3b96e25B9b549d4a2eC7' as Address
 const NNS_ABI = parseAbi(['function getPrimaryNameForAddress(address addr) view returns (string)'])
+const R3_NAMES_ABI = parseAbi(['function nameOf(address wallet) view returns (string)'])
+
+/** The R3Names registry (VITE_R3_NAMES_ADDRESS). Read by its literal name; unset = no .r3 lookups. */
+function r3NamesAddress(): Address | undefined {
+  const value = String(import.meta.env.VITE_R3_NAMES_ADDRESS ?? '').trim()
+  return /^0x[0-9a-fA-F]{40}$/.test(value) ? (value as Address) : undefined
+}
 
 const NAME_TTL_MS = 30 * 60_000
 const MISS_TTL_MS = 5 * 60_000
@@ -81,6 +89,13 @@ export function cleanNadName(raw: unknown) {
   return /^[a-z0-9_-]{1,32}$/.test(name) ? `${name}.nad` : undefined
 }
 
+/** Same rules for r3OS names: plain lowercase names only, shown as `name.r3`. */
+export function cleanR3Name(raw: unknown) {
+  if (typeof raw !== 'string') return undefined
+  const name = raw.trim().toLowerCase().replace(/\.r3$/, '')
+  return /^[a-z0-9_-]{1,32}$/.test(name) ? `${name}.r3` : undefined
+}
+
 /**
  * What NNS said about a wallet:
  * - `name`: a primary name r3OS can show;
@@ -89,7 +104,7 @@ export function cleanNadName(raw: unknown) {
  * - `error`: the RPC call itself failed, so nothing is known yet.
  */
 export type NadNameStatus = 'loading' | 'name' | 'none' | 'hidden'
-type Entry = { name?: string; state: 'name' | 'none' | 'hidden' | 'error'; at: number }
+type Entry = { name?: string; r3?: string; state: 'name' | 'none' | 'hidden' | 'error'; at: number }
 const cache = new Map<string, Entry>()
 const queued = new Set<string>()
 const listeners = new Set<() => void>()
@@ -112,24 +127,39 @@ async function flush() {
   if (queued.size) timer = setTimeout(() => void flush(), BATCH_WAIT_MS)
   if (!batch.length) return
   const now = Date.now()
+  const r3 = r3NamesAddress()
   try {
-    const rows = (await readMany(
-      batch.map((address) => ({
-        address: NNS_MAINNET,
-        abi: NNS_ABI,
-        functionName: 'getPrimaryNameForAddress',
-        args: [address as Address],
-      })),
-      { allowFailure: true },
-    )) as { status: string; result?: unknown }[]
+    const nadCalls = batch.map((address) => ({
+      address: NNS_MAINNET,
+      abi: NNS_ABI,
+      functionName: 'getPrimaryNameForAddress',
+      args: [address as Address],
+    }))
+    const r3Calls = r3
+      ? batch.map((address) => ({
+          address: r3,
+          abi: R3_NAMES_ABI,
+          functionName: 'nameOf',
+          args: [address as Address],
+        }))
+      : []
+    const rows = (await readMany([...nadCalls, ...r3Calls], { allowFailure: true })) as {
+      status: string
+      result?: unknown
+    }[]
     batch.forEach((address, index) => {
       const row = rows[index]
+      const r3Row = r3 ? rows[batch.length + index] : undefined
+      const r3Name = r3Row?.status === 'success' ? cleanR3Name(r3Row.result) : undefined
       if (row?.status !== 'success' || typeof row.result !== 'string' || !row.result.trim()) {
-        cache.set(address, { state: 'none', at: now })
+        cache.set(address, { state: 'none', r3: r3Name, at: now })
         return
       }
       const name = cleanNadName(row.result)
-      cache.set(address, name ? { name, state: 'name', at: now } : { state: 'hidden', at: now })
+      cache.set(
+        address,
+        name ? { name, r3: r3Name, state: 'name', at: now } : { state: 'hidden', r3: r3Name, at: now },
+      )
     })
   } catch {
     for (const address of batch) cache.set(address, { state: 'error', at: now })
@@ -147,12 +177,13 @@ function request(address: string) {
   timer ??= setTimeout(() => void flush(), BATCH_WAIT_MS)
 }
 
-/** `dreiki.nad` when known, otherwise the address's fixed nickname. Starts a background lookup if needed. */
+/** `dreiki.r3`, else `dreiki.nad`, else the address's fixed nickname. Starts a background lookup if needed. */
 export function painterName(address?: string | null) {
   if (!address || !ADDRESS.test(address)) return address ?? '—'
   const lower = address.toLowerCase()
   request(lower)
-  return cache.get(lower)?.name ?? nicknameFor(lower)
+  const entry = cache.get(lower)
+  return entry?.r3 ?? entry?.name ?? nicknameFor(lower)
 }
 
 /** The wallet's `.nad` name; `null` once NNS answered that none can be shown; `undefined` while not known. */
@@ -210,10 +241,10 @@ export function __resetPainterNamesForTests() {
   version = 0
 }
 
-export function __setPainterNameForTests(address: string, name: string | undefined) {
+export function __setPainterNameForTests(address: string, name: string | undefined, r3?: string) {
   cache.set(
     address.toLowerCase(),
-    name ? { name, state: 'name', at: Date.now() } : { state: 'none', at: Date.now() },
+    name ? { name, r3, state: 'name', at: Date.now() } : { state: 'none', r3, at: Date.now() },
   )
   emit()
 }

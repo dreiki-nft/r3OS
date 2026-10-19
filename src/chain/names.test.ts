@@ -9,6 +9,7 @@ vi.mock('./readMany', () => ({ readMany: () => reads.next!() }))
 
 import {
   cleanNadName,
+  cleanR3Name,
   nadNameOf,
   nadNameStatus,
   nicknameFor,
@@ -91,5 +92,38 @@ describe('painter names', () => {
     await __flushPainterNamesForTests()
     expect(nadNameStatus(A)).toBe('name')
     expect(painterName(A)).toBe('dreiki.nad')
+  })
+
+  it('shows .r3 names first, with the same plain-name rules', async () => {
+    expect(cleanR3Name('Pixel')).toBe('pixel.r3')
+    expect(cleanR3Name('pixel.r3')).toBe('pixel.r3')
+    expect(cleanR3Name('pіxel')).toBeUndefined() // Cyrillic і
+    expect(cleanR3Name('')).toBeUndefined()
+    __setPainterNameForTests(A, 'dreiki.nad', 'pixel.r3')
+    expect(painterName(A)).toBe('pixel.r3')
+    expect(nadNameOf(A)).toBe('dreiki.nad')
+    __resetPainterNamesForTests()
+
+    vi.stubEnv('VITE_R3_NAMES_ADDRESS', '0x00000000000000000000000000000000000000a3')
+    const B = '0x0000000000000000000000000000000000000002'
+    let calls = 0
+    reads.next = () => {
+      calls++
+      // NNS answers first (A, B), then R3Names (A, B).
+      return Promise.resolve([
+        { status: 'success', result: 'dreiki' },
+        { status: 'success', result: '' },
+        { status: 'success', result: '' },
+        { status: 'success', result: 'glitch' },
+      ])
+    }
+    painterName(A)
+    painterName(B)
+    await __flushPainterNamesForTests()
+    expect(calls).toBe(1)
+    expect(painterName(A)).toBe('dreiki.nad')
+    expect(painterName(B)).toBe('glitch.r3')
+    expect(nadNameStatus(B)).toBe('none')
+    vi.unstubAllEnvs()
   })
 })
