@@ -23,7 +23,7 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  <b>80 painters · 3,697 paint transactions · 332 frames saved</b> in the first 10 days, builder and guest wallets not counted (<a href="#season-1-so-far">the numbers</a>)
+  <b>82 painters · 4,824 paint transactions · 357 frames saved</b> in the first 12 days, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
 </p>
 
 <p align="center">
@@ -120,23 +120,25 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 ### Season 1 so far
 
-**As of October 19, 2026, 23:23 UTC** (blocks 111,020,589–114,817,281), not counting the builder's two wallets, the judges' guest wallets or other project-run wallets:
+**As of October 21, 2026, 14:18 UTC** (blocks 111,020,589–115,333,657), not counting the builder's two wallets, the judges' guest wallets or the project-run anon wallets (below):
 
 | | |
 | --- | ---: |
-| Painters (distinct wallets) | **80** |
+| Painters (distinct wallets) | **82** |
 | Painters who came back on another day | **31** |
-| Paint transactions | **3,697** |
-| Pixels painted | **153,946** |
-| Frames saved | **332**, by 53 wallets |
-| CDs burned | **33**, by 16 wallets |
-| Painter Passes claimed | **56** |
+| Paint transactions | **4,824** |
+| Pixels painted | **173,772** |
+| Frames saved | **357**, by 54 wallets |
+| CDs burned | **36**, by 18 wallets |
+| Painter Passes claimed | **57** |
 
-<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 19" width="100%"></p>
+Not counted above: **33 anonymous wallets run by the project** (`anon-01.r3` … `anon-33.r3`), which have been drawing a green eye in the bottom-left of the canvas since October 19 and paint it back when someone covers it. Their paints are on the canvas and in the replay like everyone else's, but they are the project's own wallets, so they are left out of every number here.
 
-The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 31 painters have come back to paint on another day. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
+<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 21" width="100%"></p>
 
-<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 19, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
+The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 31 painters have come back to paint on another day, and since October 20 more than 500 paints a day. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
+
+<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 21, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
 
 The raw numbers are in [`docs/season-stats.json`](docs/season-stats.json), and the chart is drawn from that file by [`scripts/season-chart.mjs`](scripts/season-chart.mjs).
 
@@ -149,6 +151,7 @@ Every number here is counted from the contracts' own events by [`scripts/communi
 node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range 100 \
   --exclude 0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA,0x649995F20D11F54188e865D8a4ADcFDE4692ecd1
 # the whole season so far, day by day (add the guest wallets to --exclude), then the chart
+# (the first run caches the events in .stats-cache/, so later runs only fetch the blocks added since)
 node scripts/community-stats.mjs --range 100 --concurrency 8 --json --exclude … > docs/season-stats.json
 node scripts/season-chart.mjs
 ```

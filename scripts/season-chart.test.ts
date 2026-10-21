@@ -32,7 +32,7 @@ describe('season chart', () => {
     expect(svg).toContain('33 painters came back on another day · 4 days since the public launch')
     expect(svg).toContain('>Oct 12<')
     expect(svg).toContain('Oct 13: 40 painters, 400 strokes')
-    expect(svg).toContain('builder and guest wallets excluded')
+    expect(svg).toContain('builder, guest and project-run wallets excluded')
   })
 
   it('refuses stats without day rows', () => {

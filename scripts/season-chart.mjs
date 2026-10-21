@@ -96,7 +96,7 @@ export function renderSeasonChart(stats, { from = '2026-10-10' } = {}) {
 ${panel({ rows, key: 'painters', title: 'painters each day', unit: 'painters', top: 150, height: 170, showDays: false })}
 ${panel({ rows, key: 'paints', title: 'strokes each day', unit: 'strokes', top: 380, height: 170, showDays: true })}
 <text x="${LEFT}" y="${H - 22}" fill="${INK_MUTED}" font-size="12">${escapeXml(
-    `UTC days, the last one still running · Paint contract events, blocks ${stats.fromBlock}–${stats.toBlock} · builder and guest wallets excluded`,
+    `UTC days, the last one still running · Paint contract events, blocks ${stats.fromBlock}–${stats.toBlock} · builder, guest and project-run wallets excluded`,
   )}</text>
 </svg>
 `
