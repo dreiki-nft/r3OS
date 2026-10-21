@@ -4,11 +4,13 @@ import { PAINTED } from './community-stats-lib.mjs'
 import {
   batches,
   chasers,
+  entries,
   listHash,
   parseArgs,
   report,
   stormPainters,
   stormWindow,
+  ticketList,
 } from './storm-chasers-lib.mjs'
 
 const A = '0x00000000000000000000000000000000000000a1'
@@ -64,11 +66,34 @@ describe('storm chasers', () => {
     expect(listHash(list)).not.toBe(listHash([...list].reverse()))
   })
 
-  it('splits loadTicketsBatch inputs with one ticket each', () => {
-    const out = batches([A, B, C], 2)
+  it('per storm (the default): 1 ticket for every storm a wallet painted in, excluded wallets get none', () => {
+    const perStorm = [new Set([A]), new Set([C, A, B]), new Set([A, B])]
+    const list = entries(perStorm, [B.toUpperCase().replace('0X', '0x')])
+    expect(list).toEqual([
+      { wallet: getAddress(A), tickets: 3 },
+      { wallet: getAddress(C), tickets: 1 },
+    ])
+    expect(ticketList(list)).toEqual([getAddress(A), getAddress(A), getAddress(A), getAddress(C)])
+    expect(entries([new Set(), new Set()])).toEqual([])
+  })
+
+  it('all: the original rule, 1 ticket only for wallets that painted in every storm', () => {
+    const perStorm = [new Set([A, C]), new Set([C, A, B]), new Set([A, B])]
+    expect(entries(perStorm, [], 'all')).toEqual([{ wallet: getAddress(A), tickets: 1 }])
+  })
+
+  it('splits loadTicketsBatch inputs, wallets and ticket counts side by side', () => {
+    const out = batches(
+      [
+        { wallet: A, tickets: 3 },
+        { wallet: B, tickets: 1 },
+        { wallet: C, tickets: 2 },
+      ],
+      2,
+    )
     expect(out).toEqual([
-      { wallets: [A, B], tickets: [1, 1] },
-      { wallets: [C], tickets: [1] },
+      { wallets: [A, B], tickets: [3, 1] },
+      { wallets: [C], tickets: [2] },
     ])
   })
 
@@ -81,6 +106,9 @@ describe('storm chasers', () => {
     ])
     expect(opts.storms).toEqual([115_400_000n, 116_200_000n])
     expect(opts.exclude).toEqual([A])
+    expect(opts.tickets).toBe('per-storm')
+    expect(parseArgs(['--storms', '115400000', '--tickets', 'all']).tickets).toBe('all')
+    expect(() => parseArgs(['--storms', '115400000', '--tickets', 'most'])).toThrow(/--tickets must be/)
     expect(() => parseArgs([])).toThrow(/--storms is required/)
     expect(() => parseArgs(['--storms', '115400000,115400000'])).toThrow(/duplicate/)
     expect(() => parseArgs(['--storms', '115400000', '--exclude', '0x12'])).toThrow(/not an address/)
@@ -88,16 +116,31 @@ describe('storm chasers', () => {
   })
 
   it('prints a short report', () => {
+    const storms = [stormWindow(115_400_000n), stormWindow(116_000_000n)]
     const text = report({
-      storms: [stormWindow(115_400_000n), stormWindow(116_000_000n)],
+      storms,
       perStorm: [new Set([A, B]), new Set([A])],
-      entrants: [getAddress(A)],
+      entries: [
+        { wallet: getAddress(A), tickets: 2 },
+        { wallet: getAddress(B), tickets: 1 },
+      ],
       excluded: 1,
       hash: '0xabc',
       snapshotBlock: 116_000_599n,
     })
     expect(text).toContain('storm 1: blocks 115400000-115400599 · 2 wallets painted')
-    expect(text).toContain('caught all 2: 1 wallet (1 team/test wallet not counted)')
+    expect(text).toContain('1 ticket per storm caught: 2 wallets, 3 tickets (1 team/test wallet not counted)')
+    expect(text).toContain(`${getAddress(A)}  2 tickets`)
     expect(text).toContain('snapshotBlock: 116000599')
+    const all = report({
+      storms,
+      perStorm: [new Set([A, B]), new Set([A])],
+      entries: [{ wallet: getAddress(A), tickets: 1 }],
+      mode: 'all',
+      excluded: 0,
+      hash: '0xabc',
+      snapshotBlock: 116_000_599n,
+    })
+    expect(all).toContain('caught all 2: 1 wallet')
   })
 })
