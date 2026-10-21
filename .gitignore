@@ -56,3 +56,6 @@ docs/MAINNET_DEPLOYMENT_INPUT.local.json
 guest-wallets*.local.json
 token*-uri.txt
 storm-chasers-out/
+
+# community-stats event cache (public chain data, rebuilt by a full scan)
+.stats-cache/

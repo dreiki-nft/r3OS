@@ -1,5 +1,6 @@
 // Pure helpers for scripts/community-stats.mjs (unit-tested; no network here).
-import { readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { decodeEventLog, parseAbiItem } from 'viem'
 
 export const PAINTED = parseAbiItem(
@@ -17,8 +18,11 @@ export const TRANSFER = parseAbiItem(
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/
 
+/** Where the event cache lives by default (gitignored). */
+export const DEFAULT_CACHE = '.stats-cache/community-stats.json'
+
 export function parseArgs(argv) {
-  const out = { exclude: [], range: 1_000, concurrency: 4 }
+  const out = { exclude: [], range: 1_000, concurrency: 4, cache: DEFAULT_CACHE }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const next = () => {
@@ -55,6 +59,9 @@ export function parseArgs(argv) {
         ...(text.match(/"address":\s*"(0x[0-9a-fA-F]{40})"/g) ?? []).map((row) => row.slice(-43, -1)),
       )
     } else if (arg === '--json') out.json = true
+    // Local cache of the events already read (public chain data only), so later runs fetch only new blocks.
+    else if (arg === '--cache') out.cache = next()
+    else if (arg === '--no-cache') out.cache = undefined
     // Only the flag name is echoed, never its value (values can be RPC URLs with keys).
     else throw new Error(`unknown flag ${arg.split('=')[0]}`)
   }
@@ -140,7 +147,8 @@ export function summarize({ painted = [], frames = [], cds = [], passes = [] }, 
   }
   // Day by day: distinct painters, how many of them painted for the first time that day, strokes and pixels.
   const firstDay = new Map()
-  for (const [owner, row] of painters) firstDay.set(owner, [...row.days].filter((d) => d !== 'unknown').sort()[0])
+  for (const [owner, row] of painters)
+    firstDay.set(owner, [...row.days].filter((d) => d !== 'unknown').sort()[0])
   const daily = [...days.entries()]
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([day, d]) => ({
@@ -284,4 +292,84 @@ export function windowMarkdown(window) {
     '',
     'Hour-by-hour numbers are in `--json` output (field `window.hourly`), ready for a chart.',
   ].join('\n')
+}
+
+/*
+ * Event cache. A full scan re-downloads millions of blocks of history that never changes, so the events read
+ * so far (and the block times) are kept in a local file. A later run fetches only the blocks after the cached
+ * ones (re-reading the last CACHE_OVERLAP blocks to be safe) and then counts everything again from the full
+ * set, so distinct and returning painters stay exact. The cache holds public chain data only, never the RPC.
+ */
+export const CACHE_VERSION = 1
+export const CACHE_OVERLAP = 500n
+export const CACHE_KINDS = ['painted', 'frames', 'cds', 'passes']
+
+/** What the cached events belong to: the contracts and the season's first block. Anything else → rescan. */
+export const cacheKey = ({ paint, cdBurner, pass }, fromBlock) =>
+  [paint, cdBurner, pass].map((a) => String(a).toLowerCase()).join(',') + `@${fromBlock}`
+
+/** A log as stored in the cache: block, log index, topics, data. */
+export const packLog = (log) => ({
+  b: String(log.blockNumber),
+  i: Number(log.logIndex ?? 0),
+  t: log.topics,
+  d: log.data,
+})
+export const unpackLog = (row) => ({
+  blockNumber: BigInt(row.b),
+  logIndex: row.i,
+  topics: row.t,
+  data: row.d,
+})
+
+export const emptyCache = (key, fromBlock) => ({
+  version: CACHE_VERSION,
+  key,
+  lastBlock: String(fromBlock - 1n),
+  logs: Object.fromEntries(CACHE_KINDS.map((kind) => [kind, []])),
+  times: {},
+})
+
+/** The cache at `path` if it exists and matches `key`; otherwise undefined (a full scan). */
+export function readCache(path, key) {
+  if (!path) return undefined
+  let cache
+  try {
+    cache = JSON.parse(readFileSync(path, 'utf8'))
+  } catch {
+    return undefined
+  }
+  if (cache?.version !== CACHE_VERSION || cache.key !== key || !cache.logs || !cache.times) return undefined
+  if (!CACHE_KINDS.every((kind) => Array.isArray(cache.logs[kind]))) return undefined
+  return cache
+}
+
+export function writeCache(path, cache) {
+  mkdirSync(dirname(path), { recursive: true })
+  const tmp = `${path}.tmp`
+  writeFileSync(tmp, JSON.stringify(cache))
+  renameSync(tmp, path)
+}
+
+/** Where to start fetching: the season start on a fresh cache, else CACHE_OVERLAP blocks before its end. */
+export function scanStart(cache, fromBlock) {
+  const resume = BigInt(cache.lastBlock) - CACHE_OVERLAP + 1n
+  return resume > fromBlock ? resume : fromBlock
+}
+
+/**
+ * Adds freshly fetched logs (blocks scanFrom … toBlock) to the cache: cached rows from scanFrom on are
+ * replaced by the fresh ones, so the overlap is never counted twice.
+ */
+export function mergeCache(cache, fresh, scanFrom, toBlock) {
+  const logs = {}
+  for (const kind of CACHE_KINDS) {
+    const kept = cache.logs[kind].filter((row) => BigInt(row.b) < scanFrom)
+    const added = (fresh[kind] ?? []).map(packLog)
+    logs[kind] = [...kept, ...added].sort((a, b) =>
+      BigInt(a.b) === BigInt(b.b) ? a.i - b.i : BigInt(a.b) < BigInt(b.b) ? -1 : 1,
+    )
+  }
+  const last = BigInt(cache.lastBlock)
+  return { ...cache, logs, lastBlock: String(toBlock > last ? toBlock : last) }
 }

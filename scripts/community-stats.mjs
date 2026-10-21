@@ -8,6 +8,10 @@
  *
  * Defaults to the accepted mainnet deployment and the public RPC. It never signs or sends anything.
  * Pass --rpc to use another endpoint; the URL is never printed.
+ *
+ * Events already read are kept in .stats-cache/community-stats.json (gitignored, public chain data only), so
+ * the first run scans the whole season and later runs fetch only the new blocks; every number is still counted
+ * from the whole season. --cache <file> puts it elsewhere, --no-cache does a full scan without it.
  */
 import { createPublicClient, http, parseAbi } from 'viem'
 import {
@@ -15,11 +19,18 @@ import {
   FRAME_MINTED,
   PAINTED,
   TRANSFER,
+  cacheKey,
   chunks,
+  emptyCache,
   markdown,
+  mergeCache,
   parseArgs,
+  readCache,
+  scanStart,
   summarize,
+  unpackLog,
   windowMarkdown,
+  writeCache,
   windowStats,
 } from './community-stats-lib.mjs'
 
@@ -104,6 +115,7 @@ try {
     })
     fromBlock = await firstBlockAtOrAfter(BigInt(seasonStart), head)
   }
+  const seasonFrom = fromBlock
 
   // A launch window: paints are still read from the season start (to tell new painters from earlier ones),
   // but every count below covers only the window.
@@ -119,28 +131,66 @@ try {
     if (startBlock < fromBlock) fromBlock = startBlock
   }
 
-  const painted = await logsFor(options.paint, PAINTED, fromBlock, head, 'paints')
+  // The events: from the cache where it has them, from the chain for the rest. The cache always starts at the
+  // season start, so --from-block or a launch window that begins earlier is read without it.
+  const useCache =
+    options.cache && options.fromBlock == null && !(windowRange && windowRange.startBlock < seasonFrom)
+  const key = cacheKey(options, seasonFrom)
+  let cache = (useCache && readCache(options.cache, key)) || emptyCache(key, seasonFrom)
+  const cachedTo = BigInt(cache.lastBlock)
+  let scanned = 0n
+  if (head > cachedTo) {
+    const scanFrom = useCache ? scanStart(cache, seasonFrom) : fromBlock
+    const fresh = {
+      painted: await logsFor(options.paint, PAINTED, scanFrom, head, 'paints'),
+      frames: await logsFor(options.paint, FRAME_MINTED, scanFrom, head, 'frames'),
+      cds: await logsFor(options.cdBurner, CD_BURNED, scanFrom, head, 'cds'),
+      passes: await logsFor(options.pass, TRANSFER, scanFrom, head, 'passes'),
+    }
+    cache = mergeCache(cache, fresh, scanFrom, head)
+    scanned = head - scanFrom + 1n
+  }
+  const upTo = (kind) =>
+    cache.logs[kind].map(unpackLog).filter((log) => log.blockNumber >= fromBlock && log.blockNumber <= head)
+  const painted = upTo('painted')
   const statsFrom = windowRange?.startBlock ?? fromBlock
   const inRange = (log) => BigInt(log.blockNumber) >= statsFrom && BigInt(log.blockNumber) <= head
-  const frames = (await logsFor(options.paint, FRAME_MINTED, statsFrom, head, 'frames')).filter(inRange)
-  const cds = (await logsFor(options.cdBurner, CD_BURNED, statsFrom, head, 'cds')).filter(inRange)
-  const passes = (await logsFor(options.pass, TRANSFER, statsFrom, head, 'passes')).filter(inRange)
+  const frames = upTo('frames').filter(inRange)
+  const cds = upTo('cds').filter(inRange)
+  const passes = upTo('passes').filter(inRange)
 
   // Timestamps for "came back on another day" and the day-by-day rows: one header read per distinct block with
-  // a paint, several at a time.
-  const times = new Map()
-  const blocks = [...new Set(painted.map((log) => log.blockNumber))]
+  // a paint that the cache doesn't know yet, several at a time.
+  const times = new Map(Object.entries(cache.times).map(([block, time]) => [BigInt(block), BigInt(time)]))
+  const blocks = [...new Set(painted.map((log) => log.blockNumber))].filter((block) => !times.has(block))
   let next = 0
+  let read = 0
   const timeWorker = async () => {
     while (next < blocks.length) {
       const block = blocks[next++]
       times.set(block, (await client.getBlock({ blockNumber: block })).timestamp)
-      if (process.stderr.isTTY && times.size % 50 === 0) process.stderr.write(`\rblock times: ${times.size}/${blocks.length}`)
+      read += 1
+      if (process.stderr.isTTY && read % 50 === 0)
+        process.stderr.write(`\rblock times: ${read}/${blocks.length}`)
     }
   }
   await Promise.all(Array.from({ length: options.concurrency }, timeWorker))
-  if (process.stderr.isTTY) process.stderr.write(`\rblock times: ${times.size}/${blocks.length}\n`)
+  if (process.stderr.isTTY && blocks.length) process.stderr.write(`\rblock times: ${read}/${blocks.length}\n`)
   for (const log of painted) log.blockTimestamp = times.get(log.blockNumber)
+  if (useCache) {
+    cache.times = Object.fromEntries([...times].map(([block, time]) => [String(block), String(time)]))
+    writeCache(options.cache, cache)
+  }
+  // One line on stderr (stdout stays clean JSON/markdown when redirected to a file).
+  console.error(
+    `community-stats: scanned ${scanned.toLocaleString('en-US')} blocks${
+      useCache
+        ? cachedTo >= seasonFrom
+          ? ` (the rest from the cache, up to block ${cachedTo})`
+          : ' (cache was empty: full scan)'
+        : ' (no cache)'
+    }, ${blocks.length} new block times, up to block ${head}`,
+  )
 
   const stats = summarize({ painted: painted.filter(inRange), frames, cds, passes }, options.exclude)
   const window = windowRange

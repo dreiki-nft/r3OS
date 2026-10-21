@@ -1,12 +1,24 @@
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { encodeAbiParameters, encodeEventTopics } from 'viem'
 import {
   CD_BURNED,
   FRAME_MINTED,
   PAINTED,
+  CACHE_OVERLAP,
+  DEFAULT_CACHE,
   TRANSFER,
+  cacheKey,
   chunks,
+  emptyCache,
   markdown,
+  mergeCache,
+  readCache,
+  scanStart,
+  unpackLog,
+  writeCache,
   parseArgs,
   runPixels,
   summarize,
@@ -138,5 +150,77 @@ describe('community stats', () => {
     expect(options.hours).toBe(24)
     expect(() => parseArgs(['--since', 'tomorrow-ish'])).toThrow('--since must be a date/time')
     expect(() => parseArgs(['--hours', '24'])).toThrow('--hours needs --since')
+  })
+})
+
+describe('community stats cache', () => {
+  const contracts = {
+    paint: '0x' + '1'.repeat(40),
+    cdBurner: '0x' + '2'.repeat(40),
+    pass: '0x' + '3'.repeat(40),
+  }
+  const at = (log: object, blockNumber: bigint, logIndex = 0) => ({ ...log, blockNumber, logIndex })
+  // A season of paints over blocks 1_000 … 3_000, one a day per 100 blocks.
+  const all = [
+    at(painted(A, '0x01020304', 0n), 1_000n),
+    at(painted(B, '0x01020304', 0n), 1_000n, 1),
+    at(painted(A, '0x0100ff04', DAY), 1_900n),
+    at(painted(ME, '0x01020304', DAY), 2_300n),
+    at(painted(B, '0x01000004', 2n * DAY), 2_800n),
+    at(painted(A, '0x01000004', 2n * DAY), 3_000n),
+  ]
+  const day = (b: bigint) => BigInt(Math.floor(Number(b - 1_000n) / 900)) * DAY
+  const withTimes = (logs: { blockNumber: bigint }[]) =>
+    logs.map((l) => ({ ...l, blockTimestamp: day(l.blockNumber) }))
+  const between = (from: bigint, to: bigint) =>
+    all.filter((l) => l.blockNumber >= from && l.blockNumber <= to)
+
+  it('is on by default, can be moved or switched off', () => {
+    expect(parseArgs([]).cache).toBe(DEFAULT_CACHE)
+    expect(parseArgs(['--cache', 'x/y.json']).cache).toBe('x/y.json')
+    expect(parseArgs(['--no-cache']).cache).toBeUndefined()
+  })
+
+  it('a run on top of the cache counts exactly what a full scan counts, overlap included', () => {
+    const full = summarize({ painted: withTimes(all) }, [ME])
+    const key = cacheKey(contracts, 1_000n)
+    // First run up to block 2_000, second run up to 3_000 re-reading the overlap.
+    let cache = mergeCache(emptyCache(key, 1_000n), { painted: between(1_000n, 2_000n) }, 1_000n, 2_000n)
+    expect(cache.lastBlock).toBe('2000')
+    const from = scanStart(cache, 1_000n)
+    expect(from).toBe(2_000n - CACHE_OVERLAP + 1n)
+    cache = mergeCache(cache, { painted: between(from, 3_000n) }, from, 3_000n)
+    expect(cache.logs.painted).toHaveLength(all.length)
+    const again = summarize({ painted: withTimes(cache.logs.painted.map(unpackLog)) }, [ME])
+    expect(again).toEqual(full)
+    expect(again.painters).toBe(2)
+    expect(again.returningPainters).toBe(2)
+  })
+
+  it('round-trips through the file and ignores a cache for other contracts or a broken file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'stats-cache-'))
+    const path = join(dir, 'nested', 'cache.json')
+    const key = cacheKey(contracts, 1_000n)
+    const cache = {
+      ...mergeCache(emptyCache(key, 1_000n), { painted: all }, 1_000n, 3_000n),
+      times: { '1000': '0' },
+    }
+    writeCache(path, cache)
+    expect(readCache(path, key)).toEqual(cache)
+    expect(readCache(path, cacheKey({ ...contracts, paint: '0x' + '9'.repeat(40) }, 1_000n))).toBeUndefined()
+    expect(readCache(path, cacheKey(contracts, 999n))).toBeUndefined()
+    expect(readCache(join(dir, 'missing.json'), key)).toBeUndefined()
+    writeFileSync(path, '{not json')
+    expect(readCache(path, key)).toBeUndefined()
+  })
+
+  it('never stores an RPC URL', () => {
+    const cache = mergeCache(
+      emptyCache(cacheKey(contracts, 1_000n), 1_000n),
+      { painted: all },
+      1_000n,
+      3_000n,
+    )
+    expect(JSON.stringify(cache)).not.toMatch(/https?:/)
   })
 })
