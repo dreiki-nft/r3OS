@@ -762,6 +762,11 @@ button:disabled {
   padding: 12px;
 }
 
+/* Icons default to the light text colour, which vanished on the balloon's light background. */
+.balloon > .ico {
+  --ico-colour: #0b0b0c;
+}
+
 .balloon > button {
   position: absolute;
   right: 4px;

@@ -1,5 +1,6 @@
 export const ICON_NAMES = [
   'antenna',
+  'bell',
   'briefcase',
   'brush',
   'bucket',

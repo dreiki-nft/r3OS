@@ -24,6 +24,7 @@ import { dismissBalloon, getBalloons, pushBalloon, subscribeBalloons } from './b
 import { openProgram } from './programs'
 import { getBlockPlayerPlaying, stopBlockPlayer, subscribeBlockPlayer } from '../monadhw/blockPlayer'
 import { isMuted, setMuted, subscribeSoundSettings } from './sound'
+import { checkStormAlert, getStormAlert, subscribeStormAlert, toggleStormAlert } from './stormAlert'
 import { Icon } from './ui/Icon'
 import { MessageBox } from './ui/MessageBox'
 
@@ -48,12 +49,15 @@ export function Tray() {
   const painting = summarize(presence.strokes, block.block)
   const blockPlayer = useSyncExternalStore(subscribeBlockPlayer, getBlockPlayerPlaying)
   const muted = useSyncExternalStore(subscribeSoundSettings, isMuted)
+  const stormAlert = useSyncExternalStore(subscribeStormAlert, getStormAlert)
   const [storm, setStorm] = useState(false)
   const connectionOpen = balloons.some((notice) => notice.id === 'connection')
   const liveOpen = balloons.some((notice) => notice.id === 'live-session')
   const activeLive = liveActive(live)
 
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
+  // The storm bell: rings 333 blocks before each DF1 storm while it's on (src/os/stormAlert.ts).
+  useEffect(() => checkStormAlert(block.block, block.blockTimeMs), [block.block, block.blockTimeMs])
 
   return (
     <div className="tray sunken">
@@ -73,6 +77,35 @@ export function Tray() {
             ? `STORM ${duration(blockEta(block.stormEndsIn))}`
             : duration(blockEta(block.nextStormIn))}
         </span>
+      </button>
+      <button
+        className={stormAlert ? 'tray-bell on' : 'tray-bell'}
+        aria-label={stormAlert ? 'Storm bell on' : 'Storm bell off'}
+        aria-pressed={stormAlert}
+        title={
+          stormAlert
+            ? 'Storm bell on: r3OS rings 333 blocks before every DF1 storm. Click to turn it off.'
+            : 'Storm bell: get a ping 333 blocks (about 100 seconds) before every DF1 storm'
+        }
+        onClick={() => {
+          void toggleStormAlert().then((result) =>
+            pushBalloon({
+              id: 'storm-bell',
+              title: result === 'off' ? 'Storm bell off' : 'Storm bell on',
+              icon: 'lightning',
+              sound: false,
+              body:
+                result === 'off'
+                  ? 'no more storm pings.'
+                  : result === 'on'
+                    ? 'r3OS will ping you 333 blocks (about 100 seconds) before every DF1 storm, even with this tab in the background. keep r3OS open in a tab.'
+                    : 'r3OS will ping you here, 333 blocks before every DF1 storm, while it is open. browser notifications are blocked or not available, so it can only ring inside r3OS.',
+            }),
+          )
+        }}
+      >
+        <Icon name="bell" size={20} colour={stormAlert ? '#FEC343' : undefined} />
+        {!stormAlert && <i className="mute-slash" />}
       </button>
       {blockPlayer && (
         <button aria-label="Stop Block Player" title="Block Player is listening" onClick={stopBlockPlayer}>
