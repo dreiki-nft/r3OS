@@ -303,8 +303,28 @@ function transactionRejected(error: unknown): FriendlyError | undefined {
  */
 function sanitizedMessage(error: unknown) {
   const short = error instanceof BaseError ? error.shortMessage : undefined
-  const text = short || (error instanceof Error ? error.message : String(error))
+  let text = short || (error instanceof Error ? error.message : String(error))
+  // viem's generic RPC sentences ("Missing or invalid parameters. Double check…") hide the wallet's or node's own
+  // reason, which viem keeps in `details`. Show that reason instead of the boilerplate second line.
+  const reason = short && GENERIC_RPC.test(short) ? rpcReason(error) : undefined
+  if (reason) text = `${short!.split('\n')[0]} (${reason})`
   return text.replace(/\b(?:https?|wss?):\/\/[^\s"'<>)]+/gi, '[rpc]').slice(0, 300)
+}
+
+const GENERIC_RPC =
+  /^(Missing or invalid parameters|Invalid parameters were provided|An internal error was received|An unknown RPC error occurred|Requested resource not available|Requested method not supported)/
+
+/** The wallet's or node's own error text behind a generic viem RPC error, if it says more than the generic one. */
+function rpcReason(error: unknown) {
+  const details = (error as { details?: unknown }).details
+  if (typeof details !== 'string') return undefined
+  const reason = details
+    .replace(/\b(?:https?|wss?):\/\/[^\s"'<>)]+/gi, '[rpc]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 160)
+  if (!reason || GENERIC_RPC.test(reason) || /^(internal json-rpc error|invalid params?)\.?$/i.test(reason)) return undefined
+  return reason
 }
 
 /**

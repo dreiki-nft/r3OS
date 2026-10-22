@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { parseEther } from 'viem'
-import { FUNDING_SETTLE_BLOCKS, fundingShortfall, quickFunding, retryFreshFundingStart } from './quickStart'
+import {
+  FUNDING_SETTLE_BLOCKS,
+  fundingShortfall,
+  quickFunding,
+  retryFreshFundingStart,
+  withStep,
+} from './quickStart'
 import { burnerFundTooLarge, fundingSuggestion, MAX_BURNER_FUND } from './liveStore'
 
 const GWEI = 1_000_000_000n
@@ -78,5 +84,27 @@ describe('funding shortfall', () => {
     const refused = new Error('Transaction creation failed.\n\nDetails: insufficient balance')
     expect(retryFreshFundingStart(refused, true)).toBe(true)
     expect(retryFreshFundingStart(refused, false)).toBe(false)
+  })
+})
+
+describe('failed step in the error', () => {
+  it('names the step that failed, once, and leaves a closed wallet alone', () => {
+    const tagged = withStep(new Error('the network refused the transaction. nothing was sent.'), 'funding') as Error & {
+      friendly: { message: string }
+    }
+    expect(tagged.message).toBe('the network refused the transaction. nothing was sent. (step: funding the paint key)')
+    expect(tagged.friendly.message).toBe(tagged.message)
+    expect((withStep(tagged, 'start') as Error).message).toBe(tagged.message)
+
+    const closed = Object.assign(new Error('User rejected the request.'), { code: 4001 })
+    expect(withStep(closed, 'signature')).toBe(closed)
+  })
+})
+
+describe('empty wallet', () => {
+  it('explains a 0 MON wallet in plain words (checked before the node is asked to estimate the transfer)', () => {
+    const text = fundingShortfall(0n, parseEther('0.5'), 21_000n * 200n * GWEI)!
+    expect(text).toContain('your wallet has 0 MON')
+    expect(text).toContain('nothing was sent')
   })
 })

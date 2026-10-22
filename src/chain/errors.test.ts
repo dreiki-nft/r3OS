@@ -2,7 +2,9 @@ import {
   ContractFunctionExecutionError,
   ContractFunctionRevertedError,
   encodeErrorResult,
+  InvalidInputRpcError,
   parseAbi,
+  RpcRequestError,
   TransactionRejectedRpcError,
   UserRejectedRequestError,
   type Abi,
@@ -160,5 +162,27 @@ describe('refused transactions (-32003)', () => {
     expect(odd.message).toContain('[rpc]')
     expect(odd.message).not.toContain('example.com')
     expect(friendlyError({ code: -32603, cause: { code: -32003, details: 'insufficient balance' } }).name).toBe('InsufficientFunds')
+  })
+})
+
+describe('generic RPC errors', () => {
+  it("shows the wallet's or node's own reason instead of viem's boilerplate, without URLs", () => {
+    const fromNode = new InvalidInputRpcError(
+      new RpcRequestError({
+        body: {},
+        url: 'https://rpc.example/v2/SECRET',
+        error: { code: -32000, message: 'insufficient balance for https://rpc.example/v2/SECRET' },
+      }),
+    )
+    const text = friendlyError(fromNode).message
+    expect(text).toBe('Missing or invalid parameters. (insufficient balance for [rpc])')
+    expect(text).not.toContain('SECRET')
+  })
+
+  it('keeps the plain short message when the reason adds nothing', () => {
+    const bare = new InvalidInputRpcError(new Error('Missing or invalid parameters.'))
+    expect(friendlyError(bare).message).toBe(
+      'Missing or invalid parameters.\nDouble check you have provided the correct parameters.',
+    )
   })
 })

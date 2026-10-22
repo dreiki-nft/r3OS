@@ -139,10 +139,41 @@ export function retryFreshFundingStart(error: unknown, justFunded: boolean) {
  */
 /** Quick Start, flagged as a Live Mode setup so the automatic sweep (src/live/autoSweep.ts) waits. */
 export function startLiveQuick(owner: Address, onProgress: (progress: QuickProgress) => void) {
-  return duringLiveSetup(() => runLiveQuick(owner, onProgress))
+  let step: QuickStep = 'network'
+  return duringLiveSetup(() =>
+    runLiveQuick(owner, onProgress, (next) => {
+      step = next
+    }),
+  ).catch((error: unknown) => {
+    throw withStep(error, step)
+  })
 }
 
-async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress) => void) {
+/** Where Quick Start was when it failed. Named in the error so a screenshot says which step broke. */
+export type QuickStep = 'network' | 'signature' | 'gas quote' | 'funding' | 'settling' | 'start'
+
+const STEP_TEXT: Record<QuickStep, string> = {
+  network: 'switching to Monad',
+  signature: 'session signature',
+  'gas quote': 'gas quote',
+  funding: 'funding the paint key',
+  settling: 'waiting for the funding',
+  start: 'starting the session',
+}
+
+/** The error with the failed step added to its message. A closed wallet stays as it is: nothing broke. */
+export function withStep(error: unknown, step: QuickStep) {
+  const friendly = friendlyError(error, 'startSession')
+  if (friendly.rejected || friendly.message.includes('(step:')) return error
+  const tagged = { ...friendly, message: `${friendly.message} (step: ${STEP_TEXT[step]})` }
+  return Object.assign(new Error(tagged.message), { friendly: tagged })
+}
+
+async function runLiveQuick(
+  owner: Address,
+  onProgress: (progress: QuickProgress) => void,
+  mark: (step: QuickStep) => void = () => {},
+) {
   const wallet = getWalletSnapshot().client
   if (!publicClient || !config.paintAddress || !wallet) throw new Error('connect a wallet first')
   const client = publicClient
@@ -154,7 +185,9 @@ async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress
   }
   report({})
 
+  mark('network')
   if (!walletOnCorrectChain()) await switchToMonad()
+  mark('gas quote')
 
   const existingBurner = loadBurner(owner)
   const burner = existingBurner ?? (await createBurnerOnce(owner))
@@ -199,6 +232,7 @@ async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress
     deadline: BigInt(Math.floor(Date.now() / 1_000) + SIGNATURE_TTL_SECONDS),
   }
   let signature: Hex
+  mark('signature')
   try {
     signature = (await wallet.signTypedData({
       account: owner,
@@ -229,6 +263,7 @@ async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress
   }
   let startQuote: ActionQuote
   let paintGas: bigint
+  mark('gas quote')
   try {
     ;[startQuote, paintGas] = await Promise.all([quoteAction(startBase), paintGasPromise])
   } catch (error) {
@@ -265,13 +300,19 @@ async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress
       value,
       action: 'fund burner',
     }
-    const fundQuote = await quoteAction(transfer).catch((error: unknown) => fail(error, 'transfer'))
     // Say it before the wallet does: a wallet that cannot cover the top-up plus its fee answers with a bare
-    // "Transaction creation failed." after the person has already confirmed.
+    // "Transaction creation failed." after the person has already confirmed. Checked before the transfer quote
+    // too, because the node refuses to even estimate a transfer the wallet can't pay ("insufficient balance"),
+    // which used to surface as a generic "Missing or invalid parameters" instead of this explanation.
     const ownerBalance = await client.getBalance({ address: owner }).catch(() => undefined)
+    const roughFee = 21_000n * startQuote.maxFeePerGas
+    const early = fundingShortfall(ownerBalance, value, roughFee)
+    if (early) throw new Error(early)
+    const fundQuote = await quoteAction(transfer).catch((error: unknown) => fail(error, 'transfer'))
     const shortfall = fundingShortfall(ownerBalance, value, fundQuote.gasLimit * fundQuote.maxFeePerGas)
     if (shortfall) throw new Error(shortfall)
     const fundedBalance = balanceBefore + value
+    mark('funding')
     const fundingResult = await sendAction({
       ...transfer,
       quote: fundQuote,
@@ -284,6 +325,7 @@ async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress
     // balance AND advance three blocks beyond the funding receipt. This normally costs about a second on
     // Monad, once per Live session, and is vastly better UX than failing and asking the user to click again.
     setCachedBurnerBalance(owner, fundedBalance)
+    mark('settling')
     await waitForActionFundingSettlement(
       burner.address,
       fundedBalance,
@@ -301,6 +343,7 @@ async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress
   // No prompt: the burner sends startSession itself. The pending nonce should already be warm.
   await nonceWarm
   report({ phase: 'start' })
+  mark('start')
   try {
     await sendAction({
       ...startBase,
