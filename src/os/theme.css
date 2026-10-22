@@ -267,6 +267,17 @@ button:disabled {
 
 .desktop-icon-label {
   padding: 1px 3px;
+  /* A 1px outline so labels stay readable on bright wallpapers (built-ins, frames, the live canvas). */
+  text-shadow:
+    1px 0 #000,
+    -1px 0 #000,
+    0 1px #000,
+    0 -1px #000,
+    1px 1px #000;
+}
+
+.desktop-icon-art .ico {
+  filter: drop-shadow(1px 1px 0 #000);
 }
 
 .desktop-icon.selected .desktop-icon-label {

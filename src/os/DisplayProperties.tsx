@@ -24,6 +24,7 @@ import {
   type ScreensaverSetting,
 } from './screensaver'
 import { resourceLabel, type ImageResource } from './imageResources'
+import { BUILTIN_WALLPAPERS, builtinWallpaper } from './builtinWallpapers'
 
 function sameResource(a?: ImageResource, b?: ImageResource) {
   if (!a || !b) return a === b
@@ -57,9 +58,15 @@ function useNarrowOrTouch() {
   return value
 }
 
+type WallpaperOption = { label: string; resource?: ImageResource; builtin?: string }
+
+const optionKey = (option: { resource?: ImageResource; builtin?: string }) =>
+  option.builtin ? `builtin:${option.builtin}` : resourceKey(option.resource)
+
 function wallpaperOptions(frames: readonly number[], photo?: bigint) {
-  const options: Array<{ label: string; resource?: ImageResource }> = [
+  const options: WallpaperOption[] = [
     { label: '(None) r3OS' },
+    ...BUILTIN_WALLPAPERS.map((wallpaper) => ({ label: wallpaper.label, builtin: wallpaper.id })),
     { label: 'Live canvas', resource: { kind: 'canvas' } },
   ]
   for (const tokenId of frames.filter((id) => id > 0).slice(0, 50)) {
@@ -101,6 +108,11 @@ export function DisplayProperties() {
 
   useEffect(() => {
     let cancelled = false
+    const builtin = builtinWallpaper(draft.builtin)
+    if (builtin) {
+      setPreview(builtin.file)
+      return
+    }
     if (!draft.resource) {
       setPreview('/os/wallpaper/wallpaper-dark.webp')
       return
@@ -112,7 +124,7 @@ export function DisplayProperties() {
       cancelled = true
     }
     // Only real pixel changes re-render a live-canvas preview (not every new block).
-  }, [resourceKey(draft.resource), draft.resource?.kind === 'canvas' ? canvas.background : null])
+  }, [optionKey(draft), draft.resource?.kind === 'canvas' ? canvas.background : null])
 
   const apply = () => {
     setWallpaper(draft)
@@ -147,7 +159,16 @@ export function DisplayProperties() {
           <>
             <div className="display-monitor" aria-label="Wallpaper preview">
               <div className={`display-monitor-screen mode-${draft.mode}`}>
-                {preview && <div style={{ backgroundImage: `url(${JSON.stringify(preview)})` }} />}
+                {preview && (
+                  <div
+                    style={{
+                      backgroundImage: `url(${JSON.stringify(preview)})`,
+                      // A built-in wallpaper fills the screen in Center, as it does on the desktop.
+                      ...(draft.builtin && draft.mode === 'center' ? { backgroundSize: 'cover' } : {}),
+                      ...(draft.builtin && draft.mode === 'tile' ? { backgroundSize: '50%' } : {}),
+                    }}
+                  />
+                )}
               </div>
               <i />
               <b />
@@ -156,14 +177,22 @@ export function DisplayProperties() {
               <label>Wallpaper:</label>
               <div className="display-wallpaper-list listbox sunken" role="listbox" aria-label="Wallpaper">
                 {options.map((option) => {
-                  const selected = sameResource(option.resource, draft.resource)
+                  const selected = option.builtin
+                    ? option.builtin === draft.builtin
+                    : !draft.builtin && sameResource(option.resource, draft.resource)
                   return (
                     <button
-                      key={resourceKey(option.resource)}
+                      key={optionKey(option)}
                       role="option"
                       aria-selected={selected}
                       className={selected ? 'selected' : ''}
-                      onClick={() => setDraft((value) => ({ ...value, resource: option.resource }))}
+                      onClick={() =>
+                        setDraft((value) => ({
+                          mode: value.mode,
+                          resource: option.resource,
+                          builtin: option.builtin,
+                        }))
+                      }
                     >
                       {option.label}
                     </button>
@@ -184,7 +213,13 @@ export function DisplayProperties() {
                   </label>
                 ))}
               </fieldset>
-              <small>{draft.resource ? resourceLabel(draft.resource) : 'default r3OS wallpaper'}</small>
+              <small>
+                {draft.builtin
+                  ? `${builtinWallpaper(draft.builtin)?.label ?? 'r3OS'} wallpaper`
+                  : draft.resource
+                    ? resourceLabel(draft.resource)
+                    : 'default r3OS wallpaper'}
+              </small>
             </div>
           </>
         ) : (

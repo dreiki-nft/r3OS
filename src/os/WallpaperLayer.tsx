@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { getCanvasSnapshot, subscribeCanvas } from '../paint/canvasStore'
+import { builtinWallpaper } from './builtinWallpapers'
 import { getWallpaper, subscribeWallpaper, wallpaperDataUrl } from './wallpaper'
 
 export function WallpaperLayer() {
@@ -15,6 +16,11 @@ export function WallpaperLayer() {
     let lastPixels: Uint8Array | undefined
 
     const render = async () => {
+      const builtin = builtinWallpaper(setting.builtin)
+      if (builtin) {
+        setUrl(builtin.file)
+        return
+      }
       if (!setting.resource) {
         setUrl(undefined)
         return
@@ -59,15 +65,17 @@ export function WallpaperLayer() {
       document.removeEventListener('visibilitychange', onVisibility)
       if (timer) window.clearTimeout(timer)
     }
-  }, [setting.resource])
+  }, [setting.resource, setting.builtin])
 
-  const custom = Boolean(setting.resource && url)
+  const custom = Boolean((setting.resource || setting.builtin) && url)
+  // A built-in wallpaper is a full-screen picture: Center fills the screen with it, like the default wallpaper.
+  const centerSize = setting.builtin ? 'cover' : 'auto'
   const style: CSSProperties | undefined = custom
     ? setting.mode === 'tile'
       ? {
           backgroundImage: `url(${JSON.stringify(url)})`,
           backgroundRepeat: 'repeat',
-          backgroundSize: '256px 256px',
+          backgroundSize: setting.builtin ? 'auto' : '256px 256px',
         }
       : setting.mode === 'stretch'
         ? {
@@ -79,7 +87,7 @@ export function WallpaperLayer() {
         : {
             backgroundImage: `url(${JSON.stringify(url)})`,
             backgroundRepeat: 'no-repeat',
-            backgroundSize: 'auto',
+            backgroundSize: centerSize,
             backgroundPosition: 'center',
           }
     : undefined

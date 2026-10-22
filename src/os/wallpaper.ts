@@ -1,9 +1,12 @@
 import { loadResourcePixels, resourceLabel, type ImageResource } from './imageResources'
 import { pushBalloon } from './balloons'
+import { builtinWallpaper } from './builtinWallpapers'
 
 export type WallpaperMode = 'tile' | 'center' | 'stretch'
 export interface WallpaperSetting {
   resource?: ImageResource
+  /** A wallpaper that ships with r3OS (src/os/builtinWallpapers.ts); set instead of `resource`. */
+  builtin?: string
   mode: WallpaperMode
 }
 
@@ -45,6 +48,11 @@ export function parseWallpaper(raw: string | null): WallpaperSetting {
   try {
     const parsed = JSON.parse(raw) as { kind?: unknown; tokenId?: unknown; labsId?: unknown; mode?: unknown }
     const mode = validMode(parsed.mode) ? parsed.mode : 'center'
+    if (parsed.kind === 'builtin') {
+      const id = (parsed as { id?: unknown }).id
+      const known = typeof id === 'string' ? builtinWallpaper(id) : undefined
+      return known ? { builtin: known.id, mode } : { mode }
+    }
     const resource = normalizeResource(parsed)
     return resource ? { resource, mode } : { mode }
   } catch {
@@ -71,6 +79,7 @@ function readStored() {
 let setting = parseWallpaper(readStored())
 
 export function serializeWallpaper(value: WallpaperSetting) {
+  if (value.builtin) return JSON.stringify({ kind: 'builtin', id: value.builtin, mode: value.mode })
   if (!value.resource) return JSON.stringify({ kind: 'none', mode: value.mode })
   const resource =
     value.resource.kind === 'photo'
