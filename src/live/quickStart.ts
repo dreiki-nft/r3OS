@@ -11,6 +11,7 @@ import { encodeChangedRuns } from '../lib/patch'
 import { getCanvasSnapshot } from '../paint/canvasStore'
 import { confirmHigherCost } from '../os/confirm'
 import { burnerStatus, createBurnerOnce, loadBurner, setCachedBurnerBalance } from './burner'
+import { duringLiveSetup } from './liveSetup'
 import { resetBurnerNonce } from './nonce'
 import {
   burnerFundTooLarge,
@@ -136,7 +137,12 @@ export function retryFreshFundingStart(error: unknown, justFunded: boolean) {
  * (prompt 2, skipped when it already has enough), then the burner registers itself. Same contract calls and
  * limits as the wizard, with the defaults filled in.
  */
-export async function startLiveQuick(owner: Address, onProgress: (progress: QuickProgress) => void) {
+/** Quick Start, flagged as a Live Mode setup so the automatic sweep (src/live/autoSweep.ts) waits. */
+export function startLiveQuick(owner: Address, onProgress: (progress: QuickProgress) => void) {
+  return duringLiveSetup(() => runLiveQuick(owner, onProgress))
+}
+
+async function runLiveQuick(owner: Address, onProgress: (progress: QuickProgress) => void) {
   const wallet = getWalletSnapshot().client
   if (!publicClient || !config.paintAddress || !wallet) throw new Error('connect a wallet first')
   const client = publicClient

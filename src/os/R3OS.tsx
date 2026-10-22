@@ -18,6 +18,7 @@ import { FirstRun } from './FirstRun'
 import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet, takeGuestNotice } from '../chain/wallet'
+import { initAutoSweep } from '../live/autoSweep'
 import { DisconnectGuard } from '../live/DisconnectGuard'
 import { requestDisconnect } from '../live/disconnectGuardStore'
 import { Welcome } from './Welcome'
@@ -98,6 +99,7 @@ export function R3OS() {
   useEffect(() => {
     initSound()
     initLiveNudge()
+    initAutoSweep()
     void initReleases()
     startPresence()
     initActivity()
