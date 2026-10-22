@@ -18,6 +18,8 @@ import { FirstRun } from './FirstRun'
 import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { initLiveNudge } from '../live/liveNudge'
 import { disconnectWallet, takeGuestNotice } from '../chain/wallet'
+import { DisconnectGuard } from '../live/DisconnectGuard'
+import { requestDisconnect } from '../live/disconnectGuardStore'
 import { Welcome } from './Welcome'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { startPresence } from '../paint/presence'
@@ -267,15 +269,19 @@ export function R3OS() {
       <Assistant />
       <BalloonStack />
       <ConfirmHost />
+      <DisconnectGuard />
       <ErrorBoundary mode="taskbar">
         <Taskbar
-          onShutdown={() => {
-            disconnectWallet()
-            resetWindows()
-            clearBalloons()
-            playSound('system-shutdown')
-            setShutdown(true)
-          }}
+          onShutdown={() =>
+            // Asks first if this browser still holds a running Live Mode session or leftover MON.
+            requestDisconnect(() => {
+              disconnectWallet()
+              resetWindows()
+              clearBalloons()
+              playSound('system-shutdown')
+              setShutdown(true)
+            })
+          }
         />
       </ErrorBoundary>
       {stormId != null && <StormScreen start={stormStart ?? 0n} onDismiss={dismissStorm} />}

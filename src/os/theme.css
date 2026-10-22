@@ -702,6 +702,19 @@ button:disabled {
   font-size: 11px;
 }
 
+.disconnect-guard {
+  width: min(540px, calc(100vw - 24px));
+  max-width: none;
+}
+
+.disconnect-guard .message-body p {
+  margin: 0 0 8px;
+}
+
+.disconnect-guard-error {
+  color: var(--danger);
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

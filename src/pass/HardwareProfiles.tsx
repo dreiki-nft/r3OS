@@ -13,7 +13,8 @@ import { Button } from '../os/ui/Button'
 import { GroupBox } from '../os/ui/GroupBox'
 import { Icon } from '../os/ui/Icon'
 import { MessageBox } from '../os/ui/MessageBox'
-import { cachedBurnerBalance, deleteBurner, setCachedBurnerBalance } from '../live/burner'
+import { cachedBurnerBalance, setCachedBurnerBalance } from '../live/burner'
+import { endLiveSession } from '../live/endSession'
 import { StrandedBurners } from '../live/StrandedBurners'
 import {
   burnerTopUpValue,
@@ -24,10 +25,8 @@ import {
   getLiveSnapshot,
   liveActive,
   liveTimeLeftMs,
-  refreshLiveStatus,
   setLiveOwner,
   subscribeLive,
-  sweepAmount,
   unitsLeft,
 } from '../live/liveStore'
 
@@ -212,89 +211,16 @@ export function HardwareProfiles() {
 
   async function endSession() {
     if (!wallet.account || !live.burner || !config.paintAddress || !publicClient) return
-    const account = wallet.account
     setEnding(true)
     endWorkRef.current = true
     setError('')
     try {
-      // An expired or already revoked session needs no revoke: just sweep the MON and forget the key.
-      if (active) {
-        setEndProgress('1 of 3 · revoking burner…')
-        const revokeQuote = await quoteAction({
-          kind: 'estimate',
-          address: config.paintAddress,
-          abi: R3OS_PAINT_ABI,
-          functionName: 'revokeSession',
-          args: [live.burner.address],
-          account,
-          action: 'end live session',
-        })
-        await sendAction({
-          kind: 'estimate',
-          address: config.paintAddress,
-          abi: R3OS_PAINT_ABI,
-          functionName: 'revokeSession',
-          args: [live.burner.address],
-          account,
-          quote: revokeQuote,
-          confirmHigherCost,
-          action: 'end live session',
-        })
-      }
-
-      setEndProgress('2 of 3 · sweeping leftover MON…')
-      const balance = await publicClient.getBalance({ address: live.burner.address })
-      if (balance > 0n) {
-        const quoteSweep = (value: bigint) =>
-          quoteAction({
-            type: 'transfer',
-            kind: 'estimate',
-            to: account,
-            functionName: 'transfer',
-            account,
-            signer: 'burner',
-            value,
-            action: 'sweep burner',
-          })
-
-        // Probe with a non-zero transfer so executable/EIP-7702 recipients are priced as an
-        // actual value transfer. Then quote the candidate sweep itself before signing. Never
-        // assume a recipient is a legacy 21k EOA.
-        const probeQuote = await quoteSweep(1n)
-        let value = sweepAmount(balance, probeQuote.gasLimit, probeQuote.maxFeePerGas)
-        if (value > 0n) {
-          let sweepQuote = await quoteSweep(value)
-          let safeValue = sweepAmount(balance, sweepQuote.gasLimit, sweepQuote.maxFeePerGas)
-
-          // If the recipient's gas requirement changes with msg.value, shrink to the newly safe
-          // amount and quote that value once more. We never increase the candidate after quoting.
-          if (safeValue < value && safeValue > 0n) {
-            value = safeValue
-            sweepQuote = await quoteSweep(value)
-            safeValue = sweepAmount(balance, sweepQuote.gasLimit, sweepQuote.maxFeePerGas)
-          }
-          value = safeValue < value ? safeValue : value
-
-          if (value > 0n) {
-            await sendAction({
-              type: 'transfer',
-              kind: 'estimate',
-              to: account,
-              functionName: 'transfer',
-              account,
-              signer: 'burner',
-              value,
-              quote: sweepQuote,
-              confirmHigherCost,
-              action: 'sweep burner',
-            })
-          }
-        }
-      }
-
-      setEndProgress('3 of 3 · removing local key…')
-      deleteBurner(account)
-      await refreshLiveStatus(account)
+      await endLiveSession({
+        account: wallet.account,
+        burner: live.burner.address,
+        active,
+        onProgress: setEndProgress,
+      })
       endWorkRef.current = false
       setEnding(false)
       setEndProgress('')

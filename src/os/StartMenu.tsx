@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { disconnectWallet, getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { requestDisconnect } from '../live/disconnectGuardStore'
 import { startMenuGroups } from './layout'
 import { openProgram, preloadProgram, programById, programIsVisible, type ProgramDef } from './programs'
 import { placeSubmenu, startMenuKeyAction, toggleSubmenu, type StartSubmenu } from './shellMenus'
@@ -233,9 +234,12 @@ export function StartMenu({
             role="menuitem"
             data-start-item
             onClick={() => {
-              disconnectWallet()
-              playSound('system-shutdown')
               onClose()
+              // Asks first if this browser still holds a running Live Mode session or leftover MON.
+              requestDisconnect(() => {
+                disconnectWallet()
+                playSound('system-shutdown')
+              })
             }}
           >
             <Icon name="key" size={24} />
