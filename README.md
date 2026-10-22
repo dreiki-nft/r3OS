@@ -371,7 +371,7 @@ The contracts are frozen; everything below happens on top of them.
 
 - **Season 1 ends on November 5, 2026, 11:00 UTC.** The last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen, so the canvas keeps getting new painters and the same ones keep coming back.
-- **Storm Chaser Trilogy (October 21–24).** Paint during the DF1 storms at blocks 115,400,000, 116,000,000 and 116,200,000 (600 blocks each) for a raffle ticket per storm, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn by the raffle contract above with Pyth Entropy randomness.
+- **Storm Season (October 21 – November 4).** Every DF1 storm until season 1 ends (21 storms, blocks 115,400,000 to 119,400,000, one every 200,000 blocks, 600 blocks each) is worth one raffle ticket to every wallet that paints during it, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn after the last storm by the raffle contract above with Pyth Entropy randomness.
 - **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
 - **Season 2 opens the same minute,** on a fresh canvas, with a guest.
 
