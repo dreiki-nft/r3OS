@@ -32,9 +32,6 @@ const SURFACE_CLASSES = [
   'vignette',
   'noise',
   'grain',
-  'scratch',
-  'tag',
-  'heart',
   'desktop-icons',
 ]
 

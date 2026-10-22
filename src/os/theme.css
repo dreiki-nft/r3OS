@@ -168,62 +168,6 @@ button:disabled {
   animation: grain 9s steps(7) infinite;
 }
 
-.scratch,
-.tag,
-.heart {
-  position: absolute;
-  pointer-events: none;
-  user-select: none;
-  z-index: -1;
-}
-
-.scratch {
-  width: 180px;
-  height: 1px;
-  background: #f2efe9;
-  opacity: 0.26;
-}
-
-.s1 {
-  left: 48%;
-  top: 18%;
-  transform: rotate(-17deg);
-}
-
-.s2 {
-  left: 67%;
-  top: 64%;
-  transform: rotate(12deg);
-}
-
-.tag {
-  border: 1px solid currentColor;
-  padding: 3px 6px;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-}
-
-.t1 {
-  left: 57%;
-  top: 22%;
-  transform: rotate(-7deg);
-  color: rgba(242, 239, 233, 0.45);
-}
-
-.t2 {
-  left: 71%;
-  top: 42%;
-  transform: rotate(8deg);
-  color: rgba(254, 195, 67, 0.55);
-}
-
-.heart {
-  right: 12%;
-  bottom: 18%;
-  font: 180px serif;
-  color: rgba(238, 147, 227, 0.16);
-}
-
 @keyframes grain {
   50% {
     transform: translate(5px, -7px);

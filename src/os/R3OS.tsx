@@ -223,11 +223,6 @@ export function R3OS() {
       <div className="vignette" />
       <div className="noise" />
       <div className="grain" />
-      <div className="scratch s1" />
-      <div className="scratch s2" />
-      <span className="tag t1">NO SIGNAL</span>
-      <span className="tag t2">DF1 200%</span>
-      <span className="heart">♡</span>
       <Desktop />
       <Welcome />
       <FirstRun />
