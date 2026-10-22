@@ -1883,20 +1883,43 @@ button:disabled {
 
 .background-picker {
   display: grid;
-  grid-template-columns: repeat(8, 30px);
-  gap: 4px;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
   margin: 12px 0;
 }
 
+/* A swatch with its name underneath; the colour that is the background now is marked "now" and can't be picked. */
 .background-picker button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.background-picker .background-swatch {
   width: 30px;
   height: 30px;
   border: 2px solid #111;
 }
 
+.background-picker small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .background-picker button.selected {
-  outline: 2px solid #f2efe9;
-  outline-offset: 1px;
+  border-color: #f2efe9;
+}
+
+.background-picker button:disabled {
+  cursor: default;
+}
+
+.background-picker button:disabled small,
+.background-picker .background-now {
+  color: var(--muted);
 }
 
 .message-box input {

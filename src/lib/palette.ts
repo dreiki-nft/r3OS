@@ -26,3 +26,18 @@ export const PALETTE: PaletteEntry[] = [
 
 export const WIDTH = 256
 export const HEIGHT = 256
+
+/**
+ * The background colours the Paint contract accepts (`_allowedBackground`), with the names its metadata uses
+ * (`_backgroundName`). Every other palette colour is rejected by `setBackground`; scripts/background-colours.test.ts checks this
+ * list against the contract source.
+ */
+export const BACKGROUND_CHOICES: { index: number; name: string }[] = [
+  { index: 0, name: 'white' },
+  { index: 5, name: 'gold' },
+  { index: 6, name: 'og' },
+  { index: 8, name: 'green' },
+  { index: 9, name: 'nad' },
+  { index: 10, name: 'purple' },
+  { index: 11, name: 'DF1 cyan' },
+]

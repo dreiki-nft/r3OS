@@ -46,7 +46,7 @@ import { gasHint } from './gasHint'
 import { maxCostWei } from '../chain/gas'
 import { startLiveQuick, type QuickProgress } from '../live/quickStart'
 import { drawEllipse, drawLine, drawRect, floodFill, type Point } from '../lib/paintEngine'
-import { PALETTE } from '../lib/palette'
+import { BACKGROUND_CHOICES, PALETTE } from '../lib/palette'
 import { encodeChangedRuns } from '../lib/patch'
 import { clearAssistantTip, setAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
@@ -102,7 +102,6 @@ import { Toolbox, type Tool } from './Toolbox'
 import { painterName, usePainterNames } from '../chain/names'
 
 const EMPTY_BUDGET: BudgetState = { hourly: 0, hourlyLimit: 0, holder: 0, total: 0, activeDays: 0 }
-const ALLOWED_BACKGROUNDS = new Set([0, 5, 6, 8, 9, 10, 11])
 
 function short(address?: string) {
   return address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '—'
@@ -672,6 +671,8 @@ export function PaintProgram() {
 
   useEffect(() => {
     if (!backgroundPicker || !wallet.account || !config.paintAddress || config.demo) return
+    // The current colour can't be set again (the contract reverts NoChange): nothing to quote until one is picked.
+    if (backgroundCandidate === canvas.backgroundColor) return
     void lazyQuote(quoteKey('setBackground', String(backgroundCandidate)), {
       kind: 'estimate',
       address: config.paintAddress,
@@ -680,7 +681,7 @@ export function PaintProgram() {
       args: [backgroundCandidate, stableHolderIds],
       account: wallet.account,
     })
-  }, [backgroundPicker, backgroundCandidate, wallet.account, holderKey])
+  }, [backgroundPicker, backgroundCandidate, canvas.backgroundColor, wallet.account, holderKey])
 
   function commit(mutator: (buffer: Uint8Array) => void) {
     pushUndo()
@@ -1765,24 +1766,38 @@ export function PaintProgram() {
           <div className="message-box window">
             <b>Background colour</b>
             <p>Changing it costs 256 budget units and has a global cooldown.</p>
-            <div className="background-picker">
-              {PALETTE.map((entry) => (
-                <button
-                  key={entry.index}
-                  disabled={!ALLOWED_BACKGROUNDS.has(entry.index)}
-                  className={backgroundCandidate === entry.index ? 'selected' : ''}
-                  style={{ background: entry.hex }}
-                  title={entry.name}
-                  onClick={() => setBackgroundCandidate(entry.index)}
-                />
-              ))}
+            <div className="background-picker" role="radiogroup" aria-label="background colour">
+              {BACKGROUND_CHOICES.map((choice) => {
+                const current = choice.index === canvas.backgroundColor
+                return (
+                  <button
+                    key={choice.index}
+                    role="radio"
+                    aria-checked={backgroundCandidate === choice.index}
+                    disabled={current}
+                    className={backgroundCandidate === choice.index && !current ? 'selected' : ''}
+                    title={current ? `${choice.name} (the background now)` : choice.name}
+                    onClick={() => setBackgroundCandidate(choice.index)}
+                  >
+                    <span className="background-swatch" style={{ background: PALETTE[choice.index].hex }} />
+                    <small>{choice.name}</small>
+                    {current && <small className="background-now">now</small>}
+                  </button>
+                )
+              })}
             </div>
-            <p>max cost: {quoteText(bgKey)}</p>
+            <p>
+              max cost:{' '}
+              {backgroundCandidate === canvas.backgroundColor ? 'pick a new colour' : quoteText(bgKey)}
+            </p>
             <FeeNote />
             <div className="dialog-actions">
               <Button
                 primary
-                disabled={!(quotes[bgKey] && typeof quotes[bgKey] !== 'string')}
+                disabled={
+                  backgroundCandidate === canvas.backgroundColor ||
+                  !(quotes[bgKey] && typeof quotes[bgKey] !== 'string')
+                }
                 onClick={() => {
                   setBackgroundPicker(false)
                   void simpleWrite(
