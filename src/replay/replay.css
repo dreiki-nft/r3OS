@@ -27,9 +27,17 @@
   flex-wrap: wrap;
   gap: 4px 14px;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
+/* The last painter's name changes every frame and can be long: it always gets its own single line, cut with
+   an ellipsis, so the slider and the buttons below never jump while the replay plays. */
 .replay-latest {
+  flex: 1 0 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-muted);
 }
 
