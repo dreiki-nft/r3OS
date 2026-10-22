@@ -32,6 +32,7 @@ export const ICON_NAMES = [
   'pencil',
   'picker',
   'question-filled',
+  'replay',
   'rocket',
   'speaker',
   'star',

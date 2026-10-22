@@ -160,7 +160,7 @@ export const programs: ProgramDef[] = [
   {
     id: 'replay',
     title: 'Season Replay',
-    icon: 'gallery',
+    icon: 'replay',
     colour: '#5FEDDF',
     component: ReplayProgram,
     defaultSize: { width: 580, height: 720 },

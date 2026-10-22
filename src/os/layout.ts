@@ -9,6 +9,7 @@ export const DESKTOP_PROGRAMS = [
   'paint',
   'monad-hw',
   'frames',
+  'replay',
   'pass',
   'block-camera',
   'cdrom',

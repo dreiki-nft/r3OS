@@ -17,6 +17,7 @@ describe('desktop', () => {
       'paint',
       'monad-hw',
       'frames',
+      'replay',
       'pass',
       'block-camera',
       'cdrom',
@@ -27,7 +28,7 @@ describe('desktop', () => {
 
   it('adds Auction after the primary desktop order only while an auction is live', () => {
     const ids = desktopProgramIds(visible, true)
-    expect(ids).toHaveLength(9)
+    expect(ids).toHaveLength(10)
     expect(ids.at(-1)).toBe('auction')
     expect(auctionIsLive(0n, undefined)).toBe(false)
     expect(auctionIsLive(2n, 1)).toBe(true)
