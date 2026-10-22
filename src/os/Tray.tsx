@@ -24,7 +24,13 @@ import { dismissBalloon, getBalloons, pushBalloon, subscribeBalloons } from './b
 import { openProgram } from './programs'
 import { getBlockPlayerPlaying, stopBlockPlayer, subscribeBlockPlayer } from '../monadhw/blockPlayer'
 import { isMuted, setMuted, subscribeSoundSettings } from './sound'
-import { checkStormAlert, getStormAlert, subscribeStormAlert, toggleStormAlert } from './stormAlert'
+import {
+  bellBalloon,
+  checkStormAlert,
+  getStormAlert,
+  subscribeStormAlert,
+  toggleStormAlert,
+} from './stormAlert'
 import { Icon } from './ui/Icon'
 import { MessageBox } from './ui/MessageBox'
 
@@ -88,20 +94,7 @@ export function Tray() {
             : 'Storm bell: get a ping 333 blocks (about 100 seconds) before every DF1 storm'
         }
         onClick={() => {
-          void toggleStormAlert().then((result) =>
-            pushBalloon({
-              id: 'storm-bell',
-              title: result === 'off' ? 'Storm bell off' : 'Storm bell on',
-              icon: 'lightning',
-              sound: false,
-              body:
-                result === 'off'
-                  ? 'no more storm pings.'
-                  : result === 'on'
-                    ? 'r3OS will ping you 333 blocks (about 100 seconds) before every DF1 storm, even with this tab in the background. keep r3OS open in a tab.'
-                    : 'r3OS will ping you here, 333 blocks before every DF1 storm, while it is open. browser notifications are blocked or not available, so it can only ring inside r3OS.',
-            }),
-          )
+          void toggleStormAlert().then((result) => pushBalloon(bellBalloon(result)))
         }}
       >
         <Icon name="bell" size={20} colour={stormAlert ? '#FEC343' : undefined} />

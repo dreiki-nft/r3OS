@@ -6,6 +6,8 @@ import {
   checkStormAlert,
   getStormAlert,
   resetStormAlertForTests,
+  askForNotifications,
+  bellBalloon,
   toggleStormAlert,
 } from './stormAlert'
 
@@ -72,7 +74,7 @@ describe('storm bell', () => {
 
   it('still works inside r3OS when notifications are blocked or missing', async () => {
     FakeNotification.permission = 'denied'
-    expect(await toggleStormAlert()).toBe('in-app')
+    expect(await toggleStormAlert()).toBe('blocked')
     expect(getStormAlert()).toBe(true)
     checkStormAlert(STORM - 333n, 302)
     expect(getBalloons().map((b) => b.title)).toEqual(['⚡ DF1 storm in 333 blocks'])
@@ -80,7 +82,7 @@ describe('storm bell', () => {
 
     resetStormAlertForTests(false)
     vi.stubGlobal('Notification', undefined)
-    expect(await toggleStormAlert()).toBe('in-app')
+    expect(await toggleStormAlert()).toBe('unsupported')
   })
 
   it('in the background: a balloon plus one browser notification per storm, tagged so tabs share it', () => {
@@ -106,5 +108,33 @@ describe('storm bell', () => {
   it('off means silent', () => {
     checkStormAlert(STORM - 333n, 302)
     expect(getBalloons()).toHaveLength(0)
+  })
+
+  it('tells the three "no" answers apart, and only offers to ask again when asking can still work', async () => {
+    FakeNotification.requestPermission.mockImplementationOnce(async () => 'default')
+    expect(await toggleStormAlert()).toBe('dismissed') // closed, ignored, or Chrome's hidden question
+    const dismissed = bellBalloon('dismissed')
+    expect(dismissed.actions?.map((a) => a.label)).toEqual(['Allow notifications'])
+    expect(dismissed.sticky).toBe(true)
+
+    // The button asks again; this time the person says yes.
+    FakeNotification.requestPermission.mockImplementationOnce(async () => {
+      FakeNotification.permission = 'granted'
+      return 'granted'
+    })
+    clearBalloons()
+    dismissed.actions?.[0].run()
+    await vi.waitFor(() => expect(getBalloons().map((b) => b.title)).toEqual(['Storm bell on']))
+
+    const blocked = bellBalloon('blocked')
+    expect(blocked.actions).toBeUndefined() // a page can't lift a block: it explains how instead
+    expect(blocked.body).toContain('Notifications › Allow')
+
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)' })
+    expect(bellBalloon('unsupported').body).toContain('Add to Home Screen')
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Windows NT 10.0)' })
+    expect(bellBalloon('unsupported').body).not.toContain('Home Screen')
+    vi.stubGlobal('Notification', undefined)
+    expect(await askForNotifications()).toBe('unsupported')
   })
 })
