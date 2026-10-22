@@ -14,6 +14,8 @@ import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { confirmHigherCost } from '../os/confirm'
 import { deleteBurner } from './burner'
 import { refreshLiveStatus, sweepAmount } from './liveStore'
+import { autoSweepSettled, duringLiveSetup } from './liveSetup'
+import { STRANDED_DUST } from './sessionHistory'
 
 export interface EndSessionOptions {
   /** The main wallet: it signs the revoke and receives the leftover MON. */
@@ -88,8 +90,15 @@ export async function sweepBurner({ account, burner, confirmHigherCost }: SweepO
   return value
 }
 
-export async function endLiveSession({ account, burner, active, onProgress }: EndSessionOptions) {
+export function endLiveSession(options: EndSessionOptions) {
+  // Held as Live Mode work: once the revoke lands the session is "over", and the automatic sweep must not start a
+  // second, competing sweep of the same burner (src/live/autoSweep.ts).
+  return duringLiveSetup(() => runEndSession(options))
+}
+
+async function runEndSession({ account, burner, active, onProgress }: EndSessionOptions) {
   if (!config.paintAddress || !publicClient) throw new Error('DEMO_MODE')
+  const client = publicClient
   // An expired or already revoked session needs no revoke: just sweep the MON and forget the key.
   if (active) {
     onProgress?.('1 of 3 · revoking burner…')
@@ -116,7 +125,15 @@ export async function endLiveSession({ account, burner, active, onProgress }: En
   }
 
   onProgress?.('2 of 3 · sweeping leftover MON…')
-  await sweepBurner({ account, burner, confirmHigherCost })
+  // An automatic sweep that was already sending finishes first; this one then sees what is actually left.
+  await autoSweepSettled()
+  try {
+    await sweepBurner({ account, burner, confirmHigherCost })
+  } catch (error) {
+    // If the MON is back anyway (another sweep landed first), ending the session succeeded: don't report an error.
+    const left = await client.getBalance({ address: burner }).catch(() => undefined)
+    if (left == null || left > STRANDED_DUST) throw error
+  }
 
   onProgress?.('3 of 3 · removing local key…')
   deleteBurner(account)

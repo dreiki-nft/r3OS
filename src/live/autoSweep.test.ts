@@ -19,7 +19,10 @@ vi.mock('../chain/wallet', () => ({
   subscribeWallet: () => () => {},
 }))
 vi.mock('../os/windows', () => ({ getWindows: () => ({ windows }) }))
-vi.mock('./liveSetup', () => ({ liveSetupRunning: () => setup }))
+vi.mock('./liveSetup', () => ({
+  liveSetupRunning: () => setup,
+  trackAutoSweep: <T>(task: Promise<T>) => task,
+}))
 vi.mock('./endSession', () => ({ sweepBurner: (...args: unknown[]) => sweepBurner(...args) }))
 vi.mock('./liveStore', async (load) => ({
   ...(await load<typeof import('./liveStore')>()),

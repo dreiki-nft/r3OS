@@ -20,7 +20,7 @@ import {
   subscribeLive,
   type LiveSnapshot,
 } from './liveStore'
-import { liveSetupRunning } from './liveSetup'
+import { liveSetupRunning, trackAutoSweep } from './liveSetup'
 import { STRANDED_DUST } from './sessionHistory'
 
 const ZERO = '0x0000000000000000000000000000000000000000'
@@ -60,7 +60,7 @@ async function check() {
   running = true
   try {
     // Gas went up since the quote: skip rather than ask, it runs again on the next visit.
-    const sent = await sweepBurner({ account, burner, confirmHigherCost: async () => false })
+    const sent = await trackAutoSweep(sweepBurner({ account, burner, confirmHigherCost: async () => false }))
     if (sent > 0n)
       pushBalloon({
         id: 'live-auto-sweep',
