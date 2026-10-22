@@ -90,6 +90,19 @@ export async function sweepBurner({ account, burner, confirmHigherCost }: SweepO
   return value
 }
 
+/** How long End session keeps checking the chain after a step reports an error (tests shorten it). */
+export const confirmTiming = { totalMs: 30_000, stepMs: 2_000 }
+
+/** True as soon as `check` passes, false if it never does within confirmTiming.totalMs (read errors count as "not yet"). */
+async function eventually(check: () => Promise<boolean>) {
+  const until = Date.now() + confirmTiming.totalMs
+  for (;;) {
+    if (await check().catch(() => false)) return true
+    if (Date.now() >= until) return false
+    await new Promise((resolve) => setTimeout(resolve, confirmTiming.stepMs))
+  }
+}
+
 export function endLiveSession(options: EndSessionOptions) {
   // Held as Live Mode work: once the revoke lands the session is "over", and the automatic sweep must not start a
   // second, competing sweep of the same burner (src/live/autoSweep.ts).
@@ -111,17 +124,33 @@ async function runEndSession({ account, burner, active, onProgress }: EndSession
       account,
       action: 'end live session',
     })
-    await sendAction({
-      kind: 'estimate',
-      address: config.paintAddress,
-      abi: R3OS_PAINT_ABI,
-      functionName: 'revokeSession',
-      args: [burner],
-      account,
-      quote: revokeQuote,
-      confirmHigherCost,
-      action: 'end live session',
-    })
+    const paint = config.paintAddress
+    try {
+      await sendAction({
+        kind: 'estimate',
+        address: paint,
+        abi: R3OS_PAINT_ABI,
+        functionName: 'revokeSession',
+        args: [burner],
+        account,
+        quote: revokeQuote,
+        confirmHigherCost,
+        action: 'end live session',
+      })
+    } catch (error) {
+      // A slow receipt isn't a failed revoke: if the chain shows the session revoked, carry on.
+      onProgress?.('1 of 3 · confirming the revoke…')
+      const revoked = await eventually(async () => {
+        const info = (await client.readContract({
+          address: paint,
+          abi: R3OS_PAINT_ABI,
+          functionName: 'sessionInfo',
+          args: [burner],
+        })) as readonly [Address, bigint, bigint, bigint, boolean, boolean]
+        return info[4]
+      })
+      if (!revoked) throw error
+    }
   }
 
   onProgress?.('2 of 3 · sweeping leftover MON…')
@@ -130,9 +159,11 @@ async function runEndSession({ account, burner, active, onProgress }: EndSession
   try {
     await sweepBurner({ account, burner, confirmHigherCost })
   } catch (error) {
-    // If the MON is back anyway (another sweep landed first), ending the session succeeded: don't report an error.
-    const left = await client.getBalance({ address: burner }).catch(() => undefined)
-    if (left == null || left > STRANDED_DUST) throw error
+    // The MON can be back even though this reported an error: another sweep landed first, or the transfer went
+    // through but its receipt was slow to read. Watch the burner for a while before calling it a failure.
+    onProgress?.('2 of 3 · confirming the transfer…')
+    const back = await eventually(async () => (await client.getBalance({ address: burner })) <= STRANDED_DUST)
+    if (!back) throw error
   }
 
   onProgress?.('3 of 3 · removing local key…')

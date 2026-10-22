@@ -6,13 +6,19 @@ const BURNER = '0x2217C255B93D2fd636fa4020d75e9bc1b7CeD5c6' as Address
 const MON = 10n ** 18n
 
 let balance = 2n * MON
+let revoked = false
 const sent: string[] = []
 const deleteBurner = vi.fn()
 
 vi.mock('../chain/config', () => ({
   config: { paintAddress: '0x5102de3817ae16b3afaeb9d180130669a70787b3', chainId: 143 },
 }))
-vi.mock('../chain/clients', () => ({ publicClient: { getBalance: async () => balance } }))
+vi.mock('../chain/clients', () => ({
+  publicClient: {
+    getBalance: async () => balance,
+    readContract: async () => [OWNER, 200n, 5000n, 10n, revoked, !revoked],
+  },
+}))
 vi.mock('../chain/tx', () => ({
   quoteAction: async () => ({
     gasLimit: 21_000n,
@@ -37,14 +43,17 @@ vi.mock('./liveStore', () => ({
   sweepAmount: (b: bigint, g: bigint, f: bigint) => (b > g * f ? b - g * f : 0n),
 }))
 
-const { endLiveSession } = await import('./endSession')
+const { endLiveSession, confirmTiming } = await import('./endSession')
 const { liveSetupRunning, trackAutoSweep } = await import('./liveSetup')
 
 describe('ending a Live Mode session', () => {
   beforeEach(() => {
     balance = 2n * MON
+    revoked = false
     sent.length = 0
     deleteBurner.mockReset()
+    confirmTiming.totalMs = 200
+    confirmTiming.stepMs = 20
   })
 
   it('holds the automatic sweep off while it runs', async () => {
@@ -95,5 +104,49 @@ describe('ending a Live Mode session', () => {
     await run
     expect(order.indexOf('auto-sweep done')).toBeLessThan(order.lastIndexOf('3 of 3'))
     expect(sent).toEqual(['transfer'])
+  })
+
+  it('a slow receipt is not a failure: it waits until the chain shows the MON back', async () => {
+    const tx = await import('../chain/tx')
+    vi.spyOn(tx, 'sendAction').mockImplementation(async (opts: { functionName: string }) => {
+      if (opts.functionName === 'transfer') {
+        // The transfer went through, but the RPC only shows it a little later.
+        setTimeout(() => (balance = 420_000_000_000_000n), 60)
+        throw new Error('ACTION_RECEIPT_TIMEOUT')
+      }
+      return undefined as never
+    })
+    const steps: string[] = []
+    await expect(
+      endLiveSession({ account: OWNER, burner: BURNER, active: false, onProgress: (t) => steps.push(t) }),
+    ).resolves.toBeUndefined()
+    expect(steps).toContain('2 of 3 · confirming the transfer…')
+    expect(deleteBurner).toHaveBeenCalledWith(OWNER)
+    vi.restoreAllMocks()
+  })
+
+  it('a slow revoke receipt: carries on once the chain shows the session revoked', async () => {
+    const tx = await import('../chain/tx')
+    vi.spyOn(tx, 'sendAction').mockImplementation(async (opts: { functionName: string }) => {
+      if (opts.functionName === 'revokeSession') {
+        setTimeout(() => (revoked = true), 60)
+        throw new Error('ACTION_RECEIPT_TIMEOUT')
+      }
+      balance = 420_000_000_000_000n // the sweep goes through
+      return undefined as never
+    })
+    await expect(endLiveSession({ account: OWNER, burner: BURNER, active: true })).resolves.toBeUndefined()
+    expect(deleteBurner).toHaveBeenCalledWith(OWNER)
+    vi.restoreAllMocks()
+  })
+
+  it('a revoke that really failed (session still active) is still an error', async () => {
+    const tx = await import('../chain/tx')
+    vi.spyOn(tx, 'sendAction').mockImplementation(async () => {
+      throw new Error('User rejected the request.')
+    })
+    await expect(endLiveSession({ account: OWNER, burner: BURNER, active: true })).rejects.toThrow('rejected')
+    expect(deleteBurner).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
   })
 })
