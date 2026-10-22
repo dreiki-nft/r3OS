@@ -14,6 +14,7 @@ import { GroupBox } from '../os/ui/GroupBox'
 import { Icon } from '../os/ui/Icon'
 import { MessageBox } from '../os/ui/MessageBox'
 import { cachedBurnerBalance, deleteBurner, setCachedBurnerBalance } from '../live/burner'
+import { StrandedBurners } from '../live/StrandedBurners'
 import {
   burnerTopUpValue,
   confirmBurnerBalance,
@@ -357,6 +358,7 @@ export function HardwareProfiles() {
           <dd>{live.sessionPaints.toLocaleString()} (counts toward LIVE WIRE)</dd>
         </dl>
       </GroupBox>
+      <StrandedBurners owner={wallet.account} current={live.burner?.address} refresh={refreshTick} />
       <GroupBox title="Cancel unused signatures">
         <dl className="hardware-status">
           <dt>Session nonce</dt>

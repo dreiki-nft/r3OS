@@ -14,6 +14,7 @@ import { Button } from '../os/ui/Button'
 import { FeeNote } from '../os/ui/FeeNote'
 import { SafeImage } from '../os/ui/SafeImage'
 import { createBurnerOnce, loadBurner, setCachedBurnerBalance } from './burner'
+import { StrandedBurners } from './StrandedBurners'
 import { QUICK_ALLOWANCE, samplePaint64, startLiveQuick, type QuickProgress } from './quickStart'
 import {
   buildStartSessionTypedData,
@@ -340,6 +341,7 @@ export function LiveWizard() {
           <SafeImage src="/os/brand/pfp-main.webp" alt="r3OS" width={168} height={338} />
         </div>
         <section className="live-wizard-step">
+          <StrandedBurners owner={wallet.account} current={burnerAddress} compact />
           {quick ? (
             <>
               <small>QUICK START</small>

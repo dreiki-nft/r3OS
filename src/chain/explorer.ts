@@ -15,3 +15,8 @@ export function transactionExplorerUrl(hash: Hex, chainId = config.chainId) {
   const base = explorerBaseUrl(chainId).replace(/\/$/, '')
   return base ? `${base}/tx/${hash}` : undefined
 }
+
+export function addressExplorerUrl(address: string, chainId = config.chainId) {
+  const base = explorerBaseUrl(chainId).replace(/\/$/, '')
+  return base ? `${base}/address/${address}` : undefined
+}

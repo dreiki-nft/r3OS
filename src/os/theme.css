@@ -2164,6 +2164,28 @@ button:disabled {
   color: #ff8f8f;
 }
 
+/* Live Mode wallets from another browser that still hold MON (src/live/StrandedBurners.tsx). */
+.stranded-burners {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--warn);
+  font-size: 12px;
+}
+
+.stranded-burners p {
+  margin: 0;
+}
+
+.stranded-burners ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.stranded-burners a {
+  color: var(--accent);
+}
+
 .hardware-profiles {
   display: flex;
   flex-direction: column;
