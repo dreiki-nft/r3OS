@@ -2026,11 +2026,17 @@ button:disabled {
   min-height: 0;
   display: grid;
   grid-template-columns: 168px 1fr;
+  align-items: start;
   gap: 18px;
   padding: 14px;
+  /* Long steps scroll here, above the buttons, instead of running underneath them. */
+  overflow-y: auto;
 }
 
 .live-wizard-art {
+  position: sticky;
+  top: 0;
+  aspect-ratio: 168 / 338;
   overflow: hidden;
   background: #000;
 }
@@ -2069,28 +2075,54 @@ button:disabled {
 }
 
 .live-quick {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  column-gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  padding: 8px 10px;
-  margin: 10px 0 4px;
+  gap: 8px 12px;
+  padding: 10px;
+  margin: 10px 0;
   background: var(--field);
 }
 
-.live-quick b {
-  grid-column: 1;
+/* Text takes the room; the button sits beside it, or drops underneath it when there is no room. */
+.live-quick-text {
+  flex: 1 1 220px;
+  display: grid;
+  gap: 2px;
 }
 
-.live-quick span {
-  grid-column: 1;
+.live-quick-text span {
   color: var(--text-muted);
 }
 
 .live-quick button {
-  grid-column: 2;
-  grid-row: 1 / span 2;
+  flex: 0 0 auto;
+}
+
+.live-custom {
+  margin: 10px 0 0;
+}
+
+.live-custom summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.live-custom[open] summary {
+  margin-bottom: 4px;
+}
+
+/* An input with its unit ("MON") on the same line. */
+.live-input-unit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.live-input-unit input {
+  flex: 1;
+  min-width: 0;
 }
 
 .live-quick-steps {

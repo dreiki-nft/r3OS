@@ -384,19 +384,17 @@ export function LiveWizard() {
                 <>
                   <h2>Welcome to live mode</h2>
                   <p>
-                    Live mode makes a burner key that lives in this browser. It paints for you, so strokes
-                    land without a wallet prompt each time.
-                  </p>
-                  <p className="dialog-warning">
-                    Live Mode writes strokes onchain immediately. There is no Undo or Redo after a stroke
-                    is submitted; changing it means painting over it with another transaction.
+                    Paint without a wallet popup for every stroke: a burner key in this browser paints for
+                    you, inside limits you sign once.
                   </p>
                   <div className="live-quick sunken">
-                    <b>Quick start</b>
-                    <span>
-                      about {about(24_000n, block.blockTimeMs)} · {QUICK_ALLOWANCE.toLocaleString()} units · 2
-                      wallet prompts, then no more popups
-                    </span>
+                    <div className="live-quick-text">
+                      <b>Quick start</b>
+                      <span>
+                        about {about(24_000n, block.blockTimeMs)} · {QUICK_ALLOWANCE.toLocaleString()} units · 2
+                        wallet prompts, then no more popups
+                      </span>
+                    </div>
                     <Button
                       primary
                       disabled={busy || !wallet.account}
@@ -406,37 +404,43 @@ export function LiveWizard() {
                       Start live mode
                     </Button>
                   </div>
-                  <p className="muted">or pick your own limits and press Next.</p>
-                  <label>
-                    Session length
-                    <select
-                      value={length.toString()}
-                      onChange={(event) => setLength(BigInt(event.target.value))}
-                    >
-                      {SESSION_LENGTHS.map((option) => (
-                        <option key={option.blocks.toString()} value={option.blocks.toString()}>
-                          {option.label} (about {about(option.blocks, block.blockTimeMs)})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Pixel allowance
-                    <select
-                      value={allowance.toString()}
-                      onChange={(event) => setAllowance(BigInt(event.target.value))}
-                    >
-                      {ALLOWANCES.map((value) => (
-                        <option key={value.toString()} value={value.toString()}>
-                          {value.toLocaleString()} units
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <p className="muted">
-                    It still spends your normal hourly budget and holder quota. The allowance is an extra cap
-                    on top.
+                  <p className="dialog-warning">
+                    No Undo: every stroke goes onchain right away. To change one, paint over it.
                   </p>
+                  <details className="live-custom">
+                    <summary>Custom limits</summary>
+                    <p className="muted">pick your own limits, then press Next.</p>
+                    <label>
+                      Session length
+                      <select
+                        value={length.toString()}
+                        onChange={(event) => setLength(BigInt(event.target.value))}
+                      >
+                        {SESSION_LENGTHS.map((option) => (
+                          <option key={option.blocks.toString()} value={option.blocks.toString()}>
+                            {option.label} (about {about(option.blocks, block.blockTimeMs)})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Pixel allowance
+                      <select
+                        value={allowance.toString()}
+                        onChange={(event) => setAllowance(BigInt(event.target.value))}
+                      >
+                        {ALLOWANCES.map((value) => (
+                          <option key={value.toString()} value={value.toString()}>
+                            {value.toLocaleString()} units
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <p className="muted">
+                      It still spends your normal hourly budget and holder quota. The allowance is an extra cap
+                      on top.
+                    </p>
+                  </details>
                 </>
               )}
               {step === 2 && (
@@ -465,12 +469,14 @@ allowance ${allowance.toLocaleString()} units`}</pre>
                   </p>
                   <label>
                     Send
-                    <input
-                      value={amount}
-                      onChange={(event) => setAmount(event.target.value)}
-                      inputMode="decimal"
-                    />{' '}
-                    MON
+                    <span className="live-input-unit">
+                      <input
+                        value={amount}
+                        onChange={(event) => setAmount(event.target.value)}
+                        inputMode="decimal"
+                      />
+                      MON
+                    </span>
                   </label>
                   <small>target ≈ {FUNDING_TARGET_PAINTS.toString()} paints · capped at {formatEther(MAX_BURNER_FUND)} MON</small>
                   <p>max cost: {fundQuote ? `${amount} MON + ${fundQuote.maxCost}` : 'quoting…'}</p>

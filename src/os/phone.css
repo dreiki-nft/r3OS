@@ -458,6 +458,11 @@ html {
   .live-wizard-art {
     display: none;
   }
+
+  .live-wizard-step label {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
 }
 
 @media (max-width: 640px), (max-height: 500px) and (pointer: coarse) {
