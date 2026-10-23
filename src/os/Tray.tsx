@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { blockEta, getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { chainName } from '../chain/config'
 import { formattedBalance, getWalletSnapshot, subscribeWallet } from '../chain/wallet'
@@ -31,6 +31,7 @@ import {
   subscribeStormAlert,
   toggleStormAlert,
 } from './stormAlert'
+import { fitTray } from './trayFit'
 import { Icon } from './ui/Icon'
 import { MessageBox } from './ui/MessageBox'
 
@@ -62,13 +63,28 @@ export function Tray() {
   const activeLive = liveActive(live)
 
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
+  // On a phone, hide the least important tray items until the row fits (src/os/trayFit.ts). Every render: the
+  // countdown, block number and LIVE pill change width as they tick.
+  const trayRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => fitTray(trayRef.current))
+  useEffect(() => {
+    const tray = trayRef.current
+    if (!tray) return
+    const refit = () => fitTray(tray)
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(refit)
+    observer?.observe(tray)
+    // Text widths change once the web font arrives.
+    void document.fonts?.ready.then(refit)
+    return () => observer?.disconnect()
+  }, [])
   // The storm bell: rings 333 blocks before each DF1 storm while it's on (src/os/stormAlert.ts).
   useEffect(() => checkStormAlert(block.block, block.blockTimeMs), [block.block, block.blockTimeMs])
 
   return (
-    <div className="tray sunken">
+    <div className="tray sunken" ref={trayRef}>
       <button
         aria-label="Mute sounds"
+        data-tray-drop="6"
         onClick={() => {
           setMuted(!muted)
         }}
@@ -79,9 +95,12 @@ export function Tray() {
       <button className={block.storm ? 'storming' : ''} onClick={() => setStorm(true)}>
         <Icon name="lightning" size={20} colour="#FEC343" />
         <span>
-          {block.storm
-            ? `STORM ${duration(blockEta(block.stormEndsIn))}`
-            : duration(blockEta(block.nextStormIn))}
+          {block.storm && (
+            <span className="tray-storm-word" data-tray-drop="1">
+              STORM{' '}
+            </span>
+          )}
+          {duration(blockEta(block.storm ? block.stormEndsIn : block.nextStormIn))}
         </span>
       </button>
       <button
@@ -114,6 +133,7 @@ export function Tray() {
       </button>
       <button
         aria-label="Connection information"
+        data-tray-drop="2"
         onClick={() => {
           if (connectionOpen) {
             dismissBalloon('connection')
@@ -168,12 +188,15 @@ export function Tray() {
         >
           <span className="tray-live-dot" aria-hidden="true" />
           <b>LIVE</b>
-          <Icon name="key" size={16} colour="#5FEDDF" />
+          <span className="tray-live-key" data-tray-drop="3">
+            <Icon name="key" size={16} colour="#5FEDDF" />
+          </span>
         </button>
       )}
       {unreadPaint.length > 0 && (
         <button
           className="tray-mail"
+          data-tray-drop="5"
           aria-label="You've got paint"
           title="You've got paint: see where others just painted"
           onClick={showUnreadPaint}
@@ -184,6 +207,7 @@ export function Tray() {
       {painting.painters > 0 && (
         <button
           className="tray-painters"
+          data-tray-drop="4"
           aria-label={`${painting.painters} active recently`}
           title={`${painting.painters} wallet${painting.painters === 1 ? '' : 's'} painted recently (${windowLabel(PRESENCE_WINDOW_BLOCKS, block.blockTimeMs)}) · open Paint`}
           onClick={() => void openProgram('paint')}
@@ -192,7 +216,7 @@ export function Tray() {
           <span>{painting.painters}</span>
         </button>
       )}
-      <span key={block.block.toString()} className="block-dot block-pulse">
+      <span key={block.block.toString()} className="block-dot block-pulse" data-tray-drop="7">
         ●
       </span>
       <span>#{block.block.toString()}</span>

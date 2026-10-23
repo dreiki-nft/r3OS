@@ -314,7 +314,13 @@ export function HardwareProfiles() {
         >
           New burner…
         </Button>
-        <Button disabled={!live.burner} onClick={() => setTopUp(true)}>
+        <Button
+          // A burner whose session is over gets its MON sent straight back by the automatic sweep
+          // (src/live/autoSweep.ts), so a top-up then would only bounce. Start Live Mode funds it instead.
+          disabled={!live.burner || !active}
+          title={live.burner && !active ? 'no running session: Start Live Mode funds the key' : undefined}
+          onClick={() => setTopUp(true)}
+        >
           Top up…
         </Button>
         <Button

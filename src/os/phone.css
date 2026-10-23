@@ -98,6 +98,15 @@ html {
     padding: 0 3px;
   }
 
+  /* Parts the tray hides, least important first, when the row doesn't fit (src/os/trayFit.ts). */
+  .taskbar .tray [data-tray-dropped] {
+    display: none !important;
+  }
+
+  .taskbar .tray .tray-live-key {
+    display: inline-flex;
+  }
+
   /* The assistant is hidden on phones, so its tray button would do nothing. */
   .taskbar .tray > button[aria-label='Show assistant'] {
     display: none;
@@ -562,6 +571,13 @@ html {
   }
 
   .titlebar button[aria-label='Maximize'] {
+    display: none;
+  }
+}
+
+/* The smallest phones (320px): the logo alone is the Start button, so the tray keeps the storm countdown. */
+@media (max-width: 359px) {
+  .taskbar .start-button .start-label {
     display: none;
   }
 }

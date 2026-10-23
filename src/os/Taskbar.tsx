@@ -26,7 +26,7 @@ export function Taskbar({ onShutdown }: { onShutdown: () => void }) {
           }}
         >
           <SafeImage src="/os/brand/logo.png" alt="r3OS" width={28} height={28} />
-          r3OS
+          <span className="start-label">r3OS</span>
         </button>
         <div className="task-buttons">
           {state.windows.map((win) => {
