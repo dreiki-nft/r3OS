@@ -59,3 +59,6 @@ storm-chasers-out/
 
 # community-stats event cache (public chain data, rebuilt by a full scan)
 .stats-cache/
+
+# Live Mode refund list (public chain data, rebuilt by scripts/stranded-refunds.mjs)
+refunds-out/

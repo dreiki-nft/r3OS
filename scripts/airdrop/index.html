@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>r3OS refund airdrop</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #18181b;
+        --panel: #222226;
+        --line: #3a3a40;
+        --text: #ececec;
+        --muted: #9a9aa2;
+        --ok: #5fed9f;
+        --warn: #fec343;
+        --bad: #ff6b6b;
+        --accent: #5fedde;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.5 ui-monospace,
+          'IBM Plex Mono',
+          Menlo,
+          Consolas,
+          monospace;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 6px 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 12px 14px;
+        margin: 14px 0;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      button {
+        font: inherit;
+        background: #2f2f35;
+        color: var(--text);
+        border: 1px solid #55555d;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #134a3a;
+        border-color: #2c8a6c;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 5px 6px;
+        border-bottom: 1px solid var(--line);
+        white-space: nowrap;
+      }
+      td.amount,
+      th.amount {
+        text-align: right;
+      }
+      .paid {
+        color: var(--ok);
+      }
+      .sending {
+        color: var(--warn);
+      }
+      .failed {
+        color: var(--bad);
+      }
+      a {
+        color: var(--accent);
+      }
+      #log {
+        white-space: pre-wrap;
+        font-size: 12px;
+        max-height: 220px;
+        overflow: auto;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>r3OS Live Mode refund airdrop</h1>
+      <p class="muted">
+        Sends each wallet on refunds-out/airdrop.json its refund from the wallet you connect. Your wallet
+        signs everything; nothing here sees a key. Payments already confirmed are remembered and never sent
+        twice.
+      </p>
+
+      <div class="panel">
+        <div class="row">
+          <button id="connect">Connect wallet</button>
+          <span id="who" class="muted">not connected</span>
+        </div>
+        <p id="summary" class="muted">loading the list…</p>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <button id="send" class="primary" disabled>Send unpaid refunds</button>
+          <label class="muted"
+            ><input type="checkbox" id="oneByOne" /> one payment per wallet prompt (skip batching)</label
+          >
+          <button id="check" disabled>Re-check paid on chain</button>
+          <button id="export">Download paid list</button>
+        </div>
+        <p class="muted">
+          Batches of up to 10 go through MetaMask as one prompt where the wallet supports it (EIP-5792);
+          otherwise each refund is its own prompt. You can stop and come back: unpaid rows are picked up where
+          you left off.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>wallet</th>
+              <th class="amount">MON</th>
+              <th>status</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="panel"><div id="log" class="muted"></div></div>
+    </main>
+    <script>
+      const CHAIN = '0x8f' // Monad mainnet, 143
+      const EXPLORER = 'https://monadvision.com/tx/'
+      const BATCH = 10
+      let list, account, ledgerKey
+      const $ = (id) => document.getElementById(id)
+      const log = (text) => {
+        $('log').textContent = `${new Date().toLocaleTimeString()}  ${text}\n` + $('log').textContent
+      }
+      const provider = () => window.ethereum
+      const ledger = () => {
+        try {
+          return JSON.parse(localStorage.getItem(ledgerKey) || '{}')
+        } catch {
+          return {}
+        }
+      }
+      const saveLedger = (value) => localStorage.setItem(ledgerKey, JSON.stringify(value))
+      const hex = (value) => '0x' + BigInt(value).toString(16)
+      const fmt = (wei) => (Number(BigInt(wei) / 10n ** 15n) / 1000).toFixed(3)
+
+      async function load() {
+        const response = await fetch('airdrop.json', { cache: 'no-store' })
+        if (!response.ok) {
+          $('summary').textContent =
+            'refunds-out/airdrop.json not found: run scripts/stranded-refunds.mjs first.'
+          return
+        }
+        list = await response.json()
+        if (list.chainId !== 143) throw new Error('airdrop.json is not for Monad mainnet')
+        ledgerKey = `r3os.airdrop.${list.snapshotBlock}`
+        render()
+      }
+
+      function render() {
+        const paid = ledger()
+        let unpaidWei = 0n
+        $('rows').innerHTML = ''
+        list.payments.forEach((payment, index) => {
+          const entry = paid[payment.to.toLowerCase()]
+          if (!entry || entry.status !== 'paid') unpaidWei += BigInt(payment.value)
+          const tr = document.createElement('tr')
+          const status =
+            entry?.status === 'paid'
+              ? `<span class="paid">paid</span> <a href="${EXPLORER}${entry.hash}" target="_blank" rel="noreferrer">tx</a>`
+              : entry?.status === 'sending'
+                ? '<span class="sending">waiting for confirmation…</span>'
+                : entry?.status === 'failed'
+                  ? `<span class="failed">failed: ${entry.reason ?? ''}</span>`
+                  : '<span class="muted">unpaid</span>'
+          tr.innerHTML = `<td>${index + 1}</td><td>${payment.to}</td><td class="amount">${payment.mon}</td><td>${status}</td>`
+          $('rows').appendChild(tr)
+        })
+        const paidCount = list.payments.filter((p) => paid[p.to.toLowerCase()]?.status === 'paid').length
+        $('summary').textContent =
+          `${list.payments.length} wallets · total ${fmt(list.total)} MON · paid ${paidCount} · still to send ${fmt(unpaidWei)} MON · list from block ${list.snapshotBlock}`
+        $('send').disabled = !account || unpaidWei === 0n
+        $('check').disabled = !account
+      }
+
+      async function connect() {
+        if (!provider()) {
+          alert('No wallet found. Open this page in a browser with MetaMask.')
+          return
+        }
+        ;[account] = await provider().request({ method: 'eth_requestAccounts' })
+        const chain = await provider().request({ method: 'eth_chainId' })
+        if (chain !== CHAIN) {
+          await provider().request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN }] })
+        }
+        const balance = BigInt(
+          await provider().request({ method: 'eth_getBalance', params: [account, 'latest'] }),
+        )
+        $('who').textContent = `${account} · ${fmt(balance)} MON`
+        if (list && balance < BigInt(list.total))
+          log(
+            `heads up: this wallet holds ${fmt(balance)} MON, the full list needs ${fmt(list.total)} MON plus gas`,
+          )
+        render()
+      }
+
+      function unpaid() {
+        const paid = ledger()
+        return list.payments.filter((p) => !['paid', 'sending'].includes(paid[p.to.toLowerCase()]?.status))
+      }
+
+      function mark(payments, status, extra = {}) {
+        const paid = ledger()
+        for (const p of payments)
+          paid[p.to.toLowerCase()] = { status, at: Date.now(), value: p.value, ...extra }
+        saveLedger(paid)
+        render()
+      }
+
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+      async function waitReceipt(hash) {
+        for (let i = 0; i < 120; i++) {
+          const receipt = await provider()
+            .request({ method: 'eth_getTransactionReceipt', params: [hash] })
+            .catch(() => null)
+          if (receipt) return receipt
+          await sleep(1500)
+        }
+        throw new Error('no receipt after 3 minutes; check the explorer, then "Re-check paid on chain"')
+      }
+
+      async function sendBatch(payments) {
+        const calls = payments.map((p) => ({ to: p.to, value: hex(p.value), data: '0x' }))
+        let id
+        try {
+          const answer = await provider().request({
+            method: 'wallet_sendCalls',
+            params: [{ version: '2.0.0', chainId: CHAIN, from: account, atomicRequired: true, calls }],
+          })
+          id = typeof answer === 'string' ? answer : answer.id
+        } catch (error) {
+          if (error.code === 4001) throw error
+          // Not supported (or an older wallet version): fall back to one transaction per refund.
+          log(`batching not available (${error.message ?? error.code}); sending one by one`)
+          return false
+        }
+        mark(payments, 'sending', { batch: id })
+        for (let i = 0; i < 200; i++) {
+          const status = await provider()
+            .request({ method: 'wallet_getCallsStatus', params: [id] })
+            .catch(() => null)
+          const code = status?.status
+          if (code === 200 || code === 'CONFIRMED') {
+            const receipt = status.receipts?.[0]
+            const ok =
+              !receipt || receipt.status === '0x1' || receipt.status === 'success' || receipt.status === 1
+            if (!ok) {
+              mark(payments, 'failed', { reason: 'batch reverted' })
+              throw new Error('batch reverted onchain')
+            }
+            mark(payments, 'paid', { hash: receipt?.transactionHash ?? '' })
+            log(`paid ${payments.length} wallets in one transaction ${receipt?.transactionHash ?? ''}`)
+            return true
+          }
+          if (code >= 400 || code === 'FAILED') {
+            mark(payments, 'failed', { reason: `wallet status ${code}` })
+            throw new Error(`batch failed (${code})`)
+          }
+          await sleep(1500)
+        }
+        throw new Error(
+          'the batch did not confirm in 5 minutes; check the explorer, then "Re-check paid on chain"',
+        )
+      }
+
+      async function sendOne(payment) {
+        const hash = await provider().request({
+          method: 'eth_sendTransaction',
+          params: [{ from: account, to: payment.to, value: hex(payment.value) }],
+        })
+        mark([payment], 'sending', { hash })
+        const receipt = await waitReceipt(hash)
+        if (receipt.status !== '0x1') {
+          mark([payment], 'failed', { hash, reason: 'reverted' })
+          throw new Error(`${payment.to}: transfer reverted`)
+        }
+        mark([payment], 'paid', { hash })
+        log(`paid ${payment.mon} MON to ${payment.to}`)
+      }
+
+      async function send() {
+        $('send').disabled = true
+        try {
+          let batching = !$('oneByOne').checked
+          for (;;) {
+            const todo = unpaid()
+            if (!todo.length) {
+              log('every refund on the list is paid')
+              break
+            }
+            if (batching) {
+              const ok = await sendBatch(todo.slice(0, BATCH))
+              if (!ok) batching = false
+              continue
+            }
+            await sendOne(todo[0])
+          }
+        } catch (error) {
+          log(
+            error.code === 4001
+              ? 'you rejected the wallet prompt; nothing more was sent'
+              : `stopped: ${error.message ?? error}`,
+          )
+        } finally {
+          render()
+        }
+      }
+
+      // After a reload mid-send: rows stuck on "sending" with a hash are checked against the chain.
+      async function recheck() {
+        const paid = ledger()
+        const batches = new Map()
+        for (const [to, entry] of Object.entries(paid)) {
+          if (entry.status === 'paid') continue
+          if (!entry.hash && entry.batch) {
+            if (!batches.has(entry.batch))
+              batches.set(
+                entry.batch,
+                await provider()
+                  .request({ method: 'wallet_getCallsStatus', params: [entry.batch] })
+                  .catch(() => null),
+              )
+            const status = batches.get(entry.batch)
+            const receipt = status?.receipts?.[0]
+            if ((status?.status === 200 || status?.status === 'CONFIRMED') && receipt)
+              paid[to] = { ...entry, hash: receipt.transactionHash }
+            else continue
+          }
+          if (!entry.hash && !paid[to].hash) continue
+          const hash = paid[to].hash
+          const receipt = await provider()
+            .request({ method: 'eth_getTransactionReceipt', params: [hash] })
+            .catch(() => null)
+          if (receipt?.status === '0x1') paid[to] = { ...paid[to], status: 'paid' }
+          else if (receipt) paid[to] = { ...paid[to], status: 'failed', reason: 'reverted' }
+        }
+        saveLedger(paid)
+        render()
+        log('checked pending payments against the chain')
+      }
+
+      function exportPaid() {
+        const blob = new Blob(
+          [JSON.stringify({ snapshotBlock: list?.snapshotBlock, paid: ledger() }, null, 1)],
+          { type: 'application/json' },
+        )
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `airdrop-paid-${list?.snapshotBlock ?? 'list'}.json`
+        a.click()
+      }
+
+      $('connect').onclick = () =>
+        connect().catch((error) => log(`connect failed: ${error.message ?? error}`))
+      $('send').onclick = send
+      $('check').onclick = () => recheck().catch((error) => log(`check failed: ${error.message ?? error}`))
+      $('export').onclick = exportPaid
+      load().catch((error) => {
+        $('summary').textContent = error.message
+      })
+    </script>
+  </body>
+</html>
