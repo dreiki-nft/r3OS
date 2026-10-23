@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="t d" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
 <title id="t">r3OS: season 1 day by day on Monad mainnet</title>
-<desc id="d">83 painters · 5,115 strokes · 179,364 pixels. 31 painters came back on another day · 12 days since the public launch. Oct 10: 24 painters, 231 strokes; Oct 11: 20 painters, 419 strokes; Oct 12: 11 painters, 796 strokes; Oct 13: 40 painters, 696 strokes; Oct 14: 13 painters, 593 strokes; Oct 15: 12 painters, 328 strokes; Oct 16: 12 painters, 345 strokes; Oct 17: 8 painters, 115 strokes; Oct 18: 9 painters, 95 strokes; Oct 19: 10 painters, 99 strokes; Oct 20: 15 painters, 538 strokes; Oct 21: 14 painters, 834 strokes.</desc>
+<desc id="d">88 painters · 7,028 strokes · 215,127 pixels. 33 painters came back on another day · 14 days since the public launch. Oct 10: 24 painters, 231 strokes; Oct 11: 20 painters, 419 strokes; Oct 12: 11 painters, 796 strokes; Oct 13: 40 painters, 696 strokes; Oct 14: 13 painters, 593 strokes; Oct 15: 12 painters, 328 strokes; Oct 16: 12 painters, 345 strokes; Oct 17: 8 painters, 115 strokes; Oct 18: 9 painters, 95 strokes; Oct 19: 10 painters, 99 strokes; Oct 20: 14 painters, 500 strokes; Oct 21: 14 painters, 976 strokes; Oct 22: 22 painters, 973 strokes; Oct 23: 15 painters, 836 strokes.</desc>
 <rect width="1200" height="640" fill="#0b0b0c"/>
 <text x="72" y="48" fill="#f2efe9" font-size="24" font-weight="700">r3OS · season 1, day by day on Monad mainnet</text>
-<text x="72" y="78" fill="#d6d2cb" font-size="15">83 painters · 5,115 strokes · 179,364 pixels</text>
-<text x="72" y="100" fill="#8f8b85" font-size="13">31 painters came back on another day · 12 days since the public launch</text>
+<text x="72" y="78" fill="#d6d2cb" font-size="15">88 painters · 7,028 strokes · 215,127 pixels</text>
+<text x="72" y="100" fill="#8f8b85" font-size="13">33 painters came back on another day · 14 days since the public launch</text>
 <text x="72" y="136" fill="#d6d2cb" font-size="15">painters each day</text>
 <line x1="72" x2="1168" y1="320.0" y2="320.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="320.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">0</text>
@@ -14,72 +14,84 @@
 <text x="62" y="206.7" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">40</text>
 <line x1="72" x2="1168" y1="150.0" y2="150.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="150.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">60</text>
-<path d="M89.35333333333332,320V256Q89.35333333333332,252 93.35333333333332,252H141.98Q145.98,252 145.98,256V320Z" fill="#1fa79c"><title>Oct 10: 24 painters</title></path>
-<text x="117.66666666666666" y="244" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">24</text>
-<path d="M180.68666666666664,320V267.3333333333333Q180.68666666666664,263.3333333333333 184.68666666666664,263.3333333333333H233.3133333333333Q237.3133333333333,263.3333333333333 237.3133333333333,267.3333333333333V320Z" fill="#1fa79c"><title>Oct 11: 20 painters</title></path>
-<text x="208.99999999999997" y="255.33333333333331" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">20</text>
-<path d="M272.02,320V292.8333333333333Q272.02,288.8333333333333 276.02,288.8333333333333H324.64666666666665Q328.64666666666665,288.8333333333333 328.64666666666665,292.8333333333333V320Z" fill="#1fa79c"><title>Oct 12: 11 painters</title></path>
-<text x="300.3333333333333" y="280.8333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">11</text>
-<path d="M363.35333333333335,320V210.66666666666669Q363.35333333333335,206.66666666666669 367.35333333333335,206.66666666666669H415.98Q419.98,206.66666666666669 419.98,210.66666666666669V320Z" fill="#1fa79c"><title>Oct 13: 40 painters</title></path>
-<text x="391.6666666666667" y="198.66666666666669" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">40</text>
-<path d="M454.68666666666667,320V287.1666666666667Q454.68666666666667,283.1666666666667 458.68666666666667,283.1666666666667H507.31333333333333Q511.31333333333333,283.1666666666667 511.31333333333333,287.1666666666667V320Z" fill="#1fa79c"><title>Oct 14: 13 painters</title></path>
-<text x="483" y="275.1666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">13</text>
-<path d="M546.02,320V290Q546.02,286 550.02,286H598.6466666666666Q602.6466666666666,286 602.6466666666666,290V320Z" fill="#1fa79c"><title>Oct 15: 12 painters</title></path>
-<text x="574.3333333333333" y="278" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">12</text>
-<path d="M637.3533333333334,320V290Q637.3533333333334,286 641.3533333333334,286H689.98Q693.98,286 693.98,290V320Z" fill="#1fa79c"><title>Oct 16: 12 painters</title></path>
-<text x="665.6666666666667" y="278" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">12</text>
-<path d="M728.6866666666666,320V301.3333333333333Q728.6866666666666,297.3333333333333 732.6866666666666,297.3333333333333H781.3133333333333Q785.3133333333333,297.3333333333333 785.3133333333333,301.3333333333333V320Z" fill="#1fa79c"><title>Oct 17: 8 painters</title></path>
-<text x="757" y="289.3333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">8</text>
-<path d="M820.02,320V298.5Q820.02,294.5 824.02,294.5H872.6466666666666Q876.6466666666666,294.5 876.6466666666666,298.5V320Z" fill="#1fa79c"><title>Oct 18: 9 painters</title></path>
-<text x="848.3333333333333" y="286.5" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">9</text>
-<path d="M911.3533333333334,320V295.6666666666667Q911.3533333333334,291.6666666666667 915.3533333333334,291.6666666666667H963.98Q967.98,291.6666666666667 967.98,295.6666666666667V320Z" fill="#1fa79c"><title>Oct 19: 10 painters</title></path>
-<text x="939.6666666666667" y="283.6666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">10</text>
-<path d="M1002.6866666666666,320V281.5Q1002.6866666666666,277.5 1006.6866666666666,277.5H1055.3133333333333Q1059.3133333333333,277.5 1059.3133333333333,281.5V320Z" fill="#1fa79c"><title>Oct 20: 15 painters</title></path>
-<text x="1031" y="269.5" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">15</text>
-<path d="M1094.0199999999998,320V284.3333333333333Q1094.0199999999998,280.3333333333333 1098.0199999999998,280.3333333333333H1146.6466666666665Q1150.6466666666665,280.3333333333333 1150.6466666666665,284.3333333333333V320Z" fill="#1fa79c"><title>Oct 21: 14 painters</title></path>
-<text x="1122.333333333333" y="272.3333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">14</text>
+<path d="M86.87428571428572,320V256Q86.87428571428572,252 90.87428571428572,252H131.4114285714286Q135.4114285714286,252 135.4114285714286,256V320Z" fill="#1fa79c"><title>Oct 10: 24 painters</title></path>
+<text x="111.14285714285715" y="244" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">24</text>
+<path d="M165.16,320V267.3333333333333Q165.16,263.3333333333333 169.16,263.3333333333333H209.69714285714286Q213.69714285714286,263.3333333333333 213.69714285714286,267.3333333333333V320Z" fill="#1fa79c"><title>Oct 11: 20 painters</title></path>
+<text x="189.42857142857142" y="255.33333333333331" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">20</text>
+<path d="M243.4457142857143,320V292.8333333333333Q243.4457142857143,288.8333333333333 247.4457142857143,288.8333333333333H287.98285714285714Q291.98285714285714,288.8333333333333 291.98285714285714,292.8333333333333V320Z" fill="#1fa79c"><title>Oct 12: 11 painters</title></path>
+<text x="267.7142857142857" y="280.8333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">11</text>
+<path d="M321.7314285714286,320V210.66666666666669Q321.7314285714286,206.66666666666669 325.7314285714286,206.66666666666669H366.2685714285714Q370.2685714285714,206.66666666666669 370.2685714285714,210.66666666666669V320Z" fill="#1fa79c"><title>Oct 13: 40 painters</title></path>
+<text x="346" y="198.66666666666669" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">40</text>
+<path d="M400.01714285714286,320V287.1666666666667Q400.01714285714286,283.1666666666667 404.01714285714286,283.1666666666667H444.5542857142857Q448.5542857142857,283.1666666666667 448.5542857142857,287.1666666666667V320Z" fill="#1fa79c"><title>Oct 14: 13 painters</title></path>
+<text x="424.2857142857143" y="275.1666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">13</text>
+<path d="M478.30285714285714,320V290Q478.30285714285714,286 482.30285714285714,286H522.84Q526.84,286 526.84,290V320Z" fill="#1fa79c"><title>Oct 15: 12 painters</title></path>
+<text x="502.57142857142856" y="278" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">12</text>
+<path d="M556.5885714285715,320V290Q556.5885714285715,286 560.5885714285715,286H601.1257142857144Q605.1257142857144,286 605.1257142857144,290V320Z" fill="#1fa79c"><title>Oct 16: 12 painters</title></path>
+<text x="580.857142857143" y="278" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">12</text>
+<path d="M634.8742857142857,320V301.3333333333333Q634.8742857142857,297.3333333333333 638.8742857142857,297.3333333333333H679.4114285714286Q683.4114285714286,297.3333333333333 683.4114285714286,301.3333333333333V320Z" fill="#1fa79c"><title>Oct 17: 8 painters</title></path>
+<text x="659.1428571428572" y="289.3333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">8</text>
+<path d="M713.1600000000001,320V298.5Q713.1600000000001,294.5 717.1600000000001,294.5H757.6971428571429Q761.6971428571429,294.5 761.6971428571429,298.5V320Z" fill="#1fa79c"><title>Oct 18: 9 painters</title></path>
+<text x="737.4285714285716" y="286.5" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">9</text>
+<path d="M791.4457142857144,320V295.6666666666667Q791.4457142857144,291.6666666666667 795.4457142857144,291.6666666666667H835.9828571428573Q839.9828571428573,291.6666666666667 839.9828571428573,295.6666666666667V320Z" fill="#1fa79c"><title>Oct 19: 10 painters</title></path>
+<text x="815.7142857142859" y="283.6666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">10</text>
+<path d="M869.7314285714286,320V284.3333333333333Q869.7314285714286,280.3333333333333 873.7314285714286,280.3333333333333H914.2685714285715Q918.2685714285715,280.3333333333333 918.2685714285715,284.3333333333333V320Z" fill="#1fa79c"><title>Oct 20: 14 painters</title></path>
+<text x="894.0000000000001" y="272.3333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">14</text>
+<path d="M948.017142857143,320V284.3333333333333Q948.017142857143,280.3333333333333 952.017142857143,280.3333333333333H992.5542857142858Q996.5542857142858,280.3333333333333 996.5542857142858,284.3333333333333V320Z" fill="#1fa79c"><title>Oct 21: 14 painters</title></path>
+<text x="972.2857142857144" y="272.3333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">14</text>
+<path d="M1026.3028571428572,320V261.6666666666667Q1026.3028571428572,257.6666666666667 1030.3028571428572,257.6666666666667H1070.8400000000001Q1074.8400000000001,257.6666666666667 1074.8400000000001,261.6666666666667V320Z" fill="#1fa79c"><title>Oct 22: 22 painters</title></path>
+<text x="1050.5714285714287" y="249.66666666666669" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">22</text>
+<path d="M1104.5885714285714,320V281.5Q1104.5885714285714,277.5 1108.5885714285714,277.5H1149.1257142857144Q1153.1257142857144,277.5 1153.1257142857144,281.5V320Z" fill="#1fa79c"><title>Oct 23: 15 painters</title></path>
+<text x="1128.857142857143" y="269.5" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">15</text>
 <text x="72" y="366" fill="#d6d2cb" font-size="15">strokes each day</text>
 <line x1="72" x2="1168" y1="550.0" y2="550.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="550.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">0</text>
-<line x1="72" x2="1168" y1="465.0" y2="465.0" stroke="#232326" stroke-width="1"/>
-<text x="62" y="465.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">500</text>
+<line x1="72" x2="1168" y1="493.3" y2="493.3" stroke="#232326" stroke-width="1"/>
+<text x="62" y="493.3" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">500</text>
+<line x1="72" x2="1168" y1="436.7" y2="436.7" stroke="#232326" stroke-width="1"/>
+<text x="62" y="436.7" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">1,000</text>
 <line x1="72" x2="1168" y1="380.0" y2="380.0" stroke="#232326" stroke-width="1"/>
-<text x="62" y="380.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">1,000</text>
-<path d="M89.35333333333332,550V514.73Q89.35333333333332,510.73 93.35333333333332,510.73H141.98Q145.98,510.73 145.98,514.73V550Z" fill="#1fa79c"><title>Oct 10: 231 strokes</title></path>
-<text x="117.66666666666666" y="502.73" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">231</text>
-<text x="117.66666666666666" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 10</text>
-<path d="M180.68666666666664,550V482.77Q180.68666666666664,478.77 184.68666666666664,478.77H233.3133333333333Q237.3133333333333,478.77 237.3133333333333,482.77V550Z" fill="#1fa79c"><title>Oct 11: 419 strokes</title></path>
-<text x="208.99999999999997" y="470.77" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">419</text>
-<text x="208.99999999999997" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 11</text>
-<path d="M272.02,550V418.68Q272.02,414.68 276.02,414.68H324.64666666666665Q328.64666666666665,414.68 328.64666666666665,418.68V550Z" fill="#1fa79c"><title>Oct 12: 796 strokes</title></path>
-<text x="300.3333333333333" y="406.68" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">796</text>
-<text x="300.3333333333333" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 12</text>
-<path d="M363.35333333333335,550V435.68Q363.35333333333335,431.68 367.35333333333335,431.68H415.98Q419.98,431.68 419.98,435.68V550Z" fill="#1fa79c"><title>Oct 13: 696 strokes</title></path>
-<text x="391.6666666666667" y="423.68" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">696</text>
-<text x="391.6666666666667" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 13</text>
-<path d="M454.68666666666667,550V453.19Q454.68666666666667,449.19 458.68666666666667,449.19H507.31333333333333Q511.31333333333333,449.19 511.31333333333333,453.19V550Z" fill="#1fa79c"><title>Oct 14: 593 strokes</title></path>
-<text x="483" y="441.19" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">593</text>
-<text x="483" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 14</text>
-<path d="M546.02,550V498.24Q546.02,494.24 550.02,494.24H598.6466666666666Q602.6466666666666,494.24 602.6466666666666,498.24V550Z" fill="#1fa79c"><title>Oct 15: 328 strokes</title></path>
-<text x="574.3333333333333" y="486.24" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">328</text>
-<text x="574.3333333333333" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 15</text>
-<path d="M637.3533333333334,550V495.35Q637.3533333333334,491.35 641.3533333333334,491.35H689.98Q693.98,491.35 693.98,495.35V550Z" fill="#1fa79c"><title>Oct 16: 345 strokes</title></path>
-<text x="665.6666666666667" y="483.35" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">345</text>
-<text x="665.6666666666666" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 16</text>
-<path d="M728.6866666666666,550V534.45Q728.6866666666666,530.45 732.6866666666666,530.45H781.3133333333333Q785.3133333333333,530.45 785.3133333333333,534.45V550Z" fill="#1fa79c"><title>Oct 17: 115 strokes</title></path>
-<text x="757" y="522.45" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">115</text>
-<text x="756.9999999999999" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 17</text>
-<path d="M820.02,550V537.85Q820.02,533.85 824.02,533.85H872.6466666666666Q876.6466666666666,533.85 876.6466666666666,537.85V550Z" fill="#1fa79c"><title>Oct 18: 95 strokes</title></path>
-<text x="848.3333333333333" y="525.85" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">95</text>
-<text x="848.3333333333333" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 18</text>
-<path d="M911.3533333333334,550V537.17Q911.3533333333334,533.17 915.3533333333334,533.17H963.98Q967.98,533.17 967.98,537.17V550Z" fill="#1fa79c"><title>Oct 19: 99 strokes</title></path>
-<text x="939.6666666666667" y="525.17" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">99</text>
-<text x="939.6666666666666" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 19</text>
-<path d="M1002.6866666666666,550V462.53999999999996Q1002.6866666666666,458.53999999999996 1006.6866666666666,458.53999999999996H1055.3133333333333Q1059.3133333333333,458.53999999999996 1059.3133333333333,462.53999999999996V550Z" fill="#1fa79c"><title>Oct 20: 538 strokes</title></path>
-<text x="1031" y="450.53999999999996" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">538</text>
-<text x="1031" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 20</text>
-<path d="M1094.0199999999998,550V412.22Q1094.0199999999998,408.22 1098.0199999999998,408.22H1146.6466666666665Q1150.6466666666665,408.22 1150.6466666666665,412.22V550Z" fill="#1fa79c"><title>Oct 21: 834 strokes</title></path>
-<text x="1122.333333333333" y="400.22" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">834</text>
-<text x="1122.3333333333333" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 21</text>
-<text x="72" y="618" fill="#8f8b85" font-size="12">UTC days, the last one still running · Paint contract events, blocks 111020589–115439069 · builder, guest and project-run wallets excluded</text>
+<text x="62" y="380.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">1,500</text>
+<path d="M86.87428571428572,550V527.82Q86.87428571428572,523.82 90.87428571428572,523.82H131.4114285714286Q135.4114285714286,523.82 135.4114285714286,527.82V550Z" fill="#1fa79c"><title>Oct 10: 231 strokes</title></path>
+<text x="111.14285714285715" y="515.82" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">231</text>
+<text x="111.14285714285714" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 10</text>
+<path d="M165.16,550V506.5133333333333Q165.16,502.5133333333333 169.16,502.5133333333333H209.69714285714286Q213.69714285714286,502.5133333333333 213.69714285714286,506.5133333333333V550Z" fill="#1fa79c"><title>Oct 11: 419 strokes</title></path>
+<text x="189.42857142857142" y="494.5133333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">419</text>
+<text x="189.42857142857142" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 11</text>
+<path d="M243.4457142857143,550V463.7866666666667Q243.4457142857143,459.7866666666667 247.4457142857143,459.7866666666667H287.98285714285714Q291.98285714285714,459.7866666666667 291.98285714285714,463.7866666666667V550Z" fill="#1fa79c"><title>Oct 12: 796 strokes</title></path>
+<text x="267.7142857142857" y="451.7866666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">796</text>
+<text x="267.7142857142857" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 12</text>
+<path d="M321.7314285714286,550V475.12Q321.7314285714286,471.12 325.7314285714286,471.12H366.2685714285714Q370.2685714285714,471.12 370.2685714285714,475.12V550Z" fill="#1fa79c"><title>Oct 13: 696 strokes</title></path>
+<text x="346" y="463.12" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">696</text>
+<text x="346.00000000000006" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 13</text>
+<path d="M400.01714285714286,550V486.79333333333335Q400.01714285714286,482.79333333333335 404.01714285714286,482.79333333333335H444.5542857142857Q448.5542857142857,482.79333333333335 448.5542857142857,486.79333333333335V550Z" fill="#1fa79c"><title>Oct 14: 593 strokes</title></path>
+<text x="424.2857142857143" y="474.79333333333335" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">593</text>
+<text x="424.28571428571433" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 14</text>
+<path d="M478.30285714285714,550V516.8266666666667Q478.30285714285714,512.8266666666667 482.30285714285714,512.8266666666667H522.84Q526.84,512.8266666666667 526.84,516.8266666666667V550Z" fill="#1fa79c"><title>Oct 15: 328 strokes</title></path>
+<text x="502.57142857142856" y="504.8266666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">328</text>
+<text x="502.5714285714286" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 15</text>
+<path d="M556.5885714285715,550V514.9Q556.5885714285715,510.9 560.5885714285715,510.9H601.1257142857144Q605.1257142857144,510.9 605.1257142857144,514.9V550Z" fill="#1fa79c"><title>Oct 16: 345 strokes</title></path>
+<text x="580.857142857143" y="502.9" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">345</text>
+<text x="580.8571428571429" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 16</text>
+<path d="M634.8742857142857,550V540.9666666666667Q634.8742857142857,536.9666666666667 638.8742857142857,536.9666666666667H679.4114285714286Q683.4114285714286,536.9666666666667 683.4114285714286,540.9666666666667V550Z" fill="#1fa79c"><title>Oct 17: 115 strokes</title></path>
+<text x="659.1428571428572" y="528.9666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">115</text>
+<text x="659.1428571428571" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 17</text>
+<path d="M713.1600000000001,550V543.2333333333333Q713.1600000000001,539.2333333333333 717.1600000000001,539.2333333333333H757.6971428571429Q761.6971428571429,539.2333333333333 761.6971428571429,543.2333333333333V550Z" fill="#1fa79c"><title>Oct 18: 95 strokes</title></path>
+<text x="737.4285714285716" y="531.2333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">95</text>
+<text x="737.4285714285714" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 18</text>
+<path d="M791.4457142857144,550V542.78Q791.4457142857144,538.78 795.4457142857144,538.78H835.9828571428573Q839.9828571428573,538.78 839.9828571428573,542.78V550Z" fill="#1fa79c"><title>Oct 19: 99 strokes</title></path>
+<text x="815.7142857142859" y="530.78" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">99</text>
+<text x="815.7142857142858" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 19</text>
+<path d="M869.7314285714286,550V497.3333333333333Q869.7314285714286,493.3333333333333 873.7314285714286,493.3333333333333H914.2685714285715Q918.2685714285715,493.3333333333333 918.2685714285715,497.3333333333333V550Z" fill="#1fa79c"><title>Oct 20: 500 strokes</title></path>
+<text x="894.0000000000001" y="485.3333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">500</text>
+<text x="894" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 20</text>
+<path d="M948.017142857143,550V443.38666666666666Q948.017142857143,439.38666666666666 952.017142857143,439.38666666666666H992.5542857142858Q996.5542857142858,439.38666666666666 996.5542857142858,443.38666666666666V550Z" fill="#1fa79c"><title>Oct 21: 976 strokes</title></path>
+<text x="972.2857142857144" y="431.38666666666666" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">976</text>
+<text x="972.2857142857143" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 21</text>
+<path d="M1026.3028571428572,550V443.7266666666667Q1026.3028571428572,439.7266666666667 1030.3028571428572,439.7266666666667H1070.8400000000001Q1074.8400000000001,439.7266666666667 1074.8400000000001,443.7266666666667V550Z" fill="#1fa79c"><title>Oct 22: 973 strokes</title></path>
+<text x="1050.5714285714287" y="431.7266666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">973</text>
+<text x="1050.5714285714287" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 22</text>
+<path d="M1104.5885714285714,550V459.25333333333333Q1104.5885714285714,455.25333333333333 1108.5885714285714,455.25333333333333H1149.1257142857144Q1153.1257142857144,455.25333333333333 1153.1257142857144,459.25333333333333V550Z" fill="#1fa79c"><title>Oct 23: 836 strokes</title></path>
+<text x="1128.857142857143" y="447.25333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">836</text>
+<text x="1128.857142857143" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 23</text>
+<text x="72" y="618" fill="#8f8b85" font-size="12">UTC days, the last one still running · Paint contract events, blocks 111020589–116030979 · builder, guest and project-run wallets excluded</text>
 </svg>
