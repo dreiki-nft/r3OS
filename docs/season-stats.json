@@ -1,8 +1,8 @@
 {
   "painters": 92,
   "returningPainters": 36,
-  "paints": 8060,
-  "pixels": 230647,
+  "paints": 8061,
+  "pixels": 231022,
   "frames": {
     "count": 439,
     "owners": 61
@@ -133,11 +133,11 @@
       "day": "2026-10-24",
       "painters": 15,
       "newPainters": 2,
-      "paints": 975,
-      "pixels": 13973
+      "paints": 976,
+      "pixels": 14348
     }
   ],
   "fromBlock": "111020589",
-  "toBlock": "116245244",
-  "asOf": "2026-10-24 17:39 UTC"
+  "toBlock": "116262724",
+  "asOf": "2026-10-24 19:07 UTC"
 }
