@@ -32,6 +32,9 @@ const PaintProgram = lazy(() =>
 const PassProgram = lazy(() =>
   import('../pass/PassProgram').then((module) => ({ default: module.PassProgram })),
 )
+const StatusProgram = lazy(() =>
+  import('../status/StatusProgram').then((module) => ({ default: module.StatusProgram })),
+)
 const DxDiagProgram = lazy(() =>
   import('../diagnostics/DxDiagProgram').then((module) => ({ default: module.DxDiagProgram })),
 )
@@ -238,6 +241,17 @@ export const programs: ProgramDef[] = [
     hash: '#/monad-hw',
   },
   {
+    id: 'status',
+    title: 'r3OS Status',
+    icon: 'antenna',
+    colour: '#5FEDDF',
+    component: StatusProgram,
+    defaultSize: { width: 520, height: 640 },
+    minSize: { width: 320, height: 420 },
+    singleInstance: true,
+    hash: '#/status',
+  },
+  {
     id: 'dxdiag',
     title: 'DXDIAG.EXE',
     icon: 'zoom',
@@ -409,6 +423,7 @@ const launchPreloads: readonly ProgramPreload[] = [
   { id: 'quests', label: 'Quests', load: () => import('../labs/QuestsProgram').then((m) => m.QuestsProgram) },
   { id: 'auction', label: 'Auction', load: () => import('../labs/AuctionProgram').then((m) => m.AuctionProgram) },
   { id: 'bin', label: 'Recycle Bin', load: () => import('./programs/RecycleBin').then((m) => m.RecycleBin) },
+  { id: 'status', label: 'r3OS Status', load: () => import('../status/StatusProgram').then((m) => m.StatusProgram) },
   {
     id: 'dxdiag',
     label: 'DXDIAG',

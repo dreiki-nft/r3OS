@@ -33,7 +33,7 @@ export const START_PROGRAMS = [
 ] as const
 
 /** Start › System Tools: support, diagnostics and settings. */
-export const SYSTEM_TOOLS = ['xray', 'validators', 'dxdiag', 'sounds'] as const
+export const SYSTEM_TOOLS = ['status', 'xray', 'validators', 'dxdiag', 'sounds'] as const
 
 /** Opened from Start's top level directly (no submenu). */
 export const EXPLORE_PROGRAM = 'monad-hw'
