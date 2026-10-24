@@ -23,7 +23,7 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  <b>88 painters · 7,028 paint transactions · 421 frames saved</b> in the first 14 days, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
+  <b>91 painters · 7,715 paint transactions · 435 frames saved</b> in the first two weeks, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
 </p>
 
 <p align="center">
@@ -120,29 +120,31 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 ### Season 1 so far
 
-**As of October 23, 2026, 23:47 UTC** (blocks 111,020,589–116,030,979), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
+**As of October 24, 2026, 14:01 UTC** (blocks 111,020,589–116,201,284), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
 
 | | |
 | --- | ---: |
-| Painters (distinct wallets) | **88** |
-| Painters who came back on another day | **33** |
-| Paint transactions | **7,028** |
-| Pixels painted | **215,127** |
-| Frames saved | **421**, by 57 wallets |
-| CDs burned | **40**, by 19 wallets |
-| Painter Passes claimed | **64** |
+| Painters (distinct wallets) | **91** |
+| Painters who came back on another day | **36** |
+| Paint transactions | **7,715** |
+| Pixels painted | **226,401** |
+| Frames saved | **435**, by 59 wallets |
+| CDs burned | **41**, by 20 wallets |
+| Painter Passes claimed | **67** |
 
 Not counted above: **33 anonymous wallets run by the project** (`anon-01.r3` … `anon-33.r3`), which have been drawing a green eye in the bottom-left of the canvas since October 19 and paint it back when someone covers it. Their paints are on the canvas and in the replay like everyone else's, but they are the project's own wallets, so they are left out of every number here.
 
-<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 23" width="100%"></p>
+<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 24" width="100%"></p>
 
-The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 33 painters have come back to paint on another day, and since October 21 between 800 and almost 1,000 paints a day. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
+The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 36 painters have come back to paint on another day, and from October 21 to 23 between 800 and almost 1,000 paints a day. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
 
-<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 23, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
+<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 24, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
 
 The raw numbers are in [`docs/season-stats.json`](docs/season-stats.json), and the chart is drawn from that file by [`scripts/season-chart.mjs`](scripts/season-chart.mjs).
 
 **Season Replay** is watchable in the app: **Run → `replay`** reconstructs the published Season 1 snapshot, stroke by stroke, from [`public/replay/season-0.json`](public/replay/season-0.json), and then links back to the live canvas. The 30-day season is still in progress, so the exported snapshot is **not the complete final-season history**. Rerunning `node scripts/export-replay.mjs` appends the blocks added since the last export.
+
+**Storm Chasers** (**Run → `storms`**, or [r3os.app/#/storms](https://r3os.app/#/storms)) is the Storm Season leaderboard: 1 raffle ticket for every DF1 storm a wallet painted in (21 storms, blocks 115,400,000 to 119,400,000), counted from the same `Painted` events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs) and published to [`public/storms/season-1.json`](public/storms/season-1.json). After each storm, `npm run season:refresh` updates the replay, the Live Mode sessions, these numbers, the chart and the leaderboard in one go.
 
 Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), never counting the builder's own wallets (and, for the season numbers, the judges' guest wallets either). Anyone can rerun it against mainnet:
 
