@@ -47,3 +47,32 @@ describe('storm board', () => {
     expect(currentOrNextStorm(116_200_100n)).toEqual({ start: 116_200_000n, number: 5, now: true })
   })
 })
+
+describe('storm schedule', () => {
+  it('forecasts the storms still to come from block speed', async () => {
+    const { upcomingStorms, stormsIcs, AVG_BLOCK_MS } = await import('./stormBoard')
+    const now = Date.UTC(2026, 9, 24, 16, 0)
+    const list = upcomingStorms(116_250_000n, now)
+    expect(list[0]).toMatchObject({ number: 6, start: 116_400_000n })
+    expect(list[0].at).toBeCloseTo(now + 150_000 * AVG_BLOCK_MS, -3)
+    expect(list).toHaveLength(16)
+    // a storm in progress is still listed
+    expect(upcomingStorms(116_200_100n, now)[0].number).toBe(5)
+    const ics = stormsIcs(list, now)
+    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(16)
+    expect(ics).toContain('SUMMARY:⚡ r3OS storm 21 of 21')
+    expect(ics).toMatch(/DTSTART:\d{8}T\d{6}Z/)
+    expect(ics.endsWith('END:VCALENDAR\r\n')).toBe(true)
+    for (const line of ics.split('\r\n'))
+      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75)
+    expect(ics.replace(/\r\n /g, '')).toContain('live countdown at https://r3os.app/#/storms')
+  })
+})
+
+describe('estimated head', () => {
+  it('estimates the block from the clock around the anchor', async () => {
+    const { estimatedHead } = await import('./stormBoard')
+    expect(estimatedHead(1_792_850_127_000)).toBe(116_200_735n)
+    expect(estimatedHead(1_792_850_127_000 + 3_023_000)).toBe(116_210_735n)
+  })
+})

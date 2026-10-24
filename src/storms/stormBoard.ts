@@ -73,3 +73,74 @@ export function currentOrNextStorm(block: bigint, length = 600n) {
   const start = offset < length ? block - offset : block - offset + STORM_PERIOD
   return { start, number: stormNumber(start), now: offset < length }
 }
+
+/** Average Monad block time over season 1 so far (blocks 111,020,589 → 116,200,735): forecasts days ahead. */
+export const AVG_BLOCK_MS = 302.3
+
+/** A known block and its timestamp (block 116,200,735, Oct 24 2026 13:55:27 UTC) for when the chain isn't reachable. */
+const ANCHOR_BLOCK = 116_200_735n
+const ANCHOR_MS = 1_792_850_127_000
+
+/** The head block estimated from the clock, used only until the real head arrives. */
+export function estimatedHead(nowMs: number) {
+  return ANCHOR_BLOCK + BigInt(Math.max(0, Math.floor((nowMs - ANCHOR_MS) / AVG_BLOCK_MS)))
+}
+
+/** The season storms still to come, with an estimated start time from the current block. */
+export function upcomingStorms(
+  head: bigint,
+  nowMs: number,
+  firstStorm = SEASON_FIRST_STORM,
+  total = SEASON_STORMS,
+) {
+  const out: { number: number; start: bigint; at: number }[] = []
+  for (let n = 1; n <= total; n++) {
+    const start = firstStorm + BigInt(n - 1) * STORM_PERIOD
+    if (start + 600n <= head) continue
+    out.push({ number: n, start, at: nowMs + Number(start - head) * AVG_BLOCK_MS })
+  }
+  return out
+}
+
+const icsTime = (ms: number) =>
+  new Date(Math.round(ms / 60_000) * 60_000)
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '')
+
+/**
+ * A calendar file with every storm still to come. Times are estimates (block speed drifts a little over days),
+ * so each event opens 10 minutes early and runs 20 minutes, with a reminder and the live countdown link.
+ */
+export function stormsIcs(storms: { number: number; start: bigint; at: number }[], nowMs: number) {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//r3OS//Storm Chasers//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:r3OS storms',
+  ]
+  for (const storm of storms) {
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:storm-${storm.number}-${storm.start}@r3os.app`,
+      `DTSTAMP:${icsTime(nowMs)}`,
+      `DTSTART:${icsTime(storm.at - 10 * 60_000)}`,
+      `DTEND:${icsTime(storm.at + 10 * 60_000)}`,
+      `SUMMARY:⚡ r3OS storm ${storm.number} of ${SEASON_STORMS}`,
+      `DESCRIPTION:Paint 1 pixel during the storm = 1 ticket for the end-of-season r3tard raffle. Block ${storm.start.toLocaleString('en-US')}\\, the time is an estimate: live countdown at https://r3os.app/#/storms`,
+      'URL:https://r3os.app/#/storms',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:r3OS storm ${storm.number} soon`,
+      'TRIGGER:-PT5M',
+      'END:VALARM',
+      'END:VEVENT',
+    )
+  }
+  lines.push('END:VCALENDAR')
+  // RFC 5545: lines over 75 octets are folded (CRLF + a space). 60 characters keeps multi-byte ⚡ safe.
+  const fold = (line: string) => line.match(/.{1,60}/gu)?.join('\r\n ') ?? line
+  return lines.map(fold).join('\r\n') + '\r\n'
+}

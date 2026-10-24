@@ -24,6 +24,7 @@ import { requestDisconnect } from '../live/disconnectGuardStore'
 import { Welcome } from './Welcome'
 import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { startPresence } from '../paint/presence'
+import { startStormWatch } from '../storms/stormLive'
 import { initActivity } from './activity'
 import { Assistant } from './Assistant'
 import { setAssistantTip } from './assistantStore'
@@ -102,6 +103,7 @@ export function R3OS() {
     initAutoSweep()
     void initReleases()
     startPresence()
+    startStormWatch()
     initActivity()
     window.addEventListener('resize', clampAllWindows)
     return () => window.removeEventListener('resize', clampAllWindows)
