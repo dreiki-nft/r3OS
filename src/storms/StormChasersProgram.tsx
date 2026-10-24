@@ -25,6 +25,7 @@ import {
   subscribeStormLive,
   uncountedStorms,
 } from './stormLive'
+import { cardHeadline, shareCard, type CardData } from './shareCard'
 import './storms.css'
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; board: Board }
@@ -231,6 +232,22 @@ export function StormChasersProgram() {
             pasted={lookup != null}
             pending={pending}
             onClear={() => (setLookup(undefined), setText(''))}
+            card={
+              target && (mine || pending.length)
+                ? {
+                    name: painterName(target),
+                    address: target,
+                    tickets: mine?.tickets ?? 0,
+                    pending: pending.length,
+                    rank: mine?.rank,
+                    wallets: rows.length,
+                    caught: mine?.storms ?? [],
+                    pendingStorms: pending,
+                    counted,
+                    totalStorms: board.totalStorms,
+                  }
+                : undefined
+            }
           />
 
           {picked && (
@@ -346,6 +363,7 @@ function Mine({
   pasted,
   pending,
   onClear,
+  card,
 }: {
   target?: string
   row?: BoardRow
@@ -353,7 +371,22 @@ function Mine({
   pasted: boolean
   pending: number[]
   onClear: () => void
+  card?: CardData
 }) {
+  const [shared, setShared] = useState<string>()
+  const share = async () => {
+    if (!card) return
+    setShared('making…')
+    try {
+      const result = await shareCard(card)
+      setShared(result === 'downloaded' ? 'saved' : result === 'shared' ? 'shared' : undefined)
+    } catch {
+      setShared('failed')
+    }
+  }
+  const xText = card
+    ? `${cardHeadline(card)} in r3OS Storm Season ⚡\n\npaint 1 pixel during a DF1 storm = 1 raffle ticket\n\nr3os.app/#/storms`
+    : ''
   if (bad) return <div className="storms-mine">That is not a wallet address (0x… with 40 characters).</div>
   if (!target)
     return (
@@ -388,6 +421,27 @@ function Mine({
         </div>
       ) : (
         <div>No tickets yet. Paint 1 pixel during the next storm to get one.</div>
+      )}
+      {card && (
+        <div className="storms-share">
+          <Button onClick={() => void share()} disabled={shared === 'making…'}>
+            {shared === 'making…' ? 'Making the card…' : 'Share my storm card'}
+          </Button>
+          {shared === 'saved' && (
+            <span>
+              image saved ·{' '}
+              <a
+                href={`https://x.com/intent/post?text=${encodeURIComponent(xText)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                post on X
+              </a>{' '}
+              and attach it
+            </span>
+          )}
+          {shared === 'failed' && <span>couldn't make the image in this browser</span>}
+        </div>
       )}
     </div>
   )

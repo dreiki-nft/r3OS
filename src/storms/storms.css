@@ -277,3 +277,16 @@
   white-space: nowrap;
   width: auto;
 }
+
+.storms-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.storms-share a {
+  color: var(--accent);
+}
