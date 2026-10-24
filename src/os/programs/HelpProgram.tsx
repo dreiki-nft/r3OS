@@ -228,6 +228,20 @@ const pages: Record<HelpSlug, ReactNode> = {
       <p>r3OS keeps changing while the season runs. the latest, newest first:</p>
       <ul>
         <li>
+          <b>Oct 24 · RAFFLE.EXE</b> (Run → <code>raffle</code>): check the Storm Season raffle yourself. the full
+          ticket list with its fingerprint, every step of the draw as it happens onchain, and after the draw the
+          math that picks the winner, so anyone can redo it.
+        </li>
+        <li>
+          <b>Oct 24 · who painted here</b>: in Paint, hover a pixel (or tap it with the picker on a phone) to see
+          who changed it last, when, and how many times it changed hands. the heat map (View › Wet paint &amp; heat)
+          now stripes tiles that are too hot to paint.
+        </li>
+        <li>
+          <b>Oct 24 · daily canvas post</b>: every evening the canvas, the day's numbers and a painter of the day
+          go out on X and Discord.
+        </li>
+        <li>
           <b>Oct 24 · Storm Chasers</b> (Run → <code>storms</code>): the Storm Season leaderboard. 1 raffle ticket
           for every DF1 storm you paint in. your tickets, a live "you're in ✓" during a storm, every storm left
           in your time zone with a calendar file, and a card to share.
@@ -276,7 +290,8 @@ const pages: Record<HelpSlug, ReactNode> = {
       </p>
       <p>
         until season 1 ends, every storm you paint in is also <b>1 raffle ticket</b>. see yours, and when the
-        next storms hit, in <b>Storm Chasers</b> (Run → <code>storms</code>), or tap the ⚡ timer in the tray.
+        next storms hit, in <b>Storm Chasers</b> (Run → <code>storms</code>), or tap the ⚡ timer in the tray. how
+        the winner is drawn, and how to check it: <b>RAFFLE.EXE</b> (Run → <code>raffle</code>).
       </p>
     </>
   ),

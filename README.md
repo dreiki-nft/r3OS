@@ -75,6 +75,9 @@ The guide also links a real recent paint transaction on the explorer, so every c
 
 r3OS kept shipping during judging (newest first):
 
+- **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle), or Run → `raffle`): a public check of the Storm Season raffle. The ticket list rebuilt from the Storm Chasers data with its keccak256 fingerprint (the same hash the raffle contract stores as `snapshotHash`), a download of the full list, the draw's steps read live from the contract, and, after the draw, the arithmetic anyone can redo: Pyth Entropy's random number mod the ticket count → the winning ticket → its wallet.
+- **Who painted here** in Paint: hover any pixel (or tap it with the picker on a phone) to see the last wallet that changed it, when, and how many times it changed hands this season. **Heat map:** tiles too hot to take more paint are striped, and a stroke refused for heat turns the map on and says why.
+- **A daily canvas post** on X and Discord: the canvas read straight from the contract, the day's painters and paints, and a painter of the day.
 - **Storm Chasers** ([r3os.app/#/storms](https://r3os.app/#/storms), or Run → `storms`): the Storm Season leaderboard. 1 raffle ticket for every DF1 storm a wallet paints in, counted from the Paint contract's own `Painted` events; a live "you're in ✓" while a storm is on, every remaining storm in your time zone with a calendar file, and a shareable card.
 - **r3OS Status** ([r3os.app/#/status](https://r3os.app/#/status)): is r3OS working right now, checked live from your own browser (chain head, RPC endpoints, live feed, next storm, data freshness).
 - **My Pass** shows your season rank among community painters and your storm tickets; **DXDIAG** lists the exact reason if a stroke ever doesn't land.
@@ -384,7 +387,7 @@ The contracts are frozen; everything below happens on top of them.
 
 - **Season 1 ends on November 5, 2026, 11:00 UTC.** The last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen, so the canvas keeps getting new painters and the same ones keep coming back.
-- **Storm Season (October 21 – November 4).** Every DF1 storm until season 1 ends (21 storms, blocks 115,400,000 to 119,400,000, one every 200,000 blocks, 600 blocks each) is worth one raffle ticket to every wallet that paints during it, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn after the last storm by the raffle contract above with Pyth Entropy randomness.
+- **Storm Season (October 21 – November 4).** Every DF1 storm until season 1 ends (21 storms, blocks 115,400,000 to 119,400,000, one every 200,000 blocks, 600 blocks each) is worth one raffle ticket to every wallet that paints during it, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn after the last storm by the raffle contract above with Pyth Entropy randomness. **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle)) shows the list, its fingerprint and every step of the draw, so the result can be checked by anyone.
 - **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
 - **Season 2 opens the same minute,** on a fresh canvas, with a guest.
 
