@@ -3757,6 +3757,11 @@ button:disabled {
   color: var(--accent);
 }
 
+/* Live Mode is on but strokes are waiting (auto-paint switched off): never quiet, on any screen size. */
+.paint-live-hint.held {
+  color: var(--warn);
+}
+
 /* Boot prefetch: use the startup screen to make the desktop hot before the user reaches it. */
 .boot-splash-inner {
   display: grid;

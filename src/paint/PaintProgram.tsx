@@ -100,6 +100,7 @@ import { bytesToRuns, runsToBytes, splitPaintRuns } from './split'
 import { drawStrokeSegment, protectOutline } from './strokes'
 import { Toolbox, type Tool } from './Toolbox'
 import { painterName, usePainterNames } from '../chain/names'
+import { recordStrokeIssue, type StrokeIssueKind } from './strokeLog'
 
 const EMPTY_BUDGET: BudgetState = { hourly: 0, hourlyLimit: 0, holder: 0, total: 0, activeDays: 0 }
 
@@ -325,6 +326,18 @@ export function PaintProgram() {
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
 
   const isLive = liveActive(live)
+
+  // Every stroke that doesn't land gets a line in DXDIAG › Paint problems (src/paint/strokeLog.ts), with the
+  // block and whether a storm was on, so a "Live Mode wouldn't paint" report comes with its real reason.
+  const noteStroke = (kind: StrokeIssueKind, px: number, reason: unknown) =>
+    recordStrokeIssue({
+      kind,
+      px,
+      reason,
+      block: getBlockSnapshot().block.toString(),
+      storm: getBlockSnapshot().storm,
+      live: isLive,
+    })
 
   useEffect(() => {
     if (isLive) {
@@ -754,8 +767,41 @@ export function PaintProgram() {
     setWorking(before.slice())
   }
 
+  // If a send is still going after 30 s, something is stuck (a wallet that never answered, a request that never
+  // came back): say so in the log, because every stroke after it waits behind it.
+  useEffect(() => {
+    if (!busy) return
+    const timer = window.setTimeout(
+      () => noteStroke('held', patch.pixelWrites, 'a send has been in progress for 30 s; new strokes wait behind it'),
+      30_000,
+    )
+    return () => window.clearTimeout(timer)
+  }, [busy])
+
   const scheduleAutoPaint = () => {
-    if (!isLive || !autoPaint) return
+    if (!isLive || !autoPaint) {
+      const waiting = encodeChangedRuns(getCanvasSnapshot().background, getCanvasSnapshot().working).pixelWrites
+      if (waiting > 0 && wallet.account && !guest) {
+        if (isLive) noteStroke('held', waiting, 'auto-paint is off: strokes wait for the Paint button')
+        else if (live.burner)
+          noteStroke(
+            'held',
+            waiting,
+            `live mode not active in this tab (${
+              live.loading
+                ? 'still loading the session'
+                : !live.session
+                  ? 'no session read yet'
+                  : live.session.revoked
+                    ? 'session revoked'
+                    : getBlockSnapshot().block > live.session.expiryBlock
+                      ? 'session expired'
+                      : 'session inactive'
+            })`,
+          )
+      }
+      return
+    }
     // Pointer-up is the earliest moment we know the final stroke bytes. Start eth_estimateGas immediately
     // and hide most of that RTT behind the short coalescing window instead of waiting for React's quote effect.
     if (wallet.account && config.paintAddress && !config.demo) {
@@ -949,6 +995,7 @@ export function PaintProgram() {
         const sending = attempted ?? new Map<number, number>()
         const leftover = new Map([...beginInFlight(patch.bytes)].filter(([index]) => !sending.has(index)))
         dropInFlight(leftover)
+        noteStroke('dropped', leftover.size, "out of paint: didn't fit this hour's budget")
         const minutes = 60 - new Date().getUTCMinutes()
         pushBalloon({
           id: 'out-of-paint',
@@ -1080,17 +1127,22 @@ export function PaintProgram() {
       // Cancelling (in the wallet, or the "gas went up" confirm) is a choice, not a failure: nothing was sent and
       // the pipeline already played the cancel sound, so no red "Paint failed" box. A stroke you sent yourself
       // stays to retry; an auto-painted Live stroke comes off, so the canvas keeps showing only what's onchain.
+      const failedPx = attempted?.size ?? patch.pixelWrites
+      const why = `${friendly.name ? `${friendly.name}: ` : ''}${friendly.message}`
       if (friendly.rejected) {
         if (attempted) dropInFlight(attempted)
+        noteStroke(attempted ? 'dropped' : 'failed', failedPx, `cancelled: ${why}`)
         return
       }
       if (attempted && friendly.name === 'RegionBusy' && regionRetriesRef.current < 3) {
+        noteStroke('retrying', failedPx, why)
         regionRetriesRef.current++
         window.setTimeout(() => strokeQueueRef.current?.schedule(), 800)
         return
       }
       regionRetriesRef.current = 0
       if (attempted) dropInFlight(attempted)
+      noteStroke(attempted ? 'dropped' : 'failed', failedPx, why)
       const dropped = attempted ? ", so that stroke was taken off your canvas" : ''
       if (friendly.name === 'TileTooHot')
         setAssistantTip(
@@ -1255,7 +1307,18 @@ export function PaintProgram() {
           label: `Auto-paint strokes ${autoPaint ? '✓' : ''}`,
           disabled: !isLive,
           disabledReason: 'live mode only',
-          action: () => setAutoPaint((value) => !value),
+          action: () =>
+            setAutoPaint((value) => {
+              // Off means strokes stay on the canvas until Paint is pressed. On a phone that's easy to switch off
+              // by accident (it sits under Save frame), so say it loudly instead of looking like Paint broke.
+              if (value)
+                pushBalloon({
+                  id: 'auto-paint-off',
+                  title: 'Auto-paint is off',
+                  body: 'new strokes wait on your canvas until you press Paint. File › Auto-paint strokes turns it back on.',
+                })
+              return !value
+            }),
         },
         { label: 'Exit', action: () => closeWindow('paint') },
       ],
@@ -1650,6 +1713,21 @@ export function PaintProgram() {
               </Button>
             )}
           </div>
+          {isLive && !autoPaint && (
+            <small className="paint-live-hint held">
+              auto-paint is off{patch.pixelWrites ? ` · ${patch.pixelWrites} px waiting` : ''} ·{' '}
+              <button
+                className="link-button"
+                onClick={() => {
+                  setAutoPaint(true)
+                  // send what's waiting right away (the queue runs the latest paintChunks after this render)
+                  window.setTimeout(() => strokeQueueRef.current?.schedule(), 0)
+                }}
+              >
+                turn it back on and send
+              </button>
+            </small>
+          )}
           <small className={isLive || guest ? 'paint-live-hint active' : 'paint-live-hint'}>
             {guest
               ? 'guest wallet · onchain immediately · no popups · no undo'

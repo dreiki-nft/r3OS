@@ -19,6 +19,7 @@ import {
 } from '../chain/actionRpc'
 import type { HardwareSource } from '../chain/monadHardware'
 import { getTxTraceSnapshot, subscribeTxTrace, type TxTrace } from '../chain/txTrace'
+import { formatStrokeIssues, getStrokeIssues, subscribeStrokeIssues } from '../paint/strokeLog'
 import { closeWindow } from '../os/windows'
 import { playSound } from '../os/sound'
 import { Button } from '../os/ui/Button'
@@ -104,6 +105,7 @@ export function DxDiagProgram() {
   const perfRows = useMemo(() => summarizePerf(perf.samples), [perf.version, perf.samples])
   const actionRpc = useSyncExternalStore(subscribeActionRpc, getActionRpcSnapshot)
   const txTraces = useSyncExternalStore(subscribeTxTrace, getTxTraceSnapshot)
+  const strokeIssues = useSyncExternalStore(subscribeStrokeIssues, getStrokeIssues)
 
   const load = useCallback(async (force: boolean) => {
     setLoading(true)
@@ -142,7 +144,7 @@ export function DxDiagProgram() {
   const copy = async () => {
     if (!view) return
     const ok = await copyText(
-      `${formatReport(view)}\n\n${formatPerfReport(perf)}\n\n${formatTxReport(view.chain.id, txTraces.traces)}`,
+      `${formatReport(view)}\n\n${formatPerfReport(perf)}\n\n${formatTxReport(view.chain.id, txTraces.traces)}\n\n${formatStrokeIssues(strokeIssues.entries)}`,
     )
     playSound(ok ? 'confirm' : 'error')
     setNote(ok ? 'report copied to the clipboard' : 'copy failed: select the report text manually')
@@ -358,6 +360,20 @@ export function DxDiagProgram() {
                 Live Mode signs locally and redundantly broadcasts the same raw transaction to the configured HTTP
                 endpoints. Endpoint URLs are never shown here or copied into the report.
               </p>
+            </GroupBox>
+            <GroupBox title="Paint problems">
+              {strokeIssues.entries.length ? (
+                strokeIssues.entries.slice(0, 10).map((row) => (
+                  <Row
+                    key={`${row.at}-${row.kind}`}
+                    label={`${new Date(row.at).toLocaleTimeString()} · ${row.kind}${row.storm ? ' · STORM' : ''}`}
+                    value={`${row.px} px · block ${row.block} · ${row.reason}`}
+                    source="measured"
+                  />
+                ))
+              ) : (
+                <p className="dxdiag-note">no failed or held strokes recorded in this browser.</p>
+              )}
             </GroupBox>
             <GroupBox title="Recent onchain actions">
               {txTraces.traces.length ? (

@@ -374,7 +374,7 @@ html {
   }
 
   /* The Live Mode panel above already explains this; keep the pinned bar short. */
-  .paint-action .paint-live-hint:not(.active) {
+  .paint-action .paint-live-hint:not(.active):not(.held) {
     display: none;
   }
 
