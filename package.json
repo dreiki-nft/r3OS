@@ -32,7 +32,8 @@
     "mainnet:preflight": "node scripts/mainnet-preflight.mjs",
     "mainnet:collect-addresses": "node scripts/deployment-addresses.mjs",
     "mainnet:rehearse": "node scripts/mainnet-rehearse.mjs",
-    "mainnet:oracle": "node scripts/mainnet-oracle-probe.mjs"
+    "mainnet:oracle": "node scripts/mainnet-oracle-probe.mjs",
+    "season:refresh": "node scripts/season-refresh.mjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",

@@ -54,6 +54,9 @@ docs/MAINNET_DEPLOYMENT_INPUT.local.json
 
 # Guest wallets for judges (private keys; never commit)
 guest-wallets*.local.json
+# season-refresh exclusions (builder, guest and anon wallets) and its temp stats file
+season-refresh.local.json
+docs/season-stats.json.tmp
 token*-uri.txt
 storm-chasers-out/
 
