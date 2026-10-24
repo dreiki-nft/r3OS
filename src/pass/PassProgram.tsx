@@ -54,6 +54,7 @@ import {
 } from '../chain/names'
 import { WalletChooser } from '../os/WalletChooser'
 import { Tabs } from '../os/ui/Tabs'
+import { useSeasonStanding } from './seasonRank'
 import { TreeView } from '../os/ui/TreeView'
 import { OperatorTab } from '../operator/OperatorTab'
 import { subscribeCanvasActivity } from '../paint/canvasStore'
@@ -106,6 +107,7 @@ function writeStoredDisplay(owner: Address, value: bigint | null) {
 
 export function PassProgram() {
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
+  const standing = useSeasonStanding(wallet.account)
   usePainterNames()
   const block = useSyncExternalStore(subscribeBlocks, getBlockSnapshot)
   const live = useSyncExternalStore(subscribeLive, getLiveSnapshot)
@@ -577,6 +579,11 @@ export function PassProgram() {
                           ['SESSION PAINTS', stats.sessionPaints.toString()],
                           ['STORM PAINTS', stats.stormPaints.toString()],
                           ['FIRST PAINT', stats.firstPaintBlock ? `#${stats.firstPaintBlock}` : '—'],
+                          [
+                            'SEASON RANK',
+                            standing?.rank && standing.of ? `#${standing.rank} of ${standing.of}` : '—',
+                          ],
+                          ['STORM TICKETS', String(standing?.tickets ?? 0)],
                         ] as const
                       ).map(([label, value]) => (
                         <div className="sunken" key={label}>

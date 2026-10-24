@@ -54,9 +54,19 @@ export function plan({ storms, exclude, excludeFiles, rpc, statsOut = 'docs/seas
       args: [...rpcArgs],
     },
     {
-      label: `season stats (${statsOut})`,
+      label: `season stats (${statsOut}, public/season/painters.json)`,
       script: 'scripts/community-stats.mjs',
-      args: ['--range', '100', '--concurrency', '8', '--json', ...excludeArgs, ...rpcArgs],
+      args: [
+        '--range',
+        '100',
+        '--concurrency',
+        '8',
+        '--json',
+        '--painters-out',
+        'public/season/painters.json',
+        ...excludeArgs,
+        ...rpcArgs,
+      ],
       stdoutTo: statsOut,
     },
     {
@@ -86,6 +96,7 @@ export const REFRESHED_FILES = [
   'public/replay',
   'public/live/sessions.json',
   'docs/season-stats.json',
+  'public/season/painters.json',
   'docs/media/season-days.svg',
   'public/storms/season-1.json',
 ]

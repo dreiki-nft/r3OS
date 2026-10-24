@@ -20,6 +20,7 @@ import {
   unpackLog,
   writeCache,
   parseArgs,
+  perWallet,
   runPixels,
   summarize,
   windowMarkdown,
@@ -222,5 +223,31 @@ describe('community stats cache', () => {
       3_000n,
     )
     expect(JSON.stringify(cache)).not.toMatch(/https?:/)
+  })
+})
+
+describe('per-wallet season numbers', () => {
+  it('counts each painter, skips excluded wallets and ranks by paints (ties share)', () => {
+    const t0 = 1_760_000_000n
+    const rows = perWallet(
+      {
+        painted: [
+          painted(A, '0x0a050903', t0),
+          painted(A, '0x0a050903', t0 + DAY),
+          painted(B, '0x0a050903', t0),
+          painted(ME, '0x0a050903', t0),
+        ],
+        frames: [frame(A, 1n), frame(ME, 2n)],
+        cds: [cd(B, 1n)],
+      },
+      [ME],
+    )
+    expect(rows).toEqual([
+      { address: A, paints: 2, pixels: 10, days: 2, first: '2025-10-09', frames: 1, cds: 0, rank: 1 },
+      { address: B, paints: 1, pixels: 5, days: 1, first: '2025-10-09', frames: 0, cds: 1, rank: 2 },
+    ])
+    expect(parseArgs(['--painters-out', 'public/season/painters.json']).paintersOut).toBe(
+      'public/season/painters.json',
+    )
   })
 })

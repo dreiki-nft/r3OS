@@ -5,6 +5,7 @@
  *
  *   node scripts/community-stats.mjs --exclude 0xYourWallet,0xYourTestWallet
  *   node scripts/community-stats.mjs --since 2026-10-10T21:00:00Z --hours 24 --exclude …   # a launch window
+ *   … --painters-out public/season/painters.json    # also each painter's own numbers (My Pass › My Season)
  *
  * Defaults to the accepted mainnet deployment and the public RPC. It never signs or sends anything.
  * Pass --rpc to use another endpoint; the URL is never printed.
@@ -13,6 +14,8 @@
  * the first run scans the whole season and later runs fetch only the new blocks; every number is still counted
  * from the whole season. --cache <file> puts it elsewhere, --no-cache does a full scan without it.
  */
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { createPublicClient, http, parseAbi } from 'viem'
 import {
   CD_BURNED,
@@ -27,6 +30,7 @@ import {
   parseArgs,
   readCache,
   scanStart,
+  perWallet,
   summarize,
   unpackLog,
   windowMarkdown,
@@ -193,6 +197,21 @@ try {
   )
 
   const stats = summarize({ painted: painted.filter(inRange), frames, cds, passes }, options.exclude)
+  if (options.paintersOut) {
+    const rows = perWallet({ painted: painted.filter(inRange), frames, cds }, options.exclude)
+    mkdirSync(dirname(options.paintersOut), { recursive: true })
+    writeFileSync(
+      options.paintersOut,
+      JSON.stringify({
+        version: 1,
+        chainId: 143,
+        toBlock: String(head),
+        asOf: new Date().toISOString(),
+        painters: rows,
+      }) + '\n',
+    )
+    console.error(`community-stats: wrote ${options.paintersOut} (${rows.length} painters)`)
+  }
   const window = windowRange
     ? windowStats(painted, {
         fromTime: windowRange.fromTime,

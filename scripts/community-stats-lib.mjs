@@ -44,6 +44,8 @@ export function parseArgs(argv) {
       out.since = BigInt(Math.floor(ms / 1_000))
     } else if (arg === '--hours') out.hours = Number(next())
     else if (arg === '--range') out.range = Number(next())
+    // per-wallet season numbers for the My Season tab in r3OS, e.g. public/season/painters.json
+    else if (arg === '--painters-out') out.paintersOut = next()
     else if (arg === '--concurrency') out.concurrency = Number(next())
     else if (arg === '--exclude')
       out.exclude.push(
@@ -188,6 +190,65 @@ export function summarize({ painted = [], frames = [], cds = [], passes = [] }, 
     excluded: skip.size,
     daily,
   }
+}
+
+/**
+ * Per-wallet season numbers (the same exclusions as summarize): what My Pass › My Season shows each painter.
+ * Rows are sorted by paints, most first; `rank` is that position (ties share the higher rank).
+ */
+export function perWallet({ painted = [], frames = [], cds = [] }, exclude = []) {
+  const skip = new Set(exclude.map((value) => value.toLowerCase()))
+  const rows = new Map()
+  const row = (owner) => {
+    let r = rows.get(owner)
+    if (!r) {
+      r = { address: owner, paints: 0, pixels: 0, days: new Set(), frames: 0, cds: 0 }
+      rows.set(owner, r)
+    }
+    return r
+  }
+  for (const log of painted) {
+    const args = decode(PAINTED, log)
+    if (!args) continue
+    const owner = String(args.owner).toLowerCase()
+    if (skip.has(owner)) continue
+    const r = row(owner)
+    r.paints += 1
+    r.pixels += runPixels(args.runs)
+    if (log.blockTimestamp)
+      r.days.add(new Date(Number(log.blockTimestamp) * 1_000).toISOString().slice(0, 10))
+  }
+  for (const [logs, item, field, key] of [
+    [frames, FRAME_MINTED, 'minter', 'frames'],
+    [cds, CD_BURNED, 'owner', 'cds'],
+  ]) {
+    for (const log of logs) {
+      const args = decode(item, log)
+      if (!args) continue
+      const owner = String(args[field]).toLowerCase()
+      if (skip.has(owner) || !rows.has(owner)) continue
+      row(owner)[key] += 1
+    }
+  }
+  const sorted = [...rows.values()]
+    .map((r) => {
+      const days = [...r.days].sort()
+      return {
+        address: r.address,
+        paints: r.paints,
+        pixels: r.pixels,
+        days: days.length,
+        first: days[0] ?? null,
+        frames: r.frames,
+        cds: r.cds,
+      }
+    })
+    .sort((a, b) => b.paints - a.paints || b.pixels - a.pixels || (a.address < b.address ? -1 : 1))
+  let rank = 0
+  return sorted.map((r, i) => {
+    if (i === 0 || r.paints !== sorted[i - 1].paints) rank = i + 1
+    return { ...r, rank }
+  })
 }
 
 export function markdown(stats, { fromBlock, toBlock, asOf }) {
