@@ -43,16 +43,11 @@ export function parseBoard(value: unknown): Board {
   }
 }
 
-/** Most tickets first; wallets on the same count share a rank (1, 2, 2, 4). */
+/** Most tickets first, numbered 1, 2, 3… (ties keep address order). */
 export function rankBoard(wallets: BoardWallet[]): BoardRow[] {
-  const sorted = [...wallets].sort(
-    (a, b) => b.tickets - a.tickets || (a.address.toLowerCase() < b.address.toLowerCase() ? -1 : 1),
-  )
-  let rank = 0
-  return sorted.map((row, i) => {
-    if (i === 0 || row.tickets !== sorted[i - 1].tickets) rank = i + 1
-    return { ...row, rank }
-  })
+  return [...wallets]
+    .sort((a, b) => b.tickets - a.tickets || (a.address.toLowerCase() < b.address.toLowerCase() ? -1 : 1))
+    .map((row, i) => ({ ...row, rank: i + 1 }))
 }
 
 export function findWallet(rows: BoardRow[], address?: string | null) {

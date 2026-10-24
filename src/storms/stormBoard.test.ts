@@ -7,7 +7,7 @@ const B = '0x00000000000000000000000000000000000000B2'
 const C = '0x00000000000000000000000000000000000000c3'
 
 describe('storm board', () => {
-  it('ranks most tickets first and lets ties share a rank', () => {
+  it('ranks most tickets first and numbers every row 1, 2, 3', () => {
     const rows = rankBoard([
       { address: C, tickets: 1 },
       { address: A, tickets: 3 },
@@ -15,7 +15,7 @@ describe('storm board', () => {
     ])
     expect(rows.map((row) => [row.address, row.rank])).toEqual([
       [A, 1],
-      [B, 1],
+      [B, 2],
       [C, 3],
     ])
     expect(findWallet(rows, ' 0x00000000000000000000000000000000000000b2 ')?.tickets).toBe(3)
