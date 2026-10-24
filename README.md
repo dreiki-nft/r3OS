@@ -71,6 +71,17 @@ Open **[r3os.app](https://r3os.app/)** and choose **Run → `demo.exe`** (or go 
 
 The guide also links a real recent paint transaction on the explorer, so every claim can be checked.
 
+### New this week
+
+r3OS kept shipping during judging (newest first):
+
+- **Storm Chasers** ([r3os.app/#/storms](https://r3os.app/#/storms), or Run → `storms`): the Storm Season leaderboard. 1 raffle ticket for every DF1 storm a wallet paints in, counted from the Paint contract's own `Painted` events; a live "you're in ✓" while a storm is on, every remaining storm in your time zone with a calendar file, and a shareable card.
+- **r3OS Status** ([r3os.app/#/status](https://r3os.app/#/status)): is r3OS working right now, checked live from your own browser (chain head, RPC endpoints, live feed, next storm, data freshness).
+- **My Pass** shows your season rank among community painters and your storm tickets; **DXDIAG** lists the exact reason if a stroke ever doesn't land.
+- **Live Mode refunds:** everyone who left MON in a Live Mode burner from before the automatic sweep was paid back onchain.
+- **Live Mode** sends leftover MON back by itself when a session ends and offers to end the session before you disconnect; the storm bell, Season Replay on the desktop and pixel-art wallpapers.
+- **One command after each storm** (`npm run season:refresh`) republishes the replay, the Live Mode session index, these season numbers, the chart and the leaderboard from the chain.
+
 **Judges:** the private part of the submission has a guest-wallet link. It opens r3os.app with a throwaway wallet holding a little MON, so you can paint on mainnet immediately, with no wallet setup and no popups.
 
 ## Live community proof

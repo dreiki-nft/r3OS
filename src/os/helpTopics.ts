@@ -5,6 +5,7 @@
 export const HELP_TOPICS = [
   { slug: 'welcome', title: 'welcome', group: 'start' },
   { slug: 'getting-started', title: 'getting started', group: 'start' },
+  { slug: 'whats-new', title: "what's new", group: 'start' },
   { slug: 'paint', title: 'Paint', group: 'programs', program: 'paint' },
   { slug: 'frames', title: 'My Frames', group: 'programs', program: 'frames' },
   { slug: 'pass', title: 'My Pass', group: 'programs', program: 'pass' },

@@ -223,6 +223,41 @@ const pages: Record<HelpSlug, ReactNode> = {
       </p>
     </>
   ),
+  'whats-new': (
+    <>
+      <p>r3OS keeps changing while the season runs. the latest, newest first:</p>
+      <ul>
+        <li>
+          <b>Oct 24 · Storm Chasers</b> (Run → <code>storms</code>): the Storm Season leaderboard. 1 raffle ticket
+          for every DF1 storm you paint in. your tickets, a live "you're in ✓" during a storm, every storm left
+          in your time zone with a calendar file, and a card to share.
+        </li>
+        <li>
+          <b>Oct 24 · r3OS Status</b> (Run → <code>status</code>): is everything working, checked live from your
+          browser: the chain, the RPC, the live feed, the next storm.
+        </li>
+        <li>
+          <b>Oct 24 · My Pass</b> shows your season rank among all painters and your storm tickets. DXDIAG now
+          lists why a stroke didn't land, if one ever doesn't.
+        </li>
+        <li>
+          <b>Oct 23 · Live Mode refunds</b>: everyone who left MON in a Live Mode burner from before the automatic
+          sweep got it sent back.
+        </li>
+        <li>
+          <b>Oct 22 · Live Mode</b> sends leftover MON back by itself when a session ends, offers to end the
+          session before you disconnect, and shows MON left in burners from other browsers. plus the storm bell,
+          Season Replay on the desktop and 7 pixel-art wallpapers.
+        </li>
+        <li>
+          <b>Oct 21 · Storm Season</b>: every DF1 storm until season 1 ends is worth a raffle ticket.
+        </li>
+        <li>
+          <b>Oct 19 · .r3 names</b>: painters show as <code>name.r3</code> when they have one.
+        </li>
+      </ul>
+    </>
+  ),
   seasons: (
     <p>
       a season lasts 30 days. each season can have its own character outlined on the canvas. when it ends, the
@@ -238,6 +273,10 @@ const pages: Record<HelpSlug, ReactNode> = {
       <p>
         every 200,000 blocks a storm hits for 600 blocks and everything glitches at 200%. painting in a storm
         earns the STORM CHASER stamp.
+      </p>
+      <p>
+        until season 1 ends, every storm you paint in is also <b>1 raffle ticket</b>. see yours, and when the
+        next storms hit, in <b>Storm Chasers</b> (Run → <code>storms</code>), or tap the ⚡ timer in the tray.
       </p>
     </>
   ),

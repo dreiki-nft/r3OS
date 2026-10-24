@@ -143,7 +143,11 @@ export function StatusProgram() {
             : 'nobody in the last minute'}
         </Line>
         <Line label="Last paint">
-          {lastPaintMs != null ? (lastPaintMs < 2_000 ? 'just now' : ago(lastPaintMs)) : '—'}
+          {lastPaintMs != null
+            ? lastPaintMs < 2_000
+              ? 'just now'
+              : ago(lastPaintMs)
+            : 'not in the last minute'}
         </Line>
         <Line label="Storms">
           {block.block === 0n
