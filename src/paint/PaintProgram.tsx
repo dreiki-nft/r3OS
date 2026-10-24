@@ -11,7 +11,7 @@ import {
   type PointerEvent,
 } from 'react'
 import { bytesToHex, hexToBytes, type Address } from 'viem'
-import { getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
+import { blockEta, getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { publicClient } from '../chain/clients'
 import { decodeCoreEventLog } from '../chain/coreLogs'
 import { config } from '../chain/config'
@@ -101,6 +101,13 @@ import { drawStrokeSegment, protectOutline } from './strokes'
 import { Toolbox, type Tool } from './Toolbox'
 import { painterName, usePainterNames } from '../chain/names'
 import { recordStrokeIssue, type StrokeIssueKind } from './strokeLog'
+import {
+  getPixelHistory,
+  getPixelHistoryVersion,
+  loadPixelHistory,
+  pixelInfo,
+  subscribePixelHistory,
+} from './pixelHistory'
 
 const EMPTY_BUDGET: BudgetState = { hourly: 0, hourlyLimit: 0, holder: 0, total: 0, activeDays: 0 }
 
@@ -121,6 +128,15 @@ function tilesFromDiff(before: Uint8Array, after: Uint8Array) {
     out.add((y >> 4) * 16 + (x >> 4))
   }
   return out
+}
+
+function agoText(ms: number) {
+  const minutes = Math.round(ms / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 48) return `${hours} h ago`
+  return `${Math.floor(hours / 24)} days ago`
 }
 
 export function PaintProgram() {
@@ -326,6 +342,22 @@ export function PaintProgram() {
   useEffect(() => setLiveOwner(wallet.account), [wallet.account])
 
   const isLive = liveActive(live)
+
+  // "Who painted here?": the season's pixel history, loaded only when asked for (src/paint/pixelHistory.ts).
+  useSyncExternalStore(subscribePixelHistory, getPixelHistoryVersion)
+  const history = getPixelHistory()
+  const whoPainted = (x: number, y: number) => {
+    if (history.status !== 'ready') return undefined
+    const info = pixelInfo(history.history, x, y)
+    if (!info.painted) return 'nobody has painted this pixel yet'
+    const name = info.address === wallet.account?.toLowerCase() ? 'you' : painterName(info.address)
+    const head = getBlockSnapshot().block
+    // before the first block arrives there's no "now" to measure from: leave the time out
+    const ago =
+      head === 0n ? undefined : head > BigInt(info.block) ? agoText(blockEta(head - BigInt(info.block))) : 'just now'
+    const times = info.changes === 1 ? 'painted once' : `changed ${info.changes} times`
+    return [info.glitch ? `DF1 glitch from ${name}'s stroke` : name, ago, times].filter(Boolean).join(' · ')
+  }
 
   // Every stroke that doesn't land gets a line in DXDIAG › Paint problems (src/paint/strokeLog.ts), with the
   // block and whether a storm was on, so a "Live Mode wouldn't paint" report comes with its real reason.
@@ -837,6 +869,22 @@ export function PaintProgram() {
     if (tool === 'picker') {
       const index = point.y * 256 + point.x
       setColour(canvas.outline[index] ? canvas.face : canvas.working[index])
+      // The picker also answers "who painted this?" (the info panel is hidden on phones).
+      if (canvas.outline[index]) return
+      if (history.status === 'ready')
+        pushBalloon({
+          id: 'who-painted',
+          title: `Pixel ${point.x}, ${point.y}`,
+          body: whoPainted(point.x, point.y) ?? '',
+        })
+      else if (history.status !== 'loading' && !config.demo) {
+        loadPixelHistory(Number(canvas.season))
+        pushBalloon({
+          id: 'who-painted',
+          title: 'Who painted here?',
+          body: "reading the season's history once… tap the pixel again in a moment.",
+        })
+      }
       return
     }
     if (tool === 'zoom') {
@@ -1144,10 +1192,18 @@ export function PaintProgram() {
       if (attempted) dropInFlight(attempted)
       noteStroke(attempted ? 'dropped' : 'failed', failedPx, why)
       const dropped = attempted ? ", so that stroke was taken off your canvas" : ''
-      if (friendly.name === 'TileTooHot')
+      if (friendly.name === 'TileTooHot') {
         setAssistantTip(
           "it looks like you're trying to paint over someone's piece. heat's gonna stop you lol",
         )
+        // Show where it's too hot instead of only saying so: the striped tiles are the ones that refuse paint.
+        setHeatView(true)
+        pushBalloon({
+          id: 'too-hot',
+          title: 'Too hot to paint there',
+          body: 'that area was just painted a lot. heat view is on now: striped tiles are still too hot. they cool a little every block, so try a spot nearby or wait about a minute.',
+        })
+      }
       if (friendly.name === 'BurnerOutOfMon') {
         pushBalloon({
           id: 'burner-out-of-mon',
@@ -1590,8 +1646,35 @@ export function PaintProgram() {
           </b>
           <span>
             {'▮'.repeat(heatBars)}
-            {'▯'.repeat(5 - heatBars)} {heatLabel}
+            {'▯'.repeat(5 - heatBars)} {heatLabel} ·{' '}
+            <button className="link-button" onClick={() => setHeatView(!heatView)}>
+              {heatView ? 'hide heat map' : 'show heat map'}
+            </button>
           </span>
+          {!config.demo && (
+            <>
+              <br />
+              <b
+                className="paint-term"
+                title="the last wallet that changed the pixel under your cursor, when, and how many times it changed hands this season (from the Season Replay plus live paints). with the picker tool, a click shows it too."
+              >
+                painted by
+              </b>
+              <span className="paint-who">
+                {history.status === 'ready' ? (
+                  whoPainted(hover.x, hover.y)
+                ) : history.status === 'loading' ? (
+                  "reading the season's history…"
+                ) : history.status === 'error' ? (
+                  "couldn't load the history"
+                ) : (
+                  <button className="link-button" onClick={() => loadPixelHistory(Number(canvas.season))}>
+                    who painted here?
+                  </button>
+                )}
+              </span>
+            </>
+          )}
           {!config.demo && (
             <>
               <br />

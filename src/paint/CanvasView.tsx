@@ -7,6 +7,9 @@ import type { TilePreviewState } from './cost'
 import type { Box, Ping } from './presence'
 import { shouldRecordRemoteRender } from './renderPerf'
 
+/** Heat share from which a tile is shown as too hot to paint (it cools 2 heat per block). */
+export const TOO_HOT = 0.8
+
 interface CanvasViewProps {
   pixels: Uint8Array
   outline: Uint8Array
@@ -133,6 +136,12 @@ export function CanvasView({
           red = Math.min(255, Math.round(red + 90 * heat))
           green = Math.round(green * (1 - 0.25 * heat))
           blue = Math.round(blue * (1 - 0.35 * heat))
+          // Too hot to take more paint (the contract refuses above MAX_TILE_HEAT): red diagonal stripes.
+          if (heat >= TOO_HOT && ((x + y) & 3) === 0) {
+            red = 197
+            green = 32
+            blue = 32
+          }
         }
       }
 
