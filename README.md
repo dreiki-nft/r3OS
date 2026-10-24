@@ -23,7 +23,7 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  <b>91 painters · 7,715 paint transactions · 435 frames saved</b> in the first two weeks, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
+  <b>92 painters · 8,061 paint transactions · 439 frames saved</b> in the first two weeks, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
 </p>
 
 <p align="center">
@@ -131,23 +131,23 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 ### Season 1 so far
 
-**As of October 24, 2026, 14:01 UTC** (blocks 111,020,589–116,201,284), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
+**As of October 24, 2026, 19:07 UTC** (blocks 111,020,589–116,262,724), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
 
 | | |
 | --- | ---: |
-| Painters (distinct wallets) | **91** |
+| Painters (distinct wallets) | **92** |
 | Painters who came back on another day | **36** |
-| Paint transactions | **7,715** |
-| Pixels painted | **226,401** |
-| Frames saved | **435**, by 59 wallets |
+| Paint transactions | **8,061** |
+| Pixels painted | **231,022** |
+| Frames saved | **439**, by 61 wallets |
 | CDs burned | **41**, by 20 wallets |
-| Painter Passes claimed | **67** |
+| Painter Passes claimed | **68** |
 
 Not counted above: **33 anonymous wallets run by the project** (`anon-01.r3` … `anon-33.r3`), which have been drawing a green eye in the bottom-left of the canvas since October 19 and paint it back when someone covers it. Their paints are on the canvas and in the replay like everyone else's, but they are the project's own wallets, so they are left out of every number here.
 
 <p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to October 24" width="100%"></p>
 
-The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 36 painters have come back to paint on another day, and from October 21 to 23 between 800 and almost 1,000 paints a day. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
+The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 36 painters have come back to paint on another day, and since October 21 between 800 and almost 1,000 paints a day. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
 
 <p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from October 9 to October 24, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
 
