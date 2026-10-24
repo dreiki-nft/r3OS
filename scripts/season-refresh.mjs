@@ -83,6 +83,7 @@ for (const [i, step] of steps.entries()) {
 }
 
 console.log(`done in ${Math.round((Date.now() - started) / 1000)}s. To publish:`)
-console.log(`  git add ${REFRESHED_FILES.join(' ')}`)
+// one short line per file: long lines wrap in the terminal and break when copied
+for (const file of REFRESHED_FILES) console.log(`  git add ${file}`)
 console.log(`  git commit -m "Season data after storm ${storms.length}"`)
 console.log('  git push')
