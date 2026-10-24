@@ -35,6 +35,8 @@ export function parseArgs(argv) {
     else if (arg === '--rpc') out.rpc = next()
     else if (arg === '--paint') out.paint = next()
     else if (arg === '--out') out.out = next()
+    // the leaderboard file the Storm Chasers window reads, e.g. public/storms/season-1.json
+    else if (arg === '--public') out.public = next()
     else if (arg === '--range') out.range = Number(next())
     else if (arg === '--batch') out.batch = Number(next())
     // per-storm: 1 ticket for every storm a wallet painted in (the rule since storm 1); all: 1 ticket, only
@@ -170,4 +172,35 @@ export function report({
   if (mode !== 'all') for (const e of list) lines.push(`  ${e.wallet}  ${plural(e.tickets, 'ticket')}`)
   lines.push(`snapshotBlock: ${snapshotBlock}`, `snapshotHash:  ${hash}`)
   return lines.join('\n')
+}
+
+/** Storm Season: 21 storms, block 115,400,000 → 119,400,000 (Season 1 ends with the last one). */
+export const SEASON_FIRST_STORM = 115_400_000n
+export const SEASON_STORMS = 21
+
+/**
+ * The public leaderboard file the Storm Chasers window reads (public/storms/season-1.json): the same counts the
+ * raffle uses, plus which season storms (1-21) each wallet caught. Addresses and counts only, nothing private.
+ */
+export function publicBoard({ storms, perStorm, list, updatedAt }) {
+  const number = (start) => Number((start - SEASON_FIRST_STORM) / STORM_PERIOD) + 1
+  const caught = new Map(list.map(({ wallet }) => [wallet.toLowerCase(), []]))
+  storms.forEach((window, i) => {
+    for (const wallet of perStorm[i]) caught.get(wallet)?.push(number(window.start))
+  })
+  return {
+    version: 1,
+    chainId: 143,
+    updatedAt,
+    firstStorm: String(SEASON_FIRST_STORM),
+    totalStorms: SEASON_STORMS,
+    storms: storms.map((window, i) => ({
+      number: number(window.start),
+      start: String(window.start),
+      painters: perStorm[i].size,
+    })),
+    wallets: [...list]
+      .sort((a, b) => b.tickets - a.tickets || (a.wallet.toLowerCase() < b.wallet.toLowerCase() ? -1 : 1))
+      .map(({ wallet, tickets }) => ({ address: wallet, tickets, storms: caught.get(wallet.toLowerCase()) })),
+  }
 }

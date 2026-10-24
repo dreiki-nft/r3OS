@@ -1,0 +1,228 @@
+.storms-program {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.storms-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.storms-tag {
+  background: var(--warn);
+  color: #0b0b0c;
+  font-weight: 700;
+  padding: 1px 8px;
+}
+
+.storms-count,
+.storms-note,
+.storms-program .addr {
+  color: var(--text-muted);
+}
+
+.storms-note {
+  margin: 0;
+  font-size: 12px;
+}
+
+.storms-strip {
+  display: grid;
+  grid-template-columns: repeat(21, 1fr);
+  gap: 3px;
+}
+
+.storms-strip i {
+  height: 12px;
+  background: #2b2b30;
+  border: 1px solid #3d3d43;
+}
+
+.storms-strip i.done {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Storms the checked wallet caught: yellow, like the tray bolt. */
+.storms-strip i.caught {
+  background: var(--warn);
+  border-color: var(--warn);
+}
+
+.storms-strip i.next {
+  border: 1px dashed var(--warn);
+}
+
+.storms-strip i.now {
+  border-color: var(--warn);
+  animation: storms-blink 0.8s steps(2) infinite;
+}
+
+@keyframes storms-blink {
+  50% {
+    background: var(--warn);
+  }
+}
+
+.storms-next {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.storms-next.now {
+  color: var(--warn);
+}
+
+.storms-check {
+  display: flex;
+  gap: 6px;
+}
+
+.storms-check input {
+  flex: 1;
+  min-width: 0;
+  background: var(--field);
+  border: 0;
+  padding: 4px 6px;
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-outer),
+    inset -1px -1px 0 var(--bevel-light);
+}
+
+.storms-check input[aria-invalid='true'] {
+  outline: 1px solid var(--danger);
+}
+
+.storms-mine {
+  padding: 6px 8px;
+  border: 1px dashed var(--bevel-light-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.storms-mine.dim {
+  color: var(--text-muted);
+}
+
+.storms-mine.hit {
+  border: 1px solid var(--warn);
+}
+
+.storms-mine .big {
+  color: var(--warn);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.storms-clear {
+  margin-left: 6px;
+  padding: 0 6px;
+  cursor: pointer;
+}
+
+.storms-table {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow: auto;
+  background: var(--field);
+  padding: 2px 6px;
+}
+
+.storms-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.storms-table td {
+  padding: 5px 4px;
+  border-bottom: 1px dashed #2e2e33;
+  vertical-align: middle;
+}
+
+.storms-table td.rank {
+  width: 2.5em;
+  color: var(--text-muted);
+}
+
+.storms-table td.who {
+  min-width: 0;
+  max-width: 0;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.storms-table .name {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.storms-table .addr {
+  font-size: 11px;
+}
+
+.storms-table td.pips {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.storms-table td.pips b {
+  display: inline-block;
+  width: 5px;
+  height: 12px;
+  margin-left: 2px;
+  background: var(--warn);
+  vertical-align: middle;
+}
+
+.storms-table td.t {
+  width: 2em;
+  text-align: right;
+  font-weight: 700;
+}
+
+.storms-table tr.top .name {
+  color: var(--warn);
+}
+
+.storms-table tr.me td {
+  background: rgba(254, 195, 67, 0.14);
+}
+
+.storms-table tr.you .name::after {
+  content: ' (you)';
+  color: var(--warn);
+  font-weight: 400;
+}
+
+.storms-rule {
+  margin: 0;
+}
+
+.storms-rule b {
+  color: var(--warn);
+}
+
+/* Phones: the pips go, the count stays. */
+@media (max-width: 420px) {
+  .storms-table td.pips {
+    display: none;
+  }
+  .storms-strip {
+    gap: 2px;
+  }
+}

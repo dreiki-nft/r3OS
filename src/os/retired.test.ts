@@ -20,6 +20,7 @@ describe('retired programs', () => {
       'cd',
       'cdrom',
       'replay',
+      'storms',
       'block-camera',
       'auction',
       'quests',
@@ -33,7 +34,7 @@ describe('retired programs', () => {
     ]) {
       expect(visible, id).toContain(id)
     }
-    expect(visible.length).toBe(16)
+    expect(visible.length).toBe(17)
     expect(programs.length).toBeGreaterThan(visible.length)
   })
 

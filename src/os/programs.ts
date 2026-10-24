@@ -79,6 +79,9 @@ const MonadHardwareProgram = lazy(() =>
 const ReplayProgram = lazy(() =>
   import('../replay/ReplayProgram').then((module) => ({ default: module.ReplayProgram })),
 )
+const StormChasersProgram = lazy(() =>
+  import('../storms/StormChasersProgram').then((module) => ({ default: module.StormChasersProgram })),
+)
 const CdromProgram = lazy(() =>
   import('../cdrom/CdromProgram').then((module) => ({ default: module.CdromProgram })),
 )
@@ -167,6 +170,17 @@ export const programs: ProgramDef[] = [
     minSize: { width: 340, height: 460 },
     singleInstance: true,
     hash: '#/replay',
+  },
+  {
+    id: 'storms',
+    title: 'Storm Chasers',
+    icon: 'lightning',
+    colour: '#FEC343',
+    component: StormChasersProgram,
+    defaultSize: { width: 460, height: 620 },
+    minSize: { width: 320, height: 420 },
+    singleInstance: true,
+    hash: '#/storms',
   },
   {
     id: 'auction',
@@ -376,6 +390,11 @@ const launchPreloads: readonly ProgramPreload[] = [
   },
   { id: 'cdrom', label: 'CD-ROM', load: () => import('../cdrom/CdromProgram').then((m) => m.CdromProgram) },
   { id: 'replay', label: 'Season Replay', load: () => import('../replay/ReplayProgram').then((m) => m.ReplayProgram) },
+  {
+    id: 'storms',
+    label: 'Storm Chasers',
+    load: () => import('../storms/StormChasersProgram').then((m) => m.StormChasersProgram),
+  },
   { id: 'cd', label: 'Burn a CD', load: () => import('../labs/CDBurnerProgram').then((m) => m.CDBurnerProgram) },
   {
     id: 'monad-hw',

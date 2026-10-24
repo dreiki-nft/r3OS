@@ -7,6 +7,7 @@ import {
   entries,
   listHash,
   parseArgs,
+  publicBoard,
   report,
   stormPainters,
   stormWindow,
@@ -142,5 +143,28 @@ describe('storm chasers', () => {
       snapshotBlock: 116_000_599n,
     })
     expect(all).toContain('caught all 2: 1 wallet')
+  })
+
+  it('writes the public leaderboard: most tickets first, with the season storm numbers each wallet caught', () => {
+    const storms = [stormWindow(115_400_000n), stormWindow(116_000_000n)]
+    const perStorm = [new Set([A, B]), new Set([B, C])]
+    const board = publicBoard({
+      storms,
+      perStorm,
+      list: entries(perStorm, [C]),
+      updatedAt: '2026-10-24T12:00:00Z',
+    })
+    expect(board.storms).toEqual([
+      { number: 1, start: '115400000', painters: 2 },
+      { number: 4, start: '116000000', painters: 2 },
+    ])
+    expect(board.totalStorms).toBe(21)
+    expect(board.wallets).toEqual([
+      { address: getAddress(B), tickets: 2, storms: [1, 4] },
+      { address: getAddress(A), tickets: 1, storms: [1] },
+    ])
+    expect(parseArgs(['--storms', '115400000', '--public', 'public/storms/season-1.json']).public).toBe(
+      'public/storms/season-1.json',
+    )
   })
 })

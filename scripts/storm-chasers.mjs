@@ -11,10 +11,11 @@
  * Writes to --out (default ./storm-chasers-out, gitignored):
  *   storm-chasers.txt   one address per ticket (a wallet with 2 tickets is listed twice), the list to publish
  *   raffle-inputs.json  snapshotBlock, snapshotHash and loadTicketsBatch batches (wallets[], tickets[])
+ * --public public/storms/season-1.json also writes the leaderboard the Storm Chasers window shows (same counts).
  * Read-only: it never signs or sends anything. Pass --rpc to use another endpoint; the URL is never printed.
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { createPublicClient, http } from 'viem'
 import { PAINTED, chunks } from './community-stats-lib.mjs'
 import {
@@ -23,6 +24,7 @@ import {
   listHash,
   parseArgs,
   report,
+  publicBoard,
   stormPainters,
   stormWindow,
   ticketList,
@@ -117,6 +119,12 @@ try {
   console.log(
     `\nwrote ${join(options.out, 'storm-chasers.txt')} and ${join(options.out, 'raffle-inputs.json')}`,
   )
+  if (options.public) {
+    mkdirSync(dirname(options.public), { recursive: true })
+    const board = publicBoard({ storms, perStorm, list, updatedAt: new Date().toISOString() })
+    writeFileSync(options.public, JSON.stringify(board, null, 2) + '\n')
+    console.log(`wrote ${options.public} (the Storm Chasers leaderboard)`)
+  }
 } catch (error) {
   console.error(`storm-chasers: ${error?.shortMessage ?? error?.message ?? error}`)
   process.exit(1)

@@ -25,6 +25,7 @@ export const START_PROGRAMS = [
   'block-camera',
   'cdrom',
   'replay',
+  'storms',
   'quests',
   'cd',
   'auction',

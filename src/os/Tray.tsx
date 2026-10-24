@@ -229,7 +229,20 @@ export function Tray() {
               : `next storm in ${block.nextStormIn} blocks.`
           }
           onClose={() => setStorm(false)}
-        />
+        >
+          <p className="tray-storm-chasers">
+            <button
+              type="button"
+              className="r3-button raised"
+              onClick={() => {
+                setStorm(false)
+                void openProgram('storms')
+              }}
+            >
+              Storm Chasers: who has tickets?
+            </button>
+          </p>
+        </MessageBox>
       )}
     </div>
   )
