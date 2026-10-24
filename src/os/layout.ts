@@ -26,6 +26,7 @@ export const START_PROGRAMS = [
   'cdrom',
   'replay',
   'storms',
+  'raffle',
   'quests',
   'cd',
   'auction',

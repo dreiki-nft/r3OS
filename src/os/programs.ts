@@ -32,6 +32,9 @@ const PaintProgram = lazy(() =>
 const PassProgram = lazy(() =>
   import('../pass/PassProgram').then((module) => ({ default: module.PassProgram })),
 )
+const RaffleProgram = lazy(() =>
+  import('../raffle/RaffleProgram').then((module) => ({ default: module.RaffleProgram })),
+)
 const StatusProgram = lazy(() =>
   import('../status/StatusProgram').then((module) => ({ default: module.StatusProgram })),
 )
@@ -241,6 +244,17 @@ export const programs: ProgramDef[] = [
     hash: '#/monad-hw',
   },
   {
+    id: 'raffle',
+    title: 'RAFFLE.EXE',
+    icon: 'medal',
+    colour: '#FEC343',
+    component: RaffleProgram,
+    defaultSize: { width: 520, height: 680 },
+    minSize: { width: 320, height: 440 },
+    singleInstance: true,
+    hash: '#/raffle',
+  },
+  {
     id: 'status',
     title: 'r3OS Status',
     icon: 'antenna',
@@ -423,6 +437,7 @@ const launchPreloads: readonly ProgramPreload[] = [
   { id: 'quests', label: 'Quests', load: () => import('../labs/QuestsProgram').then((m) => m.QuestsProgram) },
   { id: 'auction', label: 'Auction', load: () => import('../labs/AuctionProgram').then((m) => m.AuctionProgram) },
   { id: 'bin', label: 'Recycle Bin', load: () => import('./programs/RecycleBin').then((m) => m.RecycleBin) },
+  { id: 'raffle', label: 'RAFFLE.EXE', load: () => import('../raffle/RaffleProgram').then((m) => m.RaffleProgram) },
   { id: 'status', label: 'r3OS Status', load: () => import('../status/StatusProgram').then((m) => m.StatusProgram) },
   {
     id: 'dxdiag',

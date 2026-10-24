@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } fr
 import { blockEta, getBlockSnapshot, subscribeBlocks } from '../chain/blocks'
 import { painterName, usePainterNames } from '../chain/names'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
+import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { Icon } from '../os/ui/Icon'
 import { Tabs } from '../os/ui/Tabs'
@@ -290,7 +291,10 @@ export function StormChasersProgram() {
           </div>
 
           <p className="storms-rule">
-            Paint 1 pixel during a DF1 storm = <b>1 ticket</b> for the end-of-season r3tard raffle.
+            Paint 1 pixel during a DF1 storm = <b>1 ticket</b> for the end-of-season r3tard raffle.{' '}
+            <button className="link-button" onClick={() => void openProgram('raffle')}>
+              how the draw works
+            </button>
           </p>
           <p className="storms-note">
             Counted through storm {counted}. The board updates after each storm; tap a storm square to see who

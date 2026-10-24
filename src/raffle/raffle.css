@@ -1,0 +1,139 @@
+.raffle-program {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  font-size: 12px;
+}
+
+.raffle-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.raffle-head strong {
+  font-size: 16px;
+}
+
+.raffle-head p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+}
+
+.raffle-prize {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  border: 2px solid var(--warn);
+  background: var(--field);
+}
+
+.raffle-prize.placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--warn);
+}
+
+.raffle-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.raffle-steps li {
+  color: var(--text-muted);
+}
+
+.raffle-steps li i {
+  display: inline-block;
+  width: 1.2em;
+  font-style: normal;
+}
+
+.raffle-steps li.done {
+  color: var(--text);
+}
+
+.raffle-steps li.done i {
+  color: var(--ok);
+}
+
+.raffle-steps li.now {
+  color: var(--warn);
+}
+
+.raffle-steps small {
+  color: var(--text-muted);
+}
+
+.raffle-box {
+  padding: 8px 10px;
+  background: var(--field);
+}
+
+.raffle-box h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.raffle-box p {
+  margin: 4px 0;
+}
+
+.raffle-hash code,
+.raffle-proof code {
+  color: var(--accent);
+}
+
+.raffle-match {
+  color: var(--text-muted);
+}
+
+.raffle-match.ok {
+  color: var(--ok);
+}
+
+.raffle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.raffle-mine {
+  color: var(--warn);
+}
+
+.raffle-how {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.raffle-proof {
+  margin-top: 8px !important;
+}
+
+.raffle-foot {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.raffle-foot a {
+  color: var(--accent);
+}

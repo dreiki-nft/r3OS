@@ -36,6 +36,7 @@ export const RUN_COMMANDS: Readonly<Record<string, string>> = Object.freeze({
   bin: 'bin',
   dxdiag: 'dxdiag',
   status: 'status',
+  raffle: 'raffle',
 })
 
 /** Full-screen views that live over the desktop (Paint opens underneath, so Esc lands somewhere useful). */
