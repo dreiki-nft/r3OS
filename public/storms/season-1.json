@@ -1,7 +1,7 @@
 {
   "version": 1,
   "chainId": 143,
-  "updatedAt": "2026-10-24T19:08:06.220Z",
+  "updatedAt": "2026-10-25T13:19:13.303Z",
   "firstStorm": "115400000",
   "totalStorms": 21,
   "storms": [
@@ -29,46 +29,55 @@
       "number": 5,
       "start": "116200000",
       "painters": 7
+    },
+    {
+      "number": 6,
+      "start": "116400000",
+      "painters": 6
     }
   ],
   "wallets": [
     {
       "address": "0x251A11a49b45f9ee2320E9CFC978994830B93dEd",
-      "tickets": 4,
+      "tickets": 5,
       "storms": [
         1,
         2,
         3,
-        4
+        4,
+        6
       ]
     },
     {
       "address": "0xC493F2059cBE13583A97A3F1104027582071AD43",
-      "tickets": 4,
+      "tickets": 5,
       "storms": [
         2,
         3,
         4,
-        5
+        5,
+        6
       ]
     },
     {
       "address": "0xE9264871fAEB0C7fa7Cba6e97B40c4eB89Bfe161",
-      "tickets": 4,
+      "tickets": 5,
       "storms": [
         2,
         3,
         4,
-        5
+        5,
+        6
       ]
     },
     {
       "address": "0x533E332D90b69e3cCAad79c6C1A7b6fc644e0622",
-      "tickets": 3,
+      "tickets": 4,
       "storms": [
         2,
         3,
-        5
+        5,
+        6
       ]
     },
     {
@@ -77,6 +86,13 @@
       "storms": [
         4,
         5
+      ]
+    },
+    {
+      "address": "0x26B9491cCd729C54dCEa7842DE768fC7042D5Ed0",
+      "tickets": 1,
+      "storms": [
+        6
       ]
     },
     {
@@ -112,6 +128,13 @@
       "tickets": 1,
       "storms": [
         4
+      ]
+    },
+    {
+      "address": "0xc4b6a337adcB83831571E39a7Cf47c38f1d67c17",
+      "tickets": 1,
+      "storms": [
+        6
       ]
     },
     {
