@@ -1,7 +1,7 @@
 {
   "version": 1,
   "chainId": 143,
-  "updatedAt": "2026-10-25T13:19:13.303Z",
+  "updatedAt": "2026-10-25T23:55:10.500Z",
   "firstStorm": "115400000",
   "totalStorms": 21,
   "storms": [
@@ -34,58 +34,76 @@
       "number": 6,
       "start": "116400000",
       "painters": 6
+    },
+    {
+      "number": 7,
+      "start": "116600000",
+      "painters": 8
     }
   ],
   "wallets": [
     {
       "address": "0x251A11a49b45f9ee2320E9CFC978994830B93dEd",
-      "tickets": 5,
+      "tickets": 6,
       "storms": [
         1,
         2,
         3,
         4,
-        6
+        6,
+        7
       ]
     },
     {
       "address": "0xC493F2059cBE13583A97A3F1104027582071AD43",
-      "tickets": 5,
+      "tickets": 6,
       "storms": [
         2,
         3,
         4,
         5,
-        6
+        6,
+        7
       ]
     },
     {
       "address": "0xE9264871fAEB0C7fa7Cba6e97B40c4eB89Bfe161",
-      "tickets": 5,
+      "tickets": 6,
       "storms": [
         2,
         3,
         4,
         5,
-        6
+        6,
+        7
       ]
     },
     {
       "address": "0x533E332D90b69e3cCAad79c6C1A7b6fc644e0622",
-      "tickets": 4,
+      "tickets": 5,
       "storms": [
         2,
         3,
         5,
-        6
+        6,
+        7
       ]
     },
     {
       "address": "0x79F095C916aBF6861333939B44453D1f4DB4134c",
-      "tickets": 2,
+      "tickets": 3,
       "storms": [
         4,
-        5
+        5,
+        7
+      ]
+    },
+    {
+      "address": "0x3d0de3A76cd9f856664DC5a3adfd4056E45da9ED",
+      "tickets": 2,
+      "storms": [
+        3,
+        7
       ]
     },
     {
@@ -103,17 +121,24 @@
       ]
     },
     {
-      "address": "0x3d0de3A76cd9f856664DC5a3adfd4056E45da9ED",
-      "tickets": 1,
-      "storms": [
-        3
-      ]
-    },
-    {
       "address": "0x3E0918895094d86ea70889DC8db8c8Bc3986c203",
       "tickets": 1,
       "storms": [
         5
+      ]
+    },
+    {
+      "address": "0x75F6215EBb4c16d8087Fb3cfAf180aEeD40bD91e",
+      "tickets": 1,
+      "storms": [
+        7
+      ]
+    },
+    {
+      "address": "0x96463e29607f0F400dec7905b375F07Ac7E24cb7",
+      "tickets": 1,
+      "storms": [
+        7
       ]
     },
     {

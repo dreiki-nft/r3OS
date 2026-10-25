@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="t d" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
 <title id="t">r3OS: season 1 day by day on Monad mainnet</title>
-<desc id="d">93 painters · 8,723 strokes · 243,457 pixels. 38 painters came back on another day · 16 days since the public launch. Oct 10: 24 painters, 231 strokes; Oct 11: 20 painters, 419 strokes; Oct 12: 11 painters, 796 strokes; Oct 13: 40 painters, 696 strokes; Oct 14: 13 painters, 593 strokes; Oct 15: 12 painters, 328 strokes; Oct 16: 12 painters, 345 strokes; Oct 17: 8 painters, 115 strokes; Oct 18: 9 painters, 95 strokes; Oct 19: 10 painters, 99 strokes; Oct 20: 15 painters, 538 strokes; Oct 21: 14 painters, 976 strokes; Oct 22: 24 painters, 982 strokes; Oct 23: 16 painters, 846 strokes; Oct 24: 19 painters, 1415 strokes; Oct 25: 11 painters, 223 strokes.</desc>
+<desc id="d">96 painters · 9,339 strokes · 258,830 pixels. 38 painters came back on another day · 16 days since the public launch. Oct 10: 24 painters, 231 strokes; Oct 11: 20 painters, 419 strokes; Oct 12: 11 painters, 796 strokes; Oct 13: 40 painters, 696 strokes; Oct 14: 13 painters, 593 strokes; Oct 15: 12 painters, 328 strokes; Oct 16: 12 painters, 345 strokes; Oct 17: 8 painters, 115 strokes; Oct 18: 9 painters, 95 strokes; Oct 19: 10 painters, 99 strokes; Oct 20: 15 painters, 538 strokes; Oct 21: 14 painters, 976 strokes; Oct 22: 24 painters, 982 strokes; Oct 23: 16 painters, 846 strokes; Oct 24: 19 painters, 1415 strokes; Oct 25: 25 painters, 839 strokes.</desc>
 <rect width="1200" height="640" fill="#0b0b0c"/>
 <text x="72" y="48" fill="#f2efe9" font-size="24" font-weight="700">r3OS · season 1, day by day on Monad mainnet</text>
-<text x="72" y="78" fill="#d6d2cb" font-size="15">93 painters · 8,723 strokes · 243,457 pixels</text>
+<text x="72" y="78" fill="#d6d2cb" font-size="15">96 painters · 9,339 strokes · 258,830 pixels</text>
 <text x="72" y="100" fill="#8f8b85" font-size="13">38 painters came back on another day · 16 days since the public launch</text>
 <text x="72" y="136" fill="#d6d2cb" font-size="15">painters each day</text>
 <line x1="72" x2="1168" y1="320.0" y2="320.0" stroke="#232326" stroke-width="1"/>
@@ -44,8 +44,8 @@
 <text x="996.75" y="266.6666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">16</text>
 <path d="M1044.015,320V270.1666666666667Q1044.015,266.1666666666667 1048.015,266.1666666666667H1082.4850000000001Q1086.4850000000001,266.1666666666667 1086.4850000000001,270.1666666666667V320Z" fill="#1fa79c"><title>Oct 24: 19 painters</title></path>
 <text x="1065.25" y="258.1666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">19</text>
-<path d="M1112.515,320V292.8333333333333Q1112.515,288.8333333333333 1116.515,288.8333333333333H1150.9850000000001Q1154.9850000000001,288.8333333333333 1154.9850000000001,292.8333333333333V320Z" fill="#1fa79c"><title>Oct 25: 11 painters</title></path>
-<text x="1133.75" y="280.8333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">11</text>
+<path d="M1112.515,320V253.16666666666666Q1112.515,249.16666666666666 1116.515,249.16666666666666H1150.9850000000001Q1154.9850000000001,249.16666666666666 1154.9850000000001,253.16666666666666V320Z" fill="#1fa79c"><title>Oct 25: 25 painters</title></path>
+<text x="1133.75" y="241.16666666666666" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">25</text>
 <text x="72" y="366" fill="#d6d2cb" font-size="15">strokes each day</text>
 <line x1="72" x2="1168" y1="550.0" y2="550.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="550.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">0</text>
@@ -102,8 +102,8 @@
 <path d="M1044.015,550V433.725Q1044.015,429.725 1048.015,429.725H1082.4850000000001Q1086.4850000000001,429.725 1086.4850000000001,433.725V550Z" fill="#1fa79c"><title>Oct 24: 1,415 strokes</title></path>
 <text x="1065.25" y="421.725" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">1,415</text>
 <text x="1065.25" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 24</text>
-<path d="M1112.515,550V535.045Q1112.515,531.045 1116.515,531.045H1150.9850000000001Q1154.9850000000001,531.045 1154.9850000000001,535.045V550Z" fill="#1fa79c"><title>Oct 25: 223 strokes</title></path>
-<text x="1133.75" y="523.045" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">223</text>
+<path d="M1112.515,550V482.685Q1112.515,478.685 1116.515,478.685H1150.9850000000001Q1154.9850000000001,478.685 1154.9850000000001,482.685V550Z" fill="#1fa79c"><title>Oct 25: 839 strokes</title></path>
+<text x="1133.75" y="470.685" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">839</text>
 <text x="1133.75" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Oct 25</text>
-<text x="72" y="618" fill="#8f8b85" font-size="12">UTC days, the last one still running · Paint contract events, blocks 111020589–116478945 · builder, guest and project-run wallets excluded</text>
+<text x="72" y="618" fill="#8f8b85" font-size="12">UTC days, the last one still running · Paint contract events, blocks 111020589–116605549 · builder, guest and project-run wallets excluded</text>
 </svg>
