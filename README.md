@@ -23,7 +23,7 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  <b>93 painters · 8,723 paint transactions · 451 frames saved</b> in the first two weeks, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
+  <b>96 painters · 9,339 paint transactions · 468 frames saved</b> in the first two weeks, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
 </p>
 
 <p align="center">
@@ -134,15 +134,15 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 ### Season 1 so far
 
-**As of October 25, 2026, 13:19 UTC** (blocks 111,020,589–116,478,945), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
+**As of October 25, 2026, 23:55 UTC** (blocks 111,020,589–116,605,549), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
 
 | | |
 | --- | ---: |
-| Painters (distinct wallets) | **93** |
+| Painters (distinct wallets) | **96** |
 | Painters who came back on another day | **38** |
-| Paint transactions | **8,723** |
-| Pixels painted | **243,457** |
-| Frames saved | **451**, by 61 wallets |
+| Paint transactions | **9,339** |
+| Pixels painted | **258,830** |
+| Frames saved | **468**, by 65 wallets |
 | CDs burned | **41**, by 20 wallets |
 | Painter Passes claimed | **68** |
 
