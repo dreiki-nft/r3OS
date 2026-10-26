@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardHeadline, cardSquares, cardSubline, type CardData } from './shareCard'
+import { cardHeadline, cardSquares, cardSubline, prefersShareSheet, type CardData } from './shareCard'
 
 const data: CardData = {
   name: 'magmastaking.nad',
@@ -26,5 +26,12 @@ describe('storm card', () => {
     const squares = cardSquares(data)
     expect(squares).toHaveLength(21)
     expect(squares.slice(0, 7)).toEqual(['caught', 'caught', 'caught', 'caught', 'missed', 'caught', 'ahead'])
+  })
+
+  it('uses the share sheet only on touch devices that can share files', () => {
+    expect(prefersShareSheet({ touchFirst: true, canShareFiles: true })).toBe(true)
+    // macOS Safari / Chrome can share files, but the sheet has no Save and no X: download instead
+    expect(prefersShareSheet({ touchFirst: false, canShareFiles: true })).toBe(false)
+    expect(prefersShareSheet({ touchFirst: true, canShareFiles: false })).toBe(false)
   })
 })

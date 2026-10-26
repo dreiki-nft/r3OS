@@ -378,11 +378,11 @@ function Mine({
   card?: CardData
 }) {
   const [shared, setShared] = useState<string>()
-  const share = async () => {
+  const share = async (download = false) => {
     if (!card) return
     setShared('making…')
     try {
-      const result = await shareCard(card)
+      const result = await shareCard(card, { download })
       setShared(result === 'downloaded' ? 'saved' : result === 'shared' ? 'shared' : undefined)
     } catch {
       setShared('failed')
@@ -433,7 +433,7 @@ function Mine({
           </Button>
           {shared === 'saved' && (
             <span>
-              image saved ·{' '}
+              card downloaded ·{' '}
               <a
                 href={`https://x.com/intent/post?text=${encodeURIComponent(xText)}`}
                 target="_blank"
@@ -443,6 +443,11 @@ function Mine({
               </a>{' '}
               and attach it
             </span>
+          )}
+          {shared === 'shared' && (
+            <button type="button" className="storms-link" onClick={() => void share(true)}>
+              download the image instead
+            </button>
           )}
           {shared === 'failed' && <span>couldn't make the image in this browser</span>}
         </div>

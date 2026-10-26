@@ -169,20 +169,22 @@ export async function cardPng(data: CardData) {
   )
 }
 
-/** Share through the phone's share sheet when it can take files, else download the PNG. */
-export async function shareCard(data: CardData) {
-  const blob = await cardPng(data)
-  const file = new File([blob], 'r3os-storm-card.png', { type: 'image/png' })
-  const text = `${cardHeadline(data)} in r3OS Storm Season ⚡ paint 1 pixel during a DF1 storm = 1 raffle ticket`
-  const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean }
-  if (nav.share && nav.canShare?.({ files: [file] })) {
-    try {
-      await nav.share({ files: [file], text })
-      return 'shared'
-    } catch (error) {
-      if ((error as { name?: string }).name === 'AbortError') return 'cancelled'
-    }
-  }
+/**
+ * Use the system share sheet only on touch-first devices (phones, tablets). On a desktop, macOS's
+ * share sheet has no "Save" and lists X only if its app is installed, so the card was stuck in
+ * AirDrop / Notes / Messages. Desktops download the PNG instead and get a "post on X" link.
+ */
+export function prefersShareSheet(env: { touchFirst: boolean; canShareFiles: boolean }) {
+  return env.touchFirst && env.canShareFiles
+}
+
+function touchFirst() {
+  if (typeof window === 'undefined' || !window.matchMedia) return false
+  return window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(hover: none)').matches
+}
+
+/** Download the card's PNG. */
+export function downloadCard(blob: Blob) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -191,5 +193,23 @@ export async function shareCard(data: CardData) {
   link.click()
   link.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
+
+/** Share through the phone's share sheet, else (desktops, or no file sharing) download the PNG. */
+export async function shareCard(data: CardData, options: { download?: boolean } = {}) {
+  const blob = await cardPng(data)
+  const file = new File([blob], 'r3os-storm-card.png', { type: 'image/png' })
+  const text = `${cardHeadline(data)} in r3OS Storm Season ⚡ paint 1 pixel during a DF1 storm = 1 raffle ticket`
+  const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean }
+  const canShareFiles = typeof nav.share === 'function' && nav.canShare?.({ files: [file] }) === true
+  if (!options.download && prefersShareSheet({ touchFirst: touchFirst(), canShareFiles })) {
+    try {
+      await nav.share({ files: [file], text })
+      return 'shared'
+    } catch (error) {
+      if ((error as { name?: string }).name === 'AbortError') return 'cancelled'
+    }
+  }
+  downloadCard(blob)
   return 'downloaded'
 }
