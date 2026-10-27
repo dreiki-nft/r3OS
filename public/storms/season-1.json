@@ -1,7 +1,7 @@
 {
   "version": 1,
   "chainId": 143,
-  "updatedAt": "2026-10-26T18:07:03.299Z",
+  "updatedAt": "2026-10-27T12:33:44.247Z",
   "firstStorm": "115400000",
   "totalStorms": 21,
   "storms": [
@@ -44,12 +44,17 @@
       "number": 8,
       "start": "116800000",
       "painters": 10
+    },
+    {
+      "number": 9,
+      "start": "117000000",
+      "painters": 7
     }
   ],
   "wallets": [
     {
       "address": "0x251A11a49b45f9ee2320E9CFC978994830B93dEd",
-      "tickets": 7,
+      "tickets": 8,
       "storms": [
         1,
         2,
@@ -57,12 +62,13 @@
         4,
         6,
         7,
-        8
+        8,
+        9
       ]
     },
     {
       "address": "0xC493F2059cBE13583A97A3F1104027582071AD43",
-      "tickets": 7,
+      "tickets": 8,
       "storms": [
         2,
         3,
@@ -70,12 +76,13 @@
         5,
         6,
         7,
-        8
+        8,
+        9
       ]
     },
     {
       "address": "0xE9264871fAEB0C7fa7Cba6e97B40c4eB89Bfe161",
-      "tickets": 7,
+      "tickets": 8,
       "storms": [
         2,
         3,
@@ -83,19 +90,21 @@
         5,
         6,
         7,
-        8
+        8,
+        9
       ]
     },
     {
       "address": "0x533E332D90b69e3cCAad79c6C1A7b6fc644e0622",
-      "tickets": 6,
+      "tickets": 7,
       "storms": [
         2,
         3,
         5,
         6,
         7,
-        8
+        8,
+        9
       ]
     },
     {
@@ -118,26 +127,28 @@
       ]
     },
     {
+      "address": "0xc4b6a337adcB83831571E39a7Cf47c38f1d67c17",
+      "tickets": 3,
+      "storms": [
+        6,
+        8,
+        9
+      ]
+    },
+    {
+      "address": "0x26B9491cCd729C54dCEa7842DE768fC7042D5Ed0",
+      "tickets": 2,
+      "storms": [
+        6,
+        9
+      ]
+    },
+    {
       "address": "0x75F6215EBb4c16d8087Fb3cfAf180aEeD40bD91e",
       "tickets": 2,
       "storms": [
         7,
         8
-      ]
-    },
-    {
-      "address": "0xc4b6a337adcB83831571E39a7Cf47c38f1d67c17",
-      "tickets": 2,
-      "storms": [
-        6,
-        8
-      ]
-    },
-    {
-      "address": "0x26B9491cCd729C54dCEa7842DE768fC7042D5Ed0",
-      "tickets": 1,
-      "storms": [
-        6
       ]
     },
     {
@@ -152,6 +163,13 @@
       "tickets": 1,
       "storms": [
         5
+      ]
+    },
+    {
+      "address": "0x61A49334e0e2b320FEb8842cE5838C9088C2a96B",
+      "tickets": 1,
+      "storms": [
+        9
       ]
     },
     {
