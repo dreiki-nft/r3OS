@@ -1,7 +1,7 @@
 {
   "version": 1,
   "chainId": 143,
-  "updatedAt": "2026-10-28T02:00:16.088Z",
+  "updatedAt": "2026-10-28T22:05:07.754Z",
   "firstStorm": "115400000",
   "totalStorms": 21,
   "storms": [
@@ -54,12 +54,17 @@
       "number": 10,
       "start": "117200000",
       "painters": 14
+    },
+    {
+      "number": 11,
+      "start": "117400000",
+      "painters": 9
     }
   ],
   "wallets": [
     {
       "address": "0x251A11a49b45f9ee2320E9CFC978994830B93dEd",
-      "tickets": 9,
+      "tickets": 10,
       "storms": [
         1,
         2,
@@ -69,12 +74,13 @@
         7,
         8,
         9,
-        10
+        10,
+        11
       ]
     },
     {
       "address": "0xC493F2059cBE13583A97A3F1104027582071AD43",
-      "tickets": 9,
+      "tickets": 10,
       "storms": [
         2,
         3,
@@ -84,12 +90,13 @@
         7,
         8,
         9,
-        10
+        10,
+        11
       ]
     },
     {
       "address": "0xE9264871fAEB0C7fa7Cba6e97B40c4eB89Bfe161",
-      "tickets": 9,
+      "tickets": 10,
       "storms": [
         2,
         3,
@@ -99,12 +106,13 @@
         7,
         8,
         9,
-        10
+        10,
+        11
       ]
     },
     {
       "address": "0x533E332D90b69e3cCAad79c6C1A7b6fc644e0622",
-      "tickets": 8,
+      "tickets": 9,
       "storms": [
         2,
         3,
@@ -113,54 +121,60 @@
         7,
         8,
         9,
-        10
+        10,
+        11
       ]
     },
     {
       "address": "0x79F095C916aBF6861333939B44453D1f4DB4134c",
-      "tickets": 5,
+      "tickets": 6,
       "storms": [
         4,
         5,
         7,
         8,
-        10
+        10,
+        11
       ]
     },
     {
       "address": "0x3d0de3A76cd9f856664DC5a3adfd4056E45da9ED",
-      "tickets": 4,
+      "tickets": 5,
       "storms": [
         3,
         7,
         8,
-        10
+        10,
+        11
       ]
     },
     {
       "address": "0x75F6215EBb4c16d8087Fb3cfAf180aEeD40bD91e",
-      "tickets": 3,
+      "tickets": 4,
       "storms": [
         7,
         8,
-        10
+        10,
+        11
       ]
     },
     {
       "address": "0xc4b6a337adcB83831571E39a7Cf47c38f1d67c17",
-      "tickets": 3,
+      "tickets": 4,
       "storms": [
         6,
         8,
-        9
+        9,
+        11
       ]
     },
     {
       "address": "0x26B9491cCd729C54dCEa7842DE768fC7042D5Ed0",
-      "tickets": 2,
+      "tickets": 3,
       "storms": [
         6,
-        9
+        9,
+        11
       ]
     },
     {

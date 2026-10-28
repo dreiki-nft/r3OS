@@ -1,10 +1,10 @@
 {
-  "painters": 104,
+  "painters": 106,
   "returningPainters": 44,
-  "paints": 13002,
-  "pixels": 315015,
+  "paints": 14008,
+  "pixels": 327448,
   "frames": {
-    "count": 532,
+    "count": 546,
     "owners": 72
   },
   "cds": {
@@ -12,8 +12,8 @@
     "owners": 23
   },
   "passes": {
-    "count": 76,
-    "owners": 76
+    "count": 77,
+    "owners": 77
   },
   "excluded": 41,
   "daily": [
@@ -159,13 +159,13 @@
     },
     {
       "day": "2026-10-28",
-      "painters": 14,
-      "newPainters": 0,
-      "paints": 212,
-      "pixels": 8406
+      "painters": 21,
+      "newPainters": 2,
+      "paints": 1218,
+      "pixels": 20839
     }
   ],
   "fromBlock": "111020589",
-  "toBlock": "117201306",
-  "asOf": "2026-10-28 02:00 UTC"
+  "toBlock": "117439983",
+  "asOf": "2026-10-28 22:04 UTC"
 }
