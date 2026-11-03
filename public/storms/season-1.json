@@ -1,7 +1,7 @@
 {
   "version": 1,
   "chainId": 143,
-  "updatedAt": "2026-11-02T02:10:43.539Z",
+  "updatedAt": "2026-11-03T02:39:04.894Z",
   "firstStorm": "115400000",
   "totalStorms": 21,
   "storms": [
@@ -89,12 +89,17 @@
       "number": 17,
       "start": "118600000",
       "painters": 8
+    },
+    {
+      "number": 18,
+      "start": "118800000",
+      "painters": 7
     }
   ],
   "wallets": [
     {
       "address": "0x251A11a49b45f9ee2320E9CFC978994830B93dEd",
-      "tickets": 16,
+      "tickets": 17,
       "storms": [
         1,
         2,
@@ -111,12 +116,13 @@
         14,
         15,
         16,
-        17
+        17,
+        18
       ]
     },
     {
       "address": "0xC493F2059cBE13583A97A3F1104027582071AD43",
-      "tickets": 16,
+      "tickets": 17,
       "storms": [
         2,
         3,
@@ -133,12 +139,13 @@
         14,
         15,
         16,
-        17
+        17,
+        18
       ]
     },
     {
       "address": "0xE9264871fAEB0C7fa7Cba6e97B40c4eB89Bfe161",
-      "tickets": 16,
+      "tickets": 17,
       "storms": [
         2,
         3,
@@ -155,7 +162,8 @@
         14,
         15,
         16,
-        17
+        17,
+        18
       ]
     },
     {
@@ -180,7 +188,7 @@
     },
     {
       "address": "0xc4b6a337adcB83831571E39a7Cf47c38f1d67c17",
-      "tickets": 10,
+      "tickets": 11,
       "storms": [
         6,
         8,
@@ -191,12 +199,13 @@
         14,
         15,
         16,
-        17
+        17,
+        18
       ]
     },
     {
       "address": "0x79F095C916aBF6861333939B44453D1f4DB4134c",
-      "tickets": 9,
+      "tickets": 10,
       "storms": [
         4,
         5,
@@ -206,12 +215,13 @@
         11,
         14,
         15,
-        17
+        17,
+        18
       ]
     },
     {
       "address": "0x3d0de3A76cd9f856664DC5a3adfd4056E45da9ED",
-      "tickets": 8,
+      "tickets": 9,
       "storms": [
         3,
         7,
@@ -220,12 +230,13 @@
         11,
         14,
         15,
-        17
+        17,
+        18
       ]
     },
     {
       "address": "0x75F6215EBb4c16d8087Fb3cfAf180aEeD40bD91e",
-      "tickets": 8,
+      "tickets": 9,
       "storms": [
         7,
         8,
@@ -234,7 +245,8 @@
         13,
         14,
         15,
-        17
+        17,
+        18
       ]
     },
     {
