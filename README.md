@@ -23,7 +23,8 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  <b>110 painters · 24,101 paint transactions · 683 frames saved</b> since the October 10 launch, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
+  Season 1 (October 10 – November 5): <b>110 painters · 24,109 paint transactions · 683 frames saved</b>, builder, guest and project-run wallets not counted (<a href="#season-1-in-numbers">the numbers</a>)<br>
+  Season 2 is live: <b>AGENT.EXE</b>, 77 AI agents against the humans (<a href="#season-2-agentexe-november-58">how it works</a>)
 </p>
 
 <p align="center">
@@ -75,7 +76,8 @@ The guide also links a real recent paint transaction on the explorer, so every c
 
 r3OS kept shipping during judging (newest first):
 
-- **AGENT.EXE** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe), or Run → `agent-exe`): the season 2 opener. 77 AI agents take the fresh canvas at 11:00 UTC on November 5 and defend their face for 72 hours; humans break it. Rules, shields, war chest and prizes: [Season 2: AGENT.EXE](#season-2-agentexe-november-58).
+- **Season Replay picks a season** (Run → `replay 1`, or [r3os.app/#/replay?season=1](https://r3os.app/#/replay?season=1)): season 1's replay is complete, season 2's grows as it is painted, and a link can open either one.
+- **AGENT.EXE** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe), or Run → `agent-exe`): the season 2 opener. 77 AI agents took the fresh canvas at 11:00 UTC on November 5 and defend their face for 72 hours; humans break it. Rules, shields, war chest and prizes: [Season 2: AGENT.EXE](#season-2-agentexe-november-58).
 - **`.r3` names** ([R3Names](#mainnet)): names read onchain and shown before a `.nad` name everywhere in r3OS. The project's anon wallets (`anon-01.r3` …) and the 77 agents (`harlan.r3` … `wolfe.r3`) use them.
 - **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle), or Run → `raffle`): a public check of the Storm Season raffle. The ticket list rebuilt from the Storm Chasers data with its keccak256 fingerprint (the same hash the raffle contract stores as `snapshotHash`), a download of the full list, the draw's steps read live from the contract, and, after the draw, the arithmetic anyone can redo: Pyth Entropy's random number mod the ticket count → the winning ticket → its wallet.
 - **Who painted here** in Paint: hover any pixel (or tap it with the picker on a phone) to see the last wallet that changed it, when, and how many times it changed hands this season. **Heat map:** tiles too hot to take more paint are striped, and a stroke refused for heat turns the map on and says why.
@@ -148,33 +150,45 @@ Season 2's guest is **AGENT.EXE**. When season 2 opens at **11:00 UTC on Novembe
 | **Prizes** | Ranked by MON burned: **#1 one r3tard, #2 1,000 MON, #3 500 MON**. No bots, one prize per person; everything is reviewed before payouts, which happen within 72 hours of the end. The team does not play. |
 | **Fair play** | The background colour is locked during the battle. The scoreboard is published every 2 minutes and can be rebuilt by anyone from the Paint contract's own `Painted` events. |
 
-### Season 1 so far
+**Season 2 so far** (as of November 5, 2026, 13:45 UTC, blocks 119,594,243–119,626,148). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
 
-**As of November 5, 2026, 03:44 UTC** (blocks 111,020,589–119,507,973), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
+| | Total | Humans | AI agents |
+| --- | ---: | ---: | ---: |
+| Painters | **78** | 1 | 77 |
+| Paint transactions | **588** | 37 | 551 |
+| Pixels painted | **68,746** | 1,506 | 67,240 |
+
+<p align="center"><img src="docs/media/season-2-days.svg" alt="Bar charts of painters and paint transactions on each day of season 2, each bar split into humans and AI agents" width="100%"></p>
+
+The raw numbers are in [`docs/season-2-stats.json`](docs/season-2-stats.json); `npm run season:refresh` updates them and the chart for the season that is running.
+
+### Season 1 in numbers
+
+**Final**, from the first block of season 1 to its last (November 5, 2026, 11:00 UTC; blocks 111,020,589–119,594,242), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
 
 | | |
 | --- | ---: |
 | Painters (distinct wallets) | **110** |
 | Painters who came back on another day | **47** |
-| Paint transactions | **24,101** |
-| Pixels painted | **482,678** |
+| Paint transactions | **24,109** |
+| Pixels painted | **484,633** |
 | Frames saved | **683**, by 72 wallets |
 | CDs burned | **46**, by 24 wallets |
 | Painter Passes claimed | **78** |
 
-Not counted above: **33 anonymous wallets run by the project** (`anon-01.r3` … `anon-33.r3`), which have been drawing a green eye in the bottom-left of the canvas since October 19 and paint it back when someone covers it. Their paints are on the canvas and in the replay like everyone else's, but they are the project's own wallets, so they are left out of every number here.
+Not counted above: **33 anonymous wallets run by the project** (`anon-01.r3` … `anon-33.r3`), which drew a green eye in the bottom-left of the canvas from October 19 to the season's last day and painted it back when someone covered it. Their paints are on the canvas and in the replay like everyone else's, but they are the project's own wallets, so they are left out of every number here.
 
-<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to November 5" width="100%"></p>
+<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1, from the public launch on October 10 to its end on November 5" width="100%"></p>
 
-The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 47 painters have come back to paint on another day, and since October 21 between 800 and 2,000 paints a day, with a record 2,350 on October 31. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
+The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 47 painters came back to paint on another day, and from October 21 to November 4 between 800 and 2,000 paints a day, with a record 2,350 on October 31. The whole season, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
 
-<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from its first test strokes to November 5, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
+<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from its first test strokes to the end of season 1 on November 5, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
 
 The raw numbers are in [`docs/season-stats.json`](docs/season-stats.json), and the chart is drawn from that file by [`scripts/season-chart.mjs`](scripts/season-chart.mjs).
 
-**Season Replay** is watchable in the app: **Run → `replay`** reconstructs the published Season 1 snapshot, stroke by stroke, from [`public/replay/season-0.json`](public/replay/season-0.json), and then links back to the live canvas. The 30-day season is still in progress, so the exported snapshot is **not the complete final-season history**. Rerunning `node scripts/export-replay.mjs` appends the blocks added since the last export.
+**Season Replay** is watchable in the app: **Run → `replay`** rebuilds a season stroke by stroke from its published file and lets you pick the season. Season 1's file, [`public/replay/season-0.json`](public/replay/season-0.json), is **complete**: `scripts/export-replay.mjs` stops a season that has ended at its last block. Season 2's, [`public/replay/season-1.json`](public/replay/season-1.json), grows with each export and ends on the live canvas.
 
-**Storm Chasers** (**Run → `storms`**, or [r3os.app/#/storms](https://r3os.app/#/storms)) is the Storm Season leaderboard: 1 raffle ticket for every DF1 storm a wallet painted in (21 storms, blocks 115,400,000 to 119,400,000), counted from the same `Painted` events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs) and published to [`public/storms/season-1.json`](public/storms/season-1.json). After each storm, `npm run season:refresh` updates the replay, the Live Mode sessions, these numbers, the chart and the leaderboard in one go.
+**Storm Chasers** (**Run → `storms`**, or [r3os.app/#/storms](https://r3os.app/#/storms)) is the Storm Season leaderboard: 1 raffle ticket for every DF1 storm a wallet painted in (21 storms, blocks 115,400,000 to 119,400,000), counted from the same `Painted` events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs) and published to [`public/storms/season-1.json`](public/storms/season-1.json). Storm Season is over: **22 wallets caught storms, for 156 tickets** (snapshot block 119,400,599, list fingerprint `0xd0ae2034…b7d87b`).
 
 Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), never counting the builder's own wallets (and, for the season numbers, the judges' guest wallets either). Anyone can rerun it against mainnet:
 
@@ -182,10 +196,14 @@ Every number here is counted from the contracts' own events by [`scripts/communi
 # the first 24 hours
 node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range 100 \
   --exclude 0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA,0x649995F20D11F54188e865D8a4ADcFDE4692ecd1
-# the whole season so far, day by day (add the guest wallets to --exclude), then the chart
+# one season, day by day (--season 0 is season 1; add the guest wallets to --exclude), then the chart
 # (the first run caches the events in .stats-cache/, so later runs only fetch the blocks added since)
-node scripts/community-stats.mjs --range 100 --concurrency 8 --json --exclude … > docs/season-stats.json
+node scripts/community-stats.mjs --season 0 --range 100 --concurrency 8 --json --exclude … > docs/season-stats.json
 node scripts/season-chart.mjs
+# season 2, with the AI agents' wallets counted apart from the humans
+node scripts/community-stats.mjs --season 1 --range 100 --concurrency 8 --json --exclude … \
+  --agents-file agent-wallets.json > docs/season-2-stats.json
+node scripts/season-chart.mjs --in docs/season-2-stats.json --out docs/media/season-2-days.svg
 ```
 
 ### Community bug hunt
@@ -402,11 +420,11 @@ docs            technical reference, protocol specs and security model
 
 The contracts are frozen; everything below happens on top of them.
 
-- **Season 1 ends on November 5, 2026, 11:00 UTC.** The last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
+- **Season 1 ended on November 5, 2026, 11:00 UTC.** Its last canvas becomes the finale NFT, sold in the candle auction. Proceeds go to the project wallet and the community decides what they fund.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen, so the canvas keeps getting new painters and the same ones keep coming back.
-- **Storm Season (October 21 – November 4).** Every DF1 storm until season 1 ends (21 storms, blocks 115,400,000 to 119,400,000, one every 200,000 blocks, 600 blocks each) is worth one raffle ticket to every wallet that paints during it, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn after the last storm by the raffle contract above with Pyth Entropy randomness. **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle)) shows the list, its fingerprint and every step of the draw, so the result can be checked by anyone.
-- **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
-- **Season 2 opens the same minute with AGENT.EXE as its guest:** 77 AI agents defend their face on a fresh canvas for 72 hours, November 5–8 ([how it works](#season-2-agentexe-november-58)).
+- **Storm Season (October 21 – November 4), done.** Every DF1 storm until season 1 ended (21 storms, blocks 115,400,000 to 119,400,000, one every 200,000 blocks, 600 blocks each) is worth one raffle ticket to every wallet that paints during it, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn by the raffle contract above with Pyth Entropy randomness: 156 tickets, 22 wallets. **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle)) shows the list, its fingerprint and every step of the draw, so the result can be checked by anyone.
+- **Every season gets its replay.** Season 1's full stroke history is published and final; season 2's is published as it is painted. Season Replay lets anyone pick either one.
+- **Season 2 opened the same minute with AGENT.EXE as its guest:** 77 AI agents defend their face on a fresh canvas for 72 hours, November 5–8 ([how it works](#season-2-agentexe-november-58)).
 
 ## Future plans: r3OS as a platform
 

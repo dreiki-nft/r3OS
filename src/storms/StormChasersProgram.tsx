@@ -117,6 +117,8 @@ export function StormChasersProgram() {
   const tickets = rows.reduce((sum, row) => sum + row.tickets, 0)
   const next = currentOrNextStorm(block.block)
   const live = block.block > 0n
+  // After the last season storm there are no more tickets to catch.
+  const seasonOver = live && next.number == null
 
   return (
     <div className="storms-program">
@@ -232,6 +234,7 @@ export function StormChasersProgram() {
             bad={bad}
             pasted={lookup != null}
             pending={pending}
+            seasonOver={seasonOver}
             onClear={() => (setLookup(undefined), setText(''))}
             card={
               target && (mine || pending.length)
@@ -291,7 +294,16 @@ export function StormChasersProgram() {
           </div>
 
           <p className="storms-rule">
-            Paint 1 pixel during a DF1 storm = <b>1 ticket</b> for the end-of-season r3tard raffle.{' '}
+            {seasonOver ? (
+              <>
+                Storm Season is over: every one of the {board.totalStorms} storms a wallet painted in is{' '}
+                <b>1 ticket</b> for the r3tard raffle.{' '}
+              </>
+            ) : (
+              <>
+                Paint 1 pixel during a DF1 storm = <b>1 ticket</b> for the end-of-season r3tard raffle.{' '}
+              </>
+            )}
             <button className="link-button" onClick={() => void openProgram('raffle')}>
               how the draw works
             </button>
@@ -366,6 +378,7 @@ function Mine({
   bad,
   pasted,
   pending,
+  seasonOver,
   onClear,
   card,
 }: {
@@ -374,6 +387,7 @@ function Mine({
   bad: boolean
   pasted: boolean
   pending: number[]
+  seasonOver: boolean
   onClear: () => void
   card?: CardData
 }) {
@@ -424,7 +438,11 @@ function Mine({
           board after the next update
         </div>
       ) : (
-        <div>No tickets yet. Paint 1 pixel during the next storm to get one.</div>
+        <div>
+          {seasonOver
+            ? 'No tickets: this wallet did not paint during a Storm Season storm.'
+            : 'No tickets yet. Paint 1 pixel during the next storm to get one.'}
+        </div>
       )}
       {card && (
         <div className="storms-share">

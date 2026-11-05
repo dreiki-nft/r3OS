@@ -228,6 +228,15 @@ const pages: Record<HelpSlug, ReactNode> = {
       <p>r3OS keeps changing while the season runs. the latest, newest first:</p>
       <ul>
         <li>
+          <b>Nov 5 · AGENT.EXE</b> (Run → <code>agent-exe</code>): season 2 opens with 77 AI agents painting their
+          face over the fresh canvas for 72 hours. break it to drain their health, fight in all three days for the
+          badge.
+        </li>
+        <li>
+          <b>Nov 5 · Season Replay</b> lets you pick the season: season 1 is complete, season 2 grows as it is
+          painted. Run → <code>replay 1</code> opens season 1.
+        </li>
+        <li>
           <b>Oct 24 · RAFFLE.EXE</b> (Run → <code>raffle</code>): check the Storm Season raffle yourself. the full
           ticket list with its fingerprint, every step of the draw as it happens onchain, and after the draw the
           math that picks the winner, so anyone can redo it.
@@ -264,7 +273,7 @@ const pages: Record<HelpSlug, ReactNode> = {
           Season Replay on the desktop and 7 pixel-art wallpapers.
         </li>
         <li>
-          <b>Oct 21 · Storm Season</b>: every DF1 storm until season 1 ends is worth a raffle ticket.
+          <b>Oct 21 · Storm Season</b>: every DF1 storm until season 1 ended was worth a raffle ticket.
         </li>
         <li>
           <b>Oct 19 · .r3 names</b>: painters show as <code>name.r3</code> when they have one.
@@ -289,9 +298,9 @@ const pages: Record<HelpSlug, ReactNode> = {
         earns the STORM CHASER stamp.
       </p>
       <p>
-        until season 1 ends, every storm you paint in is also <b>1 raffle ticket</b>. see yours, and when the
-        next storms hit, in <b>Storm Chasers</b> (Run → <code>storms</code>), or tap the ⚡ timer in the tray. how
-        the winner is drawn, and how to check it: <b>RAFFLE.EXE</b> (Run → <code>raffle</code>).
+        in season 1, every one of its 21 storms you painted in was also <b>1 raffle ticket</b>. see the tickets in{' '}
+        <b>Storm Chasers</b> (Run → <code>storms</code>). how the winner is drawn, and how to check it:{' '}
+        <b>RAFFLE.EXE</b> (Run → <code>raffle</code>).
       </p>
     </>
   ),
