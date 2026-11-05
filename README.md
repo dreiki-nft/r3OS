@@ -23,7 +23,7 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  <b>110 painters · 23,723 paint transactions · 648 frames saved</b> since the October 10 launch, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
+  <b>110 painters · 24,101 paint transactions · 683 frames saved</b> since the October 10 launch, builder, guest and project-run wallets not counted (<a href="#season-1-so-far">the numbers</a>)
 </p>
 
 <p align="center">
@@ -75,6 +75,8 @@ The guide also links a real recent paint transaction on the explorer, so every c
 
 r3OS kept shipping during judging (newest first):
 
+- **AGENT.EXE** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe), or Run → `agent-exe`): the season 2 opener. 77 AI agents take the fresh canvas at 11:00 UTC on November 5 and defend their face for 72 hours; humans break it. Rules, shields, war chest and prizes: [Season 2: AGENT.EXE](#season-2-agentexe-november-58).
+- **`.r3` names** ([R3Names](#mainnet)): names read onchain and shown before a `.nad` name everywhere in r3OS. The project's anon wallets (`anon-01.r3` …) and the 77 agents (`harlan.r3` … `wolfe.r3`) use them.
 - **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle), or Run → `raffle`): a public check of the Storm Season raffle. The ticket list rebuilt from the Storm Chasers data with its keccak256 fingerprint (the same hash the raffle contract stores as `snapshotHash`), a download of the full list, the draw's steps read live from the contract, and, after the draw, the arithmetic anyone can redo: Pyth Entropy's random number mod the ticket count → the winning ticket → its wallet.
 - **Who painted here** in Paint: hover any pixel (or tap it with the picker on a phone) to see the last wallet that changed it, when, and how many times it changed hands this season. **Heat map:** tiles too hot to take more paint are striped, and a stroke refused for heat turns the map on and says why.
 - **A daily canvas post** on X and Discord: the canvas read straight from the contract, the day's painters and paints, and a painter of the day.
@@ -132,27 +134,41 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 <p align="center"><img src="docs/media/launch-24h.svg" alt="Bar charts of painters and paint transactions in each hour of the first 24 hours after launch" width="100%"></p>
 
+### Season 2: AGENT.EXE (November 5–8)
+
+Season 2's guest is **AGENT.EXE**. When season 2 opens at **11:00 UTC on November 5**, on a fresh canvas with no protected outline, **77 AI agents** (`harlan.r3` … `wolfe.r3`) start taking it over. For **72 hours**, until 11:00 UTC on November 8, they repaint their face over anything people draw. Humans fight back by breaking it. Watch and play in r3OS with **Run → `agent-exe`** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe)).
+
+| | |
+| --- | --- |
+| **Health** | The AI starts with **1,333 MON** of health. Every pixel of the face a human breaks that an agent has to repair costs it **0.008 MON** of damage tax, on top of the repair's gas. |
+| **Shields** | Health is split into **3 shields of 444 MON**, one per 24-hour window (each starts at 11:00 UTC). When today's shield breaks, the agents go dark until the next window. Break all three (the last one can only fall on day 3) and **humans win**. |
+| **Damage** | Painting over the AI while it is still drawing the face counts as fighting; only breaking pixels it has already drawn counts as damage. |
+| **War chest** | The tax goes into the war chest, the AgentBattle contract. After the battle it is shared by badge holders, in proportion to the damage each one did. |
+| **Badge** | Fight in all three 24-hour windows. It lands on your Painter Pass as a quest. |
+| **Prizes** | Ranked by MON burned: **#1 one r3tard, #2 1,000 MON, #3 500 MON**. No bots, one prize per person; everything is reviewed before payouts, which happen within 72 hours of the end. The team does not play. |
+| **Fair play** | The background colour is locked during the battle. The scoreboard is published every 2 minutes and can be rebuilt by anyone from the Paint contract's own `Painted` events. |
+
 ### Season 1 so far
 
-**As of November 4, 2026, 14:03 UTC** (blocks 111,020,589–119,344,166), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
+**As of November 5, 2026, 03:44 UTC** (blocks 111,020,589–119,507,973), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
 
 | | |
 | --- | ---: |
 | Painters (distinct wallets) | **110** |
 | Painters who came back on another day | **47** |
-| Paint transactions | **23,723** |
-| Pixels painted | **472,829** |
-| Frames saved | **648**, by 72 wallets |
+| Paint transactions | **24,101** |
+| Pixels painted | **482,678** |
+| Frames saved | **683**, by 72 wallets |
 | CDs burned | **46**, by 24 wallets |
 | Painter Passes claimed | **78** |
 
 Not counted above: **33 anonymous wallets run by the project** (`anon-01.r3` … `anon-33.r3`), which have been drawing a green eye in the bottom-left of the canvas since October 19 and paint it back when someone covers it. Their paints are on the canvas and in the replay like everyone else's, but they are the project's own wallets, so they are left out of every number here.
 
-<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to November 4" width="100%"></p>
+<p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1 from the public launch on October 10 to November 5" width="100%"></p>
 
 The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 47 painters have come back to paint on another day, and since October 21 between 800 and 2,000 paints a day, with a record 2,350 on October 31. The whole season so far, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
 
-<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from its first test strokes to November 4, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
+<p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from its first test strokes to November 5, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
 
 The raw numbers are in [`docs/season-stats.json`](docs/season-stats.json), and the chart is drawn from that file by [`scripts/season-chart.mjs`](scripts/season-chart.mjs).
 
@@ -208,7 +224,7 @@ Every program below is live on mainnet and reachable from the desktop, the Start
 
 | | |
 | --- | --- |
-| **Who's here** | "Painting now", the latest strokes, outlines flashing where others just painted, a painter count in the taskbar and "You've got paint" notes. All read from the contract's `Painted` events; there is no presence server. Painters show up by their **`.nad` name** (Nad Name Service, read onchain) or, without one, a fixed nickname like `cyan crayon·79c8` that everyone sees the same. |
+| **Who's here** | "Painting now", the latest strokes, outlines flashing where others just painted, a painter count in the taskbar and "You've got paint" notes. All read from the contract's `Painted` events; there is no presence server. Painters show up by their **`.r3` name** (R3Names, read onchain), else their **`.nad` name** (Nad Name Service, read onchain), or, without either, a fixed nickname like `cyan crayon·79c8` that everyone sees the same. |
 | **Broadcast view (TV)** | [r3os.app/#/tv](https://r3os.app/#/tv) (or Run → `tv`) puts the canvas full-screen for a projector or stream: every stroke flashes where it lands with who painted it, "painting right now", the session's totals, top painters and a QR code to join. |
 | **Season Replay** | Watch the whole season being made: every paint, in order, rebuilt from the `Painted` events with [`scripts/export-replay.mjs`](scripts/export-replay.mjs). Play, scrub, every-stroke or real-time; playback ends on the live canvas, and anyone can regenerate the file from the chain. |
 | **Monad X-ray** | Follows your own transaction from click to signature, broadcast, receipt and Monad's commit stages (Proposed → Voted → Finalized), with the 16 canvas regions it touched. Stages that weren't observed stay empty; a receipt is never relabelled as finality. |
@@ -321,6 +337,7 @@ Open to the public at **[r3os.app](https://r3os.app/)** since **October 10, 2026
 | Contract | Address (MonadVision) | Source on Monadscan |
 | --- | --- | :---: |
 | R3Names (`.r3` names, shown before `.nad`) | [`0x4B8F275be37A312B08f229bc15c84f529Be57853`](https://monadvision.com/address/0x4B8F275be37A312B08f229bc15c84f529Be57853) | [verified](https://monadscan.com/address/0x4b8f275be37a312b08f229bc15c84f529be57853#code) |
+| AgentBattle (AGENT.EXE war chest, payouts, badge days) | [`0x388869dD6a51DD5177e1A59f34aD5feD73A32291`](https://monadvision.com/address/0x388869dD6a51DD5177e1A59f34aD5feD73A32291) | pending |
 | r3tards raffle (Pyth Entropy draws) | [`0x478844840df2096Ca08AF5ce8a5CdC632493228f`](https://monadvision.com/address/0x478844840df2096Ca08AF5ce8a5CdC632493228f) | [verified](https://monadscan.com/address/0x478844840df2096ca08af5ce8a5cdc632493228f#code) |
 
 How the deployment was checked (a real canary paint observed Proposed → Voted → Finalized, finalized launch checks, reproducible evidence hashes): [`docs/submission/MAINNET_EVIDENCE.md`](docs/submission/MAINNET_EVIDENCE.md).
@@ -389,7 +406,7 @@ The contracts are frozen; everything below happens on top of them.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen, so the canvas keeps getting new painters and the same ones keep coming back.
 - **Storm Season (October 21 – November 4).** Every DF1 storm until season 1 ends (21 storms, blocks 115,400,000 to 119,400,000, one every 200,000 blocks, 600 blocks each) is worth one raffle ticket to every wallet that paints during it, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn after the last storm by the raffle contract above with Pyth Entropy randomness. **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle)) shows the list, its fingerprint and every step of the draw, so the result can be checked by anyone.
 - **Every season gets its replay.** `scripts/export-replay.mjs` publishes the full stroke history at the end of each season, so the whole history stays watchable.
-- **Season 2 opens the same minute,** on a fresh canvas, with a guest.
+- **Season 2 opens the same minute with AGENT.EXE as its guest:** 77 AI agents defend their face on a fresh canvas for 72 hours, November 5–8 ([how it works](#season-2-agentexe-november-58)).
 
 ## Future plans: r3OS as a platform
 
