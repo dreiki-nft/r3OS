@@ -10,6 +10,9 @@
  * block are scanned and appended, so refreshing the replay takes minutes, not the whole season again.
  * Pass --full to rescan the season from its first block.
  *
+ * A season that has ended is exported only up to its last block; run it once more after the end
+ * (node scripts/export-replay.mjs --season 0) and the file is complete for good.
+ *
  * Anyone can rerun it and get the same events, so the replay can be checked against the chain.
  * Pass --rpc to use another endpoint; the URL is never printed.
  */
@@ -125,6 +128,11 @@ try {
   const info = await read('seasonInfo', [season])
   const custom = await read('hasCustomOutline', [season])
   const outline = String(custom ? await read('seasonOutlineRuns', [season]) : defaultOutlineHex()).toLowerCase()
+  // A season that has ended stops at its last block, so its file can be finished once and never grows again
+  // (later blocks belong to the next season and only stretch the replay's clock).
+  const endsAt = BigInt(info[1])
+  const ended = endsAt > 0n && (await client.getBlock({ blockNumber: head })).timestamp >= endsAt
+  const toBlock = ended ? (await firstBlockAtOrAfter(endsAt, head)) - 1n : head
 
   // Refresh: reuse the existing file for this season and scan only what came after it.
   let existing
@@ -144,22 +152,26 @@ try {
     ? BigInt(existing.fromBlock)
     : (options.fromBlock ?? (await firstBlockAtOrAfter(BigInt(await read('seasonStartTime', [season])), head)))
   const scanFrom = existing ? BigInt(existing.toBlock) + 1n : fromBlock
-  if (existing && scanFrom > head) {
-    console.log(`${file} is already up to date (block ${existing.toBlock})`)
+  if (existing && scanFrom > toBlock) {
+    console.log(
+      ended
+        ? `${file} already holds the whole season (it ended at block ${toBlock})`
+        : `${file} is already up to date (block ${existing.toBlock})`,
+    )
     process.exit(0)
   }
-  if (existing) console.log(`appending to ${file}: scanning blocks ${scanFrom}–${head}`)
-  const logs = await paintedLogs(scanFrom, head)
+  if (existing) console.log(`appending to ${file}: scanning blocks ${scanFrom}–${toBlock}`)
+  const logs = await paintedLogs(scanFrom, toBlock)
   const [fromHeader, toHeader] = await Promise.all([
     existing ? undefined : client.getBlock({ blockNumber: fromBlock }),
-    client.getBlock({ blockNumber: head }),
+    client.getBlock({ blockNumber: toBlock }),
   ])
   const built = buildReplay(logs, {
     chainId,
     paint: options.paint,
     season,
     fromBlock,
-    toBlock: head,
+    toBlock,
     fromTime: existing ? existing.fromTime : fromHeader.timestamp,
     toTime: toHeader.timestamp,
     face: info[2],
@@ -170,7 +182,8 @@ try {
   mkdirSync(options.out, { recursive: true })
   writeFileSync(file, JSON.stringify(replay))
   console.log(
-    `wrote ${file}: ${replay.events.length.toLocaleString('en-US')} paints by ${replay.painters.length} wallets, blocks ${fromBlock}–${head}` +
+    `wrote ${file}: ${replay.events.length.toLocaleString('en-US')} paints by ${replay.painters.length} wallets, blocks ${fromBlock}–${toBlock}` +
+      (ended ? ' (season ended; the file is complete)' : '') +
       (existing ? ` (${built.events.length.toLocaleString('en-US')} new)` : ''),
   )
 } catch (error) {

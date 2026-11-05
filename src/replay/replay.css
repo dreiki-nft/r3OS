@@ -71,3 +71,10 @@
   gap: 8px;
   padding: 16px;
 }
+
+.replay-season {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}

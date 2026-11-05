@@ -9,6 +9,9 @@ import {
   liveCanvasFollows,
   outlineMask,
   parseReplay,
+  replayHash,
+  replaySeasons,
+  seasonFromHash,
   type ReplayFile,
 } from './replayData'
 
@@ -122,5 +125,28 @@ describe('ending on the live canvas', () => {
     expect(liveCanvasFollows(file, { season: 1n, snapshotBlock: 900n, status: 'live' })).toBe(false)
     expect(liveCanvasFollows(file, { season: 0n, snapshotBlock: 900n, status: 'offline' })).toBe(false)
     expect(liveCanvasFollows(file, { season: 0n, snapshotBlock: 900n, status: 'demo' })).toBe(false)
+  })
+})
+
+describe('season picker', () => {
+  it('offers every season up to the newest, newest first', () => {
+    expect(replaySeasons(0)).toEqual([0])
+    expect(replaySeasons(1)).toEqual([1, 0])
+    expect(replaySeasons(3)).toEqual([3, 2, 1, 0])
+    expect(replaySeasons(-1)).toEqual([0])
+    expect(replaySeasons(Number.NaN)).toEqual([0])
+    expect(replaySeasons(10_000)).toHaveLength(999)
+  })
+
+  it('reads #/replay?season=N as people count seasons and round-trips it', () => {
+    expect(seasonFromHash('#/replay?season=1')).toBe(0)
+    expect(seasonFromHash('#/replay?season=2')).toBe(1)
+    expect(seasonFromHash(replayHash(4))).toBe(4)
+    expect(seasonFromHash('#/replay')).toBeUndefined()
+    expect(seasonFromHash('#/replay?season=0')).toBeUndefined()
+    expect(seasonFromHash('#/replay?season=01')).toBeUndefined()
+    expect(seasonFromHash('#/replay?season=1e3')).toBeUndefined()
+    expect(seasonFromHash('#/replay?season=1000')).toBeUndefined()
+    expect(seasonFromHash('#/paint?season=1')).toBeUndefined()
   })
 })

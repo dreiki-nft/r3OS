@@ -97,6 +97,13 @@ export function parseRunCommand(raw: string): RunParse {
     return { ok: true, target: { program: 'auction', hash: `#/auction?auction=${id}` } }
   }
 
+  if ((command === 'replay' || command === 'timelapse') && arg != null) {
+    // People count seasons from 1; the replay window reads `?season=<n>` the same way.
+    const season = parseUint(arg, 999n)
+    if (season == null || season === 0n) return notFound(input)
+    return { ok: true, target: { program: 'replay', hash: `#/replay?season=${season}` } }
+  }
+
   if (arg != null) return notFound(input)
   if (Object.prototype.hasOwnProperty.call(RUN_VIEWS, command))
     return { ok: true, target: { program: 'paint', hash: RUN_VIEWS[command] } }

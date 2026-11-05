@@ -191,3 +191,25 @@ export function formatReplayTime(unixSeconds: number) {
   const time = date.toISOString().slice(11, 16)
   return `${day} · ${time} UTC`
 }
+
+/** People count seasons from 1, the contract from 0. The picker never offers more than this many. */
+export const MAX_REPLAY_SEASONS = 999
+
+/** Seasons the replay picker offers, newest first: every season from the first up to `newest`. */
+export function replaySeasons(newest: number) {
+  const top = Number.isSafeInteger(newest) && newest > 0 ? Math.min(newest, MAX_REPLAY_SEASONS - 1) : 0
+  return Array.from({ length: top + 1 }, (_, i) => top - i)
+}
+
+/** `#/replay?season=1` (the season as people count it) → the contract's season index, or undefined. */
+export function seasonFromHash(hash: string): number | undefined {
+  if (!hash.startsWith('#/replay')) return undefined
+  const value = new URLSearchParams(hash.split('?')[1] ?? '').get('season')
+  if (!value || !/^[1-9][0-9]{0,2}$/.test(value)) return undefined
+  return Number(value) - 1
+}
+
+/** The deep link for a season (contract index) in the replay window. */
+export function replayHash(season: number) {
+  return `#/replay?season=${season + 1}`
+}

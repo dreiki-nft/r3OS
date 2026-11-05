@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { getCanvasSnapshot, subscribeCanvas } from '../paint/canvasStore'
 import { PALETTE } from '../lib/palette'
 import { openProgram } from '../os/programs'
@@ -11,6 +11,9 @@ import {
   fractionOfEvent,
   liveCanvasFollows,
   parseReplay,
+  replayHash,
+  replaySeasons,
+  seasonFromHash,
   type Replay,
 } from './replayData'
 import './replay.css'
@@ -27,39 +30,129 @@ const DURATIONS = [15, 30, 60] as const
 const reducedMotion = () =>
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// A finished season's file never changes, so it is parsed once per visit; the current season is always refetched.
+const finishedSeasons = new Map<number, Replay>()
+
+const currentSeasonOf = () => getCanvasSnapshot().season
+
 export function ReplayProgram() {
+  const current = Number(useSyncExternalStore(subscribeCanvas, currentSeasonOf))
+  // Until someone picks a season (or opens a #/replay?season=N link), the replay follows the current season.
+  const [picked, setPicked] = useState(() => seasonFromHash(location.hash))
+  const season = picked ?? current
   const [load, setLoad] = useState<Load>({ state: 'loading' })
 
   useEffect(() => {
-    const season = Number(getCanvasSnapshot().season)
+    const onHashChange = () => {
+      const fromHash = seasonFromHash(location.hash)
+      if (fromHash != null) setPicked(fromHash)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  useEffect(() => {
+    const cached = finishedSeasons.get(season)
+    if (cached && season < current) return setLoad({ state: 'ready', replay: cached })
+    setLoad({ state: 'loading' })
     const controller = new AbortController()
     void fetch(`/replay/season-${season}.json`, { cache: 'no-cache', signal: controller.signal })
       .then(async (response) => {
-        if (response.status === 404) return setLoad({ state: 'missing', season })
+        // A missing file is a 404 on Vercel; dev servers answer with the app's index.html instead.
+        const json = (response.headers.get('content-type') ?? '').includes('json')
+        if (response.status === 404 || (response.ok && !json)) return setLoad({ state: 'missing', season })
         if (!response.ok) throw new Error(String(response.status))
-        setLoad({ state: 'ready', replay: parseReplay(await response.json()) })
+        const replay = parseReplay(await response.json())
+        if (replay.file.season !== season) throw new Error('season mismatch')
+        if (season < current) finishedSeasons.set(season, replay)
+        setLoad({ state: 'ready', replay })
       })
       .catch((error) => {
         if ((error as Error).name !== 'AbortError') setLoad({ state: 'error' })
       })
     return () => controller.abort()
-  }, [])
+  }, [season, current])
 
-  if (load.state === 'loading') return <div className="replay-empty">loading the season…</div>
+  const pick = (next: number) => {
+    setPicked(next)
+    // Keep the address shareable (#/replay?season=1) without re-routing the desktop.
+    if (location.hash.startsWith('#/replay')) history.replaceState(null, '', replayHash(next))
+  }
+  const picker = (
+    <SeasonPicker seasons={replaySeasons(Math.max(current, season))} season={season} current={current} onPick={pick} />
+  )
+
+  if (load.state === 'loading')
+    return (
+      <div className="replay-empty">
+        {picker}
+        loading season {season + 1}…
+      </div>
+    )
   if (load.state === 'error')
-    return <div className="replay-empty">the replay file couldn't be read. try again later.</div>
+    return (
+      <div className="replay-empty">
+        {picker}
+        the replay file couldn't be read. try again later.
+      </div>
+    )
   if (load.state === 'missing' || load.replay.events.length === 0)
     return (
       <div className="replay-empty">
-        <b>no replay yet for this season.</b>
+        {picker}
+        <b>no replay yet for season {season + 1}.</b>
         <span>it is exported from the chain with scripts/export-replay.mjs.</span>
-        <Button onClick={() => openProgram('paint')}>Open Paint</Button>
+        <div className="replay-controls">
+          {season > 0 && (
+            <Button primary onClick={() => pick(season - 1)}>
+              Watch season {season} ▸
+            </Button>
+          )}
+          <Button onClick={() => openProgram('paint')}>Open Paint</Button>
+        </div>
       </div>
     )
-  return <ReplayPlayer replay={load.replay} />
+  return (
+    <ReplayPlayer key={season} replay={load.replay} picker={picker} isCurrent={season === current} />
+  )
 }
 
-function ReplayPlayer({ replay }: { replay: Replay }) {
+function SeasonPicker({
+  seasons,
+  season,
+  current,
+  onPick,
+}: {
+  seasons: number[]
+  season: number
+  current: number
+  onPick: (season: number) => void
+}) {
+  if (seasons.length < 2) return null
+  return (
+    <label className="replay-season">
+      watch
+      <select value={season} onChange={(event) => onPick(Number(event.target.value))}>
+        {seasons.map((value) => (
+          <option key={value} value={value}>
+            season {value + 1}
+            {value === current ? ' (now)' : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function ReplayPlayer({
+  replay,
+  picker,
+  isCurrent,
+}: {
+  replay: Replay
+  picker: ReactNode
+  isCurrent: boolean
+}) {
   usePainterNames()
   const total = replay.events.length
   const canvasAt = useMemo(() => createCanvasAt(replay), [replay])
@@ -133,6 +226,7 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
 
   return (
     <div className="replay-program">
+      {picker}
       <div className="replay-screen sunken">
         <canvas
           ref={ref}
@@ -194,7 +288,7 @@ function ReplayPlayer({ replay }: { replay: Replay }) {
             <option value="time">real time</option>
           </select>
         </label>
-        {t >= 1 && <Button onClick={() => openProgram('paint')}>Paint on it now ▸</Button>}
+        {t >= 1 && isCurrent && <Button onClick={() => openProgram('paint')}>Paint on it now ▸</Button>}
       </div>
       <small className="replay-source">
         every paint of season {replay.file.season + 1} from the contract's Painted events, blocks{' '}
