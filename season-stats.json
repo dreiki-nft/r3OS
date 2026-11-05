@@ -1,0 +1,22 @@
+{
+  "painters": 41,
+  "returningPainters": 11,
+  "paints": 794,
+  "pixels": 55022,
+  "frames": {
+    "count": 80,
+    "owners": 29
+  },
+  "cds": {
+    "count": 23,
+    "owners": 12
+  },
+  "passes": {
+    "count": 27,
+    "owners": 27
+  },
+  "excluded": 2,
+  "fromBlock": "111020589",
+  "toBlock": "112639931",
+  "asOf": "2026-10-12 03:18 UTC"
+}

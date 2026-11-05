@@ -20,6 +20,7 @@ export const DESKTOP_PROGRAMS = [
 /** Start › Programs: everything a person uses, desktop or not. */
 export const START_PROGRAMS = [
   'paint',
+  'agent-exe',
   'frames',
   'pass',
   'block-camera',
@@ -39,9 +40,13 @@ export const SYSTEM_TOOLS = ['status', 'xray', 'validators', 'dxdiag', 'sounds']
 /** Opened from Start's top level directly (no submenu). */
 export const EXPLORE_PROGRAM = 'monad-hw'
 
-/** Desktop ids to show, given which programs are visible and whether an auction is live right now. */
-export function desktopProgramIds(isVisible: (id: string) => boolean, auctionLive: boolean): string[] {
+/**
+ * Desktop ids to show, given which programs are visible, whether an auction is live right now and whether the
+ * AGENT.EXE battle is on (its icon then sits right after Paint).
+ */
+export function desktopProgramIds(isVisible: (id: string) => boolean, auctionLive: boolean, agentExeLive = false): string[] {
   const ids: string[] = DESKTOP_PROGRAMS.filter(isVisible)
+  if (agentExeLive && isVisible('agent-exe')) ids.splice(ids[0] === 'paint' ? 1 : 0, 0, 'agent-exe')
   if (auctionLive && isVisible('auction')) ids.push('auction')
   return ids
 }

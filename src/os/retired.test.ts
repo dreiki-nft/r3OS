@@ -15,6 +15,7 @@ describe('retired programs', () => {
     const visible = visiblePrograms(snapshot as never).map((program) => program.id)
     for (const id of [
       'paint',
+      'agent-exe',
       'pass',
       'frames',
       'cd',
@@ -36,7 +37,7 @@ describe('retired programs', () => {
     ]) {
       expect(visible, id).toContain(id)
     }
-    expect(visible.length).toBe(19)
+    expect(visible.length).toBe(20)
     expect(programs.length).toBeGreaterThan(visible.length)
   })
 

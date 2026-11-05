@@ -36,6 +36,12 @@ describe('desktop', () => {
     expect(auctionIsLive(2n, 3)).toBe(false)
   })
 
+  it('puts AGENT.EXE right after Paint while the battle is on', () => {
+    expect(desktopProgramIds(visible, false, true).slice(0, 3)).toEqual(['paint', 'agent-exe', 'monad-hw'])
+    expect(desktopProgramIds(visible, false, false)).not.toContain('agent-exe')
+    expect(desktopProgramIds((id) => id !== 'agent-exe' && visible(id), false, true)).not.toContain('agent-exe')
+  })
+
   it('keeps support tools off the desktop', () => {
     const ids = desktopProgramIds(visible, true)
     for (const id of ['dxdiag', 'xray', 'sounds', 'help', 'validators', 'cd'])

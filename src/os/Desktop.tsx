@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { agentExeBattleOn } from '../agentexe/schedule'
 import { requestRecycle } from './programs/recycleIntent'
 import { openProgram, preloadProgram, programById, programIsVisible, type ProgramDef } from './programs'
 import { desktopProgramIds } from './layout'
@@ -67,7 +68,7 @@ export function Desktop() {
       desktopProgramIds((id) => {
         const program = programById(id)
         return Boolean(program && programIsVisible(program, releases))
-      }, auctionLive)
+      }, auctionLive, agentExeBattleOn(releases.now))
         .map((id) => programById(id))
         .filter((program): program is ProgramDef => Boolean(program)),
     [releases, auctionLive],

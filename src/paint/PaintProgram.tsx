@@ -47,6 +47,7 @@ import { maxCostWei } from '../chain/gas'
 import { startLiveQuick, type QuickProgress } from '../live/quickStart'
 import { drawEllipse, drawLine, drawRect, floodFill, type Point } from '../lib/paintEngine'
 import { BACKGROUND_CHOICES, PALETTE } from '../lib/palette'
+import { agentExeBattleOn } from '../agentexe/schedule'
 import { encodeChangedRuns } from '../lib/patch'
 import { clearAssistantTip, setAssistantTip } from '../os/assistantStore'
 import { pushBalloon } from '../os/balloons'
@@ -1471,7 +1472,8 @@ export function PaintProgram() {
                 : 'quoting…',
           action: () => void simpleWrite('setFace', [7, stableHolderIds], quotes[whiteKey] as ActionQuote),
         },
-        { label: 'Background colour…', action: () => setBackgroundPicker(true) },
+        // Locked while AGENT.EXE runs: a background change would repaint every blank pixel the battle is about.
+        ...(agentExeBattleOn() ? [] : [{ label: 'Background colour…', action: () => setBackgroundPicker(true) }]),
       ],
     },
     {
@@ -1922,7 +1924,7 @@ export function PaintProgram() {
           </div>
         </div>
       )}
-      {backgroundPicker && (
+      {backgroundPicker && !agentExeBattleOn() && (
         <div className="modal-shade">
           <div className="message-box window">
             <b>Background colour</b>
