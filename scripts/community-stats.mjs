@@ -6,6 +6,11 @@
  *   node scripts/community-stats.mjs --exclude 0xYourWallet,0xYourTestWallet
  *   node scripts/community-stats.mjs --since 2026-10-10T21:00:00Z --hours 24 --exclude …   # a launch window
  *   … --painters-out public/season/painters.json    # also each painter's own numbers (My Pass › My Season)
+ *   … --season 1 --agents-file ~/Desktop/files/agent-wallets.json   # season 2 only; AI agents counted apart
+ *
+ * --season N counts one season (the contract's index: 0 = season 1) from its first block to its last (or the
+ * chain head while it runs). --agents-file lists AI agent wallets: they are in the totals, and the JSON also
+ * has "humans" and "agents" with each group's own painters, paints, pixels and days.
  *
  * Defaults to the accepted mainnet deployment and the public RPC. It never signs or sends anything.
  * Pass --rpc to use another endpoint; the URL is never printed.
@@ -31,7 +36,8 @@ import {
   readCache,
   scanStart,
   perWallet,
-  summarize,
+  paintedSeason,
+  summarizeSplit,
   unpackLog,
   windowMarkdown,
   writeCache,
@@ -59,7 +65,13 @@ try {
 }
 
 const client = createPublicClient({ transport: http(options.rpc, { retryCount: 4, retryDelay: 400 }) })
-const paintAbi = parseAbi(['function SEASON_START() view returns (uint64)'])
+const paintAbi = parseAbi([
+  'function SEASON_START() view returns (uint64)',
+  'function seasonStartTime(uint256 season) view returns (uint256)',
+  'function seasonInfo(uint256 season) view returns (uint256 startsAt, uint256 endsAt, uint8 face, uint8 background, uint64 regularFrames, bool finaleMinted, uint256 finaleTokenId, uint256 successfulPaints)',
+])
+const readPaint = (functionName, args = []) =>
+  client.readContract({ address: options.paint, abi: paintAbi, functionName, args })
 
 async function firstBlockAtOrAfter(timestamp, head) {
   let low = 0n
@@ -112,14 +124,22 @@ try {
   if (options.toBlock != null && options.toBlock < head) head = options.toBlock
   let fromBlock = options.fromBlock
   if (fromBlock == null) {
-    const seasonStart = await client.readContract({
-      address: options.paint,
-      abi: paintAbi,
-      functionName: 'SEASON_START',
-    })
+    const seasonStart = await readPaint('SEASON_START')
     fromBlock = await firstBlockAtOrAfter(BigInt(seasonStart), head)
   }
   const seasonFrom = fromBlock
+
+  // One season: its own first block, and its last block once it has ended (later blocks are the next season).
+  let seasonRange
+  if (options.season != null) {
+    const season = BigInt(options.season)
+    const startBlock = await firstBlockAtOrAfter(BigInt(await readPaint('seasonStartTime', [season])), head)
+    const endsAt = BigInt((await readPaint('seasonInfo', [season]))[1])
+    const headTime = (await client.getBlock({ blockNumber: head })).timestamp
+    if (endsAt > 0n && headTime >= endsAt) head = (await firstBlockAtOrAfter(endsAt, head)) - 1n
+    if (startBlock > head) throw new Error(`season ${options.season + 1} has not started by block ${head}`)
+    seasonRange = { startBlock }
+  }
 
   // A launch window: paints are still read from the season start (to tell new painters from earlier ones),
   // but every count below covers only the window.
@@ -156,8 +176,10 @@ try {
   }
   const upTo = (kind) =>
     cache.logs[kind].map(unpackLog).filter((log) => log.blockNumber >= fromBlock && log.blockNumber <= head)
-  const painted = upTo('painted')
-  const statsFrom = windowRange?.startBlock ?? fromBlock
+  const painted = upTo('painted').filter(
+    (log) => options.season == null || paintedSeason(log) === options.season,
+  )
+  const statsFrom = windowRange?.startBlock ?? seasonRange?.startBlock ?? fromBlock
   const inRange = (log) => BigInt(log.blockNumber) >= statsFrom && BigInt(log.blockNumber) <= head
   const frames = upTo('frames').filter(inRange)
   const cds = upTo('cds').filter(inRange)
@@ -196,9 +218,17 @@ try {
     }, ${blocks.length} new block times, up to block ${head}`,
   )
 
-  const stats = summarize({ painted: painted.filter(inRange), frames, cds, passes }, options.exclude)
+  const stats = summarizeSplit(
+    { painted: painted.filter(inRange), frames, cds, passes },
+    options.exclude,
+    options.agents,
+  )
   if (options.paintersOut) {
-    const rows = perWallet({ painted: painted.filter(inRange), frames, cds }, options.exclude)
+    // My Season ranks people: AI agents are left out of it.
+    const rows = perWallet({ painted: painted.filter(inRange), frames, cds }, [
+      ...options.exclude,
+      ...options.agents,
+    ])
     mkdirSync(dirname(options.paintersOut), { recursive: true })
     writeFileSync(
       options.paintersOut,
@@ -224,6 +254,7 @@ try {
     console.log(
       JSON.stringify(
         {
+          ...(options.season != null ? { season: options.season + 1 } : {}),
           ...stats,
           fromBlock: String(statsFrom),
           toBlock: String(head),

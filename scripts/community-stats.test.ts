@@ -23,6 +23,8 @@ import {
   perWallet,
   runPixels,
   summarize,
+  summarizeSplit,
+  paintedSeason,
   windowMarkdown,
   windowStats,
 } from './community-stats-lib.mjs'
@@ -33,12 +35,12 @@ const ME = '0x00000000000000000000000000000000000000ee'
 const ZERO = '0x0000000000000000000000000000000000000000'
 const DAY = 86_400n
 
-function painted(owner: string, runs: `0x${string}`, blockTimestamp: bigint) {
+function painted(owner: string, runs: `0x${string}`, blockTimestamp: bigint, season = 0n) {
   return {
     topics: encodeEventTopics({
       abi: [PAINTED],
       eventName: 'Painted',
-      args: { season: 0n, owner, sender: owner },
+      args: { season, owner, sender: owner },
     }),
     data: encodeAbiParameters(
       [{ type: 'bytes' }, { type: 'bytes' }, { type: 'uint32' }, { type: 'uint16' }],
@@ -104,6 +106,44 @@ describe('community stats', () => {
     const text = markdown(stats, { fromBlock: 10n, toBlock: 20n, asOf: '2026-10-08 00:00 UTC' })
     expect(text).toContain('| Painters (distinct wallets) | 2 |')
     expect(text).toContain('not counting 1 builder/test wallet')
+  })
+
+  it('counts AI agents in the totals and on their own, next to the humans', () => {
+    const AGENT = '0x00000000000000000000000000000000000000c3'
+    const logs = {
+      painted: [
+        painted(A, '0x0a050903', 1_000n * DAY, 1n),
+        painted(AGENT, '0x0b000003', 1_000n * DAY, 1n),
+        painted(AGENT, '0x0c000103', 1_001n * DAY, 1n),
+        painted(ME, '0x0d00ff03', 1_000n * DAY, 1n),
+      ],
+      frames: [frame(A, 1n)],
+    }
+    const stats = summarizeSplit(logs, [ME], [AGENT.toUpperCase().replace('0X', '0x')])
+    expect([stats.painters, stats.paints, stats.pixels]).toEqual([2, 3, 8])
+    expect(stats.frames).toEqual({ count: 1, owners: 1 })
+    expect(stats.humans).toMatchObject({ painters: 1, paints: 1, pixels: 5, returningPainters: 0 })
+    expect(stats.agents).toMatchObject({ painters: 1, paints: 2, pixels: 3, returningPainters: 1 })
+    expect(stats.agents.daily.map((row) => row.paints)).toEqual([1, 1])
+    expect(summarizeSplit(logs, [ME], [])).not.toHaveProperty('humans')
+    const text = markdown(stats, { fromBlock: 1n, toBlock: 2n, asOf: 'now' })
+    expect(text).toContain('| Paint transactions | 1 | 2 |')
+    expect(paintedSeason(logs.painted[0])).toBe(1)
+    expect(paintedSeason({ topics: [], data: '0x' })).toBeUndefined()
+  })
+
+  it('reads --season and --agents-file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agents-'))
+    const file = join(dir, 'agents.json')
+    writeFileSync(
+      file,
+      JSON.stringify({ wallets: [{ address: A.toUpperCase().replace('0X', '0x') }, { address: B }] }),
+    )
+    const options = parseArgs(['--season', '1', '--agents-file', file, '--exclude', B])
+    expect(options.season).toBe(1)
+    expect(options.agents).toEqual([A]) // an excluded wallet is never also an agent
+    expect(() => parseArgs(['--season', 'two'])).toThrow(/season index/)
+    expect(() => parseArgs(['--season', '1', '--since', '2026-11-05T11:00:00Z'])).toThrow(/--season/)
   })
 
   it('splits block ranges and validates flags without echoing values', () => {

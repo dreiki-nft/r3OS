@@ -24,37 +24,52 @@ export function expandHome(path, home = homedir()) {
 
 /**
  * season-refresh.local.json (gitignored): which wallets are not community. Same list for the stats and the
- * storm tickets, so builder, guest and anon wallets never show up in either.
- *   { "exclude": ["0xBuilder…"], "excludeFiles": ["~/Desktop/files/anon-wallets.json"] }
+ * storm tickets, so builder, guest and anon wallets never show up in either. AI agent wallets (AGENT.EXE) are
+ * counted, but on their own next to the humans:
+ *   { "exclude": ["0xBuilder…"], "excludeFiles": ["~/Desktop/files/anon-wallets.json"],
+ *     "agentFiles": ["~/Desktop/files/agent-wallets.json"] }
  */
 export function parseConfig(text, home) {
   const raw = JSON.parse(text)
   const exclude = Array.isArray(raw.exclude) ? raw.exclude.map(String) : []
-  const excludeFiles = Array.isArray(raw.excludeFiles)
-    ? raw.excludeFiles.map((p) => expandHome(String(p), home))
-    : []
+  const files = (key) => (Array.isArray(raw[key]) ? raw[key].map((p) => expandHome(String(p), home)) : [])
   for (const value of exclude)
     if (!ADDRESS.test(value))
       throw new Error('season-refresh.local.json: an "exclude" entry is not an address')
-  return { exclude, excludeFiles }
+  return { exclude, excludeFiles: files('excludeFiles'), agentFiles: files('agentFiles') }
 }
 
-/** The steps, in order. `rpc` is passed on but never printed (the label never contains it). */
-export function plan({ storms, exclude, excludeFiles, rpc, statsOut = 'docs/season-stats.json' }) {
+/** Where a season's numbers go. Season 1 keeps the names the README has always linked. */
+export function seasonFiles(season) {
+  if (season === 0) return { stats: 'docs/season-stats.json', chart: 'docs/media/season-days.svg' }
+  return { stats: `docs/season-${season + 1}-stats.json`, chart: `docs/media/season-${season + 1}-days.svg` }
+}
+
+/**
+ * The steps, in order, for `season` (the contract's index: 0 = season 1). `rpc` is passed on but never printed
+ * (the label never contains it). Storm Chasers and My Season (public/season/painters.json) belong to season 1.
+ */
+export function plan({ season = 0, storms, exclude, excludeFiles, agentFiles = [], rpc }) {
   const rpcArgs = rpc ? ['--rpc', rpc] : []
   const excludeArgs = [
     ...(exclude.length ? ['--exclude', exclude.join(',')] : []),
     ...excludeFiles.flatMap((file) => ['--exclude-file', file]),
   ]
+  const { stats, chart } = seasonFiles(season)
+  const first = season === 0
   const steps = [
-    { label: 'Season Replay (public/replay)', script: 'scripts/export-replay.mjs', args: [...rpcArgs] },
+    {
+      label: `Season Replay (public/replay/season-${season}.json)`,
+      script: 'scripts/export-replay.mjs',
+      args: ['--season', String(season), ...rpcArgs],
+    },
     {
       label: 'Live Mode sessions (public/live/sessions.json)',
       script: 'scripts/export-sessions.mjs',
       args: [...rpcArgs],
     },
     {
-      label: `season stats (${statsOut}, public/season/painters.json)`,
+      label: `season ${season + 1} stats (${stats}${first ? ', public/season/painters.json' : ''})`,
       script: 'scripts/community-stats.mjs',
       args: [
         '--range',
@@ -62,20 +77,22 @@ export function plan({ storms, exclude, excludeFiles, rpc, statsOut = 'docs/seas
         '--concurrency',
         '8',
         '--json',
-        '--painters-out',
-        'public/season/painters.json',
+        '--season',
+        String(season),
+        ...(first ? ['--painters-out', 'public/season/painters.json'] : []),
         ...excludeArgs,
+        ...agentFiles.flatMap((file) => ['--agents-file', file]),
         ...rpcArgs,
       ],
-      stdoutTo: statsOut,
+      stdoutTo: stats,
     },
     {
-      label: 'season chart (docs/media/season-days.svg)',
+      label: `season ${season + 1} chart (${chart})`,
       script: 'scripts/season-chart.mjs',
-      args: ['--in', statsOut],
+      args: ['--in', stats, '--out', chart],
     },
   ]
-  if (storms.length)
+  if (first && storms.length)
     steps.push({
       label: `Storm Chasers, storms 1-${storms.length} (public/storms/season-1.json)`,
       script: 'scripts/storm-chasers.mjs',
@@ -91,12 +108,14 @@ export function plan({ storms, exclude, excludeFiles, rpc, statsOut = 'docs/seas
   return steps
 }
 
-/** Files the refresh can change, for the `git add` it prints at the end. */
-export const REFRESHED_FILES = [
-  'public/replay',
-  'public/live/sessions.json',
-  'docs/season-stats.json',
-  'public/season/painters.json',
-  'docs/media/season-days.svg',
-  'public/storms/season-1.json',
-]
+/** Files the refresh can change in `season`, for the `git add` it prints at the end. */
+export function refreshedFiles(season = 0) {
+  const { stats, chart } = seasonFiles(season)
+  return [
+    'public/replay',
+    'public/live/sessions.json',
+    stats,
+    chart,
+    ...(season === 0 ? ['public/season/painters.json', 'public/storms/season-1.json'] : []),
+  ]
+}

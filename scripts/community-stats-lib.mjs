@@ -22,7 +22,7 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/
 export const DEFAULT_CACHE = '.stats-cache/community-stats.json'
 
 export function parseArgs(argv) {
-  const out = { exclude: [], range: 1_000, concurrency: 4, cache: DEFAULT_CACHE }
+  const out = { exclude: [], agents: [], range: 1_000, concurrency: 4, cache: DEFAULT_CACHE }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const next = () => {
@@ -36,6 +36,12 @@ export function parseArgs(argv) {
     else if (arg === '--pass') out.pass = next()
     else if (arg === '--from-block') out.fromBlock = BigInt(next())
     else if (arg === '--to-block') out.toBlock = BigInt(next())
+    // One season only (the contract's index: 0 = season 1): its paints, from its first block to its last.
+    else if (arg === '--season') {
+      const value = next()
+      if (!/^[0-9]{1,3}$/.test(value)) throw new Error('--season must be a season index, e.g. 1 for season 2')
+      out.season = Number(value)
+    }
     // Launch window: --since 2026-10-10T21:00:00Z [--hours 24] counts only that window (see windowStats).
     else if (arg === '--since') {
       const value = next()
@@ -57,9 +63,10 @@ export function parseArgs(argv) {
     else if (arg === '--exclude-file') {
       // e.g. guest-wallets.local.json: every "address" field in the file is excluded.
       const text = readFileSync(next(), 'utf8')
-      out.exclude.push(
-        ...(text.match(/"address":\s*"(0x[0-9a-fA-F]{40})"/g) ?? []).map((row) => row.slice(-43, -1)),
-      )
+      out.exclude.push(...addressesIn(text))
+    } else if (arg === '--agents-file') {
+      // AI agent wallets (AGENT.EXE): counted in the totals, and on their own next to the humans.
+      out.agents.push(...addressesIn(readFileSync(next(), 'utf8')))
     } else if (arg === '--json') out.json = true
     // Local cache of the events already read (public chain data only), so later runs fetch only new blocks.
     else if (arg === '--cache') out.cache = next()
@@ -72,6 +79,7 @@ export function parseArgs(argv) {
     ['--cd-burner', out.cdBurner],
     ['--pass', out.pass],
     ...out.exclude.map((value) => ['--exclude', value]),
+    ...out.agents.map((value) => ['--agents-file', value]),
   ]) {
     if (value != null && !ADDRESS.test(value)) throw new Error(`${name} is not an address`)
   }
@@ -79,9 +87,15 @@ export function parseArgs(argv) {
   if (out.hours != null && (!Number.isFinite(out.hours) || out.hours <= 0 || out.hours > 24 * 30))
     throw new Error('--hours must be between 0 and 720')
   if (out.hours != null && out.since == null) throw new Error('--hours needs --since')
+  if (out.season != null && (out.since != null || out.fromBlock != null))
+    throw new Error('--season picks its own blocks; leave out --since and --from-block')
   if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 16)
     throw new Error('--concurrency must be 1-16')
   out.exclude = out.exclude.map((value) => value.toLowerCase())
+  const excluded = new Set(out.exclude)
+  out.agents = [...new Set(out.agents.map((value) => value.toLowerCase()))].filter(
+    (value) => !excluded.has(value),
+  )
   return out
 }
 
@@ -106,6 +120,17 @@ export function runPixels(runsHex) {
   return pixels
 }
 
+/** Every `"address": "0x…"` in a wallets file (the --exclude-file / --agents-file format). */
+export function addressesIn(text) {
+  return (String(text).match(/"address":\s*"(0x[0-9a-fA-F]{40})"/g) ?? []).map((row) => row.slice(-43, -1))
+}
+
+/** The season a Painted log belongs to (the contract's index), or undefined if it can't be decoded. */
+export function paintedSeason(log) {
+  const args = decode(PAINTED, log)
+  return args ? Number(args.season) : undefined
+}
+
 function decode(abiItem, log) {
   try {
     return decodeEventLog({ abi: [abiItem], data: log.data, topics: log.topics }).args
@@ -118,8 +143,14 @@ function decode(abiItem, log) {
  * Turns raw logs into community numbers. Excluded wallets (the builder's own, test wallets) are removed
  * from every count, so the result can be quoted as "not counting the builder".
  */
-export function summarize({ painted = [], frames = [], cds = [], passes = [] }, exclude = []) {
-  const skip = new Set(exclude.map((value) => value.toLowerCase()))
+export function summarize({ painted = [], frames = [], cds = [], passes = [] }, exclude = [], { only } = {}) {
+  const excluded = new Set(exclude.map((value) => value.toLowerCase()))
+  // `only`: count just these wallets (the agents' own numbers); everything else is skipped.
+  const keep = only && new Set(only.map((value) => value.toLowerCase()))
+  const skip = {
+    has: (owner) => excluded.has(owner) || (keep ? !keep.has(owner) : false),
+    size: excluded.size,
+  }
   const painters = new Map()
   const days = new Map() // UTC day → { paints, pixels, owners }
   let paints = 0
@@ -251,7 +282,28 @@ export function perWallet({ painted = [], frames = [], cds = [] }, exclude = [])
   })
 }
 
+/** Humans and agents side by side: the paint numbers of one group (frames, CDs and Passes stay in the totals). */
+export function groupNumbers(stats) {
+  const { painters, returningPainters, paints, pixels, daily } = stats
+  return { painters, returningPainters, paints, pixels, daily }
+}
+
+/**
+ * The totals with AI agents in them, plus humans and agents on their own. Without agents it is the plain summary.
+ * Excluded wallets (builder, guests, project-run anons) stay out of all three.
+ */
+export function summarizeSplit(logs, exclude = [], agents = []) {
+  const all = summarize(logs, exclude)
+  if (!agents.length) return all
+  return {
+    ...all,
+    humans: groupNumbers(summarize(logs, [...exclude, ...agents])),
+    agents: groupNumbers(summarize({ painted: logs.painted }, exclude, { only: agents })),
+  }
+}
+
 export function markdown(stats, { fromBlock, toBlock, asOf }) {
+  const split = stats.humans && stats.agents
   return [
     `**Community on Monad mainnet** (as of ${asOf}, blocks ${fromBlock}–${toBlock}${
       stats.excluded
@@ -268,6 +320,16 @@ export function markdown(stats, { fromBlock, toBlock, asOf }) {
     `| Frames saved | ${stats.frames.count.toLocaleString('en-US')} (by ${stats.frames.owners} wallets) |`,
     `| CDs burned | ${stats.cds.count.toLocaleString('en-US')} (by ${stats.cds.owners} wallets) |`,
     `| Painter Passes claimed | ${stats.passes.count.toLocaleString('en-US')} |`,
+    ...(split
+      ? [
+          '',
+          '| | Humans | AI agents |',
+          '| --- | ---: | ---: |',
+          `| Painters | ${stats.humans.painters.toLocaleString('en-US')} | ${stats.agents.painters.toLocaleString('en-US')} |`,
+          `| Paint transactions | ${stats.humans.paints.toLocaleString('en-US')} | ${stats.agents.paints.toLocaleString('en-US')} |`,
+          `| Pixels painted | ${stats.humans.pixels.toLocaleString('en-US')} | ${stats.agents.pixels.toLocaleString('en-US')} |`,
+        ]
+      : []),
     '',
     "Counted from the contracts' own events with `node scripts/community-stats.mjs`; anyone can rerun it.",
   ].join('\n')
