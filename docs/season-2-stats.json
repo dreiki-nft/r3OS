@@ -1,0 +1,62 @@
+{
+  "season": 2,
+  "painters": 78,
+  "returningPainters": 0,
+  "paints": 588,
+  "pixels": 68746,
+  "frames": {
+    "count": 2,
+    "owners": 1
+  },
+  "cds": {
+    "count": 0,
+    "owners": 0
+  },
+  "passes": {
+    "count": 0,
+    "owners": 0
+  },
+  "excluded": 41,
+  "daily": [
+    {
+      "day": "2026-11-05",
+      "painters": 78,
+      "newPainters": 78,
+      "paints": 588,
+      "pixels": 68746
+    }
+  ],
+  "humans": {
+    "painters": 1,
+    "returningPainters": 0,
+    "paints": 37,
+    "pixels": 1506,
+    "daily": [
+      {
+        "day": "2026-11-05",
+        "painters": 1,
+        "newPainters": 1,
+        "paints": 37,
+        "pixels": 1506
+      }
+    ]
+  },
+  "agents": {
+    "painters": 77,
+    "returningPainters": 0,
+    "paints": 551,
+    "pixels": 67240,
+    "daily": [
+      {
+        "day": "2026-11-05",
+        "painters": 77,
+        "newPainters": 77,
+        "paints": 551,
+        "pixels": 67240
+      }
+    ]
+  },
+  "fromBlock": "119594243",
+  "toBlock": "119626148",
+  "asOf": "2026-11-05 13:45 UTC"
+}

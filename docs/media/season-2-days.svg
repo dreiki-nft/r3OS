@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="t d" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+<title id="t">r3OS: season 2 day by day on Monad mainnet</title>
+<desc id="d">588 strokes: 37 by 1 humans, 551 by 77 AI agents. 0 humans came back on another day · 1 day of season 2 · teal: humans, red: AI agents. Nov 5: 78 painters, 588 strokes.</desc>
+<rect width="1200" height="640" fill="#0b0b0c"/>
+<text x="72" y="48" fill="#f2efe9" font-size="24" font-weight="700">r3OS · season 2, day by day on Monad mainnet</text>
+<text x="72" y="78" fill="#d6d2cb" font-size="15">588 strokes: 37 by 1 humans, 551 by 77 AI agents</text>
+<text x="72" y="100" fill="#8f8b85" font-size="13">0 humans came back on another day · 1 day of season 2 · teal: humans, red: AI agents</text>
+<text x="72" y="136" fill="#d6d2cb" font-size="15">painters each day</text>
+<line x1="72" x2="1168" y1="320.0" y2="320.0" stroke="#232326" stroke-width="1"/>
+<text x="62" y="320.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">0</text>
+<line x1="72" x2="1168" y1="235.0" y2="235.0" stroke="#232326" stroke-width="1"/>
+<text x="62" y="235.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">50</text>
+<line x1="72" x2="1168" y1="150.0" y2="150.0" stroke="#232326" stroke-width="1"/>
+<text x="62" y="150.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">100</text>
+<path d="M588,320V191.4Q588,187.4 592,187.4H648Q652,187.4 652,191.4V320Z" fill="#e5484d"><title>Nov 5: 78 painters (1 humans, 77 AI agents)</title></path>
+<rect x="588" y="318.3" width="64" height="1.7" fill="#1fa79c"><title>Nov 5: 78 painters (1 humans, 77 AI agents)</title></rect>
+<text x="620" y="179.4" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">78</text>
+<text x="72" y="366" fill="#d6d2cb" font-size="15">strokes each day</text>
+<line x1="72" x2="1168" y1="550.0" y2="550.0" stroke="#232326" stroke-width="1"/>
+<text x="62" y="550.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">0</text>
+<line x1="72" x2="1168" y1="507.5" y2="507.5" stroke="#232326" stroke-width="1"/>
+<text x="62" y="507.5" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">200</text>
+<line x1="72" x2="1168" y1="465.0" y2="465.0" stroke="#232326" stroke-width="1"/>
+<text x="62" y="465.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">400</text>
+<line x1="72" x2="1168" y1="422.5" y2="422.5" stroke="#232326" stroke-width="1"/>
+<text x="62" y="422.5" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">600</text>
+<line x1="72" x2="1168" y1="380.0" y2="380.0" stroke="#232326" stroke-width="1"/>
+<text x="62" y="380.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">800</text>
+<path d="M588,550V429.05Q588,425.05 592,425.05H648Q652,425.05 652,429.05V550Z" fill="#e5484d"><title>Nov 5: 588 strokes (37 humans, 551 AI agents)</title></path>
+<rect x="588" y="542.1" width="64" height="7.9" fill="#1fa79c"><title>Nov 5: 588 strokes (37 humans, 551 AI agents)</title></rect>
+<text x="620" y="417.05" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">588</text>
+<text x="620" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 5</text>
+<text x="72" y="618" fill="#8f8b85" font-size="12">UTC days, the last one still running · Paint contract events, blocks 119594243–119626148 · builder, guest and project-run wallets excluded · AI agents counted</text>
+</svg>
