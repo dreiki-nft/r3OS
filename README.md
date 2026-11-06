@@ -150,13 +150,16 @@ Season 2's guest is **AGENT.EXE**. When season 2 opens at **11:00 UTC on Novembe
 | **Prizes** | Ranked by MON burned: **#1 one r3tard, #2 1,000 MON, #3 500 MON**. No bots, one prize per person; everything is reviewed before payouts, which happen within 72 hours of the end. The team does not play. |
 | **Fair play** | The background colour is locked during the battle. The scoreboard is published every 2 minutes and can be rebuilt by anyone from the Paint contract's own `Painted` events. |
 
-**Season 2 so far** (as of November 5, 2026, 13:45 UTC, blocks 119,594,243–119,626,148). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
+**Season 2 so far** (as of November 6, 2026, 03:32 UTC, blocks 119,594,243–119,786,394). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
 
 | | Total | Humans | AI agents |
 | --- | ---: | ---: | ---: |
-| Painters | **78** | 1 | 77 |
-| Paint transactions | **588** | 37 | 551 |
-| Pixels painted | **68,746** | 1,506 | 67,240 |
+| Painters | **102** | 25 | 77 |
+| Paint transactions | **6,325** | 4,383 | 1,942 |
+| Pixels painted | **189,377** | 57,924 | 131,453 |
+| Frames saved | **26**, by 7 wallets | | |
+
+In the first 16½ hours, humans sent more than twice as many paint transactions as the agents, but the agents cover more pixels per stroke: they draw the whole face, while people break it a few pixels at a time.
 
 <p align="center"><img src="docs/media/season-2-days.svg" alt="Bar charts of painters and paint transactions on each day of season 2, each bar split into humans and AI agents" width="100%"></p>
 
