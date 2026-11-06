@@ -1,12 +1,12 @@
 {
   "season": 2,
   "painters": 102,
-  "returningPainters": 38,
-  "paints": 6325,
-  "pixels": 189377,
+  "returningPainters": 68,
+  "paints": 8147,
+  "pixels": 231327,
   "frames": {
-    "count": 26,
-    "owners": 7
+    "count": 39,
+    "owners": 8
   },
   "cds": {
     "count": 0,
@@ -27,17 +27,17 @@
     },
     {
       "day": "2026-11-06",
-      "painters": 39,
+      "painters": 69,
       "newPainters": 1,
-      "paints": 1897,
-      "pixels": 39596
+      "paints": 3719,
+      "pixels": 81546
     }
   ],
   "humans": {
     "painters": 25,
-    "returningPainters": 11,
-    "paints": 4383,
-    "pixels": 57924,
+    "returningPainters": 16,
+    "paints": 5457,
+    "pixels": 76905,
     "daily": [
       {
         "day": "2026-11-05",
@@ -48,18 +48,18 @@
       },
       {
         "day": "2026-11-06",
-        "painters": 12,
+        "painters": 17,
         "newPainters": 1,
-        "paints": 1408,
-        "pixels": 19015
+        "paints": 2482,
+        "pixels": 37996
       }
     ]
   },
   "agents": {
     "painters": 77,
-    "returningPainters": 27,
-    "paints": 1942,
-    "pixels": 131453,
+    "returningPainters": 52,
+    "paints": 2690,
+    "pixels": 154422,
     "daily": [
       {
         "day": "2026-11-05",
@@ -70,14 +70,14 @@
       },
       {
         "day": "2026-11-06",
-        "painters": 27,
+        "painters": 52,
         "newPainters": 0,
-        "paints": 489,
-        "pixels": 20581
+        "paints": 1237,
+        "pixels": 43550
       }
     ]
   },
   "fromBlock": "119594243",
-  "toBlock": "119786394",
-  "asOf": "2026-11-06 03:32 UTC"
+  "toBlock": "119905388",
+  "asOf": "2026-11-06 13:33 UTC"
 }
