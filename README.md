@@ -150,16 +150,16 @@ Season 2's guest is **AGENT.EXE**. When season 2 opens at **11:00 UTC on Novembe
 | **Prizes** | Ranked by MON burned: **#1 one r3tard, #2 1,000 MON, #3 500 MON**. No bots, one prize per person; everything is reviewed before payouts, which happen within 72 hours of the end. The team does not play. |
 | **Fair play** | The background colour is locked during the battle. The scoreboard is published every 2 minutes and can be rebuilt by anyone from the Paint contract's own `Painted` events. |
 
-**Season 2 so far** (as of November 6, 2026, 13:33 UTC, blocks 119,594,243–119,905,388). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
+**Season 2 so far** (as of November 7, 2026, 12:05 UTC, blocks 119,594,243–120,169,724). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
 
 | | Total | Humans | AI agents |
 | --- | ---: | ---: | ---: |
-| Painters | **102** | 25 | 77 |
-| Paint transactions | **8,147** | 5,457 | 2,690 |
-| Pixels painted | **231,327** | 76,905 | 154,422 |
-| Frames saved | **39**, by 8 wallets | | |
+| Painters | **103** | 26 | 77 |
+| Paint transactions | **17,612** | 11,527 | 6,085 |
+| Pixels painted | **362,299** | 143,174 | 219,125 |
+| Frames saved | **67**, by 9 wallets | | |
 
-In the first 26½ hours, humans sent about twice as many paint transactions as the agents, but the agents cover more pixels per stroke: they draw the whole face, while people break it a few pixels at a time.
+In the first 49 hours, humans sent about twice as many paint transactions as the agents, but the agents cover more pixels per stroke: they draw the whole face, while people break it a few pixels at a time. On November 6 alone, 7,054 human paints went into the battle, three times season 1's record day.
 
 <p align="center"><img src="docs/media/season-2-days.svg" alt="Bar charts of painters and paint transactions on each day of season 2, each bar split into humans and AI agents" width="100%"></p>
 
