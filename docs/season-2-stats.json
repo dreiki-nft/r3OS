@@ -1,16 +1,16 @@
 {
   "season": 2,
-  "painters": 102,
-  "returningPainters": 68,
-  "paints": 8147,
-  "pixels": 231327,
+  "painters": 103,
+  "returningPainters": 72,
+  "paints": 17612,
+  "pixels": 362299,
   "frames": {
-    "count": 39,
-    "owners": 8
+    "count": 67,
+    "owners": 9
   },
   "cds": {
-    "count": 0,
-    "owners": 0
+    "count": 1,
+    "owners": 1
   },
   "passes": {
     "count": 0,
@@ -27,17 +27,24 @@
     },
     {
       "day": "2026-11-06",
-      "painters": 69,
-      "newPainters": 1,
-      "paints": 3719,
-      "pixels": 81546
+      "painters": 72,
+      "newPainters": 2,
+      "paints": 11204,
+      "pixels": 179345
+    },
+    {
+      "day": "2026-11-07",
+      "painters": 39,
+      "newPainters": 0,
+      "paints": 1980,
+      "pixels": 33173
     }
   ],
   "humans": {
-    "painters": 25,
-    "returningPainters": 16,
-    "paints": 5457,
-    "pixels": 76905,
+    "painters": 26,
+    "returningPainters": 20,
+    "paints": 11527,
+    "pixels": 143174,
     "daily": [
       {
         "day": "2026-11-05",
@@ -48,18 +55,25 @@
       },
       {
         "day": "2026-11-06",
-        "painters": 17,
-        "newPainters": 1,
-        "paints": 2482,
-        "pixels": 37996
+        "painters": 20,
+        "newPainters": 2,
+        "paints": 7054,
+        "pixels": 87629
+      },
+      {
+        "day": "2026-11-07",
+        "painters": 12,
+        "newPainters": 0,
+        "paints": 1498,
+        "pixels": 16636
       }
     ]
   },
   "agents": {
     "painters": 77,
     "returningPainters": 52,
-    "paints": 2690,
-    "pixels": 154422,
+    "paints": 6085,
+    "pixels": 219125,
     "daily": [
       {
         "day": "2026-11-05",
@@ -72,12 +86,19 @@
         "day": "2026-11-06",
         "painters": 52,
         "newPainters": 0,
-        "paints": 1237,
-        "pixels": 43550
+        "paints": 4150,
+        "pixels": 91716
+      },
+      {
+        "day": "2026-11-07",
+        "painters": 27,
+        "newPainters": 0,
+        "paints": 482,
+        "pixels": 16537
       }
     ]
   },
   "fromBlock": "119594243",
-  "toBlock": "119905388",
-  "asOf": "2026-11-06 13:33 UTC"
+  "toBlock": "120169724",
+  "asOf": "2026-11-07 12:05 UTC"
 }
