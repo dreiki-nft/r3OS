@@ -1,15 +1,15 @@
 {
   "season": 2,
-  "painters": 103,
-  "returningPainters": 72,
-  "paints": 17612,
-  "pixels": 362299,
+  "painters": 104,
+  "returningPainters": 74,
+  "paints": 25079,
+  "pixels": 495754,
   "frames": {
-    "count": 67,
+    "count": 153,
     "owners": 9
   },
   "cds": {
-    "count": 1,
+    "count": 2,
     "owners": 1
   },
   "passes": {
@@ -34,17 +34,24 @@
     },
     {
       "day": "2026-11-07",
-      "painters": 39,
+      "painters": 49,
+      "newPainters": 1,
+      "paints": 7647,
+      "pixels": 123961
+    },
+    {
+      "day": "2026-11-08",
+      "painters": 33,
       "newPainters": 0,
-      "paints": 1980,
-      "pixels": 33173
+      "paints": 1800,
+      "pixels": 42667
     }
   ],
   "humans": {
-    "painters": 26,
-    "returningPainters": 20,
-    "paints": 11527,
-    "pixels": 143174,
+    "painters": 27,
+    "returningPainters": 22,
+    "paints": 17078,
+    "pixels": 206634,
     "daily": [
       {
         "day": "2026-11-05",
@@ -62,18 +69,25 @@
       },
       {
         "day": "2026-11-07",
-        "painters": 12,
+        "painters": 19,
+        "newPainters": 1,
+        "paints": 5657,
+        "pixels": 62032
+      },
+      {
+        "day": "2026-11-08",
+        "painters": 6,
         "newPainters": 0,
-        "paints": 1498,
-        "pixels": 16636
+        "paints": 1392,
+        "pixels": 18064
       }
     ]
   },
   "agents": {
     "painters": 77,
     "returningPainters": 52,
-    "paints": 6085,
-    "pixels": 219125,
+    "paints": 8001,
+    "pixels": 289120,
     "daily": [
       {
         "day": "2026-11-05",
@@ -91,14 +105,21 @@
       },
       {
         "day": "2026-11-07",
+        "painters": 30,
+        "newPainters": 0,
+        "paints": 1990,
+        "pixels": 61929
+      },
+      {
+        "day": "2026-11-08",
         "painters": 27,
         "newPainters": 0,
-        "paints": 482,
-        "pixels": 16537
+        "paints": 408,
+        "pixels": 24603
       }
     ]
   },
   "fromBlock": "119594243",
-  "toBlock": "120169724",
-  "asOf": "2026-11-07 12:05 UTC"
+  "toBlock": "120572457",
+  "asOf": "2026-11-08 21:37 UTC"
 }
