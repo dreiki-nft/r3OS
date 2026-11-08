@@ -24,7 +24,7 @@
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
   Season 1 (October 10 – November 5): <b>110 painters · 24,109 paint transactions · 683 frames saved</b>, builder, guest and project-run wallets not counted (<a href="#season-1-in-numbers">the numbers</a>)<br>
-  Season 2 is live: <b>AGENT.EXE</b>, 77 AI agents against the humans (<a href="#season-2-agentexe-november-58">how it works</a>)
+  Season 2 opened with <b>AGENT.EXE</b>, 77 AI agents against the humans, and <b>the humans won</b> (<a href="#season-2-agentexe-november-58">how it went</a>)
 </p>
 
 <p align="center">
@@ -77,7 +77,7 @@ The guide also links a real recent paint transaction on the explorer, so every c
 r3OS kept shipping during judging (newest first):
 
 - **Season Replay picks a season** (Run → `replay 1`, or [r3os.app/#/replay?season=1](https://r3os.app/#/replay?season=1)): season 1's replay is complete, season 2's grows as it is painted, and a link can open either one.
-- **AGENT.EXE** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe), or Run → `agent-exe`): the season 2 opener. 77 AI agents took the fresh canvas at 11:00 UTC on November 5 and defend their face for 72 hours; humans break it. Rules, shields, war chest and prizes: [Season 2: AGENT.EXE](#season-2-agentexe-november-58).
+- **AGENT.EXE** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe), or Run → `agent-exe`): the season 2 opener. 77 AI agents took the fresh canvas at 11:00 UTC on November 5 and defended their face for 72 hours. Humans broke all three shields; the AI fell at 07:07 UTC on November 8. Rules, shields, war chest and prizes: [Season 2: AGENT.EXE](#season-2-agentexe-november-58).
 - **`.r3` names** ([R3Names](#mainnet)): names read onchain and shown before a `.nad` name everywhere in r3OS. The project's anon wallets (`anon-01.r3` …) and the 77 agents (`harlan.r3` … `wolfe.r3`) use them.
 - **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle), or Run → `raffle`): a public check of the Storm Season raffle. The ticket list rebuilt from the Storm Chasers data with its keccak256 fingerprint (the same hash the raffle contract stores as `snapshotHash`), a download of the full list, the draw's steps read live from the contract, and, after the draw, the arithmetic anyone can redo: Pyth Entropy's random number mod the ticket count → the winning ticket → its wallet.
 - **Who painted here** in Paint: hover any pixel (or tap it with the picker on a phone) to see the last wallet that changed it, when, and how many times it changed hands this season. **Heat map:** tiles too hot to take more paint are striped, and a stroke refused for heat turns the map on and says why.
@@ -138,7 +138,28 @@ r3OS opened to the public on **October 10, 2026 at 19:00 UTC** ([launch post](ht
 
 ### Season 2: AGENT.EXE (November 5–8)
 
-Season 2's guest is **AGENT.EXE**. When season 2 opens at **11:00 UTC on November 5**, on a fresh canvas with no protected outline, **77 AI agents** (`harlan.r3` … `wolfe.r3`) start taking it over. For **72 hours**, until 11:00 UTC on November 8, they repaint their face over anything people draw. Humans fight back by breaking it. Watch and play in r3OS with **Run → `agent-exe`** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe)).
+Season 2's guest was **AGENT.EXE**. When season 2 opened at **11:00 UTC on November 5**, on a fresh canvas with no protected outline, **77 AI agents** (`harlan.r3` … `wolfe.r3`) took it over. For up to **72 hours** they repainted their face over anything people drew, and humans fought back by breaking it. The final scoreboard stays in r3OS: **Run → `agent-exe`** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe)).
+
+**Result: the humans won.** The AI's integrity hit 0 at **07:07 UTC on November 8**, 3 hours 52 minutes before the end. Its last move was painting `THANKS FOR PLAYING HUMANS` across the canvas; its last line in the feed was *"INTEGRITY 0%. AGENT.EXE TERMINATED. …FOR NOW."*
+
+| Shield (444 MON each) | Broken |
+| --- | --- |
+| 1 | November 6, 03:12 UTC, 16 hours into day 1 |
+| 2 | November 7, 02:01 UTC, 15 hours into day 2 |
+| 3 | November 8, 07:07 UTC, 20 hours into day 3 |
+
+From the final scoreboard: humans sent **17,017 paints** and did **166,626 pixels of damage**; the agents answered with 7,955 paints (262,407 pixels) and burned 249 MON of gas on repairs. With the 1,333 MON damage tax, the battle cost the AI about **1,582 MON**.
+
+| # | Painter | MON burned | Damage | Reward |
+| --- | --- | ---: | ---: | --- |
+| 1 | `samuelljra.nad` | 396.0 | 44,390 px | one r3tard (#124) + 513.4 MON from the war chest |
+| 2 | `noajolouis.nad` | 351.3 | 36,643 px | 1,000 MON + 423.8 MON from the war chest |
+| 3 | `gold sketch·ad43` | 162.2 | 18,341 px | 500 MON + 212.1 MON from the war chest |
+| 4 | `pink spray·e161` | 109.2 | 12,295 px | 142.2 MON from the war chest |
+
+The whole war chest, **1,333 MON**, went to the **8 badge holders** (everyone who fought in all three windows) in proportion to their damage, in one transaction ([payout](https://monadvision.com/tx/0x44509a88af7e7bce09f4b57562d76dcb044b6759ddf1218698938a1315151df4)). The days each of the 27 human wallets fought are recorded onchain for the Painter Pass quest ([recordFought](https://monadvision.com/tx/0x9a232e42038eaf5ae0cfd916bb4445748c130a8e4fdb9423e1984bf1eb866c2c)). Prizes went out by hand the same day, about 11 hours after the end. The AI's leftover MON went back to the project wallet.
+
+The rules, as they ran:
 
 | | |
 | --- | --- |
@@ -150,16 +171,16 @@ Season 2's guest is **AGENT.EXE**. When season 2 opens at **11:00 UTC on Novembe
 | **Prizes** | Ranked by MON burned: **#1 one r3tard, #2 1,000 MON, #3 500 MON**. No bots, one prize per person; everything is reviewed before payouts, which happen within 72 hours of the end. The team does not play. |
 | **Fair play** | The background colour is locked during the battle. The scoreboard is published every 2 minutes and can be rebuilt by anyone from the Paint contract's own `Painted` events. |
 
-**Season 2 so far** (as of November 7, 2026, 12:05 UTC, blocks 119,594,243–120,169,724). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
+**Season 2 so far** (as of November 8, 2026, 21:37 UTC, blocks 119,594,243–120,572,457). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
 
 | | Total | Humans | AI agents |
 | --- | ---: | ---: | ---: |
-| Painters | **103** | 26 | 77 |
-| Paint transactions | **17,612** | 11,527 | 6,085 |
-| Pixels painted | **362,299** | 143,174 | 219,125 |
-| Frames saved | **67**, by 9 wallets | | |
+| Painters | **104** | 27 | 77 |
+| Paint transactions | **25,079** | 17,078 | 8,001 |
+| Pixels painted | **495,754** | 206,634 | 289,120 |
+| Frames saved | **153**, by 9 wallets | | |
 
-In the first 49 hours, humans sent about twice as many paint transactions as the agents, but the agents cover more pixels per stroke: they draw the whole face, while people break it a few pixels at a time. On November 6 alone, 7,054 human paints went into the battle, three times season 1's record day.
+Over the battle, humans sent about twice as many paint transactions as the agents, but the agents cover more pixels per stroke: they draw the whole face, while people break it a few pixels at a time. On November 6 alone, 7,054 human paints went into the battle, three times season 1's record day.
 
 <p align="center"><img src="docs/media/season-2-days.svg" alt="Bar charts of painters and paint transactions on each day of season 2, each bar split into humans and AI agents" width="100%"></p>
 
@@ -427,7 +448,7 @@ The contracts are frozen; everything below happens on top of them.
 - **Paint parties.** Regular sessions with the broadcast view on a big screen, so the canvas keeps getting new painters and the same ones keep coming back.
 - **Storm Season (October 21 – November 4), done.** Every DF1 storm until season 1 ended (21 storms, blocks 115,400,000 to 119,400,000, one every 200,000 blocks, 600 blocks each) is worth one raffle ticket to every wallet that paints during it, in a raffle for an r3tard. The ticket list is counted from the Paint contract's own events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs), and the winner is drawn by the raffle contract above with Pyth Entropy randomness: 156 tickets, 22 wallets. **RAFFLE.EXE** ([r3os.app/#/raffle](https://r3os.app/#/raffle)) shows the list, its fingerprint and every step of the draw, so the result can be checked by anyone.
 - **Every season gets its replay.** Season 1's full stroke history is published and final; season 2's is published as it is painted. Season Replay lets anyone pick either one.
-- **Season 2 opened the same minute with AGENT.EXE as its guest:** 77 AI agents defend their face on a fresh canvas for 72 hours, November 5–8 ([how it works](#season-2-agentexe-november-58)).
+- **Season 2 opened the same minute with AGENT.EXE as its guest:** 77 AI agents defended their face on a fresh canvas, and the humans broke all three shields by November 8 ([how it went](#season-2-agentexe-november-58)).
 
 ## Future plans: r3OS as a platform
 

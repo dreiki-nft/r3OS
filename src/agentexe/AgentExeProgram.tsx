@@ -92,7 +92,9 @@ function Board({
   const wallet = useSyncExternalStore(subscribeWallet, getWalletSnapshot)
   const me = wallet.account?.toLowerCase()
   const mine = me ? board.leaderboard.find((w) => w.address === me) : undefined
-  const stale = now - board.updatedAt * 1000 > 6 * 60_000
+  // Once the battle is over the controller stops publishing: the last scoreboard is final, not behind.
+  const over = board.phase !== 'battle' || now >= board.endsAt * 1000
+  const stale = !over && now - board.updatedAt * 1000 > 6 * 60_000
   return (
     <>
       <section className="agentexe-health" aria-label="AI health">
@@ -189,7 +191,11 @@ function Board({
         {tab === 'Rules' && <Rules />}
       </div>
       <footer className="agentexe-foot">
-        {stale ? (
+        {over ? (
+          <span>
+            final scoreboard · block {board.block.toLocaleString('en-US')} · tax {board.warChest.taxPerPixel} MON/px
+          </span>
+        ) : stale ? (
           <span className="warn">the scoreboard is behind (last update {ago(now - board.updatedAt * 1000)} ago). the battle continues onchain.</span>
         ) : (
           <span>
