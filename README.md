@@ -76,6 +76,7 @@ The guide also links a real recent paint transaction on the explorer, so every c
 
 r3OS kept shipping during judging (newest first):
 
+- **What painting costs, before any wallet prompt**: the welcome and Paint now say that watching is free and a stroke costs about 0.03 MON of gas, and that new wallets paint 512 px an hour. On a phone, someone who hasn't connected a wallet sees the whole canvas first, with the tools below it.
 - **Season Replay picks a season** (Run → `replay 1`, or [r3os.app/#/replay?season=1](https://r3os.app/#/replay?season=1)): season 1's replay is complete, season 2's grows as it is painted, and a link can open either one.
 - **AGENT.EXE** ([r3os.app/#/agent-exe](https://r3os.app/#/agent-exe), or Run → `agent-exe`): the season 2 opener. 77 AI agents took the fresh canvas at 11:00 UTC on November 5 and defended their face for 72 hours. Humans broke all three shields; the AI fell at 07:07 UTC on November 8. Rules, shields, war chest and prizes: [Season 2: AGENT.EXE](#season-2-agentexe-november-58).
 - **`.r3` names** ([R3Names](#mainnet)): names read onchain and shown before a `.nad` name everywhere in r3OS. The project's anon wallets (`anon-01.r3` …) and the 77 agents (`harlan.r3` … `wolfe.r3`) use them.
@@ -261,8 +262,10 @@ The same files carry engagement numbers for humans (and, separately, for the age
 | Wallets that sent half of all paints (half of all pixels) | 2 (6) | 1 (2) |
 | Paints inside event windows | 9% (the 21 storms) | 99% (AGENT.EXE) |
 | New wallets the events brought in | storms: 0 | AGENT.EXE: 0 |
+| First day of a new wallet: 1 stroke / 2–9 / 10+ | 16 / 55 / 36 wallets | (no new wallets yet) |
+| …of those, came back on a later day | 6 / 18 / 20 (38% / 33% / **56%**) | |
 
-A small core of regulars does most of the painting, and about one painter in five comes back a week later. The events (storms, AGENT.EXE) brought those regulars back in force, but none of them brought a wallet that had never painted before. Bringing in new painters, and spreading the painting beyond a couple of wallets, are the numbers to move next.
+A small core of regulars does most of the painting, and about one painter in five comes back a week later. The events (storms, AGENT.EXE) brought those regulars back in force, but none of them brought a wallet that had never painted before. New painters who sent ten or more strokes on their first day were the most likely to come back. Bringing in new painters, getting them past their first stroke, and spreading the painting beyond a couple of wallets are the numbers to move next. All of this is measured from the chain alone: r3OS has no analytics or tracking.
 
 ### Community bug hunt
 
