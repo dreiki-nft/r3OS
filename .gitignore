@@ -65,3 +65,6 @@ storm-chasers-out/
 
 # Live Mode refund list (public chain data, rebuilt by scripts/stranded-refunds.mjs)
 refunds-out/
+
+# fair-play review output: flags stay private until a decision is made (docs/FAIR_PLAY.md)
+integrity-out/

@@ -243,6 +243,10 @@ node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range
   --exclude 0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA,0x649995F20D11F54188e865D8a4ADcFDE4692ecd1
 ```
 
+### Fair play
+
+Prize-bearing events follow written rules ([`docs/FAIR_PLAY.md`](docs/FAIR_PLAY.md)): one prize per person, no bots, team wallets never win, and per-wallet eligibility is fixed before an event is announced. Before any payout, `node scripts/integrity-review.mjs` flags bot-like timing, own-pixel farming, wallets that look like one person, and throwaway wallets, all from public data. A person reviews every flag that touches a prize, and only decisions get published. [`docs/SYBIL_REVIEW.md`](docs/SYBIL_REVIEW.md) prices what 10, 100 or 1,000 coordinated wallets could do (rerun it with `node scripts/sybil-sim.mjs`). Its findings: wiping the canvas costs under a dollar in fees and is limited only by time, which makes the finale block the most exposed moment; one-ticket-per-wallet raffles are cheap to farm; and the next raffle contract should check the list's hash onchain and refuse a prize recovery once the random number is in.
+
 ### Who comes back
 
 The same files carry engagement numbers for humans (and, separately, for the agents). The honest read for now:
