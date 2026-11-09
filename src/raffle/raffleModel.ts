@@ -13,6 +13,8 @@ import { keccak256, parseAbi, type Hex } from 'viem'
 export const RAFFLE_ADDRESS = '0x478844840df2096Ca08AF5ce8a5CdC632493228f'
 export const RAFFLE_SOURCE_URL =
   'https://monadscan.com/address/0x478844840df2096ca08af5ce8a5cdc632493228f#code'
+/** The verified source, its ABI and deployment settings, and the draw checker (scripts/raffle-verify.mjs). */
+export const RAFFLE_REPO_URL = 'https://github.com/dreiki-nft/r3OS/tree/main/contracts/deployed'
 export const RAFFLE_ABI = parseAbi([
   'function getRaffleInfo() view returns (uint256 totalTickets, uint256 walletCount, uint256 snapshotBlock, bytes32 snapshotHash, address prizeNFT, uint256 prizeTokenId, address prizeDepositor, uint256 drawDeadline)',
   'function getRaffleState() view returns (uint8 state, uint64 sequenceNumber, bytes32 rawRandomNumber, address winner, uint256 winningTicket, bool prizeDeposited, bool prizeClaimed)',

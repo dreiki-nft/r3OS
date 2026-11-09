@@ -38,7 +38,8 @@ export function weekOf(day) {
   return new Date(date.getTime() - offset * DAY * 1_000).toISOString().slice(0, 10)
 }
 
-const addDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * DAY * 1_000).toISOString().slice(0, 10)
+const addDays = (day, n) =>
+  new Date(Date.parse(`${day}T00:00:00Z`) + n * DAY * 1_000).toISOString().slice(0, 10)
 
 /** records: [{ owner, time (unix seconds), pixels }] → distinct wallets per day and per week. */
 export function activeWallets(records) {
@@ -53,7 +54,9 @@ export function activeWallets(records) {
     weeks.get(week).add(owner)
   }
   const rows = (map, key) =>
-    [...map.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, set]) => ({ [key]: k, wallets: set.size }))
+    [...map.entries()]
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([k, set]) => ({ [key]: k, wallets: set.size }))
   return { daily: rows(days, 'day'), weekly: rows(weeks, 'week') }
 }
 
@@ -79,9 +82,10 @@ export function retention(records, { lastFullDay, horizons = [1, 7, 14] } = {}) 
       const row = { day, wallets: owners.length }
       for (const n of horizons) {
         const target = addDays(day, n)
-        row[`d${n}`] = lastFullDay && target <= lastFullDay
-          ? owners.filter((owner) => daysByOwner.get(owner).has(target)).length
-          : null
+        row[`d${n}`] =
+          lastFullDay && target <= lastFullDay
+            ? owners.filter((owner) => daysByOwner.get(owner).has(target)).length
+            : null
       }
       return row
     })
@@ -135,7 +139,9 @@ export function concentration(records, key = 'paints') {
 /** Is this record inside the event window? Windows give blocks ({startBlock,endBlock}) or times ({start,end}). */
 export function inWindow(record, window) {
   if (window.startBlock != null)
-    return BigInt(record.block) >= BigInt(window.startBlock) && BigInt(record.block) <= BigInt(window.endBlock)
+    return (
+      BigInt(record.block) >= BigInt(window.startBlock) && BigInt(record.block) <= BigInt(window.endBlock)
+    )
   return Number(record.time) >= Number(window.start) && Number(record.time) < Number(window.end)
 }
 
@@ -153,8 +159,12 @@ export function events(records, windows, firstSeen) {
       return first != null && inWindow(first, window)
     })
     const after = (record) =>
-      window.endBlock != null ? BigInt(record.block) > BigInt(window.endBlock) : Number(record.time) >= Number(window.end)
-    const cameBack = fresh.filter((owner) => records.some((record) => record.owner === owner && after(record))).length
+      window.endBlock != null
+        ? BigInt(record.block) > BigInt(window.endBlock)
+        : Number(record.time) >= Number(window.end)
+    const cameBack = fresh.filter((owner) =>
+      records.some((record) => record.owner === owner && after(record)),
+    ).length
     return {
       id: window.id,
       label: window.label,
@@ -169,7 +179,9 @@ export function events(records, windows, firstSeen) {
   const eventRecords = records.filter(inAny)
   const organicRecords = records.filter((record) => !inAny(record))
   const organicOwners = new Set(organicRecords.map((record) => record.owner))
-  const eventOnly = new Set(eventRecords.map((record) => record.owner).filter((owner) => !organicOwners.has(owner)))
+  const eventOnly = new Set(
+    eventRecords.map((record) => record.owner).filter((owner) => !organicOwners.has(owner)),
+  )
   return {
     windows: rows,
     split: {
@@ -203,7 +215,10 @@ export function engagement({ records, all = records, windows = [], coverage, sea
     seasonsByOwner.get(record.owner).add(record.season)
   }
   const owners = new Set(records.map((record) => record.owner))
-  const earlier = season != null ? [...owners].filter((owner) => [...seasonsByOwner.get(owner)].some((s) => s < season)) : []
+  const earlier =
+    season != null
+      ? [...owners].filter((owner) => [...seasonsByOwner.get(owner)].some((s) => s < season))
+      : []
   return {
     coverage,
     active: activeWallets(records),
@@ -211,7 +226,13 @@ export function engagement({ records, all = records, windows = [], coverage, sea
     concentration: { paints: concentration(records, 'paints'), pixels: concentration(records, 'pixels') },
     events: events(records, windows, firstSeen),
     ...(season != null
-      ? { seasons: { wallets: owners.size, paintedInEarlierSeason: earlier.length, newThisSeason: owners.size - earlier.length } }
+      ? {
+          seasons: {
+            wallets: owners.size,
+            paintedInEarlierSeason: earlier.length,
+            newThisSeason: owners.size - earlier.length,
+          },
+        }
       : {}),
   }
 }

@@ -11,7 +11,11 @@ describe('public wallet manifest and event windows', () => {
       JSON.stringify({
         version: 1,
         groups: [
-          { id: 'builder', treatment: 'excluded', wallets: [{ address: A.toUpperCase().replace('0X', '0x') }] },
+          {
+            id: 'builder',
+            treatment: 'excluded',
+            wallets: [{ address: A.toUpperCase().replace('0X', '0x') }],
+          },
           { id: 'agents', treatment: 'agents', wallets: [{ address: B, name: 'harlan.r3' }] },
         ],
       }),
@@ -19,11 +23,14 @@ describe('public wallet manifest and event windows', () => {
     expect(manifest.exclude).toEqual([A])
     expect(manifest.agents).toEqual([B])
     expect(manifestSummary(manifest).map((g) => g.wallets)).toEqual([1, 1])
-    const twice = { version: 1, groups: [{ id: 'x', treatment: 'excluded', wallets: [{ address: A }, { address: A }] }] }
+    const twice = {
+      version: 1,
+      groups: [{ id: 'x', treatment: 'excluded', wallets: [{ address: A }, { address: A }] }],
+    }
     expect(() => parseManifest(JSON.stringify(twice))).toThrow(/listed twice/)
-    expect(() => parseManifest(JSON.stringify({ version: 1, groups: [{ id: 'x', treatment: 'maybe' }] }))).toThrow(
-      /treatment/,
-    )
+    expect(() =>
+      parseManifest(JSON.stringify({ version: 1, groups: [{ id: 'x', treatment: 'maybe' }] })),
+    ).toThrow(/treatment/)
   })
 
   it('the published manifest is valid: every group, 46 excluded wallets and the 77 AGENT.EXE agents', () => {
@@ -44,7 +51,12 @@ describe('public wallet manifest and event windows', () => {
   it('reads the published events file', () => {
     const list = parseEvents(readFileSync('docs/events.json', 'utf8'))
     expect(list.filter((event) => event.kind === 'storm')).toHaveLength(21)
-    expect(list.find((event) => event.id === 'agent-exe-1')).toMatchObject({ start: 1793876400, end: 1794135600 })
-    expect(() => parseEvents(JSON.stringify({ version: 1, events: [{ id: 'x', start: 1 }] }))).toThrow(/either/)
+    expect(list.find((event) => event.id === 'agent-exe-1')).toMatchObject({
+      start: 1793876400,
+      end: 1794135600,
+    })
+    expect(() => parseEvents(JSON.stringify({ version: 1, events: [{ id: 'x', start: 1 }] }))).toThrow(
+      /either/,
+    )
   })
 })

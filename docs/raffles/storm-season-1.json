@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "raffle": "Storm Season (season 1)",
+  "contract": "0x478844840df2096Ca08AF5ce8a5CdC632493228f",
+  "chainId": 143,
+  "ticketList": {
+    "source": "public/storms/season-1.json",
+    "generator": "scripts/storm-chasers.mjs",
+    "snapshotBlock": "119400599",
+    "snapshotHash": "0xd0ae2034e6d8d46d9b957d6fe19830a038405ed442424de1cf7d033a34b7d87b",
+    "wallets": 22,
+    "tickets": 156
+  },
+  "prize": {
+    "nft": "0x200723A706de0013316E5cd8EBa2b3f53DD90c29",
+    "tokenId": "123"
+  },
+  "result": {
+    "randomNumber": "0x5eaa018649d5f355ebbff14c8d44c77dd46fb93101bad265533a938797aade2a",
+    "winningTicket": "50",
+    "winner": "0x533E332D90b69e3cCAad79c6C1A7b6fc644e0622"
+  },
+  "window": {
+    "fromBlock": "120750640",
+    "toBlock": "120751715"
+  },
+  "transactions": [
+    {
+      "step": "initSnapshot",
+      "hash": "0xfc6b0f9370021fb850dd888bd1e766c595f53dc918a1cc2680d0b6bb7be7b4f5",
+      "block": "120750640"
+    },
+    {
+      "step": "loadTicketsBatch",
+      "hash": "0x607ecb458b5a3bb6974df8c325877f4ae42faba3fec35e3e6ae406a2c3607479",
+      "block": "120750771"
+    },
+    {
+      "step": "finalizeSnapshot",
+      "hash": "0x94bef519166f093955bec8ebaa7ea4fd4f7077a0f417aad73e2f39893f39f0cf",
+      "block": "120750911"
+    },
+    {
+      "step": "prize deposit (safeTransferFrom)",
+      "hash": "0xd6e5ab091adb4d0e4106851a99464d248df788eb50a7682faa236b0cdbf8d6d8",
+      "block": "120750987"
+    },
+    {
+      "step": "setDrawDeadline",
+      "hash": "0x6e1ba3788119eaf68a40f017a3f3314e3ef0d86162a846e32f67fce66aac4871",
+      "block": "120751315"
+    },
+    {
+      "step": "requestDraw",
+      "hash": "0x35e03b5e4723e3151f3ab86012763e8c93ca64a899642b07701ce623469a593a",
+      "block": "120751426"
+    },
+    {
+      "step": "fulfillDraw",
+      "hash": "0xac51fcd2fca8051b99a91f046959ef3e2749b2c1d65a05d459f716a9d795779f",
+      "block": "120751530"
+    },
+    {
+      "step": "claimPrize",
+      "hash": "0x2ce454272bf77a1a65e1c7cec016f166748fc91f43e667881bc751267436e027",
+      "block": "120751715"
+    }
+  ]
+}

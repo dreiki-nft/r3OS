@@ -17,23 +17,29 @@ const TREATMENTS = new Set(['excluded', 'agents'])
 
 export function parseManifest(text) {
   const raw = JSON.parse(text)
-  if (raw.version !== 1 || !Array.isArray(raw.groups)) throw new Error('wallets manifest: expected version 1 with groups[]')
+  if (raw.version !== 1 || !Array.isArray(raw.groups))
+    throw new Error('wallets manifest: expected version 1 with groups[]')
   const seen = new Map()
   const groups = raw.groups.map((group) => {
     if (!group.id || !TREATMENTS.has(group.treatment))
-      throw new Error(`wallets manifest: group "${group.id}" needs an id and a treatment (excluded or agents)`)
+      throw new Error(
+        `wallets manifest: group "${group.id}" needs an id and a treatment (excluded or agents)`,
+      )
     const wallets = (group.wallets ?? []).map((wallet) => {
       if (!ADDRESS.test(String(wallet.address)))
         throw new Error(`wallets manifest: "${group.id}" has an entry that is not an address`)
       const address = wallet.address.toLowerCase()
       if (seen.has(address))
-        throw new Error(`wallets manifest: ${address} is listed twice ("${seen.get(address)}" and "${group.id}")`)
+        throw new Error(
+          `wallets manifest: ${address} is listed twice ("${seen.get(address)}" and "${group.id}")`,
+        )
       seen.set(address, group.id)
       return { ...wallet, address }
     })
     return { ...group, wallets }
   })
-  const pick = (treatment) => groups.filter((g) => g.treatment === treatment).flatMap((g) => g.wallets.map((w) => w.address))
+  const pick = (treatment) =>
+    groups.filter((g) => g.treatment === treatment).flatMap((g) => g.wallets.map((w) => w.address))
   return { groups, exclude: pick('excluded'), agents: pick('agents') }
 }
 
@@ -50,7 +56,8 @@ export function manifestSummary(manifest) {
 /** docs/events.json: named block or time windows (storms, AGENT.EXE…). */
 export function parseEvents(text) {
   const raw = JSON.parse(text)
-  if (raw.version !== 1 || !Array.isArray(raw.events)) throw new Error('events: expected version 1 with events[]')
+  if (raw.version !== 1 || !Array.isArray(raw.events))
+    throw new Error('events: expected version 1 with events[]')
   return raw.events.map((event) => {
     const byBlock = event.startBlock != null && event.endBlock != null
     const byTime = event.start != null && event.end != null

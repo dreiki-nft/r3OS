@@ -13,6 +13,7 @@ import { parseBoard, SEASON_FIRST_STORM, STORM_PERIOD, type Board } from '../sto
 import {
   RAFFLE_ABI,
   RAFFLE_ADDRESS,
+  RAFFLE_REPO_URL,
   RAFFLE_SOURCE_URL,
   STATE_NAMES,
   fingerprint,
@@ -232,6 +233,10 @@ export function RaffleProgram() {
             list's order (wallets sorted by address, one ticket per storm caught).
           </li>
           <li>The wallet holding that ticket wins. The contract's own team wallets are skipped.</li>
+          <li>
+            One thing to watch: once R is onchain, the owner could pull the prize back and draw again. That leaves
+            extra events, so the checker below fails on it. A fair draw has exactly one request and one winner.
+          </li>
         </ol>
         {proof && onchain && (
           <p className="raffle-proof">
@@ -254,7 +259,12 @@ export function RaffleProgram() {
         ·{' '}
         <a href={RAFFLE_SOURCE_URL} target="_blank" rel="noreferrer">
           verified source
-        </a>
+        </a>{' '}
+        ·{' '}
+        <a href={RAFFLE_REPO_URL} target="_blank" rel="noreferrer">
+          source, ABI and checker in the repo
+        </a>{' '}
+        (<code>node scripts/raffle-verify.mjs</code>)
         {onchain && !onchainIsSeason && (
           <> · it currently holds an earlier raffle ({STATE_NAMES[onchain.state] ?? onchain.state})</>
         )}

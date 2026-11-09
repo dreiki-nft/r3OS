@@ -73,8 +73,18 @@ describe('engagement numbers from paint records', () => {
     const first = new Map(records.map((r) => [r.owner, r]).reverse())
     const out = events(records, windows, first)
     expect(out.windows[0]).toMatchObject({ id: 'storm', wallets: 1, newWallets: 1, newWalletsWhoCameBack: 1 })
-    expect(out.windows[1]).toMatchObject({ id: 'battle', wallets: 2, newWallets: 2, newWalletsWhoCameBack: 1 })
-    expect(out.split).toMatchObject({ eventPaints: 3, organicPaints: 2, eventOnlyWallets: 1, organicWallets: 2 })
+    expect(out.windows[1]).toMatchObject({
+      id: 'battle',
+      wallets: 2,
+      newWallets: 2,
+      newWalletsWhoCameBack: 1,
+    })
+    expect(out.split).toMatchObject({
+      eventPaints: 3,
+      organicPaints: 2,
+      eventOnlyWallets: 1,
+      organicWallets: 2,
+    })
   })
 
   it('counts who came back from an earlier season', () => {
