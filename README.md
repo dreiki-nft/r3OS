@@ -23,7 +23,7 @@
 
 <p align="center">
   Monad Metropolis Hackathon · <b>Social, Attention &amp; Culture</b> · solo build by <b>dreiki</b> · <b>live on Monad mainnet since October 10, 2026</b><br>
-  Season 1 (October 10 – November 5): <b>110 painters · 24,109 paint transactions · 683 frames saved</b>, builder, guest and project-run wallets not counted (<a href="#season-1-in-numbers">the numbers</a>)<br>
+  Season 1 (October 10 – November 5): <b>107 painters · 23,907 paint transactions · 674 frames saved</b>, the wallets in <a href="docs/wallets.json">docs/wallets.json</a> not counted (<a href="#season-1-in-numbers">the numbers</a>)<br>
   Season 2 opened with <b>AGENT.EXE</b>, 77 AI agents against the humans, and <b>the humans won</b> (<a href="#season-2-agentexe-november-58">how it went</a>)
 </p>
 
@@ -157,7 +157,7 @@ From the final scoreboard: humans sent **17,017 paints** and did **166,626 pixel
 | 3 | `gold sketch·ad43` | 162.2 | 18,341 px | 500 MON + 212.1 MON from the war chest |
 | 4 | `pink spray·e161` | 109.2 | 12,295 px | 142.2 MON from the war chest |
 
-The whole war chest, **1,333 MON**, went to the **8 badge holders** (everyone who fought in all three windows) in proportion to their damage, in one transaction ([payout](https://monadvision.com/tx/0x44509a88af7e7bce09f4b57562d76dcb044b6759ddf1218698938a1315151df4)). The days each of the 27 human wallets fought are recorded onchain for the Painter Pass quest ([recordFought](https://monadvision.com/tx/0x9a232e42038eaf5ae0cfd916bb4445748c130a8e4fdb9423e1984bf1eb866c2c)). Prizes went out by hand the same day, about 11 hours after the end. The AI's leftover MON went back to the project wallet.
+The whole war chest, **1,333 MON**, went to the **8 badge holders** (everyone who fought in all three windows) in proportion to their damage, in one transaction ([payout](https://monadvision.com/tx/0x44509a88af7e7bce09f4b57562d76dcb044b6759ddf1218698938a1315151df4)). The days each of the 27 wallets that fought are recorded onchain for the Painter Pass quest ([recordFought](https://monadvision.com/tx/0x9a232e42038eaf5ae0cfd916bb4445748c130a8e4fdb9423e1984bf1eb866c2c)). Prizes went out by hand the same day, about 11 hours after the end. The AI's leftover MON went back to the project wallet.
 
 The rules, as they ran:
 
@@ -171,14 +171,14 @@ The rules, as they ran:
 | **Prizes** | Ranked by MON burned: **#1 one r3tard, #2 1,000 MON, #3 500 MON**. No bots, one prize per person; everything is reviewed before payouts, which happen within 72 hours of the end. The team does not play. |
 | **Fair play** | The background colour is locked during the battle. The scoreboard is published every 2 minutes and can be rebuilt by anyone from the Paint contract's own `Painted` events. |
 
-**Season 2 so far** (as of November 8, 2026, 21:37 UTC, blocks 119,594,243–120,572,457). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The builder's own wallets, the judges' guest wallets and the project-run anon wallets are still left out:
+**Season 2 so far** (as of November 9, 2026, 19:56 UTC, blocks 119,594,243–120,835,392). Season 2 counts every paint, the AI agents' too, and shows humans and agents apart. The wallets in [`docs/wallets.json`](docs/wallets.json) (the project's, the builder's, the judges' guest wallets, the r3tards team's and the project-run anons) are left out:
 
 | | Total | Humans | AI agents |
 | --- | ---: | ---: | ---: |
-| Painters | **104** | 27 | 77 |
-| Paint transactions | **25,079** | 17,078 | 8,001 |
-| Pixels painted | **495,754** | 206,634 | 289,120 |
-| Frames saved | **153**, by 9 wallets | | |
+| Painters | **103** | 26 | 77 |
+| Paint transactions | **25,219** | 17,218 | 8,001 |
+| Pixels painted | **493,096** | 203,976 | 289,120 |
+| Frames saved | **155**, by 8 wallets | | |
 
 Over the battle, humans sent about twice as many paint transactions as the agents, but the agents cover more pixels per stroke: they draw the whole face, while people break it a few pixels at a time. On November 6 alone, 7,054 human paints went into the battle, three times season 1's record day.
 
@@ -188,23 +188,25 @@ The raw numbers are in [`docs/season-2-stats.json`](docs/season-2-stats.json); `
 
 ### Season 1 in numbers
 
-**Final**, from the first block of season 1 to its last (November 5, 2026, 11:00 UTC; blocks 111,020,589–119,594,242), not counting the builder's own wallets, the judges' guest wallets or the project-run anon wallets (below):
+**Final**, from the first block of season 1 to its last (November 5, 2026, 11:00 UTC; blocks 111,020,589–119,594,242), not counting the wallets in [`docs/wallets.json`](docs/wallets.json) (see [how the numbers are made](#how-the-numbers-are-made)):
 
 | | |
 | --- | ---: |
-| Painters (distinct wallets) | **110** |
-| Painters who came back on another day | **47** |
-| Paint transactions | **24,109** |
-| Pixels painted | **484,633** |
-| Frames saved | **683**, by 72 wallets |
+| Painters (distinct wallets) | **107** |
+| Painters who came back on another day | **44** |
+| Paint transactions | **23,907** |
+| Pixels painted | **466,365** |
+| Frames saved | **674**, by 69 wallets |
 | CDs burned | **46**, by 24 wallets |
-| Painter Passes claimed | **78** |
+| Painter Passes claimed | **75** |
+
+*Revised on November 9, 2026:* the first numbers published for season 1 (110 painters, 24,109 paints) counted three r3tards NFT team wallets as community. They are now in the public manifest with the other excluded wallets, and every number here was recomputed.
 
 Not counted above: **33 anonymous wallets run by the project** (`anon-01.r3` … `anon-33.r3`), which drew a green eye in the bottom-left of the canvas from October 19 to the season's last day and painted it back when someone covered it. Their paints are on the canvas and in the replay like everyone else's, but they are the project's own wallets, so they are left out of every number here.
 
 <p align="center"><img src="docs/media/season-days.svg" alt="Bar charts of painters and paint transactions on each day of season 1, from the public launch on October 10 to its end on November 5" width="100%"></p>
 
-The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 47 painters came back to paint on another day, and from October 21 to November 4 between 800 and 2,000 paints a day, with a record 2,350 on October 31. The whole season, every stroke in order (the counters skip the builder, guest and project-run wallets; the canvas shows every paint):
+The launch weekend, then the October 13 paint party (40 painters in one day), then a core of regulars: 44 painters came back to paint on another day, and from October 21 to November 4 between 800 and 2,000 paints a day, with a record 2,350 on October 31. The whole season, every stroke in order (the counters skip the wallets in `docs/wallets.json`; the canvas shows every paint):
 
 <p align="center"><img src="docs/media/season-so-far.gif" alt="The shared r3OS canvas from its first test strokes to the end of season 1 on November 5, replayed from onchain paint events, with live counters of painters and paints" width="512"></p>
 
@@ -214,21 +216,47 @@ The raw numbers are in [`docs/season-stats.json`](docs/season-stats.json), and t
 
 **Storm Chasers** (**Run → `storms`**, or [r3os.app/#/storms](https://r3os.app/#/storms)) is the Storm Season leaderboard: 1 raffle ticket for every DF1 storm a wallet painted in (21 storms, blocks 115,400,000 to 119,400,000), counted from the same `Painted` events by [`scripts/storm-chasers.mjs`](scripts/storm-chasers.mjs) and published to [`public/storms/season-1.json`](public/storms/season-1.json). Storm Season is over: **22 wallets caught storms, for 156 tickets** (snapshot block 119,400,599, list fingerprint `0xd0ae2034…b7d87b`). **The raffle was drawn on November 9:** Pyth Entropy's random number `0x5eaa0186…97aade2a` mod 156 is ticket **50**, which belongs to **`0x533E…0622`** (tickets 44–59, 16 of the 21 storms). It won **r3tard #123**, sent by the raffle contract the same minute ([draw](https://monadvision.com/tx/0xac51fcd2fca8051b99a91f046959ef3e2749b2c1d65a05d459f716a9d795779f), [prize](https://monadvision.com/tx/0x2ce454272bf77a1a65e1c7cec016f166748fc91f43e667881bc751267436e027)).
 
-Every number here is counted from the contracts' own events by [`scripts/community-stats.mjs`](scripts/community-stats.mjs), never counting the builder's own wallets (and, for the season numbers, the judges' guest wallets either). Anyone can rerun it against mainnet:
+### How the numbers are made
+
+Every community number in this README is counted from the contracts' own public events (`Painted`, frame mints, CD burns, Pass mints) by [`scripts/community-stats.mjs`](scripts/community-stats.mjs). Nothing private goes in: two public files decide what counts.
+
+- **[`docs/wallets.json`](docs/wallets.json)**, the wallets that are not counted as community, by category and with addresses only: the project wallet (1), the builder's personal wallet (1), the judges' guest wallets (5), the r3tards NFT team wallets (4, the same list the raffle contract treats as team), the project-run anon wallets and their treasury (34) and the AGENT.EXE treasury (1). The **77 AGENT.EXE agents** are listed too: they are counted, and shown apart from humans everywhere. Every other wallet is a human painter.
+- **[`docs/events.json`](docs/events.json)**, the event windows: the 21 DF1 storms (by block) and AGENT.EXE (by time). Activity inside a window is "event", outside every window "organic".
+
+**Season-wide vs battle-only.** The season numbers count every successful paint from a season's first block to its last (or to the latest refresh). The AGENT.EXE scoreboard counted something else: the battle window only, as the controller saw it, with damage measured as face pixels the agents had to repair. That is why its "17,017 human paints" differs slightly from the 17,021 human paints the season numbers find inside the AGENT.EXE window.
+
+**Definitions** (also written into every stats file): a day is a UTC day, a week starts on Monday (UTC). An active wallet sent at least one successful paint. A cohort is the wallets whose first paint fell on the same day; Dn retention is the share of a cohort that painted again exactly n days later, counted only once that day is over. Concentration is the share of all paints (or pixels) sent by the busiest wallets.
+
+Anyone can regenerate the published files from mainnet and compare them (only `asOf` differs):
 
 ```bash
-# the first 24 hours
+npm ci
+# season 1 (final) and season 2 up to the last published block
+node scripts/community-stats.mjs --season 0 --manifest docs/wallets.json --events docs/events.json \
+  --range 100 --concurrency 8 --json > season-1.json
+node scripts/community-stats.mjs --season 1 --to-block 120835392 --manifest docs/wallets.json \
+  --events docs/events.json --range 100 --concurrency 8 --json > season-2.json
+# the first 24 hours after launch, as published then (only the project and builder wallets left out)
 node scripts/community-stats.mjs --since 2026-10-10T19:00:00Z --hours 24 --range 100 \
   --exclude 0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA,0x649995F20D11F54188e865D8a4ADcFDE4692ecd1
-# one season, day by day (--season 0 is season 1; add the guest wallets to --exclude), then the chart
-# (the first run caches the events in .stats-cache/, so later runs only fetch the blocks added since)
-node scripts/community-stats.mjs --season 0 --range 100 --concurrency 8 --json --exclude … > docs/season-stats.json
-node scripts/season-chart.mjs
-# season 2, with the AI agents' wallets counted apart from the humans
-node scripts/community-stats.mjs --season 1 --range 100 --concurrency 8 --json --exclude … \
-  --agents-file agent-wallets.json > docs/season-2-stats.json
-node scripts/season-chart.mjs --in docs/season-2-stats.json --out docs/media/season-2-days.svg
 ```
+
+### Who comes back
+
+The same files carry engagement numbers for humans (and, separately, for the agents). The honest read for now:
+
+| Humans | Season 1 (final) | Season 2 (to November 9) |
+| --- | ---: | ---: |
+| Wallets | 107 | 26 |
+| New to r3OS | 107 | **0** (all 26 painted in season 1) |
+| Weekly active wallets | 38 · 60 · 39 · 43 · 27 | 26 · 7 (this week so far) |
+| D1 / D7 / D14 retention | 17% / 18% / 21% | 73% / not yet / not yet |
+| Busiest wallet's share of paints | 45% | 54% |
+| Wallets that sent half of all paints (half of all pixels) | 2 (6) | 1 (2) |
+| Paints inside event windows | 9% (the 21 storms) | 99% (AGENT.EXE) |
+| New wallets the events brought in | storms: 0 | AGENT.EXE: 0 |
+
+A small core of regulars does most of the painting, and about one painter in five comes back a week later. The events (storms, AGENT.EXE) brought those regulars back in force, but none of them brought a wallet that had never painted before. Bringing in new painters, and spreading the painting beyond a couple of wallets, are the numbers to move next.
 
 ### Community bug hunt
 
