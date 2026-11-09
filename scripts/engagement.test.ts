@@ -121,3 +121,19 @@ describe('onboarding from the chain', () => {
     })
   })
 })
+
+describe('first-seen without times', () => {
+  it('still finds new wallets and the wallets an event brought in when `all` has no times', async () => {
+    const { engagement } = await import('./engagement-lib.mjs')
+    const records = [rec('n', 0), rec('n', 1), rec('m', 0)]
+    const all = records.map(({ time: _time, ...rest }) => rest)
+    const out = engagement({
+      records,
+      all,
+      windows: [{ id: 'e', start: T0 - 10, end: T0 + 10 }],
+      coverage: { toTime: T0 + 3 * DAY },
+    })
+    expect(out.onboarding.newWallets).toBe(2)
+    expect(out.events.windows[0].newWallets).toBe(2)
+  })
+})

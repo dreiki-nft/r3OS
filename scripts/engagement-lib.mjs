@@ -215,9 +215,10 @@ export function firstDay(records, firstSeen) {
   }
   let newWallets = 0
   for (const [owner, list] of byOwner) {
-    const first = firstSeen.get(owner)
-    if (!first || !list.some((record) => record.block === first.block)) continue
-    if (first.time == null) continue
+    const seen = firstSeen.get(owner)
+    // The wallet is new here when its first paint ever is one of these records (whose times are known).
+    const first = seen && list.find((record) => BigInt(record.block) === BigInt(seen.block))
+    if (!first || first.time == null) continue
     newWallets += 1
     const day = dayOf(first.time)
     const onFirstDay = list.filter((record) => record.time != null && dayOf(record.time) === day).length
@@ -242,9 +243,12 @@ export function lastFullDay(toTime) {
 export function engagement({ records, all = records, windows = [], coverage, season }) {
   const firstSeen = new Map()
   const seasonsByOwner = new Map()
+  // `all` may come without times for some blocks: borrow them from `records`, which always have them.
+  const timeOf = new Map(records.map((record) => [String(record.block), record.time]))
   for (const record of all) {
     const known = firstSeen.get(record.owner)
-    if (!known || BigInt(record.block) < BigInt(known.block)) firstSeen.set(record.owner, record)
+    if (!known || BigInt(record.block) < BigInt(known.block))
+      firstSeen.set(record.owner, { ...record, time: record.time ?? timeOf.get(String(record.block)) })
     if (!seasonsByOwner.has(record.owner)) seasonsByOwner.set(record.owner, new Set())
     seasonsByOwner.get(record.owner).add(record.season)
   }

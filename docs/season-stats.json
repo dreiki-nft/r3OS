@@ -442,7 +442,7 @@
   },
   "fromBlock": "111020589",
   "toBlock": "119594242",
-  "asOf": "2026-11-09 20:39 UTC",
+  "asOf": "2026-11-09 20:56 UTC",
   "walletGroups": [
     {
       "id": "project",
@@ -1057,18 +1057,18 @@
         }
       },
       "onboarding": {
-        "newWallets": 0,
+        "newWallets": 107,
         "oneStroke": {
-          "wallets": 0,
-          "cameBack": 0
+          "wallets": 16,
+          "cameBack": 6
         },
         "twoToNine": {
-          "wallets": 0,
-          "cameBack": 0
+          "wallets": 55,
+          "cameBack": 18
         },
         "tenPlus": {
-          "wallets": 0,
-          "cameBack": 0
+          "wallets": 36,
+          "cameBack": 20
         }
       },
       "seasons": {

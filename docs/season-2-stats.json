@@ -134,8 +134,8 @@
     ]
   },
   "fromBlock": "119594243",
-  "toBlock": "120848770",
-  "asOf": "2026-11-09 20:48 UTC",
+  "toBlock": "120850611",
+  "asOf": "2026-11-09 20:57 UTC",
   "walletGroups": [
     {
       "id": "project",
@@ -196,9 +196,9 @@
     "humans": {
       "coverage": {
         "fromBlock": "119594243",
-        "toBlock": "120848770",
+        "toBlock": "120850611",
         "fromTime": 1793876400,
-        "toTime": 1794257258
+        "toTime": 1794257814
       },
       "active": {
         "daily": [
@@ -532,9 +532,9 @@
     "agents": {
       "coverage": {
         "fromBlock": "119594243",
-        "toBlock": "120848770",
+        "toBlock": "120850611",
         "fromTime": 1793876400,
-        "toTime": 1794257258
+        "toTime": 1794257814
       },
       "active": {
         "daily": [
@@ -809,7 +809,7 @@
             "wallets": 77,
             "paints": 8001,
             "pixels": 289120,
-            "newWallets": 0,
+            "newWallets": 77,
             "newWalletsWhoCameBack": 0
           }
         ],
@@ -823,18 +823,18 @@
         }
       },
       "onboarding": {
-        "newWallets": 0,
+        "newWallets": 77,
         "oneStroke": {
           "wallets": 0,
           "cameBack": 0
         },
         "twoToNine": {
-          "wallets": 0,
-          "cameBack": 0
+          "wallets": 50,
+          "cameBack": 33
         },
         "tenPlus": {
-          "wallets": 0,
-          "cameBack": 0
+          "wallets": 27,
+          "cameBack": 19
         }
       },
       "seasons": {

@@ -278,7 +278,10 @@ try {
       toTime,
     }
     const records = paintRecords(painted.filter(inRange), options.exclude)
-    const all = paintRecords(upTo('painted'), options.exclude)
+    // Every season's paints (for first-seen and cross-season numbers), with the block times already known.
+    const allLogs = upTo('painted')
+    for (const log of allLogs) log.blockTimestamp ??= times.get(log.blockNumber)
+    const all = paintRecords(allLogs, options.exclude)
     const agents = new Set(options.agents)
     const group = (list, isAgent) => list.filter((record) => agents.has(record.owner) === isAgent)
     const windows = options.events ?? []
