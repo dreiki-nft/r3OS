@@ -442,7 +442,7 @@
   },
   "fromBlock": "111020589",
   "toBlock": "119594242",
-  "asOf": "2026-11-09 19:36 UTC",
+  "asOf": "2026-11-09 20:39 UTC",
   "walletGroups": [
     {
       "id": "project",
@@ -497,7 +497,8 @@
       "concentration": "share of all paints (or pixels) sent by the busiest wallets; walletsForHalf is how few wallets made 50%",
       "gini": "0 = every wallet painted the same amount, 1 = one wallet did everything",
       "event": "activity inside a window from docs/events.json; organic = outside every window",
-      "newWallet": "a wallet whose first paint since the first season started falls in the period"
+      "newWallet": "a wallet whose first paint since the first season started falls in the period",
+      "onboarding": "new wallets grouped by strokes on their first day (1, 2–9, 10+), and how many of each painted again on a later day"
     },
     "humans": {
       "coverage": {
@@ -1055,6 +1056,21 @@
           "organicWallets": 107
         }
       },
+      "onboarding": {
+        "newWallets": 0,
+        "oneStroke": {
+          "wallets": 0,
+          "cameBack": 0
+        },
+        "twoToNine": {
+          "wallets": 0,
+          "cameBack": 0
+        },
+        "tenPlus": {
+          "wallets": 0,
+          "cameBack": 0
+        }
+      },
       "seasons": {
         "wallets": 107,
         "paintedInEarlierSeason": 0,
@@ -1310,6 +1326,21 @@
           "organicPixels": 0,
           "eventOnlyWallets": 0,
           "organicWallets": 0
+        }
+      },
+      "onboarding": {
+        "newWallets": 0,
+        "oneStroke": {
+          "wallets": 0,
+          "cameBack": 0
+        },
+        "twoToNine": {
+          "wallets": 0,
+          "cameBack": 0
+        },
+        "tenPlus": {
+          "wallets": 0,
+          "cameBack": 0
         }
       },
       "seasons": {
