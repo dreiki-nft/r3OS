@@ -42,7 +42,7 @@ import {
 } from '../live/liveStore'
 import { createStrokeQueue } from '../live/paintQueue'
 import { HOVER_REFRESH_MS, hoverReadDelay } from './hoverRead'
-import { gasHint } from './gasHint'
+import { gasHint, TYPICAL_STROKE_MON } from './gasHint'
 import { maxCostWei } from '../chain/gas'
 import { startLiveQuick, type QuickProgress } from '../live/quickStart'
 import { drawEllipse, drawLine, drawRect, floodFill, type Point } from '../lib/paintEngine'
@@ -1494,7 +1494,7 @@ export function PaintProgram() {
   ]
 
   return (
-    <div className="paint-program">
+    <div className={wallet.account ? 'paint-program' : 'paint-program watching'}>
       <MenuBar menus={menuItems} onOpen={quoteMenus} />
       <section className={`paint-live-hero ${isLive ? 'active' : liveStarting ? 'starting' : ''}`}>
         <div className="paint-live-state">
@@ -1748,12 +1748,14 @@ export function PaintProgram() {
         />
         <div className="paint-action">
           <small>
-            {cost.pixels} px · cost {cost.units} ({cost.blank} blank, {cost.wet} wet, {cost.dry} dry×2)
+            {cost.pixels
+              ? `${cost.pixels} px · cost ${cost.units} (${cost.blank} blank, ${cost.wet} wet, ${cost.dry} dry×2)`
+              : 'draw on the canvas, then send it onchain'}
           </small>
           <small>
             {wallet.account
               ? (paintQuote?.maxCost ?? (patch.pixelWrites ? 'quoting…' : '—'))
-              : 'connect to quote'}
+              : `free to watch · ≈${TYPICAL_STROKE_MON} MON a stroke`}
           </small>
           <div className="paint-action-buttons">
             <Button
@@ -1824,7 +1826,9 @@ export function PaintProgram() {
                     : liveQuick?.phase === 'fund'
                       ? 'confirm burner gas funding once'
                       : 'finishing setup…'
-                  : 'quick start: usually 2 wallet prompts once · then none per stroke · no undo'}
+                  : wallet.account
+                    ? 'quick start: usually 2 wallet prompts once · then none per stroke · no undo'
+                    : 'to paint: a wallet on Monad with a little MON for gas'}
           </small>
         </div>
       </div>

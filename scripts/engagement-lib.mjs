@@ -25,6 +25,8 @@ export const DEFINITIONS = {
   gini: '0 = every wallet painted the same amount, 1 = one wallet did everything',
   event: 'activity inside a window from docs/events.json; organic = outside every window',
   newWallet: 'a wallet whose first paint since the first season started falls in the period',
+  onboarding:
+    'new wallets grouped by strokes on their first day (1, 2–9, 10+), and how many of each painted again on a later day',
 }
 
 const DAY = 86_400
@@ -195,6 +197,38 @@ export function events(records, windows, firstSeen) {
   }
 }
 
+/**
+ * Onboarding from the chain alone: wallets whose first paint ever falls in `records`, grouped by how much they
+ * painted on that first day, and how many of each group painted again on a later day. A one-stroke first day
+ * is the closest onchain sign of someone who tried once and left.
+ */
+export function firstDay(records, firstSeen) {
+  const byOwner = new Map()
+  for (const record of records) {
+    if (!byOwner.has(record.owner)) byOwner.set(record.owner, [])
+    byOwner.get(record.owner).push(record)
+  }
+  const groups = {
+    oneStroke: { wallets: 0, cameBack: 0 },
+    twoToNine: { wallets: 0, cameBack: 0 },
+    tenPlus: { wallets: 0, cameBack: 0 },
+  }
+  let newWallets = 0
+  for (const [owner, list] of byOwner) {
+    const first = firstSeen.get(owner)
+    if (!first || !list.some((record) => record.block === first.block)) continue
+    if (first.time == null) continue
+    newWallets += 1
+    const day = dayOf(first.time)
+    const onFirstDay = list.filter((record) => record.time != null && dayOf(record.time) === day).length
+    const later = list.some((record) => record.time != null && dayOf(record.time) > day)
+    const group = onFirstDay <= 1 ? groups.oneStroke : onFirstDay < 10 ? groups.twoToNine : groups.tenPlus
+    group.wallets += 1
+    if (later) group.cameBack += 1
+  }
+  return { newWallets, ...groups }
+}
+
 /** The last UTC day fully inside the data: the day before `toTime`'s day, unless toTime ends that day exactly. */
 export function lastFullDay(toTime) {
   const day = dayOf(toTime)
@@ -225,6 +259,7 @@ export function engagement({ records, all = records, windows = [], coverage, sea
     retention: retention(records, { lastFullDay: lastFullDay(coverage.toTime) }),
     concentration: { paints: concentration(records, 'paints'), pixels: concentration(records, 'pixels') },
     events: events(records, windows, firstSeen),
+    onboarding: firstDay(records, firstSeen),
     ...(season != null
       ? {
           seasons: {

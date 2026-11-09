@@ -1,6 +1,6 @@
 import { Button } from '../os/ui/Button'
 import { ProgressSegments } from '../os/ui/ProgressSegments'
-import type { GasHint } from './gasHint'
+import { NEW_WALLET_PIXELS_PER_HOUR, type GasHint } from './gasHint'
 
 export interface BudgetState {
   hourly: number
@@ -29,7 +29,7 @@ export function BudgetMeter({
   if (!connected) {
     return (
       <div className="budget-meter">
-        <span>connect to see your budget</span>
+        <span>new wallets paint {NEW_WALLET_PIXELS_PER_HOUR} px an hour · connect to see yours</span>
         <ProgressSegments value={0} max={1} />
       </div>
     )

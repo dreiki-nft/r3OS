@@ -10,6 +10,16 @@ export type GasHint =
   | { kind: 'short'; perStroke: string; balance: string }
   | { kind: 'low'; strokes: number; perStroke: string }
 
+/**
+ * What a stroke typically costs, for people who haven't connected yet: the average human paint transaction on
+ * mainnet in season 2 (359.3 MON of fees over 12,216 strokes, docs/SYBIL_REVIEW.md). Once a wallet is
+ * connected, Paint shows the real quote instead.
+ */
+export const TYPICAL_STROKE_MON = '0.03'
+
+/** What a brand-new wallet can paint each hour (BASE_PIXELS_PER_HOUR on mainnet). */
+export const NEW_WALLET_PIXELS_PER_HOUR = 512
+
 /** Below this many strokes left, warn before the wallet runs dry mid-party. */
 export const LOW_STROKES = 10
 

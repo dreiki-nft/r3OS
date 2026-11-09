@@ -297,6 +297,20 @@ html {
     padding: 0 4px;
   }
 
+  /* Before a wallet is connected the visitor is here to look: the whole canvas comes first, right under the
+     Live Mode panel, and the tools follow. Once connected, tools and colours sit above the canvas again. */
+  .paint-program.watching .canvas-well {
+    order: 3;
+  }
+
+  .paint-program.watching .paint-main .toolbox {
+    order: 4;
+  }
+
+  .paint-program.watching .palette-row {
+    order: 5;
+  }
+
   .canvas-well {
     order: 5;
     width: 100%;

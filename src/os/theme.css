@@ -3202,6 +3202,11 @@ button:disabled {
   color: var(--text-muted);
 }
 
+.first-run-body .first-run-cost {
+  font-size: 12px;
+  margin-top: -8px;
+}
+
 .first-run-choices {
   display: grid;
   gap: 8px;

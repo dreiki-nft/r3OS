@@ -98,3 +98,26 @@ describe('engagement numbers from paint records', () => {
     expect(out.seasons).toEqual({ wallets: 2, paintedInEarlierSeason: 1, newThisSeason: 1 })
   })
 })
+
+describe('onboarding from the chain', () => {
+  it('groups new wallets by their first day and counts who came back', async () => {
+    const { firstDay } = await import('./engagement-lib.mjs')
+    const day = (owner: string, d: number, n = 1) =>
+      Array.from({ length: n }, (_, i) => rec(owner, d, { time: T0 + d * DAY + i }))
+    const records = [
+      ...day('once', 0),
+      ...day('few', 0, 3),
+      ...day('few', 2),
+      ...day('lots', 1, 12),
+      ...day('old', 0),
+    ]
+    const firstSeen = new Map(records.map((r) => [r.owner, r]).reverse())
+    firstSeen.set('old', rec('old', -30, { season: 0 }))
+    expect(firstDay(records, firstSeen)).toEqual({
+      newWallets: 3,
+      oneStroke: { wallets: 1, cameBack: 0 },
+      twoToNine: { wallets: 1, cameBack: 1 },
+      tenPlus: { wallets: 1, cameBack: 0 },
+    })
+  })
+})

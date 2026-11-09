@@ -11,6 +11,7 @@ import { helpHash } from './helpTopics'
 import { openProgram } from './programs'
 import { playSound } from './sound'
 import { Icon } from './ui/Icon'
+import { TYPICAL_STROKE_MON } from '../paint/gasHint'
 
 function storage() {
   try {
@@ -66,6 +67,10 @@ export function FirstRun() {
         <div className="first-run-body">
           <h2>Welcome to r3OS 98</h2>
           <p>One shared computer on Monad. Watch it live first; connect only when you want to write onchain.</p>
+          <p className="first-run-cost">
+            Painting needs a wallet on Monad with a little MON: each stroke is one transaction, about{' '}
+            {TYPICAL_STROKE_MON} MON of gas.
+          </p>
           <div className="first-run-choices">
             {FIRST_RUN_CHOICES.map((choice, index) => (
               <button
