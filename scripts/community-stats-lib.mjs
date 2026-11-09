@@ -2,6 +2,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { decodeEventLog, parseAbiItem } from 'viem'
+import { manifestSummary, parseEvents, parseManifest } from './wallet-manifest-lib.mjs'
 
 export const PAINTED = parseAbiItem(
   'event Painted(uint256 indexed season, address indexed owner, address indexed sender, bytes runs, bytes corruptions, uint32 unitsSpent, uint16 regionsMask)',
@@ -67,7 +68,14 @@ export function parseArgs(argv) {
     } else if (arg === '--agents-file') {
       // AI agent wallets (AGENT.EXE): counted in the totals, and on their own next to the humans.
       out.agents.push(...addressesIn(readFileSync(next(), 'utf8')))
-    } else if (arg === '--json') out.json = true
+    } else if (arg === '--manifest') {
+      // docs/wallets.json: the public list of excluded wallets and AI agents, by category.
+      const manifest = parseManifest(readFileSync(next(), 'utf8'))
+      out.exclude.push(...manifest.exclude)
+      out.agents.push(...manifest.agents)
+      out.walletGroups = manifestSummary(manifest)
+    } else if (arg === '--events') out.events = parseEvents(readFileSync(next(), 'utf8'))
+    else if (arg === '--json') out.json = true
     // Local cache of the events already read (public chain data only), so later runs fetch only new blocks.
     else if (arg === '--cache') out.cache = next()
     else if (arg === '--no-cache') out.cache = undefined
@@ -91,7 +99,7 @@ export function parseArgs(argv) {
     throw new Error('--season picks its own blocks; leave out --since and --from-block')
   if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 16)
     throw new Error('--concurrency must be 1-16')
-  out.exclude = out.exclude.map((value) => value.toLowerCase())
+  out.exclude = [...new Set(out.exclude.map((value) => value.toLowerCase()))]
   const excluded = new Set(out.exclude)
   out.agents = [...new Set(out.agents.map((value) => value.toLowerCase()))].filter(
     (value) => !excluded.has(value),
@@ -118,6 +126,29 @@ export function runPixels(runsHex) {
     if (x1 >= x0) pixels += x1 - x0 + 1
   }
   return pixels
+}
+
+/**
+ * Painted logs → plain records for the engagement numbers ({ owner, block, time, pixels, season }), excluded
+ * wallets dropped. Logs without a timestamp keep time undefined (only block windows can match them).
+ */
+export function paintRecords(logs, exclude = []) {
+  const skip = new Set(exclude.map((value) => value.toLowerCase()))
+  const out = []
+  for (const log of logs) {
+    const args = decode(PAINTED, log)
+    if (!args) continue
+    const owner = String(args.owner).toLowerCase()
+    if (skip.has(owner)) continue
+    out.push({
+      owner,
+      block: BigInt(log.blockNumber),
+      time: log.blockTimestamp != null ? Number(log.blockTimestamp) : undefined,
+      pixels: runPixels(args.runs),
+      season: Number(args.season),
+    })
+  }
+  return out
 }
 
 /** Every `"address": "0x…"` in a wallets file (the --exclude-file / --agents-file format). */

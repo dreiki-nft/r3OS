@@ -1,0 +1,183 @@
+{
+  "version": 1,
+  "description": "Named windows the community numbers report on. Activity inside any window counts as event activity, outside every window as organic. Block windows are inclusive; time windows (unix seconds, UTC) include start and exclude end.",
+  "events": [
+    {
+      "id": "storm-1",
+      "label": "DF1 storm 1",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 115400000,
+      "endBlock": 115400599
+    },
+    {
+      "id": "storm-2",
+      "label": "DF1 storm 2",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 115600000,
+      "endBlock": 115600599
+    },
+    {
+      "id": "storm-3",
+      "label": "DF1 storm 3",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 115800000,
+      "endBlock": 115800599
+    },
+    {
+      "id": "storm-4",
+      "label": "DF1 storm 4",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 116000000,
+      "endBlock": 116000599
+    },
+    {
+      "id": "storm-5",
+      "label": "DF1 storm 5",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 116200000,
+      "endBlock": 116200599
+    },
+    {
+      "id": "storm-6",
+      "label": "DF1 storm 6",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 116400000,
+      "endBlock": 116400599
+    },
+    {
+      "id": "storm-7",
+      "label": "DF1 storm 7",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 116600000,
+      "endBlock": 116600599
+    },
+    {
+      "id": "storm-8",
+      "label": "DF1 storm 8",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 116800000,
+      "endBlock": 116800599
+    },
+    {
+      "id": "storm-9",
+      "label": "DF1 storm 9",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 117000000,
+      "endBlock": 117000599
+    },
+    {
+      "id": "storm-10",
+      "label": "DF1 storm 10",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 117200000,
+      "endBlock": 117200599
+    },
+    {
+      "id": "storm-11",
+      "label": "DF1 storm 11",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 117400000,
+      "endBlock": 117400599
+    },
+    {
+      "id": "storm-12",
+      "label": "DF1 storm 12",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 117600000,
+      "endBlock": 117600599
+    },
+    {
+      "id": "storm-13",
+      "label": "DF1 storm 13",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 117800000,
+      "endBlock": 117800599
+    },
+    {
+      "id": "storm-14",
+      "label": "DF1 storm 14",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 118000000,
+      "endBlock": 118000599
+    },
+    {
+      "id": "storm-15",
+      "label": "DF1 storm 15",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 118200000,
+      "endBlock": 118200599
+    },
+    {
+      "id": "storm-16",
+      "label": "DF1 storm 16",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 118400000,
+      "endBlock": 118400599
+    },
+    {
+      "id": "storm-17",
+      "label": "DF1 storm 17",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 118600000,
+      "endBlock": 118600599
+    },
+    {
+      "id": "storm-18",
+      "label": "DF1 storm 18",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 118800000,
+      "endBlock": 118800599
+    },
+    {
+      "id": "storm-19",
+      "label": "DF1 storm 19",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 119000000,
+      "endBlock": 119000599
+    },
+    {
+      "id": "storm-20",
+      "label": "DF1 storm 20",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 119200000,
+      "endBlock": 119200599
+    },
+    {
+      "id": "storm-21",
+      "label": "DF1 storm 21",
+      "kind": "storm",
+      "season": 1,
+      "startBlock": 119400000,
+      "endBlock": 119400599
+    },
+    {
+      "id": "agent-exe-1",
+      "label": "AGENT.EXE (season 2 opener)",
+      "kind": "battle",
+      "season": 2,
+      "start": 1793876400,
+      "end": 1794135600,
+      "note": "Scheduled 72 hours, Nov 5 11:00 to Nov 8 11:00 UTC. The AI was defeated at 1794121678 (Nov 8 07:07:58 UTC); the window keeps the scheduled end so the rules' last hours are included."
+    }
+  ]
+}

@@ -1,0 +1,522 @@
+{
+  "version": 1,
+  "description": "Every wallet the r3OS community numbers treat differently, with public addresses only. \"excluded\" wallets are left out of every community number; \"agents\" are counted, and also shown apart from humans. Everyone else is a human painter. Used by scripts/community-stats.mjs --manifest and npm run season:refresh.",
+  "revised": [
+    {
+      "date": "2026-11-09",
+      "change": "First public version. The four r3tards NFT team wallets (the same list the raffle contract treats as team) moved from counted to excluded; season 1 and season 2 numbers were recomputed."
+    }
+  ],
+  "groups": [
+    {
+      "id": "project",
+      "label": "r3OS project wallet",
+      "treatment": "excluded",
+      "description": "Deploys and owns the contracts, holds the treasury and sends prizes.",
+      "wallets": [
+        {
+          "address": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA",
+          "name": "project wallet"
+        }
+      ]
+    },
+    {
+      "id": "builder",
+      "label": "Builder's personal wallet",
+      "treatment": "excluded",
+      "description": "The builder (dreiki) paints and tests with it; it never counts as community and never wins anything.",
+      "wallets": [
+        {
+          "address": "0x649995F20D11F54188e865D8a4ADcFDE4692ecd1",
+          "name": "dreiki.nad"
+        }
+      ]
+    },
+    {
+      "id": "judges",
+      "label": "Judge guest wallets",
+      "treatment": "excluded",
+      "description": "Pre-funded guest wallets handed to hackathon judges so they could paint without their own MON.",
+      "wallets": [
+        {
+          "address": "0x94D3Bb7F98767410A6b8aBeB4c985F62dc849e48"
+        },
+        {
+          "address": "0xc3de98993B34da1c99C24d6aE1Ddb19d55D0182c"
+        },
+        {
+          "address": "0x3bDEe2b2B356E48fAfd05ce9858F15fC628ad952"
+        },
+        {
+          "address": "0x6f6d847BC8C884e875784Ce49f21108cC5761cbB"
+        },
+        {
+          "address": "0xE61709E9BF41005A64aC0eF9851291d4e04fbbE2"
+        }
+      ]
+    },
+    {
+      "id": "r3tards-team",
+      "label": "r3tards NFT team wallets",
+      "treatment": "excluded",
+      "description": "The r3tards collection’s own wallets; the raffle contract treats the same four as team and never picks them.",
+      "wallets": [
+        {
+          "address": "0xdfC19DD5f80048dF12D7a71cB01226F8ce24a954",
+          "name": "community treasury"
+        },
+        {
+          "address": "0x18D5346216315667C51D69F346E3C768136F8018",
+          "name": "activation wallet"
+        },
+        {
+          "address": "0xf10eD040f182511ef2179AdeA749920881A4eef9",
+          "name": "collab wallet"
+        },
+        {
+          "address": "0xec823eAffA4584f482a0d9c3E634840d14066242",
+          "name": "lock contract"
+        }
+      ]
+    },
+    {
+      "id": "anons",
+      "label": "Project-run anon wallets",
+      "treatment": "excluded",
+      "description": "A treasury and 33 small wallets (anon-01.r3 … anon-33.r3) run by the project from October 19 to the end of season 1: they kept a green eye on the canvas to exercise the paint flow under real conditions. Their MON went back to the project wallet on November 8.",
+      "wallets": [
+        {
+          "address": "0x155e5A2C8AF03E0d703e70345CCaB234ECE62A35",
+          "name": "anon treasury"
+        },
+        {
+          "address": "0xB837289A61c76560147955ddA7c28Bf09267f014"
+        },
+        {
+          "address": "0x5838cD28aC3D8b268928bD73F8Daeaa6066b7a60"
+        },
+        {
+          "address": "0xDEe8BB42f0A123873aD78FA2cbd002cfa490cD15"
+        },
+        {
+          "address": "0x5995dcBf86B4A05d98DB2b6F4C663F7b01efcf1c"
+        },
+        {
+          "address": "0xd124E6B63B19582B5589f26c66b99E9977F4d6f5"
+        },
+        {
+          "address": "0xB9A2eE56B2848007d17037C5bC16D7E3B4643503"
+        },
+        {
+          "address": "0xF90854D63abB7b41de3f097CF432B01C42f429C8"
+        },
+        {
+          "address": "0xfbBa4855aef1fdD993F7e08d8445BAD4620E8e30"
+        },
+        {
+          "address": "0x3ff2A2e19264f1d4783b9644F530748176eE6505"
+        },
+        {
+          "address": "0xCc5ea4c9614c6d1D14f4e8a7BEcE699fbeCc5Dad"
+        },
+        {
+          "address": "0x126a859a0fc27Af1E3537Aa02fe7156024bBe470"
+        },
+        {
+          "address": "0xD50D7A2dff9ad6D852178Ed0f69F7eF2C926C520"
+        },
+        {
+          "address": "0xb6b9886Aec1e476BDAC677Fa6517a601D27A6A9b"
+        },
+        {
+          "address": "0xeB2f51c6596C90774A6910c42A8E8C54481c86a9"
+        },
+        {
+          "address": "0xB1f7876E500e4991C1a62dBf90C325f7DAa109e1"
+        },
+        {
+          "address": "0x6650B9bae5935ab2A42dC07A75D23B381373BEba"
+        },
+        {
+          "address": "0x690c14d9acC8d6eab2F2983c708d242173247589"
+        },
+        {
+          "address": "0xB376432C4dc44BB4012Aa36bD58df07b87F12BE1"
+        },
+        {
+          "address": "0x339faa098A47A7d1449f8Bd9ABA55104d3C00CeA"
+        },
+        {
+          "address": "0x4d619FF8BD4821d5Ba547eEA1074132277774654"
+        },
+        {
+          "address": "0x05cf4588da1ad42d88f9E51A491e364F0F6E43c9"
+        },
+        {
+          "address": "0x4Bcadb95e0BA55aD4bd8Ad62de6F432DB9376Bde"
+        },
+        {
+          "address": "0xdf7257a33a56CA8ab9cEE0F9264E36C09af8AeD8"
+        },
+        {
+          "address": "0x4687c33df7CB858070c6d71Ba7e9fAb3E0Eb3c47"
+        },
+        {
+          "address": "0x0560F87078B22910d31525cfC8c368c32D38e0A7"
+        },
+        {
+          "address": "0xBE530ABA8904429408A94F85ff37FbE731E095a0"
+        },
+        {
+          "address": "0x30752bdB629540850E43158A78cEF2E30b9543a1"
+        },
+        {
+          "address": "0x867e213A6caC73884065094f6f1009270ea9fad4"
+        },
+        {
+          "address": "0xD639261090F465eA3B2447f532ca2456049A6551"
+        },
+        {
+          "address": "0x3f76BD8D334f2EBF781216Ea279feE685F6fa086"
+        },
+        {
+          "address": "0x951aAaCeCc85f0d1B9098f150Dc966B45B483936"
+        },
+        {
+          "address": "0x6cD81593EDd8bd5E4FB147e183a7419EDC4DbCAC"
+        },
+        {
+          "address": "0x3BFB39DA46dB3725A8fA0bef5367BE86A214E2cE"
+        }
+      ]
+    },
+    {
+      "id": "agent-exe-infra",
+      "label": "AGENT.EXE treasury",
+      "treatment": "excluded",
+      "description": "Funded and topped up the 77 agents; never painted. Swept back to the project wallet on November 8.",
+      "wallets": [
+        {
+          "address": "0x00B177c9127bB3C8DCE9754BF6E7489B241920b1",
+          "name": "agent treasury"
+        }
+      ]
+    },
+    {
+      "id": "agents",
+      "label": "AGENT.EXE AI agents",
+      "treatment": "agents",
+      "description": "The 77 AI agents of the season 2 opener (November 5–8). Counted in season totals and shown apart from humans everywhere.",
+      "wallets": [
+        {
+          "address": "0x963eC1fc152F621d7D8D118E8BE537d8B5af7a2B",
+          "name": "harlan.r3"
+        },
+        {
+          "address": "0x498484738697CE2D1bbA5B047a1b3CCF35a29B3B",
+          "name": "voss.r3"
+        },
+        {
+          "address": "0x5bcCe8528baA8D24e25934E99793e10A2e34e2f5",
+          "name": "mercer.r3"
+        },
+        {
+          "address": "0x9b265CC05204c859Ac789BeFC959Ad9eef8Be2B3",
+          "name": "calder.r3"
+        },
+        {
+          "address": "0xb4708e66d72c374B5B97AFd2C5E508032E232835",
+          "name": "dorne.r3"
+        },
+        {
+          "address": "0x1dF39De3bb2532d3E0a1cC09F29eEfCDb9745446",
+          "name": "ashby.r3"
+        },
+        {
+          "address": "0x8CccC63195C0F8D171dB4f060da68212FeD85d09",
+          "name": "kessler.r3"
+        },
+        {
+          "address": "0x153cA3A8661fE2D090634A592566f2654BA8e455",
+          "name": "rourke.r3"
+        },
+        {
+          "address": "0x507ce327eFe35839d243dC78973297CD19d65c8C",
+          "name": "thorne.r3"
+        },
+        {
+          "address": "0x6E6B3F2BA6eC97c149fdBBeDa876EadaDF733486",
+          "name": "vance.r3"
+        },
+        {
+          "address": "0x045Ec6F0Cc7bf907A5D265CfE024341038bfFeC1",
+          "name": "holloway.r3"
+        },
+        {
+          "address": "0xB8Bc6d9aA2C7372aD63a14128d5eb4D16fC5e777",
+          "name": "sterling.r3"
+        },
+        {
+          "address": "0x957BaF12C7e44737bFE451e85A4f137Df08bB7da",
+          "name": "garrick.r3"
+        },
+        {
+          "address": "0x74a3D4d37644F1699C96192e63d5641Db1C54E42",
+          "name": "pryce.r3"
+        },
+        {
+          "address": "0x4fAbaA6653447A278629791818f60fAE9eE7f18a",
+          "name": "whitlock.r3"
+        },
+        {
+          "address": "0xe683b7279b07e9320cDB7921C2cAFB67c13c43a1",
+          "name": "bramwell.r3"
+        },
+        {
+          "address": "0xb05A1a3fd05C5AE6A53240c49bFd0026E37948B3",
+          "name": "crane.r3"
+        },
+        {
+          "address": "0xaa9A7315D172Cb6AeBF53A9eba3e4313c59C7F6E",
+          "name": "decker.r3"
+        },
+        {
+          "address": "0x14bB49A9a1375d317C0E7E030213346D4Ee9f95b",
+          "name": "ellison.r3"
+        },
+        {
+          "address": "0x32eA51aa57004116A4B735A196633B4226b69098",
+          "name": "faulkner.r3"
+        },
+        {
+          "address": "0x4D20679Dd1Af9E00059020E2044B131e6d7eD10b",
+          "name": "graves.r3"
+        },
+        {
+          "address": "0x3aBcaDda49dfe0FBA259d60969cbB23989f8a7CB",
+          "name": "hendrix.r3"
+        },
+        {
+          "address": "0x0174A3368e32c2832fe309EcC0383A87B44B6AFC",
+          "name": "ingram.r3"
+        },
+        {
+          "address": "0x02981150736933b2bB521dFC77D2159d4ec2170A",
+          "name": "jarvis.r3"
+        },
+        {
+          "address": "0xbCD1eF1F08D363b28de717B633A452Fc76c9ede2",
+          "name": "kemp.r3"
+        },
+        {
+          "address": "0xbE5FF67FE581B749C847EB49121d712539Be79D4",
+          "name": "lomax.r3"
+        },
+        {
+          "address": "0xf833b4943BED5028bc155c98a9c82B40ED3206e0",
+          "name": "marsh.r3"
+        },
+        {
+          "address": "0xc230dF09Dafcd11C886AaE612430bA12A64fAe3F",
+          "name": "nolan.r3"
+        },
+        {
+          "address": "0x380128A0961FcbA4e61D5e6882113355698625B9",
+          "name": "osborne.r3"
+        },
+        {
+          "address": "0x49BEEd7795186A182107e90d5D0B160486854000",
+          "name": "pike.r3"
+        },
+        {
+          "address": "0x2d86726b123e01Ba744a485951CfA7321af498d4",
+          "name": "quill.r3"
+        },
+        {
+          "address": "0xe4a12Ac69246886e6CbE054C4cD6Ec0D9d4EA8bA",
+          "name": "radcliffe.r3"
+        },
+        {
+          "address": "0x00bF53E959Adfa75F46D26E968E60f05Fc218Aa2",
+          "name": "sawyer.r3"
+        },
+        {
+          "address": "0x31F4e553C88C97B28c253f3d604d23490D90B1d7",
+          "name": "tate.r3"
+        },
+        {
+          "address": "0x5666cA96dd8356552e4941FCB01eC328f4020213",
+          "name": "underhill.r3"
+        },
+        {
+          "address": "0x8e4239B0A1eB1Cb5b52C6D12a6D3E237B59eBACB",
+          "name": "vickers.r3"
+        },
+        {
+          "address": "0xB5531741fbce147823085D6cF3436C70b1ad5D62",
+          "name": "wade.r3"
+        },
+        {
+          "address": "0x4De07dafb2FDd986F435ba6f28b09608667715e9",
+          "name": "yates.r3"
+        },
+        {
+          "address": "0xb7A5e0ECeA3Cda3B85c8a344C43149FE998B1386",
+          "name": "zeller.r3"
+        },
+        {
+          "address": "0xbfd44D5Ca775FF373dA57b3e649AF09644b952C3",
+          "name": "abbott.r3"
+        },
+        {
+          "address": "0x2242C7C246Ab5Dd601789077697598Cf4E298FB0",
+          "name": "blake.r3"
+        },
+        {
+          "address": "0xa491E0DEe3ede43621BAE9De04b00a73F25fb0D4",
+          "name": "corbin.r3"
+        },
+        {
+          "address": "0x1BC0FaB50bc556Ff97003C10b0EfE8997a99deB1",
+          "name": "dalton.r3"
+        },
+        {
+          "address": "0xc851ce96dA79B879b0781bAB38D56B9B5D02f69b",
+          "name": "everett.r3"
+        },
+        {
+          "address": "0xfA12f3Bffa8F410900794Dc07C31bcfDCf447f0f",
+          "name": "fletcher.r3"
+        },
+        {
+          "address": "0xb265F9f06F5c985952A3972b893a50C5656Cf8ca",
+          "name": "gage.r3"
+        },
+        {
+          "address": "0xa0Fa3c62318866160f76D6FCDC77DCA84e72cec7",
+          "name": "hale.r3"
+        },
+        {
+          "address": "0x13C24190bAFe665104Bb12609897E23b9c63A31a",
+          "name": "irving.r3"
+        },
+        {
+          "address": "0x6d04ceb40283c199bB9BB8Ff61016400A8bB9817",
+          "name": "judd.r3"
+        },
+        {
+          "address": "0x6D3823C24a3f6851DE42691Ed8F3D153B213DbC5",
+          "name": "knox.r3"
+        },
+        {
+          "address": "0xE2Db1E99Be3391cc8E38E9C9af2d0ff8A1B684b0",
+          "name": "lang.r3"
+        },
+        {
+          "address": "0xeBCa9023c0C4d29A6E411dE4156c495518a40a9D",
+          "name": "mead.r3"
+        },
+        {
+          "address": "0x4d31810CB3accccF6474008255003e6693ba59B2",
+          "name": "north.r3"
+        },
+        {
+          "address": "0x855401B8b22BE51e7EF0d0C63F3822d87EabBbeC",
+          "name": "orr.r3"
+        },
+        {
+          "address": "0x01d791663A5D4b06c0b44411d7010f9dfcBee136",
+          "name": "payne.r3"
+        },
+        {
+          "address": "0xad1b55F91b0b0A6Cd6c415a9c0A81F71DA8300cb",
+          "name": "quinlan.r3"
+        },
+        {
+          "address": "0x4fb350C094CF71E64B6e332759aA1b38AffbE6e3",
+          "name": "reeve.r3"
+        },
+        {
+          "address": "0x90ea0edba74c618EA8885A0c6c55a55732d273B7",
+          "name": "shaw.r3"
+        },
+        {
+          "address": "0x9936cE5390c5D9fd18f088e5de7e3e2220A06873",
+          "name": "temple.r3"
+        },
+        {
+          "address": "0xD9cfBa106aD34c70EfEB5a3DEc8c636aE32a5dDc",
+          "name": "usher.r3"
+        },
+        {
+          "address": "0x892FB0eA1E4D927FEBA71a80b0fce76cF7b6c38f",
+          "name": "vale.r3"
+        },
+        {
+          "address": "0xcB0161BbD6A85C8F8bBA247b316A141b2Ba8F63D",
+          "name": "ward.r3"
+        },
+        {
+          "address": "0x1A77f51f059dD04153091c9C1c3dF1BBEb88919f",
+          "name": "york.r3"
+        },
+        {
+          "address": "0x96A21B8361f90b34f8BeFd48191Bf5D12743920e",
+          "name": "ames.r3"
+        },
+        {
+          "address": "0x95837dfB8a10D4D1bD0c1Fdf93D87c75AD425fBA",
+          "name": "booth.r3"
+        },
+        {
+          "address": "0x0d9a6803921Ed6C22acDFa69484f7aA5E304352c",
+          "name": "cross.r3"
+        },
+        {
+          "address": "0xD8741e48d82DD70950e1e6119614f9B0e1989B48",
+          "name": "drake.r3"
+        },
+        {
+          "address": "0xa0eAB136Eaea951937A25aB9Bb741ce89Ee94502",
+          "name": "frost.r3"
+        },
+        {
+          "address": "0x2eeb55e274296622940Ec3f4f8338FCb94565E82",
+          "name": "grant.r3"
+        },
+        {
+          "address": "0xc78f35b12A6bbB694Edb1369Aef706A51dD6D61B",
+          "name": "hayes.r3"
+        },
+        {
+          "address": "0x8817c1Bc8a5D8F4BdE67d51F7D40cD3C89f1CE9E",
+          "name": "keane.r3"
+        },
+        {
+          "address": "0x702f7Aa8B50CE7Bf856745AaD8De0BA310EBEeb0",
+          "name": "locke.r3"
+        },
+        {
+          "address": "0x46D104EdDD3cF495DF5cF507f80c8B6d2b68E6e8",
+          "name": "moss.r3"
+        },
+        {
+          "address": "0x4e4Eb6d698e4cE24e2474721a43b8180Ef7f4bF1",
+          "name": "nash.r3"
+        },
+        {
+          "address": "0xFD17eb19cfC030A6C86f7A341C7D71E90F5F27e9",
+          "name": "royce.r3"
+        },
+        {
+          "address": "0x0375906c0B41D1BC10933042ee358E3c57563B5B",
+          "name": "stone.r3"
+        },
+        {
+          "address": "0x10B2Cd233eB0A3E8aAA644935648Aae836bbe4aE",
+          "name": "wolfe.r3"
+        }
+      ]
+    }
+  ]
+}

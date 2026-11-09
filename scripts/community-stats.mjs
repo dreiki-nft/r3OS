@@ -7,10 +7,14 @@
  *   node scripts/community-stats.mjs --since 2026-10-10T21:00:00Z --hours 24 --exclude …   # a launch window
  *   … --painters-out public/season/painters.json    # also each painter's own numbers (My Pass › My Season)
  *   … --season 1 --agents-file ~/Desktop/files/agent-wallets.json   # season 2 only; AI agents counted apart
+ *   … --season 1 --manifest docs/wallets.json --events docs/events.json --json   # the published numbers
  *
  * --season N counts one season (the contract's index: 0 = season 1) from its first block to its last (or the
  * chain head while it runs). --agents-file lists AI agent wallets: they are in the totals, and the JSON also
  * has "humans" and "agents" with each group's own painters, paints, pixels and days.
+ * --manifest docs/wallets.json reads both lists from the public manifest (no private file needed); with --json
+ * and --season the output also has "engagement": active wallets per day and week, D1/D7/D14 cohort retention,
+ * concentration, per-event numbers (--events docs/events.json) and cross-season returns, for humans and agents.
  *
  * Defaults to the accepted mainnet deployment and the public RPC. It never signs or sends anything.
  * Pass --rpc to use another endpoint; the URL is never printed.
@@ -22,6 +26,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { createPublicClient, http, parseAbi } from 'viem'
+import { engagement, DEFINITIONS } from './engagement-lib.mjs'
 import {
   CD_BURNED,
   FRAME_MINTED,
@@ -36,6 +41,7 @@ import {
   readCache,
   scanStart,
   perWallet,
+  paintRecords,
   paintedSeason,
   summarizeSplit,
   unpackLog,
@@ -133,12 +139,13 @@ try {
   let seasonRange
   if (options.season != null) {
     const season = BigInt(options.season)
-    const startBlock = await firstBlockAtOrAfter(BigInt(await readPaint('seasonStartTime', [season])), head)
+    const startsAt = BigInt(await readPaint('seasonStartTime', [season]))
+    const startBlock = await firstBlockAtOrAfter(startsAt, head)
     const endsAt = BigInt((await readPaint('seasonInfo', [season]))[1])
     const headTime = (await client.getBlock({ blockNumber: head })).timestamp
     if (endsAt > 0n && headTime >= endsAt) head = (await firstBlockAtOrAfter(endsAt, head)) - 1n
     if (startBlock > head) throw new Error(`season ${options.season + 1} has not started by block ${head}`)
-    seasonRange = { startBlock }
+    seasonRange = { startBlock, startsAt }
   }
 
   // A launch window: paints are still read from the season start (to tell new painters from earlier ones),
@@ -194,7 +201,16 @@ try {
   const timeWorker = async () => {
     while (next < blocks.length) {
       const block = blocks[next++]
-      times.set(block, (await client.getBlock({ blockNumber: block })).timestamp)
+      // A public RPC drops the odd request in a run of thousands: retry a few times before giving up.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          times.set(block, (await client.getBlock({ blockNumber: block })).timestamp)
+          break
+        } catch (error) {
+          if (attempt >= 4) throw error
+          await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
+        }
+      }
       read += 1
       if (process.stderr.isTTY && read % 50 === 0)
         process.stderr.write(`\rblock times: ${read}/${blocks.length}`)
@@ -250,6 +266,44 @@ try {
       })
     : undefined
   const asOf = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
+
+  // Engagement (one season, JSON): from the same public events, humans and AI agents apart.
+  let engagementOut
+  if (options.json && seasonRange) {
+    const toTime = Number(times.get(head) ?? (await client.getBlock({ blockNumber: head })).timestamp)
+    const coverage = {
+      fromBlock: String(statsFrom),
+      toBlock: String(head),
+      fromTime: Number(seasonRange.startsAt),
+      toTime,
+    }
+    const records = paintRecords(painted.filter(inRange), options.exclude)
+    const all = paintRecords(upTo('painted'), options.exclude)
+    const agents = new Set(options.agents)
+    const group = (list, isAgent) => list.filter((record) => agents.has(record.owner) === isAgent)
+    const windows = options.events ?? []
+    engagementOut = {
+      definitions: DEFINITIONS,
+      humans: engagement({
+        records: group(records, false),
+        all: group(all, false),
+        windows,
+        coverage,
+        season: options.season,
+      }),
+      ...(agents.size
+        ? {
+            agents: engagement({
+              records: group(records, true),
+              all: group(all, true),
+              windows,
+              coverage,
+              season: options.season,
+            }),
+          }
+        : {}),
+    }
+  }
   if (options.json)
     console.log(
       JSON.stringify(
@@ -259,7 +313,9 @@ try {
           fromBlock: String(statsFrom),
           toBlock: String(head),
           asOf,
+          ...(options.walletGroups ? { walletGroups: options.walletGroups } : {}),
           ...(window ? { window } : {}),
+          ...(engagementOut ? { engagement: engagementOut } : {}),
         },
         null,
         2,

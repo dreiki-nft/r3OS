@@ -1,36 +1,36 @@
 {
   "season": 2,
-  "painters": 104,
+  "painters": 103,
   "returningPainters": 74,
-  "paints": 25079,
-  "pixels": 495754,
+  "paints": 25219,
+  "pixels": 493096,
   "frames": {
-    "count": 153,
-    "owners": 9
+    "count": 155,
+    "owners": 8
   },
   "cds": {
-    "count": 2,
-    "owners": 1
+    "count": 3,
+    "owners": 2
   },
   "passes": {
     "count": 0,
     "owners": 0
   },
-  "excluded": 41,
+  "excluded": 46,
   "daily": [
     {
       "day": "2026-11-05",
-      "painters": 101,
-      "newPainters": 101,
-      "paints": 4428,
-      "pixels": 149781
+      "painters": 100,
+      "newPainters": 100,
+      "paints": 4424,
+      "pixels": 147231
     },
     {
       "day": "2026-11-06",
-      "painters": 72,
+      "painters": 71,
       "newPainters": 2,
-      "paints": 11204,
-      "pixels": 179345
+      "paints": 11184,
+      "pixels": 174215
     },
     {
       "day": "2026-11-07",
@@ -41,31 +41,38 @@
     },
     {
       "day": "2026-11-08",
-      "painters": 33,
+      "painters": 34,
       "newPainters": 0,
-      "paints": 1800,
-      "pixels": 42667
+      "paints": 1825,
+      "pixels": 43549
+    },
+    {
+      "day": "2026-11-09",
+      "painters": 7,
+      "newPainters": 0,
+      "paints": 139,
+      "pixels": 4140
     }
   ],
   "humans": {
-    "painters": 27,
+    "painters": 26,
     "returningPainters": 22,
-    "paints": 17078,
-    "pixels": 206634,
+    "paints": 17218,
+    "pixels": 203976,
     "daily": [
       {
         "day": "2026-11-05",
-        "painters": 24,
-        "newPainters": 24,
-        "paints": 2975,
-        "pixels": 38909
+        "painters": 23,
+        "newPainters": 23,
+        "paints": 2971,
+        "pixels": 36359
       },
       {
         "day": "2026-11-06",
-        "painters": 20,
+        "painters": 19,
         "newPainters": 2,
-        "paints": 7054,
-        "pixels": 87629
+        "paints": 7034,
+        "pixels": 82499
       },
       {
         "day": "2026-11-07",
@@ -76,10 +83,17 @@
       },
       {
         "day": "2026-11-08",
-        "painters": 6,
+        "painters": 7,
         "newPainters": 0,
-        "paints": 1392,
-        "pixels": 18064
+        "paints": 1417,
+        "pixels": 18946
+      },
+      {
+        "day": "2026-11-09",
+        "painters": 7,
+        "newPainters": 0,
+        "paints": 139,
+        "pixels": 4140
       }
     ]
   },
@@ -120,6 +134,683 @@
     ]
   },
   "fromBlock": "119594243",
-  "toBlock": "120572457",
-  "asOf": "2026-11-08 21:37 UTC"
+  "toBlock": "120835392",
+  "asOf": "2026-11-09 19:56 UTC",
+  "walletGroups": [
+    {
+      "id": "project",
+      "label": "r3OS project wallet",
+      "treatment": "excluded",
+      "wallets": 1
+    },
+    {
+      "id": "builder",
+      "label": "Builder's personal wallet",
+      "treatment": "excluded",
+      "wallets": 1
+    },
+    {
+      "id": "judges",
+      "label": "Judge guest wallets",
+      "treatment": "excluded",
+      "wallets": 5
+    },
+    {
+      "id": "r3tards-team",
+      "label": "r3tards NFT team wallets",
+      "treatment": "excluded",
+      "wallets": 4
+    },
+    {
+      "id": "anons",
+      "label": "Project-run anon wallets",
+      "treatment": "excluded",
+      "wallets": 34
+    },
+    {
+      "id": "agent-exe-infra",
+      "label": "AGENT.EXE treasury",
+      "treatment": "excluded",
+      "wallets": 1
+    },
+    {
+      "id": "agents",
+      "label": "AGENT.EXE AI agents",
+      "treatment": "agents",
+      "wallets": 77
+    }
+  ],
+  "engagement": {
+    "definitions": {
+      "day": "UTC calendar day",
+      "week": "7 UTC days starting on Monday, labelled by that Monday",
+      "activeWallet": "a wallet that sent at least one successful paint in the period",
+      "cohort": "wallets whose first paint in the data fell on the same UTC day",
+      "retention": "Dn: share of a cohort that painted again exactly n days after its first day; cohorts whose day n is not over yet are left out",
+      "concentration": "share of all paints (or pixels) sent by the busiest wallets; walletsForHalf is how few wallets made 50%",
+      "gini": "0 = every wallet painted the same amount, 1 = one wallet did everything",
+      "event": "activity inside a window from docs/events.json; organic = outside every window",
+      "newWallet": "a wallet whose first paint since the first season started falls in the period"
+    },
+    "humans": {
+      "coverage": {
+        "fromBlock": "119594243",
+        "toBlock": "120835392",
+        "fromTime": 1793876400,
+        "toTime": 1794253200
+      },
+      "active": {
+        "daily": [
+          {
+            "day": "2026-11-05",
+            "wallets": 23
+          },
+          {
+            "day": "2026-11-06",
+            "wallets": 19
+          },
+          {
+            "day": "2026-11-07",
+            "wallets": 19
+          },
+          {
+            "day": "2026-11-08",
+            "wallets": 7
+          },
+          {
+            "day": "2026-11-09",
+            "wallets": 7
+          }
+        ],
+        "weekly": [
+          {
+            "week": "2026-11-02",
+            "wallets": 26
+          },
+          {
+            "week": "2026-11-09",
+            "wallets": 7
+          }
+        ]
+      },
+      "retention": {
+        "overall": {
+          "d1": {
+            "eligible": 26,
+            "retained": 19,
+            "rate": 0.7308
+          },
+          "d7": {
+            "eligible": 0,
+            "retained": 0,
+            "rate": null
+          },
+          "d14": {
+            "eligible": 0,
+            "retained": 0,
+            "rate": null
+          }
+        },
+        "cohorts": [
+          {
+            "day": "2026-11-05",
+            "wallets": 23,
+            "d1": 17,
+            "d7": null,
+            "d14": null
+          },
+          {
+            "day": "2026-11-06",
+            "wallets": 2,
+            "d1": 1,
+            "d7": null,
+            "d14": null
+          },
+          {
+            "day": "2026-11-07",
+            "wallets": 1,
+            "d1": 1,
+            "d7": null,
+            "d14": null
+          }
+        ]
+      },
+      "concentration": {
+        "paints": {
+          "wallets": 26,
+          "total": 17218,
+          "top1": 0.5429,
+          "top5": 0.944,
+          "top10": 0.9749,
+          "top10Percent": 0.9228,
+          "walletsForHalf": 1,
+          "gini": 0.8809
+        },
+        "pixels": {
+          "wallets": 26,
+          "total": 203976,
+          "top1": 0.2511,
+          "top5": 0.7247,
+          "top10": 0.839,
+          "top10Percent": 0.6204,
+          "walletsForHalf": 2,
+          "gini": 0.6528
+        }
+      },
+      "events": {
+        "windows": [
+          {
+            "id": "storm-1",
+            "label": "DF1 storm 1",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-2",
+            "label": "DF1 storm 2",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-3",
+            "label": "DF1 storm 3",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-4",
+            "label": "DF1 storm 4",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-5",
+            "label": "DF1 storm 5",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-6",
+            "label": "DF1 storm 6",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-7",
+            "label": "DF1 storm 7",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-8",
+            "label": "DF1 storm 8",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-9",
+            "label": "DF1 storm 9",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-10",
+            "label": "DF1 storm 10",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-11",
+            "label": "DF1 storm 11",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-12",
+            "label": "DF1 storm 12",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-13",
+            "label": "DF1 storm 13",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-14",
+            "label": "DF1 storm 14",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-15",
+            "label": "DF1 storm 15",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-16",
+            "label": "DF1 storm 16",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-17",
+            "label": "DF1 storm 17",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-18",
+            "label": "DF1 storm 18",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-19",
+            "label": "DF1 storm 19",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-20",
+            "label": "DF1 storm 20",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-21",
+            "label": "DF1 storm 21",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "agent-exe-1",
+            "label": "AGENT.EXE (season 2 opener)",
+            "wallets": 26,
+            "paints": 17021,
+            "pixels": 196990,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          }
+        ],
+        "split": {
+          "eventPaints": 17021,
+          "organicPaints": 197,
+          "eventPixels": 196990,
+          "organicPixels": 6986,
+          "eventOnlyWallets": 18,
+          "organicWallets": 8
+        }
+      },
+      "seasons": {
+        "wallets": 26,
+        "paintedInEarlierSeason": 26,
+        "newThisSeason": 0
+      }
+    },
+    "agents": {
+      "coverage": {
+        "fromBlock": "119594243",
+        "toBlock": "120835392",
+        "fromTime": 1793876400,
+        "toTime": 1794253200
+      },
+      "active": {
+        "daily": [
+          {
+            "day": "2026-11-05",
+            "wallets": 77
+          },
+          {
+            "day": "2026-11-06",
+            "wallets": 52
+          },
+          {
+            "day": "2026-11-07",
+            "wallets": 30
+          },
+          {
+            "day": "2026-11-08",
+            "wallets": 27
+          }
+        ],
+        "weekly": [
+          {
+            "week": "2026-11-02",
+            "wallets": 77
+          }
+        ]
+      },
+      "retention": {
+        "overall": {
+          "d1": {
+            "eligible": 77,
+            "retained": 52,
+            "rate": 0.6753
+          },
+          "d7": {
+            "eligible": 0,
+            "retained": 0,
+            "rate": null
+          },
+          "d14": {
+            "eligible": 0,
+            "retained": 0,
+            "rate": null
+          }
+        },
+        "cohorts": [
+          {
+            "day": "2026-11-05",
+            "wallets": 77,
+            "d1": 52,
+            "d7": null,
+            "d14": null
+          }
+        ]
+      },
+      "concentration": {
+        "paints": {
+          "wallets": 77,
+          "total": 8001,
+          "top1": 0.0621,
+          "top5": 0.2543,
+          "top10": 0.4471,
+          "top10Percent": 0.3767,
+          "walletsForHalf": 12,
+          "gini": 0.5923
+        },
+        "pixels": {
+          "wallets": 77,
+          "total": 289120,
+          "top1": 0.0746,
+          "top5": 0.2893,
+          "top10": 0.4543,
+          "top10Percent": 0.3964,
+          "walletsForHalf": 12,
+          "gini": 0.5177
+        }
+      },
+      "events": {
+        "windows": [
+          {
+            "id": "storm-1",
+            "label": "DF1 storm 1",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-2",
+            "label": "DF1 storm 2",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-3",
+            "label": "DF1 storm 3",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-4",
+            "label": "DF1 storm 4",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-5",
+            "label": "DF1 storm 5",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-6",
+            "label": "DF1 storm 6",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-7",
+            "label": "DF1 storm 7",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-8",
+            "label": "DF1 storm 8",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-9",
+            "label": "DF1 storm 9",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-10",
+            "label": "DF1 storm 10",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-11",
+            "label": "DF1 storm 11",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-12",
+            "label": "DF1 storm 12",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-13",
+            "label": "DF1 storm 13",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-14",
+            "label": "DF1 storm 14",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-15",
+            "label": "DF1 storm 15",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-16",
+            "label": "DF1 storm 16",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-17",
+            "label": "DF1 storm 17",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-18",
+            "label": "DF1 storm 18",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-19",
+            "label": "DF1 storm 19",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-20",
+            "label": "DF1 storm 20",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "storm-21",
+            "label": "DF1 storm 21",
+            "wallets": 0,
+            "paints": 0,
+            "pixels": 0,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          },
+          {
+            "id": "agent-exe-1",
+            "label": "AGENT.EXE (season 2 opener)",
+            "wallets": 77,
+            "paints": 8001,
+            "pixels": 289120,
+            "newWallets": 0,
+            "newWalletsWhoCameBack": 0
+          }
+        ],
+        "split": {
+          "eventPaints": 8001,
+          "organicPaints": 0,
+          "eventPixels": 289120,
+          "organicPixels": 0,
+          "eventOnlyWallets": 77,
+          "organicWallets": 0
+        }
+      },
+      "seasons": {
+        "wallets": 77,
+        "paintedInEarlierSeason": 0,
+        "newThisSeason": 77
+      }
+    }
+  }
 }

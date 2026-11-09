@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="t d" font-family="'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
 <title id="t">r3OS: season 2 day by day on Monad mainnet</title>
-<desc id="d">25,079 strokes: 17,078 by 27 humans, 8,001 by 77 AI agents. 22 humans came back on another day · 4 days of season 2 · teal: humans, red: AI agents. Nov 5: 101 painters, 4428 strokes; Nov 6: 72 painters, 11204 strokes; Nov 7: 49 painters, 7647 strokes; Nov 8: 33 painters, 1800 strokes.</desc>
+<desc id="d">25,219 strokes: 17,218 by 26 humans, 8,001 by 77 AI agents. 22 humans came back on another day · 5 days of season 2 · teal: humans, red: AI agents. Nov 5: 100 painters, 4424 strokes; Nov 6: 71 painters, 11184 strokes; Nov 7: 49 painters, 7647 strokes; Nov 8: 34 painters, 1825 strokes; Nov 9: 7 painters, 139 strokes.</desc>
 <rect width="1200" height="640" fill="#0b0b0c"/>
 <text x="72" y="48" fill="#f2efe9" font-size="24" font-weight="700">r3OS · season 2, day by day on Monad mainnet</text>
-<text x="72" y="78" fill="#d6d2cb" font-size="15">25,079 strokes: 17,078 by 27 humans, 8,001 by 77 AI agents</text>
-<text x="72" y="100" fill="#8f8b85" font-size="13">22 humans came back on another day · 4 days of season 2 · teal: humans, red: AI agents</text>
+<text x="72" y="78" fill="#d6d2cb" font-size="15">25,219 strokes: 17,218 by 26 humans, 8,001 by 77 AI agents</text>
+<text x="72" y="100" fill="#8f8b85" font-size="13">22 humans came back on another day · 5 days of season 2 · teal: humans, red: AI agents</text>
 <text x="72" y="136" fill="#d6d2cb" font-size="15">painters each day</text>
 <line x1="72" x2="1168" y1="320.0" y2="320.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="320.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">0</text>
@@ -14,18 +14,20 @@
 <text x="62" y="206.7" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">100</text>
 <line x1="72" x2="1168" y1="150.0" y2="150.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="150.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">150</text>
-<path d="M177,320V209.53333333333333Q177,205.53333333333333 181,205.53333333333333H237Q241,205.53333333333333 241,209.53333333333333V320Z" fill="#e5484d"><title>Nov 5: 101 painters (24 humans, 77 AI agents)</title></path>
-<rect x="177" y="292.8" width="64" height="27.2" fill="#1fa79c"><title>Nov 5: 101 painters (24 humans, 77 AI agents)</title></rect>
-<text x="209" y="197.53333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">101</text>
-<path d="M451,320V242.4Q451,238.4 455,238.4H511Q515,238.4 515,242.4V320Z" fill="#e5484d"><title>Nov 6: 72 painters (20 humans, 52 AI agents)</title></path>
-<rect x="451" y="297.3" width="64" height="22.7" fill="#1fa79c"><title>Nov 6: 72 painters (20 humans, 52 AI agents)</title></rect>
-<text x="483" y="230.4" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">72</text>
-<path d="M725,320V268.4666666666667Q725,264.4666666666667 729,264.4666666666667H785Q789,264.4666666666667 789,268.4666666666667V320Z" fill="#e5484d"><title>Nov 7: 49 painters (19 humans, 30 AI agents)</title></path>
-<rect x="725" y="298.5" width="64" height="21.5" fill="#1fa79c"><title>Nov 7: 49 painters (19 humans, 30 AI agents)</title></rect>
-<text x="757" y="256.4666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">49</text>
-<path d="M999,320V286.6Q999,282.6 1003,282.6H1059Q1063,282.6 1063,286.6V320Z" fill="#e5484d"><title>Nov 8: 33 painters (6 humans, 27 AI agents)</title></path>
-<rect x="999" y="313.2" width="64" height="6.8" fill="#1fa79c"><title>Nov 8: 33 painters (6 humans, 27 AI agents)</title></rect>
-<text x="1031" y="274.6" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">33</text>
+<path d="M149.6,320V210.66666666666669Q149.6,206.66666666666669 153.6,206.66666666666669H209.6Q213.6,206.66666666666669 213.6,210.66666666666669V320Z" fill="#e5484d"><title>Nov 5: 100 painters (23 humans, 77 AI agents)</title></path>
+<rect x="149.6" y="293.9" width="64" height="26.1" fill="#1fa79c"><title>Nov 5: 100 painters (23 humans, 77 AI agents)</title></rect>
+<text x="181.6" y="198.66666666666669" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">100</text>
+<path d="M368.79999999999995,320V243.53333333333333Q368.79999999999995,239.53333333333333 372.79999999999995,239.53333333333333H428.79999999999995Q432.79999999999995,239.53333333333333 432.79999999999995,243.53333333333333V320Z" fill="#e5484d"><title>Nov 6: 71 painters (19 humans, 52 AI agents)</title></path>
+<rect x="368.79999999999995" y="298.5" width="64" height="21.5" fill="#1fa79c"><title>Nov 6: 71 painters (19 humans, 52 AI agents)</title></rect>
+<text x="400.79999999999995" y="231.53333333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">71</text>
+<path d="M588,320V268.4666666666667Q588,264.4666666666667 592,264.4666666666667H648Q652,264.4666666666667 652,268.4666666666667V320Z" fill="#e5484d"><title>Nov 7: 49 painters (19 humans, 30 AI agents)</title></path>
+<rect x="588" y="298.5" width="64" height="21.5" fill="#1fa79c"><title>Nov 7: 49 painters (19 humans, 30 AI agents)</title></rect>
+<text x="620" y="256.4666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">49</text>
+<path d="M807.1999999999999,320V285.4666666666667Q807.1999999999999,281.4666666666667 811.1999999999999,281.4666666666667H867.1999999999999Q871.1999999999999,281.4666666666667 871.1999999999999,285.4666666666667V320Z" fill="#e5484d"><title>Nov 8: 34 painters (7 humans, 27 AI agents)</title></path>
+<rect x="807.1999999999999" y="312.1" width="64" height="7.9" fill="#1fa79c"><title>Nov 8: 34 painters (7 humans, 27 AI agents)</title></rect>
+<text x="839.1999999999999" y="273.4666666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">34</text>
+<path d="M1026.3999999999999,320V316.06666666666666Q1026.3999999999999,312.06666666666666 1030.3999999999999,312.06666666666666H1086.3999999999999Q1090.3999999999999,312.06666666666666 1090.3999999999999,316.06666666666666V320Z" fill="#1fa79c"><title>Nov 9: 7 painters (7 humans, 0 AI agents)</title></path>
+<text x="1058.3999999999999" y="304.06666666666666" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">7</text>
 <text x="72" y="366" fill="#d6d2cb" font-size="15">strokes each day</text>
 <line x1="72" x2="1168" y1="550.0" y2="550.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="550.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">0</text>
@@ -35,21 +37,24 @@
 <text x="62" y="436.7" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">10,000</text>
 <line x1="72" x2="1168" y1="380.0" y2="380.0" stroke="#232326" stroke-width="1"/>
 <text x="62" y="380.0" dy="4" text-anchor="end" fill="#8f8b85" font-size="12">15,000</text>
-<path d="M177,550V503.816Q177,499.816 181,499.816H237Q241,499.816 241,503.816V550Z" fill="#e5484d"><title>Nov 5: 4,428 strokes (2,975 humans, 1,453 AI agents)</title></path>
-<rect x="177" y="516.3" width="64" height="33.7" fill="#1fa79c"><title>Nov 5: 4,428 strokes (2,975 humans, 1,453 AI agents)</title></rect>
-<text x="209" y="491.816" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">4,428</text>
-<text x="209" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 5</text>
-<path d="M451,550V427.02133333333336Q451,423.02133333333336 455,423.02133333333336H511Q515,423.02133333333336 515,427.02133333333336V550Z" fill="#e5484d"><title>Nov 6: 11,204 strokes (7,054 humans, 4,150 AI agents)</title></path>
-<rect x="451" y="470.1" width="64" height="79.9" fill="#1fa79c"><title>Nov 6: 11,204 strokes (7,054 humans, 4,150 AI agents)</title></rect>
-<text x="483" y="415.02133333333336" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">11,204</text>
-<text x="483" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 6</text>
-<path d="M725,550V467.334Q725,463.334 729,463.334H785Q789,463.334 789,467.334V550Z" fill="#e5484d"><title>Nov 7: 7,647 strokes (5,657 humans, 1,990 AI agents)</title></path>
-<rect x="725" y="485.9" width="64" height="64.1" fill="#1fa79c"><title>Nov 7: 7,647 strokes (5,657 humans, 1,990 AI agents)</title></rect>
-<text x="757" y="455.334" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">7,647</text>
-<text x="757" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 7</text>
-<path d="M999,550V533.6Q999,529.6 1003,529.6H1059Q1063,529.6 1063,533.6V550Z" fill="#e5484d"><title>Nov 8: 1,800 strokes (1,392 humans, 408 AI agents)</title></path>
-<rect x="999" y="534.2" width="64" height="15.8" fill="#1fa79c"><title>Nov 8: 1,800 strokes (1,392 humans, 408 AI agents)</title></rect>
-<text x="1031" y="521.6" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">1,800</text>
-<text x="1031" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 8</text>
-<text x="72" y="618" fill="#8f8b85" font-size="12">UTC days, the last one still running · Paint contract events, blocks 119594243–120572457 · builder, guest and project-run wallets excluded · AI agents counted</text>
+<path d="M149.6,550V503.86133333333333Q149.6,499.86133333333333 153.6,499.86133333333333H209.6Q213.6,499.86133333333333 213.6,503.86133333333333V550Z" fill="#e5484d"><title>Nov 5: 4,424 strokes (2,971 humans, 1,453 AI agents)</title></path>
+<rect x="149.6" y="516.3" width="64" height="33.7" fill="#1fa79c"><title>Nov 5: 4,424 strokes (2,971 humans, 1,453 AI agents)</title></rect>
+<text x="181.6" y="491.86133333333333" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">4,424</text>
+<text x="181.6" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 5</text>
+<path d="M368.79999999999995,550V427.248Q368.79999999999995,423.248 372.79999999999995,423.248H428.79999999999995Q432.79999999999995,423.248 432.79999999999995,427.248V550Z" fill="#e5484d"><title>Nov 6: 11,184 strokes (7,034 humans, 4,150 AI agents)</title></path>
+<rect x="368.79999999999995" y="470.3" width="64" height="79.7" fill="#1fa79c"><title>Nov 6: 11,184 strokes (7,034 humans, 4,150 AI agents)</title></rect>
+<text x="400.79999999999995" y="415.248" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">11,184</text>
+<text x="400.79999999999995" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 6</text>
+<path d="M588,550V467.334Q588,463.334 592,463.334H648Q652,463.334 652,467.334V550Z" fill="#e5484d"><title>Nov 7: 7,647 strokes (5,657 humans, 1,990 AI agents)</title></path>
+<rect x="588" y="485.9" width="64" height="64.1" fill="#1fa79c"><title>Nov 7: 7,647 strokes (5,657 humans, 1,990 AI agents)</title></rect>
+<text x="620" y="455.334" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">7,647</text>
+<text x="620" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 7</text>
+<path d="M807.1999999999999,550V533.3166666666667Q807.1999999999999,529.3166666666667 811.1999999999999,529.3166666666667H867.1999999999999Q871.1999999999999,529.3166666666667 871.1999999999999,533.3166666666667V550Z" fill="#e5484d"><title>Nov 8: 1,825 strokes (1,417 humans, 408 AI agents)</title></path>
+<rect x="807.1999999999999" y="533.9" width="64" height="16.1" fill="#1fa79c"><title>Nov 8: 1,825 strokes (1,417 humans, 408 AI agents)</title></rect>
+<text x="839.1999999999999" y="521.3166666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">1,825</text>
+<text x="839.1999999999999" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 8</text>
+<path d="M1026.3999999999999,550V550Q1026.3999999999999,548.4246666666667 1027.9753333333333,548.4246666666667H1088.8246666666664Q1090.3999999999999,548.4246666666667 1090.3999999999999,550V550Z" fill="#1fa79c"><title>Nov 9: 139 strokes (139 humans, 0 AI agents)</title></path>
+<text x="1058.3999999999999" y="540.4246666666667" text-anchor="middle" fill="#f2efe9" font-size="13" font-weight="600">139</text>
+<text x="1058.3999999999999" y="572" text-anchor="middle" fill="#8f8b85" font-size="12">Nov 9</text>
+<text x="72" y="618" fill="#8f8b85" font-size="12">UTC days, the last one still running · Paint contract events, blocks 119594243–120835392 · builder, guest and project-run wallets excluded · AI agents counted</text>
 </svg>

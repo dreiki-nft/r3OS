@@ -49,7 +49,7 @@ export function seasonFiles(season) {
  * The steps, in order, for `season` (the contract's index: 0 = season 1). `rpc` is passed on but never printed
  * (the label never contains it). Storm Chasers and My Season (public/season/painters.json) belong to season 1.
  */
-export function plan({ season = 0, storms, exclude, excludeFiles, agentFiles = [], rpc }) {
+export function plan({ season = 0, storms, exclude = [], excludeFiles = [], agentFiles = [], manifest, events, rpc }) {
   const rpcArgs = rpc ? ['--rpc', rpc] : []
   const excludeArgs = [
     ...(exclude.length ? ['--exclude', exclude.join(',')] : []),
@@ -80,6 +80,9 @@ export function plan({ season = 0, storms, exclude, excludeFiles, agentFiles = [
         '--season',
         String(season),
         ...(first ? ['--painters-out', 'public/season/painters.json'] : []),
+        // The public manifest first (docs/wallets.json), then any local extras.
+        ...(manifest ? ['--manifest', manifest] : []),
+        ...(events ? ['--events', events] : []),
         ...excludeArgs,
         ...agentFiles.flatMap((file) => ['--agents-file', file]),
         ...rpcArgs,

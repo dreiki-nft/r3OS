@@ -13,8 +13,10 @@
  *   node scripts/season-refresh.mjs --rpc <url>  # another endpoint; never printed
  *   node scripts/season-refresh.mjs --season 0   # a season that has ended (0 = season 1): its final numbers
  *
- * Wallets that are not community (builder, judge guests, anons) come from season-refresh.local.json
- * (gitignored), the same list for stats and storm tickets. Read-only: nothing is signed or sent.
+ * Wallets that are not community (builder, judge guests, project-run anons) and the AI agents come from the
+ * public manifest docs/wallets.json, and event windows from docs/events.json, so anyone can rerun this with no
+ * private file. season-refresh.local.json (gitignored) is optional: extra exclusions, and the list used for the
+ * season 1 storm tickets. Read-only: nothing is signed or sent.
  */
 import { closeSync, existsSync, openSync, readFileSync, renameSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
@@ -22,6 +24,8 @@ import { createPublicClient, http, parseAbi } from 'viem'
 import { finishedStorms, parseConfig, plan, refreshedFiles } from './season-refresh-lib.mjs'
 
 const CONFIG = 'season-refresh.local.json'
+const MANIFEST = 'docs/wallets.json'
+const EVENTS = 'docs/events.json'
 const argv = process.argv.slice(2)
 let rpc
 let seasonFlag
@@ -34,14 +38,14 @@ for (let i = 0; i < argv.length; i++) {
   }
 }
 
-if (!existsSync(CONFIG)) {
-  console.error(
-    `season-refresh: ${CONFIG} is missing. Create it in the repo folder (it is gitignored):\n` +
-      `  { "exclude": ["0xYourWallet", "0xGuestWallet"], "excludeFiles": ["~/Desktop/files/anon-wallets.json"] }`,
-  )
-  process.exit(2)
+const hasManifest = existsSync(MANIFEST)
+if (!hasManifest && !existsSync(CONFIG)) {
+  console.error(`season-refresh: neither ${MANIFEST} nor ${CONFIG} exists, so nothing would be excluded`)
+  process.exit(1)
 }
-const config = parseConfig(readFileSync(CONFIG, 'utf8'))
+const config = existsSync(CONFIG)
+  ? parseConfig(readFileSync(CONFIG, 'utf8'))
+  : { exclude: [], excludeFiles: [], agentFiles: [] }
 for (const file of [...config.excludeFiles, ...config.agentFiles])
   if (!existsSync(file)) {
     console.error(`season-refresh: exclude file not found: ${file}`)
@@ -67,13 +71,20 @@ const season =
     }),
   )
 const storms = finishedStorms(head)
-const steps = plan({ season, storms, ...config, rpc })
+const steps = plan({
+  season,
+  storms,
+  ...config,
+  manifest: hasManifest ? MANIFEST : undefined,
+  events: existsSync(EVENTS) ? EVENTS : undefined,
+  rpc,
+})
 console.log(
   `chain at block ${head} · season ${season + 1}` +
     (season === 0 ? ` · ${storms.length} season storm${storms.length === 1 ? '' : 's'} finished` : '') +
     '\n',
 )
-if (season > 0 && !config.agentFiles.length)
+if (season > 0 && !hasManifest && !config.agentFiles.length)
   console.log(
     `note: no "agentFiles" in ${CONFIG}, so AI agent paints are counted as humans. Add the agent wallets file.\n`,
   )
