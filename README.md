@@ -416,7 +416,7 @@ Open to the public at **[r3os.app](https://r3os.app/)** since **October 10, 2026
 | Contract | Address (MonadVision) | Source on Monadscan |
 | --- | --- | :---: |
 | R3Names (`.r3` names, shown before `.nad`) | [`0x4B8F275be37A312B08f229bc15c84f529Be57853`](https://monadvision.com/address/0x4B8F275be37A312B08f229bc15c84f529Be57853) | [verified](https://monadscan.com/address/0x4b8f275be37a312b08f229bc15c84f529be57853#code) |
-| AgentBattle (AGENT.EXE war chest, payouts, badge days) | [`0x388869dD6a51DD5177e1A59f34aD5feD73A32291`](https://monadvision.com/address/0x388869dD6a51DD5177e1A59f34aD5feD73A32291) | pending |
+| AgentBattle (AGENT.EXE war chest, payouts, badge days) | [`0x388869dD6a51DD5177e1A59f34aD5feD73A32291`](https://monadvision.com/address/0x388869dD6a51DD5177e1A59f34aD5feD73A32291) | [verified](https://monadscan.com/address/0x388869dd6a51dd5177e1a59f34ad5fed73a32291#code) · [source in repo](contracts/deployed/AgentBattle.sol) |
 | r3tards raffle (Pyth Entropy draws) | [`0x478844840df2096Ca08AF5ce8a5CdC632493228f`](https://monadvision.com/address/0x478844840df2096Ca08AF5ce8a5CdC632493228f) | [verified](https://monadscan.com/address/0x478844840df2096ca08af5ce8a5cdc632493228f#code) · [source in repo](contracts/deployed/R3tardsRaffle.sol) |
 
 How the deployment was checked (a real canary paint observed Proposed → Voted → Finalized, finalized launch checks, reproducible evidence hashes): [`docs/submission/MAINNET_EVIDENCE.md`](docs/submission/MAINNET_EVIDENCE.md).

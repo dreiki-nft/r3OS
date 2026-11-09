@@ -1,0 +1,30 @@
+{
+  "contract": "AgentBattle",
+  "address": "0x388869dD6a51DD5177e1A59f34aD5feD73A32291",
+  "chainId": 143,
+  "network": "Monad mainnet",
+  "source": "contracts/deployed/AgentBattle.sol",
+  "compiler": {
+    "version": "0.8.28",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "viaIR": false,
+    "evmVersion": "prague"
+  },
+  "constructorArgs": {
+    "start": "1793876400",
+    "battleSeconds": "259200",
+    "rescueDelaySeconds": "2592000",
+    "initialOwner": "0x40Ea55E0b8f02f8eBc9D91e082e202ed988647fA"
+  },
+  "constructorArgsMeaning": "Battle from 2026-11-05 11:00 UTC for 72 hours (to 2026-11-08 11:00 UTC); the owner can rescue leftover funds only after a further 30 days (2026-12-08 11:00 UTC). Owner is the project wallet.",
+  "verification": {
+    "monadscan": "https://monadscan.com/address/0x388869dd6a51dd5177e1a59f34ad5fed73a32291#code",
+    "sourcify": "https://repo.sourcify.dev/contracts/full_match/143/0x388869dD6a51DD5177e1A59f34aD5feD73A32291/",
+    "status": "exact_match",
+    "explorer": "https://monadvision.com/address/0x388869dD6a51DD5177e1A59f34aD5feD73A32291"
+  },
+  "note": "This copy is the exact source that was deployed and verified (Sourcify exact match). contracts/src/agentexe/AgentBattle.sol has the same code with pragma ^0.8.28 and is built by this repo's Foundry config with via-IR, which produces different bytecode, so verify against this file and these settings, not that one."
+}
