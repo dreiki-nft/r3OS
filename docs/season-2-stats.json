@@ -2,8 +2,8 @@
   "season": 2,
   "painters": 103,
   "returningPainters": 74,
-  "paints": 25219,
-  "pixels": 493096,
+  "paints": 25269,
+  "pixels": 494504,
   "frames": {
     "count": 155,
     "owners": 8
@@ -52,13 +52,20 @@
       "newPainters": 0,
       "paints": 139,
       "pixels": 4140
+    },
+    {
+      "day": "2026-11-10",
+      "painters": 1,
+      "newPainters": 0,
+      "paints": 50,
+      "pixels": 1408
     }
   ],
   "humans": {
     "painters": 26,
     "returningPainters": 22,
-    "paints": 17218,
-    "pixels": 203976,
+    "paints": 17268,
+    "pixels": 205384,
     "daily": [
       {
         "day": "2026-11-05",
@@ -94,6 +101,13 @@
         "newPainters": 0,
         "paints": 139,
         "pixels": 4140
+      },
+      {
+        "day": "2026-11-10",
+        "painters": 1,
+        "newPainters": 0,
+        "paints": 50,
+        "pixels": 1408
       }
     ]
   },
@@ -134,8 +148,8 @@
     ]
   },
   "fromBlock": "119594243",
-  "toBlock": "120850611",
-  "asOf": "2026-11-09 20:57 UTC",
+  "toBlock": "121114679",
+  "asOf": "2026-11-10 19:28 UTC",
   "walletGroups": [
     {
       "id": "project",
@@ -196,9 +210,9 @@
     "humans": {
       "coverage": {
         "fromBlock": "119594243",
-        "toBlock": "120850611",
+        "toBlock": "121114679",
         "fromTime": 1793876400,
-        "toTime": 1794257814
+        "toTime": 1794338017
       },
       "active": {
         "daily": [
@@ -221,6 +235,10 @@
           {
             "day": "2026-11-09",
             "wallets": 7
+          },
+          {
+            "day": "2026-11-10",
+            "wallets": 1
           }
         ],
         "weekly": [
@@ -279,23 +297,23 @@
       "concentration": {
         "paints": {
           "wallets": 26,
-          "total": 17218,
-          "top1": 0.5429,
-          "top5": 0.944,
+          "total": 17268,
+          "top1": 0.5413,
+          "top5": 0.9421,
           "top10": 0.9749,
-          "top10Percent": 0.9228,
+          "top10Percent": 0.9201,
           "walletsForHalf": 1,
-          "gini": 0.8809
+          "gini": 0.8801
         },
         "pixels": {
           "wallets": 26,
-          "total": 203976,
-          "top1": 0.2511,
-          "top5": 0.7247,
+          "total": 205384,
+          "top1": 0.2493,
+          "top5": 0.7197,
           "top10": 0.839,
-          "top10Percent": 0.6204,
-          "walletsForHalf": 2,
-          "gini": 0.6528
+          "top10Percent": 0.6162,
+          "walletsForHalf": 3,
+          "gini": 0.6507
         }
       },
       "events": {
@@ -501,9 +519,9 @@
         ],
         "split": {
           "eventPaints": 17021,
-          "organicPaints": 197,
+          "organicPaints": 247,
           "eventPixels": 196990,
-          "organicPixels": 6986,
+          "organicPixels": 8394,
           "eventOnlyWallets": 18,
           "organicWallets": 8
         }
@@ -532,9 +550,9 @@
     "agents": {
       "coverage": {
         "fromBlock": "119594243",
-        "toBlock": "120850611",
+        "toBlock": "121114679",
         "fromTime": 1793876400,
-        "toTime": 1794257814
+        "toTime": 1794338017
       },
       "active": {
         "daily": [
