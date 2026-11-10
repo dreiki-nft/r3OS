@@ -39,15 +39,27 @@ export function parseConfig(text, home) {
   return { exclude, excludeFiles: files('excludeFiles'), agentFiles: files('agentFiles') }
 }
 
-/** Where a season's numbers go. Season 1 keeps the names the README has always linked. */
+/**
+ * Where a season's numbers go. Season 1 keeps the names the README (and the app) have always used. `painters` is
+ * each painter's own numbers and rank, read by My Pass.
+ */
 export function seasonFiles(season) {
-  if (season === 0) return { stats: 'docs/season-stats.json', chart: 'docs/media/season-days.svg' }
-  return { stats: `docs/season-${season + 1}-stats.json`, chart: `docs/media/season-${season + 1}-days.svg` }
+  if (season === 0)
+    return {
+      stats: 'docs/season-stats.json',
+      chart: 'docs/media/season-days.svg',
+      painters: 'public/season/painters.json',
+    }
+  return {
+    stats: `docs/season-${season + 1}-stats.json`,
+    chart: `docs/media/season-${season + 1}-days.svg`,
+    painters: `public/season/painters-${season + 1}.json`,
+  }
 }
 
 /**
  * The steps, in order, for `season` (the contract's index: 0 = season 1). `rpc` is passed on but never printed
- * (the label never contains it). Storm Chasers and My Season (public/season/painters.json) belong to season 1.
+ * (the label never contains it). Every season writes its painters file for My Pass; Storm Chasers is season 1's.
  */
 export function plan({ season = 0, storms, exclude = [], excludeFiles = [], agentFiles = [], manifest, events, rpc }) {
   const rpcArgs = rpc ? ['--rpc', rpc] : []
@@ -55,7 +67,7 @@ export function plan({ season = 0, storms, exclude = [], excludeFiles = [], agen
     ...(exclude.length ? ['--exclude', exclude.join(',')] : []),
     ...excludeFiles.flatMap((file) => ['--exclude-file', file]),
   ]
-  const { stats, chart } = seasonFiles(season)
+  const { stats, chart, painters } = seasonFiles(season)
   const first = season === 0
   const steps = [
     {
@@ -69,7 +81,7 @@ export function plan({ season = 0, storms, exclude = [], excludeFiles = [], agen
       args: [...rpcArgs],
     },
     {
-      label: `season ${season + 1} stats (${stats}${first ? ', public/season/painters.json' : ''})`,
+      label: `season ${season + 1} stats (${stats}, ${painters})`,
       script: 'scripts/community-stats.mjs',
       args: [
         '--range',
@@ -79,7 +91,8 @@ export function plan({ season = 0, storms, exclude = [], excludeFiles = [], agen
         '--json',
         '--season',
         String(season),
-        ...(first ? ['--painters-out', 'public/season/painters.json'] : []),
+        '--painters-out',
+        painters,
         // The public manifest first (docs/wallets.json), then any local extras.
         ...(manifest ? ['--manifest', manifest] : []),
         ...(events ? ['--events', events] : []),
@@ -113,12 +126,13 @@ export function plan({ season = 0, storms, exclude = [], excludeFiles = [], agen
 
 /** Files the refresh can change in `season`, for the `git add` it prints at the end. */
 export function refreshedFiles(season = 0) {
-  const { stats, chart } = seasonFiles(season)
+  const { stats, chart, painters } = seasonFiles(season)
   return [
     'public/replay',
     'public/live/sessions.json',
     stats,
     chart,
-    ...(season === 0 ? ['public/season/painters.json', 'public/storms/season-1.json'] : []),
+    painters,
+    ...(season === 0 ? ['public/storms/season-1.json'] : []),
   ]
 }

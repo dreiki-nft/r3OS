@@ -9,6 +9,7 @@ import { getPresenceSnapshot, PRESENCE_WINDOW_BLOCKS, subscribePresence, summari
 import { openProgram } from '../os/programs'
 import { Button } from '../os/ui/Button'
 import { currentOrNextStorm } from '../storms/stormBoard'
+import { loadSeasonPainters } from '../pass/seasonRank'
 import { LEVEL_TEXT, ago, chainLevel, overall, rpcSummary, type Level } from './statusModel'
 import './status.css'
 
@@ -64,18 +65,21 @@ export function StatusProgram() {
       fetch(path, { cache: 'no-cache' })
         .then((response) => (response.ok ? response.json() : undefined))
         .catch(() => undefined)
-    void Promise.all([read('/storms/season-1.json'), read('/season/painters.json')]).then(
-      ([storms, painters]) =>
-        setFresh({
-          storms:
-            storms?.updatedAt != null
-              ? {
-                  at: Date.parse(storms.updatedAt),
-                  counted: Math.max(0, ...(storms.storms ?? []).map((s: { number: number }) => s.number)),
-                }
-              : undefined,
-          season: painters?.asOf ? { at: Date.parse(painters.asOf) } : undefined,
-        }),
+    // Season data: the newest season's painters file (season 1's is frozen since it ended).
+    void Promise.all([
+      read('/storms/season-1.json'),
+      loadSeasonPainters().then((all) => all.at(-1)?.file),
+    ]).then(([storms, painters]) =>
+      setFresh({
+        storms:
+          storms?.updatedAt != null
+            ? {
+                at: Date.parse(storms.updatedAt),
+                counted: Math.max(0, ...(storms.storms ?? []).map((s: { number: number }) => s.number)),
+              }
+            : undefined,
+        season: painters?.asOf ? { at: Date.parse(painters.asOf) } : undefined,
+      }),
     )
   }, [])
 

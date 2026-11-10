@@ -251,6 +251,7 @@ try {
       JSON.stringify({
         version: 1,
         chainId: 143,
+        ...(options.season != null ? { season: options.season + 1 } : {}),
         toBlock: String(head),
         asOf: new Date().toISOString(),
         painters: rows,

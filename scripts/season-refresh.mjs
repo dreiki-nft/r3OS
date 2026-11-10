@@ -6,6 +6,7 @@
  *   2. Live Mode sessions     public/live/sessions.json        (only new blocks)
  *   3. season stats           docs/season-stats.json (season 1), docs/season-2-stats.json, …
  *                             (written to a temp file first, never truncated; AI agents counted apart)
+ *                             + My Pass ranks: public/season/painters.json (season 1), painters-2.json, … (humans only)
  *   4. season chart           docs/media/season-days.svg (season 1), docs/media/season-2-days.svg, …
  *   5. season 1 only: Storm Chasers  public/storms/season-1.json + storm-chasers-out/
  *

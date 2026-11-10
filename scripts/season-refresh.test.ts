@@ -69,7 +69,8 @@ describe('season refresh', () => {
     expect(stats).toContain('--season 1')
     expect(stats).toContain('--agents-file /h/agents.json')
     expect(stats).toContain('--exclude-file /h/anons.json')
-    expect(stats).not.toContain('painters.json')
+    // Every season writes its own painters file for My Pass; season 1 keeps its old path.
+    expect(stats).toContain('--painters-out public/season/painters-2.json')
     expect(steps[0].args).toEqual(['--season', '1'])
     expect(steps[2].stdoutTo).toBe('docs/season-2-stats.json')
     expect(steps[3].args).toEqual([
@@ -83,8 +84,11 @@ describe('season refresh', () => {
       'public/live/sessions.json',
       'docs/season-2-stats.json',
       'docs/media/season-2-days.svg',
+      'public/season/painters-2.json',
     ])
     expect(refreshedFiles(0)).toContain('public/storms/season-1.json')
-    expect(plan({ storms: [], exclude: [], excludeFiles: [] })[2].args).toContain('--painters-out')
+    expect(refreshedFiles(0)).toContain('public/season/painters.json')
+    const first = plan({ storms: [], exclude: [], excludeFiles: [] })[2].args.join(' ')
+    expect(first).toContain('--painters-out public/season/painters.json')
   })
 })

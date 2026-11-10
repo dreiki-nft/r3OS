@@ -54,7 +54,7 @@ import {
 } from '../chain/names'
 import { WalletChooser } from '../os/WalletChooser'
 import { Tabs } from '../os/ui/Tabs'
-import { useSeasonStanding } from './seasonRank'
+import { rankCells, useSeasonStanding } from './seasonRank'
 import { TreeView } from '../os/ui/TreeView'
 import { OperatorTab } from '../operator/OperatorTab'
 import { subscribeCanvasActivity } from '../paint/canvasStore'
@@ -579,12 +579,9 @@ export function PassProgram() {
                           ['SESSION PAINTS', stats.sessionPaints.toString()],
                           ['STORM PAINTS', stats.stormPaints.toString()],
                           ['FIRST PAINT', stats.firstPaintBlock ? `#${stats.firstPaintBlock}` : '—'],
-                          [
-                            'SEASON RANK',
-                            standing?.rank && standing.of ? `#${standing.rank} of ${standing.of}` : '—',
-                          ],
+                          ...rankCells(standing),
                           ['STORM TICKETS', String(standing?.tickets ?? 0)],
-                        ] as const
+                        ] as [string, string][]
                       ).map(([label, value]) => (
                         <div className="sunken" key={label}>
                           <dt>{label}</dt>
