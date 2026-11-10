@@ -83,13 +83,24 @@ export function currentDisc(account?: Address) {
 }
 
 // ---------------------------------------------------------------------------
-// Imaging viewer target (the track the user double-clicked in D:)
+// Imaging viewer target (the track the user double-clicked in D:, or a frame opened from My Frames)
 // ---------------------------------------------------------------------------
 
-export interface ImagingTarget {
+export interface CdImagingTarget {
   cdId: string
   track: number
 }
+
+/** Frames opened from My Frames: the folder's frames in order, so Previous/Next walk the same list. */
+export interface FrameImagingTarget {
+  frames: number[]
+  index: number
+}
+
+export type ImagingTarget = CdImagingTarget | FrameImagingTarget
+
+export const isFrameTarget = (target?: ImagingTarget): target is FrameImagingTarget =>
+  !!target && 'frames' in target
 
 let imagingTarget: ImagingTarget | undefined
 

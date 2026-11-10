@@ -23,6 +23,7 @@ import { quoteAction, sendAction, type ActionQuote } from '../chain/tx'
 import { getWalletSnapshot, subscribeWallet } from '../chain/wallet'
 import { R3OS_PAINT_ABI } from '../lib/generated/abi'
 import { openProgram } from '../os/programs'
+import { setImagingTarget } from '../cdrom/cdromStore'
 import { playSound } from '../os/sound'
 import { imageActions, type ImageResource } from '../os/imageResources'
 import { requestFloppy } from '../os/floppy'
@@ -596,6 +597,15 @@ export function FramesProgram() {
     openProgram('frame-props', true, `#/frame-props?${query}`)
   }
 
+  /** Open shows the picture (in Imaging, with Previous/Next through this folder); Properties stays a separate action. */
+  const openFrame = (tokenId: number) => {
+    if (tokenId <= 0) return
+    const frames = visibleIds.filter((id) => id > 0)
+    const index = frames.indexOf(tokenId)
+    setImagingTarget(index >= 0 ? { frames, index } : { frames: [tokenId], index: 0 })
+    openProgram('imaging', true, `#/imaging?frame=${tokenId}`)
+  }
+
   const openProps = (tab = 'General', renderer?: string) => {
     if (selected == null) return
     openTokenProps(selected, tab, renderer)
@@ -679,7 +689,7 @@ export function FramesProgram() {
     }
     if (event.key === 'Enter' && selected != null && selected !== 0) {
       event.preventDefault()
-      openProps()
+      openFrame(Number(selected))
       return
     }
     if (!visibleIds.length) return
@@ -1091,7 +1101,7 @@ export function FramesProgram() {
                     onSelect={() => setSelected(tokenId)}
                     onOpen={() => {
                       setSelected(tokenId)
-                      if (tokenId > 0) openTokenProps(tokenId)
+                      openFrame(tokenId)
                     }}
                     onContextMenu={(x, y) => openContextMenu(tokenId, x, y)}
                   />
@@ -1128,7 +1138,7 @@ export function FramesProgram() {
               <button
                 role="menuitem"
                 onClick={() => {
-                  if (savedFrame) openTokenProps(tokenId)
+                  if (savedFrame) openFrame(tokenId)
                   setContextMenu(undefined)
                 }}
               >

@@ -233,3 +233,15 @@ describe('drive and viewer state', () => {
     expect(currentDisc(a)).toBeUndefined()
   })
 })
+
+describe('frames in Imaging', () => {
+  it('opens a frame from its deep link, and walks the folder with wrap-around', async () => {
+    const { frameFileName, stepIndex } = await import('./FrameImaging')
+    expect(imagingTargetFromHash('#/imaging?frame=42')).toEqual({ frames: [42], index: 0 })
+    expect(imagingTargetFromHash('#/imaging?frame=0')).toBeUndefined()
+    expect(frameFileName(42)).toBe('FRAME0042.BMP')
+    expect(stepIndex(0, -1, 3)).toBe(2)
+    expect(stepIndex(2, 1, 3)).toBe(0)
+    expect(stepIndex(1, 1, 3)).toBe(2)
+  })
+})

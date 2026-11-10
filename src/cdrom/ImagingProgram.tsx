@@ -18,15 +18,25 @@ import {
   type LoadedCd,
   type TrackStatus,
 } from './cdrom'
-import { getCdromVersion, getImagingTarget, setImagingTarget, subscribeCdrom } from './cdromStore'
+import {
+  getCdromVersion,
+  getImagingTarget,
+  isFrameTarget,
+  setImagingTarget,
+  subscribeCdrom,
+  type CdImagingTarget,
+} from './cdromStore'
+import { FrameImaging } from './FrameImaging'
 import './cdrom.css'
 
 type Zoom = 'fit' | 1 | 2
 
-/** `#/imaging?cd=5&track=2` deep link (track is 1-based in the URL). */
+/** `#/imaging?cd=5&track=2` (track is 1-based in the URL) or `#/imaging?frame=42` deep link. */
 export function imagingTargetFromHash(hash: string) {
   if (!hash.startsWith('#/imaging')) return undefined
   const params = new URLSearchParams(hash.split('?')[1] ?? '')
+  const frame = params.get('frame')
+  if (frame && /^\d+$/.test(frame) && Number(frame) > 0) return { frames: [Number(frame)], index: 0 }
   const cd = params.get('cd')
   const track = Number(params.get('track') ?? '1')
   if (!cd || !/^\d+$/.test(cd) || !Number.isInteger(track) || track < 1) return undefined
@@ -37,6 +47,12 @@ export function ImagingProgram() {
   useSyncExternalStore(subscribeCdrom, getCdromVersion)
   const target =
     getImagingTarget() ?? imagingTargetFromHash(typeof location === 'undefined' ? '' : location.hash)
+  // Two viewers behind one window: a CD's tracks, or frames opened from My Frames.
+  if (isFrameTarget(target)) return <FrameImaging target={target} />
+  return <CdImaging target={target} />
+}
+
+function CdImaging({ target }: { target?: CdImagingTarget }) {
   const [cd, setCd] = useState<LoadedCd>()
   const [image, setImage] = useState<PixelImage>()
   const [error, setError] = useState('')
