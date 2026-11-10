@@ -87,3 +87,25 @@ export function loadDraft(key: string, season: bigint): DraftPixel[] | undefined
     return undefined
   }
 }
+
+/**
+ * The DRAFT label on the canvas: how many drawn pixels are not onchain yet, and what sends them. Hidden while a
+ * send is under way and in Live Mode with auto-paint on, where every stroke goes out by itself.
+ */
+export function draftLabel(
+  pixels: number,
+  {
+    sending,
+    autoSends,
+    connected,
+    needsLive,
+  }: { sending: boolean; autoSends: boolean; connected: boolean; needsLive: boolean },
+): { pixels: number; hint?: string } | undefined {
+  if (pixels <= 0 || sending || autoSends) return undefined
+  const hint = !connected
+    ? 'connect a wallet to paint it'
+    : needsLive
+      ? 'start Live Mode to send it'
+      : 'press Paint to send it'
+  return { pixels, hint }
+}

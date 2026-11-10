@@ -67,6 +67,7 @@ import { BudgetMeter, type BudgetState } from './BudgetMeter'
 import { spendObservedBudget } from './budget'
 import { isPhoneScreen } from '../os/phone'
 import { CanvasView } from './CanvasView'
+import { draftLabel } from './draft'
 import {
   agoLabel,
   focusPaint,
@@ -1622,6 +1623,12 @@ export function PaintProgram() {
           onHover={(point) => {
             setHover(point)
           }}
+          draft={draftLabel(patch.pixelWrites, {
+            sending: busy || !!progress,
+            autoSends: isLive && autoPaint,
+            connected: Boolean(wallet.account),
+            needsLive,
+          })}
         />
         <aside className="paint-info">
           <b>256 × 256</b>

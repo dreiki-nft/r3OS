@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyDraft, decodeDraft, draftPixels, encodeDraft } from './draft'
+import { applyDraft, decodeDraft, draftLabel, draftPixels, encodeDraft } from './draft'
 
 describe('unsent drawing kept across reloads', () => {
   it('stores only changed pixels and restores them exactly', () => {
@@ -31,5 +31,21 @@ describe('unsent drawing kept across reloads', () => {
     const everything = new Uint8Array(65_536).fill(5)
     const big = draftPixels(background, everything)
     expect(decodeDraft(encodeDraft(big))).toHaveLength(65_536)
+  })
+})
+
+describe('DRAFT label', () => {
+  const idle = { sending: false, autoSends: false, connected: true, needsLive: false }
+
+  it('shows unsent pixels with what sends them', () => {
+    expect(draftLabel(42, idle)).toEqual({ pixels: 42, hint: 'press Paint to send it' })
+    expect(draftLabel(42, { ...idle, connected: false })?.hint).toBe('connect a wallet to paint it')
+    expect(draftLabel(42, { ...idle, needsLive: true })?.hint).toBe('start Live Mode to send it')
+  })
+
+  it('stays hidden with nothing drawn, while sending, and when Live Mode sends every stroke itself', () => {
+    expect(draftLabel(0, idle)).toBeUndefined()
+    expect(draftLabel(42, { ...idle, sending: true })).toBeUndefined()
+    expect(draftLabel(42, { ...idle, autoSends: true })).toBeUndefined()
   })
 })

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { recordPerfSampled } from '../chain/perf'
 import { nextFitSize } from './fitSize'
 import { PALETTE } from '../lib/palette'
@@ -37,6 +37,8 @@ interface CanvasViewProps {
   /** the browser took the touch over (a pinch-zoom started): drop the stroke instead of finishing it */
   onCancel?: () => void
   onHover: (point: Point) => void
+  /** Pixels drawn but not sent onchain yet: shown as a DRAFT label so a drawing never looks painted when it isn't. */
+  draft?: { pixels: number; hint?: string }
 }
 
 export function CanvasView({
@@ -60,6 +62,7 @@ export function CanvasView({
   onMove,
   onUp,
   onCancel,
+  draft,
   onHover,
 }: CanvasViewProps) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -277,6 +280,20 @@ export function CanvasView({
         if (event.ctrlKey) event.preventDefault()
       }}
     >
+      {draft && draft.pixels > 0 && (
+        <div
+          className="canvas-draft"
+          aria-live="polite"
+          style={{ '--canvas-w': `${256 * effectiveZoom}px` } as CSSProperties}
+        >
+          <span>
+            <span>
+              <b>DRAFT</b> · {draft.pixels.toLocaleString('en-US')} px not sent
+            </span>
+            {draft.hint && <small>{draft.hint}</small>}
+          </span>
+        </div>
+      )}
       <canvas
         ref={ref}
         width={256}
