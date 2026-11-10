@@ -17,6 +17,7 @@ import { ScreensaverOverlay } from './ScreensaverOverlay'
 import { FirstRun } from './FirstRun'
 import { isFirstRunOpen, subscribeFirstRun } from './firstRunState'
 import { initLiveNudge } from '../live/liveNudge'
+import { initFirstStroke } from '../paint/firstStroke'
 import { disconnectWallet, takeGuestNotice } from '../chain/wallet'
 import { initAutoSweep } from '../live/autoSweep'
 import { DisconnectGuard } from '../live/DisconnectGuard'
@@ -100,6 +101,7 @@ export function R3OS() {
   useEffect(() => {
     initSound()
     initLiveNudge()
+    initFirstStroke()
     initAutoSweep()
     void initReleases()
     startPresence()
